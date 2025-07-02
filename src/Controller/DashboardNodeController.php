@@ -25,6 +25,7 @@ use Drupal\token\Token;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\vactory_dashboard\Service\PreviewUrlService;
+use Drupal\path_alias\AliasManagerInterface;
 
 /**
  * Controller for the vactory_page dashboard.
@@ -61,6 +62,14 @@ class DashboardNodeController extends ControllerBase {
    */
   protected $metatagService;
 
+    /**
+   * Le service AliasManager.
+   *
+   * @var \Drupal\Core\Path\AliasManagerInterface
+   */
+  protected $aliasManager;
+
+
   protected $tokenService;
 
   /**
@@ -77,7 +86,8 @@ class DashboardNodeController extends ControllerBase {
     MetatagService $metatag_service,
     Token $tokenService,
     ConfigFactoryInterface $configFactory,
-    PreviewUrlService $previewUrlService
+    PreviewUrlService $previewUrlService,
+    AliasManagerInterface $alias_manager,
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
@@ -85,6 +95,7 @@ class DashboardNodeController extends ControllerBase {
     $this->tokenService = $tokenService;
     $this->configFactory = $configFactory;
     $this->previewUrlService = $previewUrlService;
+    $this->aliasManager = $alias_manager;
   }
 
   /**
@@ -98,6 +109,7 @@ class DashboardNodeController extends ControllerBase {
       $container->get('token'),
       $container->get('config.factory'),
       $container->get('vactory_dashboard.preview_url'),
+      $container->get('path_alias.manager'),
     );
   }
 
@@ -1259,4 +1271,48 @@ class DashboardNodeController extends ControllerBase {
     return $result;
   }
 
+  /**
+   * Returns the list of aliases of published nodes accessible to the user,
+   * filtered by an optional search query
+   *
+   * @param Request $request
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   */
+  public function getNodeLinks(Request $request) {
+
+    $query = $request->query->get('q', '');
+  
+    $entityQuery = \Drupal::entityQuery('node')
+      ->accessCheck(TRUE)
+      ->condition('status', 1);
+  
+    if ($query !== '') {
+      $entityQuery->condition('title', '%' . $query . '%', 'LIKE');
+    }
+  
+    $entityQuery->range(0, 10); 
+  
+    $nids = $entityQuery->execute();
+  
+    $nodes = Node::loadMultiple($nids);
+    $links = [];
+  
+    foreach ($nodes as $node) {
+      $url = $node->toUrl();
+      $path = $url->getInternalPath();
+  
+      $alias = $this->aliasManager->getAliasByPath('/' . $path);
+  
+      $links[] = [
+        'title' => $node->label(),
+        'url' => $alias,
+        'type' => $node->bundle(),
+        'created' => $node->getCreatedTime(),
+        'id' => $node->id(),
+        'author' => $node->getOwner()->getDisplayName(),
+      ];
+    }
+  
+    return new JsonResponse($links);
+  }
 }
