@@ -1,0 +1,832 @@
+<?php
+
+/**
+ * @file
+ */
+
+use Drupal\block\Entity\Block;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
+use Drupal\node\Entity\Node;
+use Drupal\user\Entity\Role;
+
+/**
+ * @file
+ * Primary module hooks for vactory_dashboard module.
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function vactory_dashboard_theme($existing, $type, $theme, $path) {
+  return [
+    'vactory_dashboard_home' => [
+      'variables' => [
+        'total_pages' => NULL,
+        'total_users' => NULL,
+        'total_media' => NULL,
+        'pages_modified_this_week' => NULL,
+        'last_modified_pages' => NULL,
+        'issues' => [],
+        'projetID' => NULL,
+        'error_message' => NULL,
+      ],
+      'template' => 'dashboard-home',
+    ],
+    'vactory_dashboard_users' => [
+      'variables' => [
+        'content' => NULL,
+        'roles' => [],
+        'has_edit_permission' => NULL,
+      ],
+      'template' => 'users/list',
+    ],
+    'vactory_dashboard_taxonomies' => [
+      'variables' => [
+        'taxonomy_vid' => NULL,
+        'langs' => NULL,
+        'default_lang' => NULL,
+        'permissions' => NULL,
+      ],
+      'template' => 'taxonomy/list',
+    ],
+    'vactory_dashboard_media' => [
+      'template' => 'media/dashboard-media',
+      'variables' => [
+        'media_types' => [],
+        'permission_create_media' => NULL,
+        'permission_delete_media' => NULL,
+      ],
+    ],
+    'vactory_dashboard_ajoute_medias_files' => [
+      'template' => 'media/dashboard-ajoute-medias-files',
+      'variables' => [
+        'allowed_extensions' => [],
+        'max_size_bytes' => NULL,
+      ],
+    ],
+    'vactory_dashboard_ajoute_medias_images' => [
+      'template' => 'media/dashboard-ajoute-medias-images',
+      'variables' => [
+        'allowed_extensions' => [],
+        'max_size_bytes' => NULL,
+      ],
+    ],
+    'vactory_dashboard_ajoute_medias_upload_documents' => [
+      'template' => 'media/dashboard-ajoute-medias-upload-documents',
+      'variables' => [
+        'allowed_extensions' => [],
+      ],
+    ],
+
+    'vactory_dashboard_ajoute_medias_remote_video' => [
+      'template' => 'media/dashboard-ajoute-medias-remote-video',
+
+    ],
+
+    'vactory_dashboard_ajoute_media' => [
+      'template' => 'media/dashboard-ajoute-media',
+      'variables' => [
+        'media_types' => [],
+      ],
+    ],
+
+    'vactory_dashboard_webform' => [
+      'template' => 'webform/dashboard-webform',
+      'variables' => [
+        'id' => NULL,
+        'permissions' => [],
+      ],
+    ],
+    'vactory_dashboard_update_user' => [
+      'template' => 'users/edit',
+      'variables' => [
+        'userId' => NULL,
+        'roles' => [],
+        'user_data' => [],
+        'has_permission_edit_role' => NULL,
+      ],
+    ],
+    'vactory_dashboard_submission' => [
+      'template' => 'submission/dashboard-submission',
+      'variables' => [
+        'id' => NULL,
+        'submission_id' => NULL,
+      ],
+    ],
+    'vactory_dashboard_submission_edit' => [
+      'template' => 'submission/dashboard-submission-edit',
+      'variables' => [
+        'id' => NULL,
+        'submission_id' => NULL,
+      ],
+    ],
+    'vactory_dashboard_translations' => [
+      'variables' => [],
+      'template' => 'translation/list',
+    ],
+    'vactory_dashboard_content_types' => [
+      'template' => 'content-types/dashboard-content-types',
+      'variables' => [
+        'id' => NULL,
+        'bundle_label' => NULL,
+        'entity_queues' => NULL,
+        'permissions' => NULL,
+        'dynamic_exports' => NULL,
+        'taxonomies' => NULL,
+        'langs' => NULL,
+        'has_metatag' => NULL,
+      ],
+    ],
+    'vactory_dashboard_captcha' => [
+      'template' => 'captcha/dashboard-captcha',
+      'variables' => [
+        'form' => NULL,
+      ],
+    ],
+    'vactory_dashboard_languages' => [
+      'template' => 'languages/dashboard-languages',
+    ],
+    'vactory_dashboard_sitemap' => [
+      'template' => 'sitemap/dashboard-sitemap',
+    ],
+    'vactory_dashboard_shield' => [
+      'template' => 'shield/dashboard-shield',
+      'variables' => [
+        'form' => NULL,
+        'isShieldEnabled' => NULL,
+      ],
+    ],
+    'vactory_dashboard_banner_blocks' => [
+      'template' => 'blocks/banner-list',
+      'variables' => [
+        'blocks' => [],
+        'block_types' => [],
+      ],
+    ],
+    'vactory_dashboard_vactory_page_edit' => [
+      'template' => 'node/vactory-page/edit',
+      'variables' => [
+        'node' => NULL,
+        'language' => NULL,
+        'nid' => NULL,
+        'label' => NULL,
+        'changed' => NULL,
+        'status' => NULL,
+        'has_translation' => NULL,
+        'node_default_lang' => NULL,
+        'available_languages' => NULL,
+        'permissions' => NULL,
+        'meta_tags' => NULL,
+        'preview_url' => NULL,
+      ],
+    ],
+    'vactory_dashboard_vactory_page_add' => [
+      'template' => 'node/vactory-page/add',
+      'variables' => [
+        'language' => NULL,
+        'available_languages' => NULL,
+        'node_default_lang' => NULL,
+      ],
+    ],
+    'vactory_dashboard_node_add' => [
+      'template' => 'node/content-types/add',
+      'variables' => [
+        'language' => NULL,
+        'available_languages' => NULL,
+        'node_default_lang' => NULL,
+        'bundle' => NULL,
+        'fields' => NULL,
+        'bundle_label' => NULL,
+      ],
+    ],
+    'vactory_dashboard_node_edit' => [
+      'template' => 'node/content-types/edit',
+      'variables' => [
+        'alias' => NULL,
+        'language' => NULL,
+        'available_languages' => NULL,
+        'node_default_lang' => NULL,
+        'bundle' => NULL,
+        'nid' => NULL,
+        'fields' => NULL,
+        'node' => NULL,
+        'status' => NULL,
+        'changed' => NULL,
+        'bundle_label' => NULL,
+        'has_translation' => NULL,
+        'meta_tags' => NULL,
+        'has_seo' => NULL,
+      ],
+    ],
+  ];
+}
+
+function getLogo() {
+  $config = \Drupal::config('vactory_dashboard.global.settings');
+
+  $file_url = NULL;
+  $file_id = $config->get('image');
+
+  if (!empty($file_id)) {
+    $file = \Drupal\file\Entity\File::load(is_array($file_id) ? reset($file_id) : $file_id);
+    if ($file) {
+      $file_url = \Drupal::service('file_url_generator')
+        ->generateAbsoluteString($file->getFileUri());
+    }
+  }
+  return $file_url;
+}
+
+/**
+ *
+ */
+function vactory_dashboard_preprocess(&$variables) {
+  $config = \Drupal::config('vactory_dashboard.settings');
+  $projectID = $config->get('redmine_project_id');
+  $variables['redmineProjectId'] = $projectID;
+  $variables['logo'] = getLogo();
+
+  $current_path = \Drupal::service('path.current')->getPath();
+  $advanced_mode_url = get_admin_path($current_path);
+  $variables['advanced_mode_url'] = $advanced_mode_url;
+
+  $variables['homepage'] = getHomePage();
+
+  [$links, $defaultlang, $currentlang] = getLanguages();
+
+  $variables['languages'] = $links;
+  $variables['default_language'] = $defaultlang;
+  $variables['current_language'] = $currentlang;
+}
+
+/**
+ * Get all taxonomy vocabularies with their names and vocabulary IDs.
+ *
+ * @return array
+ *   An associative array of vocabularies with vid as key and name as value.
+ */
+function vactory_dashboard_get_taxonomy_vocabularies() {
+  static $vocabularies = NULL;
+
+  if ($vocabularies !== NULL) {
+    return $vocabularies;
+  }
+
+  $vocabularies = [];
+
+  $config = \Drupal::config('vactory_dashboard.global.settings');
+  $selected_vocabularies = $config->get('dashboard_taxonomies');
+
+  $config = \Drupal::config('vactory_dashboard.global.settings');
+  $selected_vocabularies = $config->get('dashboard_taxonomies');
+
+  // Load all taxonomy vocabularies.
+  $vocabulary_entities = \Drupal::entityTypeManager()
+    ->getStorage('taxonomy_vocabulary')
+    ->loadMultiple($selected_vocabularies);
+
+  // Extract vocabulary names and IDs.
+  foreach ($vocabulary_entities as $vocabulary) {
+    $vocabularies[$vocabulary->id()] = $vocabulary->label();
+  }
+
+  return $vocabularies;
+}
+
+/**
+ * Get the items of the main menu.
+ *
+ * @return array
+ *   An array of menu items with their properties.
+ */
+function vactory_dashboard_get_main_menu_items() {
+  static $menu_items = NULL;
+
+  if ($menu_items !== NULL) {
+    return $menu_items;
+  }
+
+  $menu_items = [];
+
+  // Load the main menu.
+  $menu_name = 'main';
+  $menu_tree = \Drupal::menuTree();
+  $parameters = $menu_tree->getCurrentRouteMenuTreeParameters($menu_name);
+
+  // Set the root level to 1 to get only top-level items.
+  $parameters->setMinDepth(1);
+  // Set maximum depth to 3 levels.
+  $parameters->setMaxDepth(3);
+
+  // Load the tree.
+  $tree = $menu_tree->load($menu_name, $parameters);
+
+  // Transform the tree into a renderable array.
+  $manipulators = [
+    ['callable' => 'menu.default_tree_manipulators:checkAccess'],
+    ['callable' => 'menu.default_tree_manipulators:generateIndexAndSort'],
+  ];
+  $tree = $menu_tree->transform($tree, $manipulators);
+
+  // Process menu items recursively.
+  $menu_items = vactory_dashboard_process_menu_items($tree);
+
+  return $menu_items;
+}
+
+/**
+ * Helper function to process menu items recursively.
+ *
+ * @param array $items
+ *   The menu items to process.
+ *
+ * @return array
+ *   Processed menu items with their children.
+ */
+function vactory_dashboard_process_menu_items($items) {
+  $processed_items = [];
+
+  foreach ($items as $item) {
+    $link = $item->link;
+    $url = $link->getUrlObject();
+
+    $menu_item = [
+      'title' => $link->getTitle(),
+      'url' => $url->toString(),
+      'route_name' => $url->getRouteName(),
+      'route_parameters' => $url->getRouteParameters(),
+      'external' => $url->isExternal(),
+      'attributes' => $link->getOptions(),
+      'below' => [],
+    ];
+
+    // Process children if they exist.
+    if (!empty($item->subtree)) {
+      $menu_item['below'] = vactory_dashboard_process_menu_items($item->subtree);
+    }
+
+    $processed_items[] = $menu_item;
+  }
+
+  return $processed_items;
+}
+
+/**
+ * Implements hook_toolbar().
+ */
+function vactory_dashboard_toolbar() {
+  $items['dashboard'] = [
+    '#weight' => 999,
+    '#cache' => [
+      'contexts' => ['route'],
+    ],
+    '#attached' => [
+      'library' => [
+        'vactory_dashboard/dashboard.icons.admin',
+      ],
+    ],
+  ];
+  // Show dashboard only on administration pages.
+  $admin_context = \Drupal::service('router.admin_context');
+  if ($admin_context->isAdminRoute()) {
+    $items['dashboard']['#type'] = 'toolbar_item';
+    $items['dashboard']['tab'] = [
+      '#type' => 'inline_template',
+      '#template' => '<a class="toolbar-icon toolbar-icon-dashboard trigger toolbar-item" href="{{ path("vactory_dashboard.home") }}">Dashboard <span style="display: inline-block; background-color: #ff4444; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 5px; font-weight: bold;">BETA</span></a>',
+    ];
+  }
+  return $items;
+}
+
+/**
+ * Maps dashboard paths to native admin UI paths.
+ */
+function get_admin_path(string $path): string {
+  $url = Url::fromRoute('system.admin')->toString();
+
+  $route_match = \Drupal::routeMatch();
+
+  switch ($route_match->getRouteName()) {
+    // Page.
+    case 'vactory_dashboard.vactory_page.edit':
+      $id = $route_match->getParameter('id');
+      $url = Url::fromRoute('entity.node.edit_form', ['node' => $id])
+        ->toString();
+      break;
+
+    // Page - traduction.
+    case 'vactory_dashboard.vactory_page.add.translation':
+      $id = $route_match->getParameter('id');
+      $url = Url::fromRoute('entity.node.content_translation_overview', ['node' => $id])
+        ->toString();
+      break;
+
+    // Taxonomy.
+    case 'vactory_dashboard.taxonomies':
+      $vid = $route_match->getParameter('vid');
+      $url = Url::fromRoute('entity.taxonomy_vocabulary.overview_form', ['taxonomy_vocabulary' => $vid])
+        ->toString();
+      break;
+
+    // Content type.
+    case 'vactory_dashboard.content_types':
+      $bundle = $route_match->getParameter('bundle');
+      $url = Url::fromRoute('system.admin_content', ['node_type' => $bundle], ['query' => ['type' => $bundle]])
+        ->toString();
+      break;
+
+    // Content type - edit.
+    case 'vactory_dashboard.node.edit':
+      $nid = $route_match->getParameter('nid');
+      $url = Url::fromRoute('entity.node.edit_form', ['node' => $nid])
+        ->toString();
+      break;
+
+    // Content type - edit translation.
+    case 'vactory_dashboard.node.translate':
+      $nid = $route_match->getParameter('nid');
+      $url = Url::fromRoute('entity.node.content_translation_overview', ['node' => $nid])
+        ->toString();
+      break;
+
+    // Content type - add.
+    case 'vactory_dashboard.node.add':
+      $bundle = $route_match->getParameter('bundle');
+      $url = Url::fromRoute('node.add', ['node_type' => $bundle])->toString();
+      break;
+
+    // Media.
+    case 'vactory_dashboard.media':
+      $url = Url::fromRoute('entity.media.collection')->toString();
+      break;
+
+    // Media - add in bulk.
+    case 'vactory_dashboard_ajoute_medias_upload_documents':
+      $url = Url::fromRoute('vactory_core.upload_documents_form')->toString();
+      break;
+
+    // Media - add single item.
+    case 'vactory_dashboard_ajoute_media':
+      $url = Url::fromRoute('entity.media.add_page')->toString();
+      break;
+
+    // Media - add file.
+    case 'vactory_dashboard_ajoute_medias_files':
+      $type_id = $route_match->getParameter('type_id');
+      $url = Url::fromRoute('entity.media.add_form', ['media_type' => $type_id])
+        ->toString();
+      break;
+
+    // Media - add image.
+    case 'vactory_dashboard_ajoute_medias_images':
+      $type_id = $route_match->getParameter('type_id');
+      $url = Url::fromRoute('entity.media.add_form', ['media_type' => $type_id])
+        ->toString();
+      break;
+
+    // Media - add remote video.
+    case 'vactory_dashboard_ajoute_medias_remote_video':
+      $type_id = $route_match->getParameter('type_id');
+      $url = Url::fromRoute('entity.media.add_form', ['media_type' => $type_id])
+        ->toString();
+      break;
+
+    // Users.
+    case 'vactory_dashboard.users':
+      $url = Url::fromRoute('entity.user.collection')->toString();
+      break;
+
+    // User.
+    case 'vactory_dashboard_update_user':
+      $userId = $route_match->getParameter('userId');
+      $url = Url::fromRoute('entity.user.edit_form', ['user' => $userId])
+        ->toString();
+      break;
+
+    // Formulaire.
+    case 'vactory_dashboard.webform':
+      $id = $route_match->getParameter('id');
+      $url = Url::fromRoute('entity.webform.results_submissions', ['webform' => $id])
+        ->toString();
+      break;
+
+    // Soumission.
+    case 'vactory_dashboard.webform.submission':
+      $id = $route_match->getParameter('id');
+      $submission_id = $route_match->getParameter('submission_id');
+      $url = Url::fromRoute('entity.webform_submission.canonical', [
+        'webform' => $id,
+        'webform_submission' => $submission_id,
+      ])->toString();
+      break;
+
+    // Parametre - traduction.
+    case 'vactory_dashboard.translations':
+      $url = Url::fromRoute('locale.translate_page')->toString();
+      break;
+
+    // Parametre - captcha.
+    case 'vactory_dashboard.settings.captcha':
+      $url = Url::fromRoute('recaptcha.admin_settings_form')->toString();
+      break;
+
+    // Parametre - langue.
+    case 'vactory_dashboard.settings.languages':
+      $url = Url::fromRoute('entity.configurable_language.collection')
+        ->toString();
+      break;
+
+    // Parametre - sitemap.
+    case 'vactory_dashboard.settings.sitemaps':
+      $url = Url::fromRoute('xmlsitemap.admin_search')->toString();
+      break;
+
+    // Parametre - shield.
+    case 'vactory_dashboard.settings.shield':
+      $url = Url::fromRoute('shield.settings')->toString();
+      break;
+
+    default:
+      break;
+  }
+
+  return $url;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function vactory_dashboard_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $blocks_form = [
+    'block_content_vactory_block_component_form',
+  ];
+  if (in_array($form_id, $blocks_form)) {
+    $form['actions']['configure_block']['#access'] = FALSE;
+    $defaultThemeName = \Drupal::config('system.theme')->get('default');
+
+    $regions = system_region_list($defaultThemeName, REGIONS_VISIBLE);
+
+    $region_options = [];
+    foreach ($regions as $key => $region) {
+      $region_options[$key] = $region;
+    }
+
+    $form['block_region'] = [
+      '#type' => 'select',
+      '#required' => TRUE,
+      '#title' => t('Block region'),
+      '#options' => $region_options,
+      '#empty_option' => t('- Select a region -'),
+      '#description' => t('Select which region to place the block into.'),
+      '#weight' => 90,
+    ];
+
+    $form['visibility'] = [
+      '#type' => 'vertical_tabs',
+      '#title' => t('Visibility'),
+      '#weight' => 91,
+    ];
+
+    $condition_ids = [
+      'language',
+      'request_path',
+      'user_role',
+      'entity_bundle:node',
+    ];
+
+    $manager = \Drupal::service('plugin.manager.condition');
+
+    foreach ($condition_ids as $id) {
+      if (!$manager->hasDefinition($id)) {
+        continue;
+      }
+
+      $plugin = $manager->createInstance($id, []);
+
+      $form[$id] = [
+        '#type' => 'details',
+        '#title' => $id === 'request_path' ? t("Pages") : $plugin->getPluginDefinition()['label'],
+        '#group' => 'visibility',
+        '#open' => FALSE,
+        '#tree' => TRUE,
+      ];
+      $form[$id] += $plugin->buildConfigurationForm([], $form_state);
+      if ($id !== 'request_path') {
+        unset($form[$id]['negate']);
+      }
+    }
+    $form['actions']['submit']['#submit'][] = 'save_block_content_as_block_with_visibility';
+  }
+}
+
+/**
+ * Save block content as a block with visibility.
+ */
+function save_block_content_as_block_with_visibility(&$form, FormStateInterface $form_state) {
+  try {
+    $block_content_id = $form_state->getValue('id');
+    $uuid = \Drupal::entityTypeManager()
+      ->getStorage('block_content')
+      ->load($block_content_id)
+      ->uuid();
+
+    $block = Block::create([
+      'id' => $form_state->getValue('block_machine_name')[0]['value'],
+      'plugin' => 'block_content:' . $uuid,
+      'region' => $form_state->getValue('block_region'),
+      'theme' => \Drupal::config('system.theme')->get('default'),
+      'visibility' => [],
+    ]);
+
+    $roles = $form_state->getValue('user_role')['roles'] ?? [];
+    $roles = array_filter($roles, function($role) {
+      return $role != 0;
+    });
+    $block->setVisibilityConfig('user_role', [
+      'id' => 'user_role',
+      'roles' => $roles,
+    ]);
+
+    $block->setVisibilityConfig('request_path', [
+        'id' => 'request_path',
+        'pages' => $form_state->getValue('request_path')['pages'] ?? "",
+        'negate' => $form_state->getValue('request_path')['negate'] ?? FALSE,
+      ]
+    );
+
+    $langcodes = $form_state->getValue('language')['langcodes'] ?? [];
+    $langcodes = array_filter($langcodes, function($langcode) {
+      return $langcode != 0;
+    });
+
+    $block->setVisibilityConfig('language', [
+        'id' => 'language',
+        'langcodes' => $langcodes,
+      ]
+    );
+
+    $bundles = $form_state->getValue('entity_bundle:node')['bundles'] ?? [];
+    $bundles = array_filter($bundles, function($bundle) {
+      return $bundle != 0;
+    });
+    $block->setVisibilityConfig('entity_bundle:node', [
+        'id' => 'entity_bundle:node',
+        'bundles' => $bundles,
+      ]
+    );
+
+    $block->save();
+  }
+  catch (\Exception $exception) {
+    \Drupal::logger('vactory_dashboard')->error($exception->getMessage());
+    \Drupal::messenger()->addError($exception->getMessage());
+  }
+}
+
+/**
+ * Get information about the homepage node if available.
+ *
+ * @return array
+ *   An array containing:
+ *   - nid: Node ID of the homepage (0 if not a node).
+ *   - url: URL to edit the homepage or fallback to its absolute URL.
+ *   - title: Translated title of the homepage node (if any).
+ */
+function getHomePage(): array {
+  $front_path = \Drupal::config('system.site')->get('page.front');
+
+  // Get absolute URL of the front path.
+  $absolute_url = Url::fromUserInput('/' . ltrim($front_path, '/'))
+    ->setAbsolute()
+    ->toString();
+
+  // Resolve system path (e.g., /node/1).
+  $system_path = \Drupal::service('path_alias.manager')
+    ->getPathByAlias($front_path);
+
+  // Check if the resolved path matches a node pattern.
+  if (!preg_match('#^/(?:[a-z]{2}/)?node/(\d+)$#', $system_path, $matches)) {
+    return [
+      'nid' => 0,
+      'url' => $absolute_url,
+      'title' => NULL,
+    ];
+  }
+
+  $nid = (int) $matches[1];
+  $node = Node::load($nid);
+
+  if (!$node) {
+    return [
+      'nid' => 0,
+      'url' => $absolute_url,
+      'title' => NULL,
+    ];
+  }
+
+  $langcode = \Drupal::languageManager()->getCurrentLanguage()->getId();
+  $translated_node = $node->hasTranslation($langcode)
+    ? $node->getTranslation($langcode)
+    : $node;
+
+  return [
+    'nid' => $nid,
+    'url' => Url::fromRoute('vactory_dashboard.vactory_page.edit', ['id' => $nid])
+      ->toString(),
+    'title' => $translated_node->label(),
+  ];
+}
+
+/**
+ * Get languages.
+ */
+function getLanguages() {
+  /** Get current path and turn it into a Url object */
+  $current_path = Drupal::service('path.current')->getPath();
+  $current_url = Url::fromUserInput($current_path);
+
+  /** Language manager service */
+  $language_manager = Drupal::service('language_manager');
+
+  /** Get language switch links for current page */
+  $language_links = $language_manager->getLanguageSwitchLinks('url', $current_url);
+
+  /** Get all configured languages */
+  $all_languages = $language_manager->getLanguages();
+
+  /** Get default site language code */
+  $default_lang = Drupal::service('language.default')->get();
+  $default_langcode = $default_lang->getId();
+  $default_langname = $default_lang->getName();
+
+  $current_langname = \Drupal::languageManager()
+    ->getCurrentLanguage()
+    ->getName();
+
+  $language_links = $language_manager->getLanguageSwitchLinks('url', $current_url);
+
+  $links = [];
+
+  foreach ($all_languages as $langcode => $language) {
+    $translated_url = $language_links['links'][$langcode]['url'] ?? Url::fromUserInput($current_path, ['language' => $language]);
+
+    $links[] = [
+      'name' => $language->getName(),
+      'id' => $langcode,
+      'is_default' => $langcode === $default_langcode,
+      'url' => $translated_url->toString(),
+    ];
+  }
+  return [$links, $default_langname, $current_langname];
+}
+
+/**
+ * Implémentation de hook_cron().
+ */
+function vactory_dashboard_cron() {
+  \Drupal::logger('vactory_dashboard')->notice('Début du cron personnalisé SSL.');
+
+  $config = \Drupal::configFactory()->getEditable('vactory_dashboard.ssl.settings');
+  $last_check = $config->get('ssl_info_last_check') ?? 0;
+
+  if (\Drupal::time()->getRequestTime() - $last_check < 30 * 24 * 60 * 60) {
+    \Drupal::logger('vactory_dashboard')->notice('Pas encore 30 jours depuis la dernière vérification SSL.');
+    return;
+  }
+
+  try {
+    \Drupal::logger('vactory_dashboard')->notice('Lancement automatique du check SSL via cron.');
+
+    /** @var \Drupal\vactory_dashboard\Service\SslService $ssl_service */
+    $ssl_service = \Drupal::service('vactory_dashboard.ssl_service');
+    $ssl_service->getSSLStatus();
+
+  }
+  catch (\Exception $e) {
+    \Drupal::logger('vactory_dashboard')->error('Erreur lors du cron SSL : @msg', [
+      '@msg' => $e->getMessage(),
+    ]);
+  }
+
+  \Drupal::logger('vactory_dashboard')->notice('Fin du cron personnalisé SSL.');
+}
+
+/*
+ * Implements hook_user_login().
+ */
+function vactory_dashboard_user_login($account) {
+  $current_user = \Drupal::currentUser();
+  $request = \Drupal::request();
+
+  // Skip if there's already a destination.
+  if ($request->query->has('destination')) {
+    return;
+  }
+
+  if ($current_user->hasPermission('access dashboard')) {
+    $url = Url::fromRoute('vactory_dashboard.home');
+    $request->query->set('destination', $url->toString());
+  }
+}
+

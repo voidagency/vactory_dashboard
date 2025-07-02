@@ -1,0 +1,161 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% block content %}
+	<div class="flex-1 overflow-y-auto" x-data="fileUploader()">
+    {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
+		<div x-cloak>
+			
+			<div class="flex items-center gap-x-3 mb-6">
+				<a href="javascript:history.back()">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
+					</svg>
+				</a>
+				<div class="sm:flex-auto">
+					<h1 class="text-2xl font-semibold text-gray-900">{{ 'Ajouter un fichier' | t }}</h1>
+				</div>
+			</div>
+
+            <div class="bg-white shadow sm:rounded-lg p-6">
+
+
+                <form
+                        x-ref="form">
+                    <!-- Nom du fichier -->
+                    <div class="mb-6">
+                        <label for="fileName" class="block text-sm font-semibold text-gray-700 mb-1">
+                            {{ "Nom du fichier" | t }}<span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="fileName" id="fileName" minlength="4" maxlength="255" required
+                               class="block w-full rounded-md border-0 py-1.5 pl-3 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                        <p class="mt-2 text-sm text-gray-600">
+                            0/255
+                        </p>
+                        <template x-if="errors.fileName">
+                            <p class="text-sm text-red-600" x-text="errors.fileName"></p>
+                        </template>
+                    </div>
+
+
+                    <!-- Fichier -->
+                    <div class="mb-6">
+                        <label for="file" class="block text-sm font-semibold text-gray-700 mb-1">
+                            {{ "Fichier" | t }}<span class="text-red-500">*</span>
+                        </label>
+                        <input type="file" name="file" id="file" x-ref="file" required
+                               class="block w-full rounded-md border-0 py-1.5 pl-3 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                               accept="{{ allowed_extensions | map(ext => '.' ~ ext) | join(',') }}">
+                        <p class="mt-2 text-sm text-gray-600">
+                            {{ "1 seul fichier.<br>Limité à " | t }}
+                            {{ max_size_bytes }}
+                            {{ ".<br>Types autorisés : " | t }}
+                            {{ allowed_extensions | join(' ') }}
+                        </p>
+                        <template x-if="errors.file">
+                            <p class="text-sm text-red-600" x-text="errors.file"></p>
+                        </template>
+                    </div>
+
+					<!--  public/prive -->
+					<div class="mb-6">
+						<label class="inline-flex items-center">
+							<input type="checkbox" name="isPublic" x-model="isPublic" class="rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
+							<span class="ml-2 text-sm text-gray-700">{{ 'Fichier public' | t }}</span>
+						</label>
+					</div>
+					<div class="flex justify-end gap-x-2">
+						{% include '@vactory_admin/components/button/button.twig' with {
+							variant: 'secondary',
+							text: "Annuler" | t,
+							type: 'button',
+							click_handler: "$refs.form.reset(); history.back()",
+							attributes: create_attribute({'type': 'button'})
+						} %}
+
+            <button 
+              @click="loading = true; submitForm();" 
+              :disabled="loading"
+              :class="{'opacity-50 cursor-not-allowed': loading,'bg-primary-500 hover:bg-primary-600': !loading,'bg-primary-400': loading}"
+              class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                  <!-- Button text (changes based on loading state) -->
+                  <span x-text="loading ? '{{ 'Ajout...'|t }}' : '{{ 'Ajouter'|t }}'"></span>
+                  
+                  <!-- Loading spinner (shown when saving) -->
+                  <svg x-show="loading" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+            </button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+      function fileUploader() {
+        return {
+          loading: false,
+          errors: {},
+          isPublic: true,
+          notification: {
+            show: false,
+            type: 'success',
+            message: '',
+            timeout: null,
+          },
+
+          showNotification(type, message) {
+            if (this.notification.timeout) {
+              clearTimeout(this.notification.timeout);
+            }
+            this.notification.type = type;
+            this.notification.message = message;
+            this.notification.show = true;
+            this.notification.timeout = setTimeout(() => {
+              this.notification.show = false;
+            }, 5000);
+          },
+
+          async submitForm() {
+            this.errors = {};
+            const form = this.$refs.form;
+            const fileInput = this.$refs.file;
+
+            const formData = new FormData(form);
+            formData.set('isPublic', this.isPublic ? '1' : '0');
+
+            if (!fileInput || fileInput.files.length === 0) {
+              this.errors.file = 'Veuillez sélectionner un fichier.';
+              this.loading = false;
+              return;
+            }
+
+            try {
+              const typeId = 'file';
+              const response = await fetch(`/api/vactory-dashboard/media/add-file/${typeId}`, {
+                method: 'POST',
+                body: formData,
+              });
+              const result = await response.json();
+
+              if (!response.ok) {
+                this.errors = result.errors || {};
+                this.showNotification('error', '{{ "Veuillez vérifier les valeurs fournies."|t }}');
+              } else {
+                this.showNotification('success', '{{ "Fichier ajouté avec succès"|t }}');
+                window.location.href = '{{ path("vactory_dashboard.media") }}';
+              }
+            } catch (error) {
+              console.error('Erreur lors de l\'envoi :', error);
+                this.showNotification('error', '{{ "Une erreur est survenue"|t }}');
+            } finally {
+              this.loading = false;
+            }
+          },
+        };
+      }
+    </script>
+{% endblock %}

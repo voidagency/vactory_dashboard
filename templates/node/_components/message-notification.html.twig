@@ -1,0 +1,62 @@
+<div
+        x-show="notification.show"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 transform -translate-y-2"
+        x-transition:enter-end="opacity-100 transform translate-y-0"
+        x-transition:leave="transition ease-in duration-300"
+        x-transition:leave-start="opacity-100 transform translate-y-0"
+        x-transition:leave-end="opacity-0 transform -translate-y-2"
+        @click="notification.show = false"
+        :class="{
+            'bg-red-50 border-red-200': notification.type === 'error',
+            'bg-green-50 border-green-200': notification.type === 'success'
+        }"
+        class="fixed top-4 right-4 px-4 py-3 rounded-xl shadow-lg cursor-pointer border transition-all duration-200 hover:shadow-xl">
+    <div class="flex items-center">
+        <div class="flex-shrink-0">
+            <svg
+                    x-show="notification.type === 'success'"
+                    class="h-5 w-5 text-green-500"
+                    viewBox="0 0 20 20"
+                    fill="currentColor">
+                <path fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clip-rule="evenodd"/>
+            </svg>
+            <svg
+                    x-show="notification.type === 'error'"
+                    class="h-5 w-5 text-red-500"
+                    viewBox="0 0 20 20"
+                    fill="currentColor">
+                <path fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clip-rule="evenodd"/>
+            </svg>
+        </div>
+        <div class="ml-3">
+            <p
+                    :class="{
+                        'text-red-800': notification.type === 'error',
+                        'text-green-800': notification.type === 'success'
+                    }"
+                    class="text-sm font-medium"
+                    x-text="notification.message"></p>
+        </div>
+        <div class="ml-auto pl-3">
+            <div class="-mx-1.5 -my-1.5">
+                <button
+                        type="button"
+                        class="inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                        :class="{
+                            'text-red-500 hover:bg-red-100 focus:ring-red-600': notification.type === 'error',
+                            'text-green-500 hover:bg-green-100 focus:ring-green-600': notification.type === 'success'
+                        }">
+                    <span class="sr-only">Dismiss</span>
+                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,21 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% block content %}
+  <div class="content-type-layout">
+    {# Page header #}
+    <div class="mb-6">
+      <h1 class="text-2xl font-semibold text-slate-900">{{ "Settings Captcha" | t }}</h1>
+    </div>
+
+        {# Settings form #}
+        <div id="captcha-form" class="bg-white rounded-lg shadow p-6">
+            {{ form }}
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+      // Additional JavaScript if needed
+    </script>
+{% endblock %}

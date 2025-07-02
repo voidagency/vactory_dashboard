@@ -1,0 +1,946 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% block content %}
+    <div x-data="{ isRTL: document.dir === 'rtl' }" :dir="isRTL ? 'rtl' : 'ltr'">
+        <div class="h-full flex flex-col"
+             x-data="pageEditor({nid: '{{ nid }}', language: '{{ language }}', node: '{{ node|json_encode|e('js') }}', has_translation: '{{ has_translation }}', changed: '{{ changed }}', status: '{{ status }}'})">
+            <div class="sticky top-0 z-10 bg-slate-50">
+                <div x-show="!showBlockForm">
+                    {# Header with back button, title and actions #}
+                    {% include "@vactory_dashboard/node/_components/actions.html.twig" %}
+                </div>
+
+                {# Notification #}
+                {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
+
+                <div x-show="!showBlockForm">
+                    {# Tabs #}
+                    {% include "@vactory_dashboard/node/_components/tabs.html.twig" %}
+                </div>
+            </div>
+            {# Node Edit View #}
+            <div x-show="!showBlockForm">
+                {# Content Tab #}
+                <div x-show="activeTab === 'content'">
+                    <div class="w-full">
+                        <div x-ref="firstAddBlockButton">
+                            {% include "@vactory_dashboard/node/_components/add-block-action.html.twig" with {
+                                show: node_default_lang == language
+                            } %}
+                        </div>
+                        <div class="space-y-1">
+                            {% include "@vactory_dashboard/_components/paragraph/blocks.html.twig" %}
+                        </div>
+                        <div x-show="!isFirstAddBlockVisible && {{ node_default_lang == language ? 'true' : 'false' }}"
+                             class="flex justify-end mt-4">
+                            {% include '@vactory_admin/components/button/button.twig' with {
+                                text: 'Add block'|t,
+                                size: 'md',
+                                variant: 'primary',
+                                click_handler: 'showBlocksModal = true',
+                                icon_left: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path></svg>'
+                            } %}
+                        </div>
+                    </div>
+                </div>
+                {# Settings Tab #}
+                {% include "@vactory_dashboard/node/_components/settings-form.html.twig" %}
+                {# SEO Tab #}
+                {% include "@vactory_dashboard/node/_components/seo-form.html.twig" %}
+            </div>
+            {# Block Form View #}
+            <div x-show="showBlockForm" class="h-full">
+                {% include "@vactory_dashboard/_components/paragraph/block-form.html.twig" with {
+                    node_default_lang: node_default_lang,
+                    language: language,
+                } %}
+            </div>
+            {# Include the blocks modal #}
+            {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+      document.addEventListener('alpine:init', () => {
+        Alpine.data('pageEditor', (config) => ({
+          nid: config.nid,
+          errorMessage: '',
+          language: config.language,
+          node: config.node,
+          has_translation: config.has_translation,
+          activeTab: 'content',
+          blocks: [],
+          changed: config.changed,
+          settings: {
+            title: '',
+            alias: '',
+            status: config.status === '1',
+          },
+          seo: {},
+          showBlocksModal: false,
+          showBlockForm: false,
+          selectedTemplate: null,
+          blockForm: {
+            extra_fields: {},
+            fields: {},
+            items: [],
+            config: {
+              title: '',
+              show_title: false,
+              width: 'full_width',
+              spacing: '_none',
+              css_classes: '',
+            },
+          },
+          currentBlockIndex: null,
+          dragStartIndex: null,
+          dragStartItemIndex: null,
+          // Add intersection observer state
+          isFirstAddBlockVisible: true,
+          firstAddBlockObserver: null,
+          dragStart(event) {
+            this.dragStartIndex = parseInt(event.target.dataset.index);
+            event.dataTransfer.effectAllowed = 'move';
+          },
+          dragStartItem(event) {
+            this.dragStartItemIndex = parseInt(event.target.dataset.index);
+            event.dataTransfer.effectAllowed = 'move';
+          },
+          dragEnd(event) {
+            const dragEndIndex = parseInt(event.target.closest('[draggable]').dataset.index);
+
+            if (this.dragStartIndex !== null && dragEndIndex !== null && this.dragStartIndex !== dragEndIndex) {
+              // Remove the dragged item
+              const [draggedItem] = this.blocks.splice(this.dragStartIndex, 1);
+              // Insert it at the new position
+              this.blocks.splice(dragEndIndex, 0, draggedItem);
+
+              // Reset drag state
+              this.dragStartIndex = null;
+
+              // Show success notification
+              this.showNotification('success', '{{ 'Block order updated'|t }}');
+              this.saveChanges();
+            }
+          },
+          dragEndItem(event) {
+            const dragEndIndex = parseInt(event.target.closest('[draggable]').dataset.index);
+
+            if (this.dragStartItemIndex !== null && dragEndIndex !== null && this.dragStartItemIndex !== dragEndIndex) {
+              // Remove the dragged item
+              const [draggedItem] = this.blockForm.items.splice(this.dragStartItemIndex, 1);
+              // Insert it at the new position
+              this.blockForm.items.splice(dragEndIndex, 0, draggedItem);
+
+              // Reset drag state
+              this.dragStartItemIndex = null;
+
+              // Show success notification
+              this.showNotification('success', '{{ 'Item order updated'|t }}');
+            }
+          },
+          async modifyBlock(index) {
+            const block = this.blocks[index];
+            this.currentBlockIndex = index;
+            // Find the template that matches this block
+            const template = block.widget_config;
+            this.selectedTemplate = template;
+            // Initialize the form data structure
+            this.blockForm = {
+              extra_fields: {},
+              fields: {},
+              items: [],
+              config: {
+                title: block.title || template.name || '',
+                show_title: block.show_title || false,
+                width: block.width || 'full_width',
+                spacing: block.spacing || '_none',
+                css_classes: block.css_classes || '',
+              },
+            };
+
+            if (template.multiple) {
+              // For multiple items, widget_data is an object with numeric keys (0, 1, 2, etc.)
+              const items = [];
+              let i = 0;
+              while (block.widget_data[i] !== undefined) {
+                const item = block.widget_data[i];
+                const mappedItem = {};
+                // Map each field in the item
+                Object.keys(template.fields).forEach(fieldName => {
+                  if (template.fields[fieldName].type === 'text_format') {
+                    mappedItem[fieldName] = item[fieldName].value || '';
+                  } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
+                    const imageKey = Object.keys(item?.[fieldName] ?? {})?.[0] ?? null;
+                    const imageData = item?.[fieldName]?.[imageKey] ?? {};
+                    const imageId = imageData?.selection?.[0]?.target_id ?? null;
+                    if (imageId) {
+                      mappedItem[fieldName] = {
+                        id: imageId,
+                        url: imageData.selection[0].url,
+                        name: imageData.name,
+                        path: 'items.' + i + '.' + fieldName,
+                        key: imageKey,
+                      };
+                    } else {
+                      mappedItem[fieldName] = {
+                        id: null,
+                        url: null,
+                        name: null,
+                        path: 'items.' + i + '.' + fieldName,
+                        key: imageKey ?? new Date().getTime(),
+                      };
+                    }
+                  } else if (template.fields[fieldName].type === 'json_api_collection') {
+                    mappedItem[fieldName] = item[fieldName];
+                  } else {
+                    mappedItem[fieldName] = item[fieldName];
+                  }
+
+                });
+                items.push(mappedItem);
+                i++;
+              }
+              this.blockForm.items = items;
+
+              // If no items exist, add one empty item
+              if (!this.blockForm.items.length) {
+                this.addItem();
+              }
+            } else {
+              // Handle single item case
+              // widget_data[0] contains the fields
+              if (block.widget_data && block.widget_data[0]) {
+                Object.keys(template.fields).forEach(fieldName => {
+                  if (block.widget_data[0][fieldName]) {
+                    if (template.fields[fieldName].type === 'text_format') {
+                      this.blockForm.fields[fieldName] = block.widget_data[0][fieldName].value || '';
+                    } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
+                      const imageKey = Object.keys(block?.widget_data?.[0]?.[fieldName] ?? {})?.[0] ?? null;
+                      const imageData = block?.widget_data?.[0]?.[fieldName]?.[imageKey] ?? {};
+                      const imageId = imageData?.selection ? imageData?.selection?.[0]?.target_id : null;
+                      if (imageId) {
+                        this.blockForm.fields[fieldName] = {
+                          id: imageId ?? null,
+                          url: imageData?.selection[0]?.url ?? null,
+                          name: imageData?.name ?? null,
+                          path: 'fields.' + fieldName,
+                          key: imageKey,
+                        };
+                      } else {
+                        this.blockForm.fields[fieldName] = {
+                          id: null,
+                          url: null,
+                          name: null,
+                          path: 'fields.' + fieldName,
+                          key: imageKey ?? new Date().getTime(),
+                        };
+                      }
+
+                    } else if (template.fields[fieldName].type === 'json_api_collection') {
+                      this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
+                    } else {
+                      this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
+                    }
+                  }
+                });
+              }
+            }
+
+            // Handle extra fields if they exist
+            if (block.widget_data.extra_field) {
+              Object.keys(template.extra_fields || {}).forEach(fieldName => {
+                if (block.widget_data.extra_field[fieldName]) {
+                  if (template.extra_fields[fieldName].type === 'text_format') {
+                    this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName].value || '';
+                  } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
+                    const imageKey = Object.keys(block?.widget_data?.extra_field?.[fieldName] ?? {})?.[0] ?? null;
+                    const imageData = block?.widget_data?.extra_field?.[fieldName]?.[imageKey] ?? {};
+                    const imageId = imageData?.selection?.[0]?.target_id ?? null;
+                    if (imageId) {
+                      this.blockForm.extra_fields[fieldName] = {
+                        id: imageId,
+                        url: imageData.selection[0].url,
+                        name: imageData.name,
+                        path: 'extra_fields.' + fieldName,
+                        key: imageKey,
+                      };
+                    } else {
+                      this.blockForm.extra_fields[fieldName] = {
+                        id: null,
+                        url: null,
+                        name: null,
+                        path: 'extra_fields.' + fieldName,
+                        key: imageKey ?? new Date().getTime(),
+                      };
+                    }
+                  } else if (template.extra_fields[fieldName].type === 'json_api_collection') {
+                    this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
+                  } else {
+                    this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
+                  }
+                }
+              });
+            }
+            this.showBlockForm = true;
+          },
+          saveBlock() {
+            let blockData;
+
+            if (this.selectedTemplate.multiple) {
+              // For multiple items, convert array to object with numeric keys
+              blockData = {};
+              this.blockForm.items.forEach((item, index) => {
+                blockData[index] = {};
+                Object.keys(this.selectedTemplate.fields).forEach(fieldName => {
+                  if (this.selectedTemplate.fields[fieldName].type === 'text_format') {
+                    blockData[index][fieldName] = {
+                      value: item[fieldName] || '',
+                      format: 'full_html',
+                    };
+                  } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
+                    blockData[index][fieldName] = {
+                      [item[fieldName].key]: {
+                        media_library_selection: '',
+                        media_library_update_widget: 'Update widget',
+                        open_button: 'Add media',
+                        name: item?.[fieldName]?.id ?? '',
+                        selection: [
+                          {
+                            remove_button: 'Remove',
+                            target_id: item[fieldName].id,
+                            url: item[fieldName].url,
+                            weight: 0,
+                          },
+                        ],
+                      },
+                    };
+                  } else {
+                    blockData[index][fieldName] = item[fieldName];
+                  }
+                });
+              });
+            } else {
+              // For single item, wrap in array with index 0
+              blockData = {
+                0: {},
+              };
+              Object.keys(this.selectedTemplate.fields).forEach(fieldName => {
+                if (this.selectedTemplate.fields[fieldName].type === 'text_format') {
+                  blockData[0][fieldName] = {
+                    value: this.blockForm.fields[fieldName] || '',
+                    format: 'full_html',
+                  };
+                } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
+                  blockData[0][fieldName] = {
+                    [this.blockForm.fields[fieldName].key]: {
+                      media_library_selection: '',
+                      media_library_update_widget: 'Update widget',
+                      open_button: 'Add media',
+                      name: this?.blockForm?.fields?.[fieldName]?.name ?? '',
+                      selection: [
+                        {
+                          remove_button: 'Remove',
+                          target_id: this.blockForm.fields[fieldName].id,
+                          url: this.blockForm.fields[fieldName].url,
+                          weight: 0,
+                        },
+                      ],
+                    },
+                  };
+                } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
+                  // Nothing to change here
+                  blockData[0][fieldName] = this.blockForm.fields[fieldName];
+                } else {
+                  blockData[0][fieldName] = this.blockForm.fields[fieldName];
+                }
+              });
+            }
+
+            // Add extra fields if they exist
+            if (Object.keys(this.blockForm.extra_fields).length > 0) {
+              blockData.extra_field = {};
+              Object.keys(this.blockForm.extra_fields).forEach(fieldName => {
+                if (this.selectedTemplate.extra_fields[fieldName].type === 'text_format') {
+                  blockData.extra_field[fieldName] = {
+                    value: this.blockForm.extra_fields[fieldName] || '',
+                    format: 'full_html',
+                  };
+                } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.extra_fields[fieldName].type)) {
+                  blockData.extra_field[fieldName] = {
+                    [this.blockForm.extra_fields[fieldName].key]: {
+                      media_library_selection: '',
+                      media_library_update_widget: 'Update widget',
+                      open_button: 'Add media',
+                      name: this?.blockForm?.extra_fields?.[fieldName]?.name ?? '',
+                      selection: [
+                        {
+                          remove_button: 'Remove',
+                          target_id: this.blockForm.extra_fields[fieldName].id,
+                          url: this.blockForm.extra_fields[fieldName].url,
+                          weight: 0,
+                        },
+                      ],
+                    },
+                  };
+                } else {
+                  blockData.extra_field[fieldName] = this.blockForm.extra_fields[fieldName];
+                }
+              });
+            }
+
+            if (this.currentBlockIndex !== null) {
+              // Modify existing block
+              this.blocks[this.currentBlockIndex] = {
+                ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
+                widget_data: blockData,
+                title: this.blockForm.config.title,
+                show_title: this.blockForm.config.show_title,
+                width: this.blockForm.config.width,
+                spacing: this.blockForm.config.spacing,
+                css_classes: this.blockForm.config.css_classes,
+              };
+              this.showNotification('success', '{{ 'Block updated successfully'|t }}');
+            } else {
+              // Add new block
+              this.blocks.push({
+                id: Date.now(),
+                is_new: true,
+                title: this.blockForm.config.title,
+                show_title: this.blockForm.config.show_title,
+                width: this.blockForm.config.width,
+                spacing: this.blockForm.config.spacing,
+                css_classes: this.blockForm.config.css_classes,
+                preview: this.selectedTemplate.screenshot,
+                widget_id: this.selectedTemplate.uuid,
+                widget_config: this.selectedTemplate,
+                widget_data: blockData,
+              });
+              this.showNotification('success', '{{ 'Block added successfully'|t }}');
+            }
+
+            // Reset form and close
+            this.blockForm = {
+              extra_fields: {},
+              fields: {},
+              items: [],
+              config: {
+                title: '',
+                show_title: false,
+                width: 'full_width',
+                spacing: '_none',
+                css_classes: '',
+              },
+            };
+            this.currentBlockIndex = null;
+            this.showBlockForm = false;
+            this.saveChanges();
+          },
+          selectTemplate(template) {
+            this.selectedTemplate = template;
+            this.currentBlockIndex = null; // Reset current block index for new blocks
+
+            // Initialize the form data structure
+            this.blockForm = {
+              extra_fields: {},
+              fields: {},
+              items: [],
+              config: {
+                title: template.name || '',
+                show_title: false,
+                width: 'full_width',
+                spacing: '_none',
+                css_classes: '',
+              },
+            };
+            // Initialize extra_fields if they exist
+            if (template.extra_fields) {
+              Object.keys(template.extra_fields).forEach(fieldName => {
+                // Initialize url_extended fields with both title and url
+                if (template.extra_fields[fieldName].type === 'url_extended') {
+                  this.blockForm.extra_fields[fieldName] = {
+                    title: '',
+                    url: '',
+                  };
+                } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
+                  this.blockForm.extra_fields[fieldName] = {
+                    id: null,
+                    url: null,
+                    name: null,
+                    path: 'extra_fields.' + fieldName,
+                    key: new Date().getTime(),
+                  };
+                } else if (template.extra_fields[fieldName].type === 'json_api_collection') {
+                  // Nothing to change here
+                  this.blockForm.extra_fields[fieldName] = template.extra_fields[fieldName]['options']['#default_value'];
+                } else {
+                  this.blockForm.extra_fields[fieldName] = '';
+                }
+              });
+            }
+
+            // Initialize fields or first item based on multiple flag
+            if (template.multiple) {
+              this.addItem(); // Add first item
+            } else {
+              Object.keys(template.fields).forEach(fieldName => {
+                // Initialize url_extended fields with both title and url
+                if (template.fields[fieldName].type === 'url_extended') {
+                  this.blockForm.fields[fieldName] = {
+                    title: '',
+                    url: '',
+                  };
+                } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
+                  this.blockForm.fields[fieldName] = {
+                    id: null,
+                    url: null,
+                    name: null,
+                    path: 'fields.' + fieldName,
+                    key: new Date().getTime(),
+                  };
+                } else if (template.fields[fieldName].type === 'json_api_collection') {
+                  this.blockForm.fields[fieldName] = template.fields[fieldName]['options']['#default_value'];
+                } else {
+                  this.blockForm.fields[fieldName] = '';
+                }
+              });
+            }
+            this.showBlocksModal = false;
+            this.showBlockForm = true;
+          },
+          blockSearch: '',
+          blockCategory: 'all',
+          templates: [],
+          categories: [],
+          isLoadingTemplates: false,
+          async fetchTemplates() {
+            this.isLoadingTemplates = true;
+            try {
+              const response = await fetch('/api/vactory-dashboard/templates');
+              const result = await response.json();
+              if (!response.ok) {
+                throw new Error(result.message || 'Failed to fetch templates');
+              }
+
+              // Transform the nested object into a flat array and extract categories
+              const categoriesSet = new Set();
+              const templatesArray = [];
+
+              Object.entries(result.data).forEach(([category, templates]) => {
+                categoriesSet.add(category);
+                Object.entries(templates).forEach(([id, template]) => {
+                  templatesArray.push({
+                    ...template,
+                    id: template.uuid,
+                    category: category,
+                  });
+                });
+              });
+
+              this.templates = templatesArray;
+              this.categories = Array.from(categoriesSet);
+            } catch (error) {
+              console.error('Error fetching templates:', error);
+              this.showNotification('error', error.message || '{{ 'Failed to load templates'|t }}');
+            } finally {
+              this.isLoadingTemplates = false;
+            }
+          },
+          get filteredTemplates() {
+            return this.templates.filter(template => {
+              const matchesSearch = template.name.toLowerCase().includes(this.blockSearch.toLowerCase());
+              const matchesCategory = this.blockCategory === 'all' || template.category === this.blockCategory;
+              return matchesSearch && matchesCategory;
+            });
+          },
+          addItem() {
+            const newItem = {};
+            // Initialize all fields with empty values
+            Object.keys(this.selectedTemplate.fields).forEach((fieldName, index) => {
+              // Initialize url_extended fields with both title and url
+              if (this.selectedTemplate.fields[fieldName].type === 'url_extended') {
+                newItem[fieldName] = {
+                  title: '',
+                  url: '',
+                };
+              } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
+                newItem[fieldName] = {
+                  id: null,
+                  url: null,
+                  name: null,
+                  path: 'items.' + this.blockForm.items.length + '.' + fieldName,
+                  key: new Date().getTime(),
+                };
+              } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
+                // Nothing to change here
+                newItem[fieldName] = this.selectedTemplate.fields[fieldName]['options']['#default_value'];
+              } else {
+                newItem[fieldName] = '';
+              }
+            });
+
+            // Add the new item with highlighted state
+            newItem._isNewItem = true;
+            this.blockForm.items.push(newItem);
+
+            // Scroll to the new item after DOM update
+            this.$nextTick(() => {
+              const newItemIndex = this.blockForm.items.length - 1;
+              const newItemElement = document.querySelector(`[data-item-index="${newItemIndex}"]`);
+              if (newItemElement) {
+                newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Remove highlight after 3 seconds
+                setTimeout(() => {
+                  newItem._isNewItem = false;
+                }, 3000);
+              }
+            });
+          },
+          removeItem(index) {
+            this.blockForm.items.splice(index, 1);
+          },
+          isSaving: false,
+          notification: {
+            show: false,
+            type: 'success',
+            message: '',
+            timeout: null,
+          },
+          init() {
+            const node = JSON.parse(this.node);
+            if (node.paragraphs && node.paragraphs.length > 0) {
+              this.blocks = node.paragraphs.map((paragraph) => ({
+                title: paragraph.title,
+                show_title: paragraph.show_title,
+                width: paragraph.width,
+                spacing: paragraph.spacing,
+                css_classes: paragraph.css_classes,
+                preview: paragraph.widget_config.screenshot,
+                id: paragraph.pid,
+                widget_id: paragraph.widget_id,
+                widget_config: paragraph.widget_config,
+                widget_data: paragraph.widget_data,
+              }));
+            }
+            this.settings.title = node.title || '';
+            this.settings.alias = node.alias || '';
+            // this.settings.status = node.status || false;
+
+            window.seoData = {{ meta_tags|json_encode|raw }};
+            this.seo = {
+              title: window.seoData.title || '',
+              description: window.seoData.description || '',
+              keywords: window.seoData.keywords || '',
+              abstract: window.seoData.abstract || '',
+              article_author: window.seoData.article_author || '',
+              article_expiration_time: window.seoData.article_expiration_time || '',
+              article_modified_time: window.seoData.article_modified_time || '',
+              article_published_time: window.seoData.article_published_time || '',
+              article_section: window.seoData.article_section || '',
+              article_publisher: window.seoData.article_publisher || '',
+              article_tag: window.seoData.article_tag || '',
+              book_author: window.seoData.book_author || '',
+              book_isbn: window.seoData.book_isbn || '',
+              book_release_date: window.seoData.book_release_date || '',
+              book_tag: window.seoData.book_tag || '',
+              og_audio: window.seoData.og_audio || '',
+              og_audio_secure_url: window.seoData.og_audio_secure_url || '',
+              og_audio_type: window.seoData.og_audio_type || '',
+              og_country_name: window.seoData.og_country_name || '',
+              og_determiner: window.seoData.og_determiner || '',
+              og_email: window.seoData.og_email || '',
+              og_fax_number: window.seoData.og_fax_number || '',
+              og_image: window.seoData.og_image || '',
+              og_image_secure_url: window.seoData.og_image_secure_url || '',
+              og_image_alt: window.seoData.og_image_alt || '',
+              og_image_height: window.seoData.og_image_height || '',
+              og_image_width: window.seoData.og_image_width || '',
+              og_image_type: window.seoData.og_image_type || '',
+              og_image_url: window.seoData.og_image_url || '',
+              og_latitude: window.seoData.og_latitude || '',
+              og_locale: window.seoData.og_locale || '',
+              og_locale_alternative: window.seoData.og_locale_alternative || '',
+              og_locality: window.seoData.og_locality || '',
+              og_longitude: window.seoData.og_longitude || '',
+              og_phone_number: window.seoData.og_phone_number || '',
+              og_description: window.seoData.og_description || '',
+              og_postal_code: window.seoData.og_postal_code || '',
+              og_region: window.seoData.og_region || '',
+              og_see_also: window.seoData.og_see_also || '',
+              og_site_name: window.seoData.og_site_name || '',
+              og_street_address: window.seoData.og_street_address || '',
+              og_title: window.seoData.og_title || '',
+              og_type: window.seoData.og_type || '',
+              og_url: window.seoData.og_url || '',
+              og_updated_time: window.seoData.og_updated_time || '',
+              og_video: window.seoData.og_video || '',
+              og_video_duration: window.seoData.og_video_duration || '',
+              og_video_height: window.seoData.og_video_height || '',
+              og_video_secure_url: window.seoData.og_video_secure_url || '',
+              og_video_type: window.seoData.og_video_type || '',
+              og_video_width: window.seoData.og_video_width || '',
+              profile_first_name: window.seoData.profile_first_name || '',
+              profile_gender: window.seoData.profile_gender || '',
+              profile_last_name: window.seoData.profile_last_name || '',
+              profile_username: window.seoData.profile_username || '',
+              video_actor: window.seoData.video_actor || '',
+              video_actor_role: window.seoData.video_actor_role || '',
+              video_tag: window.seoData.video_tag || '',
+              video_writer: window.seoData.video_writer || '',
+              og_updated_time: window.seoData.og_updated_time || '',
+              video_series: window.seoData.video_series || '',
+              video_release_date: window.seoData.video_release_date || '',
+              video_director: window.seoData.video_director || '',
+
+            };
+
+            // Fetch templates when component initializes
+            this.fetchTemplates();
+
+            // Setup intersection observer for first add block button
+            this.setupFirstAddBlockObserver();
+          },
+          setupFirstAddBlockObserver() {
+            // Wait for the next tick to ensure DOM is ready
+            this.$nextTick(() => {
+              const firstAddBlockButton = this.$refs.firstAddBlockButton;
+
+              if (firstAddBlockButton) {
+                this.firstAddBlockObserver = new IntersectionObserver(
+                  (entries) => {
+                    entries.forEach((entry) => {
+                      this.isFirstAddBlockVisible = entry.isIntersecting;
+                    });
+                  },
+                  {
+                    threshold: 0,
+                    rootMargin: '0px',
+                  },
+                );
+
+                this.firstAddBlockObserver.observe(firstAddBlockButton);
+              }
+            });
+          },
+          destroy() {
+            // Cleanup intersection observer when component is destroyed
+            if (this.firstAddBlockObserver) {
+              this.firstAddBlockObserver.disconnect();
+            }
+          },
+          showNotification(type, message) {
+            // Clear any existing timeout
+            if (this.notification.timeout) {
+              clearTimeout(this.notification.timeout);
+            }
+
+            // Show new notification
+            this.notification.type = type;
+            this.notification.message = message;
+            this.notification.show = true;
+
+            // Auto hide after 5 seconds
+            this.notification.timeout = setTimeout(() => {
+              this.notification.show = false;
+            }, 5000);
+          },
+          async saveChanges() {
+            if (this.isSaving) {
+              return;
+            }
+            this.isSaving = true;
+            try {
+              const node = JSON.parse(this.node);
+              const response = await fetch(`/api/vactory-dashboard/node/${this.nid}/save`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  id: node.id,
+                  language: this.language,
+                  has_translation: this.has_translation,
+                  settings: this.settings,
+                  seo: this.seo,
+                  blocks: this.blocks,
+                  status: this.settings.status,
+                  changed: this.changed,
+                }),
+              });
+              const data = await response.json();
+
+              if (!response.ok) {
+                throw new Error(data.message || 'Failed to save changes');
+              }
+              this.has_translation = true;
+              this.showNotification('success', '{{ 'Changes saved successfully'|t }}');
+              window.location.reload();
+            } catch (error) {
+              console.error('Error saving changes:', error);
+              this.showNotification('error', error.message || '{{ 'An error occurred while saving'|t }}');
+            } finally {
+              this.isSaving = false;
+            }
+          },
+          removeBlock(index) {
+            // Remove the block at the specified index
+            this.blocks.splice(index, 1);
+            // Show success notification
+            this.showNotification('success', '{{ 'Block removed successfully'|t }}');
+            this.saveChanges();
+          },
+          // Media Library States
+          showMediaLibrary: false,
+          mediaLoading: false,
+          mediaError: null,
+          mediaItems: [],
+          currentMediaPage: 1,
+          totalMediaPages: 1,
+          totalMedia: 0,
+          mediaFilters: {
+            search: '',
+            type: 'image',
+            limit: Alpine.store('limit'),
+          },
+          selectedType: 'image',
+          selectedMedia: null,
+          currentField: null,
+          currentFieldPath: null,
+          currentFieldIndex: null,
+          selectedFieldInfo: null,
+          loading: false,
+          error: null,
+          items: [],
+          currentPage: 1,
+          totalPages: 1,
+          total: 0,
+          filters: {
+            search: '',
+            type: 'image',
+            limit: Alpine.store('limit'),
+          },
+          // Media Library Methods and states (@todo: must be shared across multiple files)
+          async loadMedia(page = 1) {
+            this.mediaLoading = true;
+            this.mediaError = null;
+            this.currentMediaPage = page;
+
+            try {
+              const params = new URLSearchParams({
+                page: this.currentMediaPage.toString(),
+                limit: this.mediaFilters.limit.toString(),
+                search: this.mediaFilters.search,
+                type: this.selectedType,
+              });
+
+              const response = await fetch(`{{ path('vactory_dashboard.media.data') }}?${params.toString()}`);
+
+              if (!response.ok) {
+                throw new Error('{{ "Une erreur est survenue lors du chargement des médias"|t }}');
+              }
+
+              const data = await response.json();
+
+              this.mediaItems = data.data.map(item => ({
+                id: item.id,
+                url: item.url,
+                name: item.name,
+                type: item.type,
+              }));
+              this.totalMedia = data.total;
+              this.totalMediaPages = data.pages;
+            } catch (error) {
+              console.error('Error loading media:', error);
+              this.mediaError = error.message;
+              this.mediaItems = [];
+            } finally {
+              this.mediaLoading = false;
+            }
+          },
+          openMediaLibrary(fieldName, path, key = null, type = 'image') {
+            this.selectedType = type;
+            this.currentField = fieldName;
+            this.currentFieldPath = path;
+            this.currentFieldKey = key;
+            this.showMediaLibrary = true;
+            this.loadMedia(1);
+          },
+          closeMediaLibrary() {
+            this.showMediaLibrary = false;
+            this.selectedMedia = null;
+            this.currentField = null;
+            this.mediaItems = [];
+            this.currentMediaPage = 1;
+            this.mediaFilters.search = '';
+          },
+          setValueByPath(obj, path, newValue) {
+            const keys = path.split('.');
+            const lastKey = keys.pop();
+            const target = keys.reduce((o, key) => o[key], obj);
+            target[lastKey] = newValue;
+          },
+          selectMedia(media) {
+            this.selectedMedia = media;
+            console.log('path', this.blockForm, this.currentFieldPath);
+            if (!this.selectedMedia || !this.currentField) {
+              return;
+            }
+
+            // Create the image data structure
+            const imageData = {
+              id: media.id,
+              url: media.url,
+              name: media.name,
+              path: this.currentFieldPath,
+              key: this.currentFieldKey,
+            };
+
+            this.setValueByPath(this.blockForm, this.currentFieldPath, imageData);
+
+            this.closeMediaLibrary();
+            this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
+          },
+          clearImage(fieldName, path, key) {
+            this.setValueByPath(this.blockForm, path, {
+              id: null,
+              url: null,
+              name: null,
+              path: path,
+              key: key ?? new Date().getTime(),
+            });
+          },
+          getFieldValue(fieldName, index = null) {
+            if (index !== null) {
+              // Handle multiple items case
+              return this.blockForm.items[index]?.[fieldName];
+            } else {
+              // Handle single item case
+              return this.blockForm.fields[fieldName];
+            }
+          },
+          getVideoEmbedUrl(url) {
+            if (!url) {
+              return '';
+            }
+            const youtubePatterns = [
+              /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+              /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+            ];
+
+            for (const pattern of youtubePatterns) {
+              const match = url?.match(pattern);
+              if (match) {
+                const videoId = match[1];
+                return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+              }
+            }
+
+            return url;
+          },
+        }));
+      });
+    </script>
+{% endblock %}

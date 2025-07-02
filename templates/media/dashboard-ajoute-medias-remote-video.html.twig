@@ -1,0 +1,129 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% block content %}
+	<div class="flex-1 overflow-y-auto" x-data="vedioUploader()">
+    {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
+		<div x-cloak>
+			<!-- Titre -->
+			<div class="flex items-center gap-x-2 mb-6">
+				<a href="javascript:history.back()">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
+					</svg>
+				</a>
+				<div class="sm:flex-auto">
+					<h1 class="text-2xl font-semibold text-gray-900">{{ 'Ajouter Remote Video' | t }}</h1>
+				</div>
+			</div>
+
+            <!-- Formulaire -->
+            <div class="bg-white shadow sm:rounded-lg p-6">
+                <form
+                        x-ref="form" @submit.prevent="submitForm">
+					<!-- URL video -->
+					<div class="mb-6">
+						<label for="url" class="block text-sm font-semibold text-gray-700 mb-1">
+							{{ "URL video" | t }}
+							<span class="text-red-500">*</span>
+						</label>
+						<input x-ref="url" name="url" id="url" type="url" minlength="4" maxlength="255" required placeholder="Enter video URL" class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-primary-600 sm:text-sm"/>
+						<template x-if="errors.url">
+							<p class="text-sm text-red-600" x-text="errors.url"></p>
+						</template>
+					</div>
+
+					<!-- Boutons -->
+					<div class="flex justify-end gap-x-2">
+						{% include '@vactory_admin/components/button/button.twig' with {
+							variant: 'outline',
+							text: 'Annuler' | t,
+							type: 'button',
+							click_handler: '$refs.form.reset(); preview = null; history.back()'
+						} %}
+
+						<button 
+							@click="submitForm()"
+							x-bind:data-is-loading="loading"
+							:disabled="loading"
+							:class="{'opacity-50 cursor-not-allowed': loading,'bg-primary-500 hover:bg-primary-600': !loading,'bg-primary-400': loading}"
+							class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+								<!-- Button text (changes based on loading state) -->
+								<span x-text="loading ? '{{ 'Ajout...'|t }}' : '{{ 'Ajouter'|t }}'"></span>
+								
+								<!-- Loading spinner (shown when saving) -->
+								<svg x-show="loading" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								</svg>
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+{% block javascripts %}
+    <script>
+      function vedioUploader() {
+        return {
+          loading: false,
+          errors: {},
+		  notification: {
+            show: false,
+            type: 'success',
+            message: '',
+            timeout: null,
+          },
+
+          showNotification(type, message) {
+            if (this.notification.timeout) {
+              clearTimeout(this.notification.timeout);
+            }
+            this.notification.type = type;
+            this.notification.message = message;
+            this.notification.show = true;
+            this.notification.timeout = setTimeout(() => {
+              this.notification.show = false;
+            }, 5000);
+          },
+
+          async submitForm() {
+            this.loading = true;
+            this.errors = {};
+
+            const form = this.$refs.form;
+            const url = this.$refs.url.value;
+
+            console.log('Sending URL:', url);
+
+            try {
+              const typeId = 'remote-video';
+              const response = await fetch(`/api/vactory-dashboard/media/add-remote-video/${typeId}`, {
+                method: 'POST',
+                body: JSON.stringify({ url }),
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              });
+
+              const result = await response.json();
+
+              if (response.ok) {
+                this.showNotification('success', '{{ "Vidéo ajouté avec succès"|t }}');
+                window.location.href = '{{ path("vactory_dashboard.media") }}';
+                form.reset();
+              } else {
+                this.errors = result.errors;
+                this.showNotification('error', '{{ "Veuillez vérifier les valeurs fournies."|t }}');
+              }
+            } catch (error) {
+              this.errors['url'] = 'An error occurred. Please try again.';
+                this.showNotification('error', '{{ "Une erreur est survenue"|t }}');
+            } finally {
+              this.loading = false;
+            }
+          },
+        };
+      }
+    </script>
+{% endblock %}

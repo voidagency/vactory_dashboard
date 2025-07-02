@@ -1,0 +1,22 @@
+<table class="min-w-full divide-y divide-gray-300">
+    <thead class="bg-[#f3f4f6]">
+    <tr>
+        {% for i in 1..6 %}
+            <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">
+                <span class="animate-pulse inline-block w-[200px] h-8 bg-[#d1d5db] rounded-md"></span>
+            </th>
+        {% endfor %}
+    </tr>
+    </thead>
+    <tbody class="animate-pulse divide-y divide-gray-200">
+    {% for i in 1..6 %}
+        <tr>
+            {% for j in 1..6 %}
+                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">
+                    <span class="inline-block w-[200px] h-8 bg-[#d1d5db] rounded-md"></span>
+                </td>
+            {% endfor %}
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>

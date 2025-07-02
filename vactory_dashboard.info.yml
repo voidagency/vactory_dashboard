@@ -1,0 +1,5 @@
+name: Vactory Dashboard
+type: module
+description: 'Vactory Dashboard module.'
+core_version_requirement: ^9 || ^10 || ^11
+package: Vactory

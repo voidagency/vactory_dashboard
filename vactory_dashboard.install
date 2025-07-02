@@ -1,0 +1,45 @@
+<?php
+
+/**
+ * @file
+ * Install script for vactory_dashboard module.
+ */
+
+use Drupal\user\Entity\Role;
+
+/**
+ * Assign permissions (access dash, sitemap, media ..) to webmaster.
+ */
+function vactory_dashboard_update_9956() {
+  _assign_permissions_to_webmaster();
+}
+
+/**
+ * Implements hook_install().
+ */
+function vactory_dashboard_install() {
+  _assign_permissions_to_webmaster();
+}
+
+/**
+ * Assign the permissions such as (access dashboard, access webform overview ...) to webmaster role.
+ */
+function _assign_permissions_to_webmaster() {
+  $role = Role::load('webmaster');
+
+  if ($role) {
+    $role->grantPermission('access dashboard');
+    $role->grantPermission('access drupal advanced mode');
+    $role->grantPermission('administer content translation');
+    $role->grantPermission('access sitemap');
+    $role->grantPermission('access webform overview');
+    $role->grantPermission('administer block content');
+    $role->grantPermission('access user profiles');
+    $role->grantPermission('view media');
+    $role->grantPermission('access content overview');
+    $role->grantPermission('access taxonomy overview');
+    $role->grantPermission('administer users');
+    $role->grantPermission('administer dashboard configuration');
+    $role->save();
+  }
+}

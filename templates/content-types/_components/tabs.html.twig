@@ -1,0 +1,45 @@
+<div class="border-b border-gray-200 bg-white mb-6">
+    <nav class="-mb-px flex overflow-auto">
+        <button
+                @click="activeTab = 'list'"
+                :class="{'border-primary-500 text-primary-600': activeTab === 'list', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'list'}"
+                class="py-4 px-4 border-b-2 font-medium text-sm">
+            <span class=" flex items-center">
+                {{ bundle_label|t }}
+            </span>
+        </button>
+        {% if entity_queues is not empty %}
+            <button
+                    @click="activeTab = 'entity_queue'"
+                    :class="{'border-primary-500 text-primary-600': activeTab === 'entity_queue', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'entity_queue'}"
+                    class=" py-4 px-4 border-b-2 font-medium text-sm">
+                {{ 'Sélection'|t }}
+            </button>
+        {% endif %}
+
+        {% if has_metatag %}
+        <button
+                @click="activeTab = 'metatags'"
+                :class="{'border-primary-500 text-primary-600': activeTab === 'metatags', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'metatags'}"
+                class="py-4 px-4 border-b-2 font-medium text-sm">
+            <span class="w-[max-content] flex items-center">
+                {{ "Meta Tags"|t }}
+            </span>
+        </button>
+        {% endif %}
+
+        {% for vocab in taxonomies %}
+            <button
+                @click="activeTab = '{{ vocab.id }}'; vid = '{{ vocab.id }}'; loadTaxonomyData(1);"
+                :class="{
+                'border-primary-500 text-primary-600': activeTab === '{{ vocab.id }}',
+                'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== '{{ vocab.id }}'
+                }"
+                class="flex items-center py-4 px-4 border-b-2 font-medium text-sm"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z"></path></svg>
+                <span class="w-[max-content] flex items-center">{{ vocab.label }}</span>
+            </button>
+        {% endfor %}
+    </nav>
+</div>

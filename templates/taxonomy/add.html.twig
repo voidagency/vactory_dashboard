@@ -1,0 +1,38 @@
+<div x-show="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-2" x-cloak>
+	<div class="bg-white rounded-lg shadow-[0_0_50px_rgba(0,0,0,0.3)] p-5 w-[400px]" x-init="termLang = '{{ default_lang }}'">
+		<h2 class="mb-6 text-xl font-semibold text-gray-900" x-text="editingTerm ? 'Modifier un terme' : 'Ajouter un terme'"></h2>
+
+        <div class="mb-4">
+            <label class="block mb-2 text-sm font-medium text-gray-700">Nom du terme</label>
+            <input x-model="termName" type="text"
+                   class="w-full border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-4 py-2"
+                   placeholder="Entrez le nom du terme">
+        </div>
+
+        <div class="mb-4">
+            <label class="block mb-2 text-sm font-medium text-gray-700">Langue</label>
+            <select x-model="termLang"
+                    class="w-full border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-4 py-2">
+                {% for code, name in langs %}
+                    <option value="{{ code }}" {% if code == default_lang %} selected {% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label class="block mb-2 text-sm font-medium text-gray-700">Description</label>
+            <textarea x-model="termDescription"
+                      class="block w-full border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-4 py-2"
+                      rows="4" placeholder="Entrez une description"></textarea>
+        </div>
+
+		<div class="flex justify-end mt-6 space-x-3">
+			<button @click="closeModal" class="group text-left px-4 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700 rounded-lg transition-all duration-200 flex items-center justify-between border border-red-200 hover:border-red-300 hover:shadow-sm h-10">
+				{{ "Annuler"|t }}
+			</button>
+			<button @click="saveTerm" x-text="editingTerm ? 'Modifier' : 'Ajouter'" class="group text-left px-4 text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between overflow-hidden h-10">
+				{{ "Ajouter"|t }}
+			</button>
+		</div>
+	</div>
+</div>

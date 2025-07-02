@@ -1,0 +1,205 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% block content %}
+	<div class="flex-1 overflow-y-auto" x-data="imageUploader()">
+    {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
+		<div x-cloak>
+
+			<!-- Titre -->
+			<div class="flex items-center gap-x-2 mb-6">
+				<a href="javascript:history.back()">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
+					</svg>
+				</a>
+				<div class="sm:flex-auto">
+					<h1 class="text-2xl font-semibold text-gray-900">{{ 'Ajouter une image' | t }}</h1>
+				</div>
+			</div>
+
+            <!-- Formulaire -->
+            <div class="bg-white shadow sm:rounded-lg p-6">
+                <form
+                        x-ref="form">
+
+                    <!-- Nom de l'image -->
+                    <div class="mb-6">
+                        <label for="name" class="block text-sm font-semibold text-gray-700 mb-1">
+                            {{ "Nom de l'image" | t }}
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="name" id="name" minlength="4" maxlength="255" required
+                               class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-600 sm:text-sm"/>
+                        <p class="mt-2 text-sm text-gray-600">
+                            0/255
+                        </p>
+                        <template x-if="errors.name">
+                            <p class="text-sm text-red-600" x-text="errors.name"></p>
+                        </template>
+                    </div>
+
+                    <!-- Image upload -->
+                    <div class="mb-6">
+                        <label for="image" class="block text-sm font-semibold text-gray-700 mb-1">
+                            {{ "Image" | t }}<span class="text-red-500">*</span>
+                        </label>
+
+                        <div class="flex items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-pointer"
+                             x-ref="dropzone">
+                            <label
+                                    for="image" class="w-full h-full flex items-center justify-center">
+                                <!-- Show upload instructions if no preview -->
+                                <div class="flex flex-col items-center justify-center py-5 px-3" x-show="!preview">
+                                    <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
+                                         xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 20 16">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                              stroke-width="2"
+                                              d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                                    </svg>
+                                    <p class="mb-2 text-sm text-gray-500">
+                                        <span class="font-semibold">Click to upload</span>
+                                        or drag and drop
+                                    </p>
+                                    <p class="text-xs text-gray-500">
+                                        {{ allowed_extensions | join(' ') }}
+                                        (max.
+                                        {{ max_size_bytes }})</p>
+                                </div>
+
+                                <!-- Show image preview if selected -->
+                                <template x-if="preview">
+                                    <div class="text-center">
+                                        <img :src="preview" alt="Preview" class="h-32 object-contain rounded-md mx-auto"
+                                             style="width: 350px; height: 200px;"/>
+
+                                    </div>
+                                </template>
+                                <input name="image" id="image" type="file" class="hidden" x-ref="image"
+                                       @change="previewImage"
+                                       accept="{{ allowed_extensions | map(ext => '.' ~ ext) | join(',') }}"/>
+                            </label>
+                        </div>
+
+                        <template x-if="errors.image">
+                            <p class="text-sm text-red-600" x-text="errors.image"></p>
+                        </template>
+                    </div>
+
+					<div class="flex justify-end space-x-2">
+						{% include '@vactory_admin/components/button/button.twig' with {
+							variant: 'secondary',
+							text: 'Annuler' | t,
+							type: 'button',
+							alpine_attrs: '@click="$refs.form.reset(); preview = null; history.back()"'
+						} %}
+
+						<button 
+              @click.prevent="loading = true; submitForm()"
+              :data-is-loading="loading"
+              :disabled="loading"
+              :class="{'opacity-50 cursor-not-allowed': loading,'bg-primary-500 hover:bg-primary-600': !loading,'bg-primary-400': loading}"
+              class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                  <!-- Button text (changes based on loading state) -->
+                  <span x-text="loading ? '{{ 'Ajout...'|t }}' : '{{ 'Ajouter'|t }}'"></span>
+                  
+                  <!-- Loading spinner (shown when saving) -->
+                  <svg x-show="loading" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+            </button>
+					</div>
+
+
+				</form>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+{% block javascripts %}
+    <script>
+      function imageUploader() {
+        return {
+          loading: false,
+          errors: {},
+          preview: null,
+          notification: {
+            show: false,
+            type: 'success',
+            message: '',
+            timeout: null,
+          },
+
+          showNotification(type, message) {
+            if (this.notification.timeout) {
+              clearTimeout(this.notification.timeout);
+            }
+            this.notification.type = type;
+            this.notification.message = message;
+            this.notification.show = true;
+            this.notification.timeout = setTimeout(() => {
+              this.notification.show = false;
+            }, 5000);
+          },
+
+          previewImage(event) {
+            const file = this.$refs.image.files[0];
+            if (file && file.type.startsWith('image/')) {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                  this.preview = e.target.result;
+                };
+                img.src = e.target.result;
+              };
+              reader.readAsDataURL(file);
+            } else {
+              this.preview = null;
+            }
+          },
+
+          async submitForm() {
+            this.loading = true;
+            this.errors = {};
+
+            const form = this.$refs.form;
+            const imageInput = this.$refs.image;
+
+            if (!imageInput || imageInput.files.length === 0) {
+              this.errors.image = "{{ 'Veuillez sélectionner une image.' | t }}";
+              this.loading = false;
+              this.showNotification('error', '{{ "Veuillez vérifier les valeurs fournies."|t }}');
+              return;
+            }
+
+            const formData = new FormData(form);
+
+            try {
+              const typeId = 'image';
+              const response = await fetch(`/api/vactory-dashboard/media/add-image/${typeId}`, {
+                method: 'POST',
+                body: formData,
+              });
+
+              const result = await response.json();
+
+              if (!response.ok) {
+                this.errors = result.errors || {};
+                this.showNotification('error', '{{ "Veuillez vérifier les valeurs fournies."|t }}');
+              } else {
+                this.showNotification('success', '{{ "Image ajouté avec succès"|t }}');
+                window.location.href = '{{ path("vactory_dashboard.media") }}';
+                this.preview = null;
+              }
+            } catch (error) {
+              console.error('Erreur :', error);
+                this.showNotification('error', '{{ "Une erreur est survenue"|t }}');
+            } finally {
+              this.loading = false;
+            }
+          },
+        };
+      }
+    </script>
+{% endblock %}

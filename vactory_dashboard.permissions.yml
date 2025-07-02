@@ -1,0 +1,10 @@
+access dashboard:
+  title: "Access the dashboard"
+  description: "Allow users to access the dashboard."
+  restrict access: TRUE
+access drupal advanced mode:
+  title: "Access drupal advanced mode"
+administer dashboard configuration:
+  title: "Administer dashboard configuration"
+  description: "Allow users to administer the dashboard configuration."
+  restrict access: TRUE

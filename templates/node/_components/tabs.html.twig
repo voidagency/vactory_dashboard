@@ -1,0 +1,36 @@
+<div class="bg-white border-b border-slate-200 mb-2 flex items-center justify-between">
+    <div class="flex space-x-1">
+        <button
+                @click="activeTab = 'content'"
+                :class="{
+                    'border-primary-500 text-primary-600 bg-primary-50/50': activeTab === 'content',
+                    'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50': activeTab !== 'content'
+                }"
+                class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
+            {{ 'Content'|t }}
+        </button>
+        <button
+                @click="activeTab = 'settings'"
+                :class="{
+                    'border-primary-500 text-primary-600 bg-primary-50/50': activeTab === 'settings',
+                    'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50': activeTab !== 'settings'
+                }"
+                class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
+            {{ 'Settings'|t }}
+        </button>
+        <button
+                @click="activeTab = 'seo'"
+                :class="{
+                    'border-primary-500 text-primary-600 bg-primary-50/50': activeTab === 'seo',
+                    'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50': activeTab !== 'seo'
+                }"
+                class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
+            {{ 'SEO'|t }}
+        </button>
+    </div>
+    {% if preview_url %}
+        <div class="flex justify-end mr-1">
+            {% include "@vactory_dashboard/node/_components/page-speed.html.twig" with { url: preview_url } %}
+        </div>
+    {% endif %}
+</div>

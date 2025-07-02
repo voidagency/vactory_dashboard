@@ -1,0 +1,120 @@
+<div class="bg-white rounded-lg shadow-sm mb-8">
+	<div class="px-6 py-4 border-b border-gray-200 flex flex-col items-start gap-2 lg:flex-row lg:items-center justify-between">
+		<h2 class="text-lg font-medium">{{ "Tickets Redmine"|t }}</h2>
+		<div class="flex items-center gap-2">
+			{% if projetID %}
+				<a href="https://redmine3.void.fr/projects/{{ projetID }}/issues" class="group relative w-full text-left px-4 text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between overflow-hidden h-10" target="_blank" rel="noopener">
+					<span>{{ "Voir plus sur Redmine"|t }}</span>
+					<svg class="h-5 w-5 ml-1" fill="none" viewbox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+					</svg>
+				</a>
+				<a href="https://redmine3.void.fr/projects/{{ projetID }}/issues/new" class="p-1 text-primary-600 rounded-full hover:bg-primary-600 transition duration-300 ease-in-out transform group" target="_blank" rel="noopener">
+					<svg class="h-8 w-8 text-primary-600 group-hover:text-white transition-colors duration-200" fill="none" viewbox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+					</svg>
+				</a>
+			{% endif %}
+		</div>
+	</div>
+
+	<div class="overflow-x-auto">
+		{% if error_message %}
+			<p class="text-red-600 text-center py-4 font-semibold">{{ error_message }}</p>
+		{% elseif issues is empty %}
+			<p class="text-gray-500 text-center py-4">{{ "Aucun ticket trouvé."|t }}</p>
+		{% else %}
+			<table class="min-w-full bg-white">
+				<thead>
+					<tr class="border-b border-slate-200 bg-slate-100 hover:bg-slate-100">
+						<th class="px-6 py-4 text-left font-semibold text-slate-700 uppercase tracking-wider">{{ "ID"|t }}</th>
+						<th class="px-6 py-4 text-left font-semibold text-slate-700 uppercase tracking-wider">{{ "Titre"|t }}</th>
+						<th class="px-6 py-4 text-left font-semibold text-slate-700 uppercase tracking-wider">{{ "Priorité"|t }}</th>
+						<th class="px-6 py-4 text-left font-semibold text-slate-700 uppercase tracking-wider">{{ "Statut"|t }}</th>
+						<th class="px-6 py-4 text-left font-semibold text-slate-700 uppercase tracking-wider">{{ "Date"|t }}</th>
+						<th class="px-6 py-4 text-center font-semibold text-slate-700 uppercase tracking-wider">{{ "Actions"|t }}</th>
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-slate-100">
+					{% for issue in issues %}
+						<tr class="hover:bg-slate-50 transition-colors duration-150 group">
+							<td class="px-3 lg:px-6 py-4 lg:py-5">
+								<div class="flex items-center">
+									<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+										#{{ issue.id }}
+									</span>
+								</div>
+							</td>
+							<td class="px-3 lg:px-6 py-4 lg:py-5">
+								<div class="text-sm font-medium text-slate-900 truncate">
+									{{ issue.subject }}
+								</div>
+							</td>
+							<td class="px-3 lg:px-6 py-4 lg:py-5">
+								<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+									{% set priority = issue.priority.name|lower %}
+									{% if priority == 'immediate' %}
+									  bg-red-200 text-red-900
+									{% elseif priority == 'urgent' %}
+									  bg-yellow-200 text-yellow-900
+									{% elseif priority == 'high' %}
+									  bg-red-100 text-red-800
+									{% elseif priority == 'normal' %}
+									  bg-green-100 text-green-800
+									{% elseif priority == 'low' %}
+									  bg-blue-100 text-blue-800
+									{% else %}
+									  bg-gray-100 text-gray-800
+									{% endif %}">
+									{{ issue.priority.name|default('N/A') }}
+								</span>
+							</td>
+							<td class="px-3 lg:px-6 py-4 lg:py-5">
+								<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+									{% set status = issue.status.name|lower %}
+									{% if status == 'terminé' %}
+									  bg-green-100 text-green-800
+									{% elseif status == 'en attente' %}
+									  bg-gray-100 text-gray-800
+									{% elseif status == 'en cours' %}
+									  bg-orange-100  text-orange-800
+									{% elseif status == 'nouveau' %}
+									  bg-blue-100  text-blue-800
+									{% elseif status == 'pret recette' %}
+									  bg-indigo-100 text-indigo-800
+									{% elseif status == 'recette ok' %}
+									  bg-green-200 text-green-900
+									{% elseif status == 'recette ko' %}
+									  bg-red-200 text-red-900
+									{% elseif status == 'fermé' %}
+									  bg-gray-300 text-gray-900 line-through
+									{% else %}
+									  bg-gray-100 text-gray-800
+									{% endif %}">
+									{{ issue.status.name|default('N/A') }}
+								</span>
+							</td>
+							<td class="px-3 lg:px-6 py-4 lg:py-5">
+								<div class="text-sm font-medium text-slate-900"
+								     title="{{ issue.updated_on | date('d F Y, H:i') }}">
+									{{ issue.updated_on | date('d M Y') }}
+								</div>
+								<div class="text-xs text-slate-500 flex items-center">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-3 w-3 mr-1">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
+									</svg>
+									{{ issue.updated_on | date('H:i') }}
+								</div>
+							</td>
+							<td class="py-4 px-6 whitespace-nowrap text-right text-sm font-medium">
+								<a href="https://redmine3.void.fr/issues/{{ issue.id }}" class="text-primary-600 hover:text-primary-800 hover:underline" target="_blank" rel="noopener">
+									{{ "Consulter"|t }}
+								</a>
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		{% endif %}
+	</div>
+</div>

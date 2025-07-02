@@ -1,0 +1,64 @@
+services:
+  vactory_dashboard.theme_negotiator:
+    class: Drupal\vactory_dashboard\Theme\VactoryDashboardThemeNegotiator
+    arguments: ["@path.current"]
+    tags:
+      - { name: theme_negotiator, priority: 1000 }
+
+  vactory_dashboard.translation_service:
+    class: Drupal\vactory_dashboard\Service\TranslationService
+    arguments: ["@locale.storage"]
+
+  vactory_dashboard.form_search:
+    class: Drupal\vactory_dashboard\Service\FormSearchService
+    arguments: ["@database"]
+
+  vactory_dashboard.content_search:
+    class: Drupal\vactory_dashboard\Service\ContentSearchService
+    arguments: ['@path_alias.manager', '@language_manager', '@entity_type.manager']
+
+  vactory_dashboard.taxonomy_access_check:
+    class: Drupal\vactory_dashboard\Service\TaxonomyAccessCheck
+
+  vactory_dashboard.bundle_access_check:
+    class: Drupal\vactory_dashboard\Service\BundleAccessCheck
+    arguments: []
+
+  vactory_dashboard.media_access_check:
+    class: Drupal\vactory_dashboard\Service\MediaAccessCheck
+    arguments: []
+
+  vactory_dashboard.login_redirect_subscriber:
+    class: Drupal\vactory_dashboard\EventSubscriber\LoginRedirectSubscriber
+    arguments:
+      - '@current_user'
+      - '@current_route_match'
+      - '@request_stack'
+      - '@url_generator'
+    tags:
+      - { name: 'event_subscriber', priority: 2048 }
+    
+  vactory_dashboard.metatag_service: 
+    class: Drupal\vactory_dashboard\Service\MetatagService
+    arguments: ['@metatag.manager']
+  
+  vactory_dashboard.alias_validation:
+    class: Drupal\vactory_dashboard\Service\AliasValidationService
+    arguments:
+      - '@language_manager'
+      - '@entity_type.manager'
+
+  vactory_dashboard.dashboard_controller:
+    class: Drupal\vactory_dashboard\Controller\DashboardController
+    arguments:
+      - '@entity_type.manager'
+      - '@http_client'
+      - '@current_user'
+
+  vactory_dashboard.preview_url:
+    class: Drupal\vactory_dashboard\Service\PreviewUrlService
+    arguments: ['@module_handler', '@language_manager']
+
+  vactory_dashboard.ssl_service:
+    class: Drupal\vactory_dashboard\Service\SslService
+    arguments: ['@config.factory', '@http_client']

@@ -1,0 +1,288 @@
+{# Media Library Modal Component #}
+<div
+        x-show="showMediaLibrary"
+        @click.outside="showMediaLibrary = false"
+        class="fixed inset-y-0 right-0 w-96 bg-white shadow-xl z-50 flex flex-col"
+        x-data="{
+        isUploading: false,
+        showVideoUrlModal: false,
+        videoUrl: '',
+        async handleVideoUrlSubmit() {
+            if (!this.videoUrl) return;
+            
+            try {
+                this.isUploading = true;
+                const response = await fetch('/api/vactory-dashboard/media/add-remote-video/remote_video', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: this.videoUrl,
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '{{ "Failed to add video"|t }}');
+                }
+
+                // Refresh media list
+                await loadMedia(1);
+                
+                // Reset and close modal
+                this.videoUrl = '';
+                this.showVideoUrlModal = false;
+                
+                // Show success notification
+                showNotification('success', '{{ "Video added successfully"|t }}');
+            } catch (error) {
+                console.error('Video add error:', error);
+                showNotification('error', error.message);
+            } finally {
+                this.isUploading = false;
+            }
+        },
+        async handleFileUpload(event) {
+            console.log('here');
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                this.isUploading = true;
+                const formData = new FormData();
+                
+                let endpoint = '/api/vactory-dashboard/media/add-file/file';
+                let fileFieldName = 'file';
+                let fileName = 'fileName'
+                let isPublic = '1'
+                switch(selectedType) {
+                    case 'image':
+                       endpoint = '/api/vactory-dashboard/media/add-image/image';
+                       fileFieldName = 'image';
+                       fileName = 'name'
+                       break;
+                    case 'private_file':
+                        endpoint = '/api/vactory-dashboard/media/add-file/private_file';
+                        isPublic = '0'
+                        break;
+                }
+
+                formData.append(fileFieldName, file);
+                formData.append(fileName, file.name);
+                formData.append('isPublic', isPublic);
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '{{ "Upload failed"|t }}');
+                }
+
+                // Refresh media list
+                await loadMedia(1);
+                
+                // Show success notification
+                showNotification('success', '{{ "File uploaded successfully"|t }}');
+            } catch (error) {
+                console.error('Upload error:', error);
+                showNotification('error', error.message);
+            } finally {
+                this.isUploading = false;
+                // Reset file input
+                event.target.value = '';
+            }
+        }
+    }">
+
+    {# Loading Overlay #}
+    <div
+            x-show="isUploading"
+            class="absolute inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center"
+            style="backdrop-filter: blur(2px);">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mb-3"></div>
+            <p class="text-sm text-gray-600">{{ "Uploading..."|t }}</p>
+        </div>
+    </div>
+
+    {# Hidden file input for upload #}
+    <input
+            type="file"
+            id="media-file-input"
+            class="hidden"
+            @change="handleFileUpload($event)"
+            :accept="selectedType === 'image' ? 'image/*' : '.pdf,.doc,.docx,.txt,.rtf,.odt'"
+    >
+
+    {# Header #}
+    <div class="p-4 border-b flex justify-between items-center">
+        <h3 class="font-medium">{{ 'Médiathèque'|t }}</h3>
+        <button
+                @click="closeMediaLibrary()"
+                class="text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="h-5 w-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+
+    {# Search #}
+    <div class="p-4 border-b">
+        <input
+                type="search"
+                x-model="mediaFilters.search"
+                @input.debounce.300ms="loadMedia()"
+                placeholder="{{ 'Rechercher...'|t }}"
+                class="w-full p-2 border border-gray-300 rounded-md">
+    </div>
+
+    {# Media Content #}
+    <div class="flex-1 overflow-y-auto">
+        {# mediaLoading State #}
+        <template x-if="mediaLoading">
+            <div class="flex justify-center items-center py-12">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+            </div>
+        </template>
+
+        {# mediaError State #}
+        <template x-if="mediaError">
+            <div class="p-4">
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <span x-text="mediaError"></span>
+                </div>
+            </div>
+        </template>
+
+        {# Empty State #}
+        <template x-if="!mediaLoading && !mediaError && mediaItems.length === 0">
+            <div class="text-center py-12">
+                <h3 class="mt-2 text-sm font-medium text-gray-900">{{ "Aucun média"|t }}</h3>
+                <p class="mt-1 text-sm text-gray-500">{{ "Commencez par ajouter un média"|t }}</p>
+            </div>
+        </template>
+
+        {# Media Grid #}
+        <template x-if="!mediaLoading && !mediaError && mediaItems.length > 0">
+            <div class="p-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <template x-for="media in mediaItems" :key="media.id">
+                        <button
+                                @click="selectMedia(media)"
+                                class="border border-gray-200 rounded-md p-2 hover:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                :class="{'ring-2 ring-primary-500': selectedMedia?.id === media.id}">
+                            <template x-if="media.type === 'image'">
+                                <img
+                                        :src="media.url"
+                                        :alt="media.name"
+                                        class="w-full h-32 object-cover rounded">
+                            </template>
+                            <template x-if="media.type !== 'image'">
+                                <div class="w-full h-32 bg-gray-100 rounded flex items-center justify-center">
+                                    <svg class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span class="w-fit inline-block max-h-24 line-clamp-2 overflow-hidden" x-text="media.name"></span>
+                                </div>
+                            </template>
+                        </button>
+                    </template>
+                </div>
+
+                {# Pagination #}
+                <div class="mt-6 flex items-center justify-between">
+                    <div class="flex flex-1 justify-between">
+                        <button
+                                @click="loadMedia(currentMediaPage - 1)"
+                                :disabled="currentMediaPage === 1"
+                                class="relative inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                :class="{'opacity-50 cursor-not-allowed': currentMediaPage === 1}">
+                            {{ 'Précédent'|t }}
+                        </button>
+                        <button
+                                @click="loadMedia(currentMediaPage + 1)"
+                                :disabled="currentMediaPage === totalMediaPages"
+                                class="relative inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                :class="{'opacity-50 cursor-not-allowed': currentMediaPage === totalMediaPages}">
+                            {{ 'Suivant'|t }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+    {# Footer #}
+    <div class="p-4 border-t">
+        <template x-if="selectedType === 'remote_video'">
+            <button
+                    @click="showVideoUrlModal = true"
+                    class="w-full px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                {{ 'Add Remote Video'|t }}
+            </button>
+        </template>
+        <template x-if="selectedType !== 'remote_video'">
+            <button
+                    @click="document.getElementById('media-file-input').click()"
+                    class="w-full px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                <span x-text="selectedType === 'image' ? '{{ 'Téléverser une nouvelle image'|t }}' : '{{ 'Téléverser un nouveau document'|t }}'"></span>
+            </button>
+        </template>
+    </div>
+    {# Modal #}
+    <div
+        x-show="showVideoUrlModal"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 transform translate-y-full"
+        x-transition:enter-end="opacity-100 transform translate-y-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 transform translate-y-0"
+        x-transition:leave-end="opacity-0 transform translate-y-full"
+        class="absolute inset-0 z-50 overflow-y-auto"
+        style="display: none;">
+        <div class="flex p-[14px] items-end justify-center overflow-hidden h-screen text-center">
+            <div class="shadow-lg flex-1 relative inline-block align-bottom bg-white rounded-t-[10px] px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                            {{ 'Add Remote Video'|t }}
+                        </h3>
+                        <div class="mt-2 space-y-4">
+                            <div>
+                                <label for="video-url" class="block text-left text-sm font-medium text-gray-700">{{ 'Video URL'|t }}</label>
+                                <input type="url"
+                                    id="video-url"
+                                    x-model="videoUrl"
+                                    required
+                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                                    placeholder="{{ 'Enter video URL'|t }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse sm:justify-center sm:items-end">
+                    <button type="button"
+                            @click="handleVideoUrlSubmit()"
+                            :disabled="!videoUrl"
+                            class="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
+                            :class="{'opacity-50 cursor-not-allowed': !videoUrl}">
+                        {{ 'Add Video'|t }}
+                    </button>
+                    <button type="button"
+                            @click="showVideoUrlModal = false"
+                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:w-auto sm:text-sm">
+                        {{ 'Cancel'|t }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,225 @@
+<div x-data="{
+  isRTL: document.dir === 'rtl',
+  previewUrl: '{{ preview_url }}',
+  loadImageSize() {
+    if (!this.seo.og_image_url) return;
+    const img = new Image();
+    img.onload = () => {
+      this.seo.og_image_width = img.width;
+      this.seo.og_image_height = img.height;
+    };
+    img.onerror = () => {
+      this.seo.og_image_width = '';
+      this.seo.og_image_height = '';
+    };
+    img.src = this.seo.og_image_url;
+  }
+}" :dir="isRTL ? 'rtl' : 'ltr'">
+<div x-show="activeTab === 'seo'" class="flex-1 overflow-y-auto">
+
+<div class="flex justify-end mt-10 py-2">
+  <button
+    type="button"
+    style="
+      color: white;
+      background-image: linear-gradient(to right, #06b6d4, #3b82f6);
+      font-weight: 500;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      padding: 0.625rem 1.25rem;
+      text-align: center;
+      margin-inline-end: 0.5rem;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      width: 160px;
+      border: none;
+      outline: none;
+      transition: background-image 0.3s ease;
+      display: flex; align-items: center; justify-content: center;
+    "
+      @click="(() => {
+       let url = previewUrl;
+       if (url.startsWith('http://')) {
+       url = url.replace('http://', 'https://');
+      }
+      window.open(`https://www.opengraph.xyz/url/${encodeURIComponent(url)}`, '_blank')
+      })()"
+      title="Analyser le SEO de cette page" >
+    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 8v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    Checker SEO
+  </button>
+  </div>
+  
+    <div class="lg:bg-white lg:p-6 rounded-xl shadow-sm mx-auto space-y-6">
+
+        <div x-data="{ openSeo: false }" class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
+            <!-- SEO Metadata Section -->
+            <div class="flex justify-between items-center cursor-pointer select-none" @click="openSeo = !openSeo">
+                <h3 class="text-lg font-semibold text-slate-900">
+                    {{ 'SEO Metadata' | t }}
+                </h3>
+                <svg :class="{'rotate-180': openSeo}"
+                     class="w-5 h-5 transform transition-transform duration-300 text-slate-400" fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </div>
+            <div x-show="openSeo" x-transition class="space-y-4">
+                <!-- Meta Title -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Meta Title'|t }}</label>
+                    <input
+                            x-model="seo.title"
+                            class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                            type="text"
+                            name="meta.title"
+                            placeholder="[node:title] | [site:name]"
+                            maxlength="65"
+                    >
+                    <p class="mt-0.5 text-xs text-slate-400">{{ 'Recommended: 50-60 characters'|t }}</p>
+                </div>
+                <!-- Meta Description -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Meta Description'|t }}</label>
+                    <textarea
+                            x-model="seo.description"
+                            name="meta.description"
+                            rows="3"
+                            class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                            placeholder="[vactory:node_summary]"
+                            maxlength="160"
+                    ></textarea>
+                    <p class="mt-0.5 text-xs text-slate-400">{{ 'Recommended: 150-160 characters'|t }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div x-data="{ openSeo: false }" class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
+            <!-- Open Graph Section -->
+            <div class="flex justify-between items-center cursor-pointer select-none" @click="openSeo = !openSeo">
+                <h3 class="text-lg font-semibold text-slate-900">
+                    {{ 'Open Graph Metadata' | t }}
+                </h3>
+                <svg :class="{'rotate-180': openSeo}"
+                     class="w-5 h-5 transform transition-transform duration-300 text-slate-400" fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </div>
+            <div x-show="openSeo" x-transition class="space-y-4">
+               
+
+                <!-- OG Site Name -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'OG Site Name'|t }}</label>
+                    <input
+                            x-model="seo.og_site_name"
+                            type="text"
+                            name="meta.og_site_name"
+                            placeholder=""
+                            class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                    >
+                    <p class="mt-0.5 text-xs text-slate-400">{{ 'A human-readable name for the site, e.g., IMDb.'|t }}</p>
+                </div>
+
+                <!-- OG Page URL -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'OG Page URL'|t }}</label>
+                    <input
+                            x-model="seo.og_url"
+                            type="url"
+                            name="meta.og_url"
+                            placeholder=""
+                            class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                    >
+                    <p class="mt-0.5 text-xs text-slate-400">{{ 'e.g., https://www.imdb.com/title/tt0117500/'|t }}</p>
+
+                </div>
+
+                <!-- OG Title -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'OG Title'|t }}</label>
+                    <input
+                            x-model="seo.og_title"
+                            type="text"
+                            name="meta.og_title"
+                            placeholder=""
+                            class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                    >
+                    <p class="mt-0.5 text-xs text-slate-400">{{ 'The title of the content, e.g., The Rock.'|t }}</p>
+
+                </div>
+
+                <!-- OG Description -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'OG Description'|t }}</label>
+                    <textarea
+                            x-model="seo.og_description"
+                            name="meta.og_description"
+                            rows="3"
+                            placeholder=""
+                            class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                    ></textarea>
+                    <p class="mt-0.5 text-xs text-slate-400">{{ 'A one to two sentence description of the content.'|t }}</p>
+
+                </div>
+
+                <!-- OG Image URL -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'OG Image URL'|t }}</label>
+                    <input
+                            x-model="seo.og_image_url"
+                            type="url"
+                            @blur="loadImageSize"
+                            name="meta.og_image_url"
+                            placeholder=""
+                            class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                    >
+                    <p class="mt-0.5 text-xs text-slate-400">{{ 'The URL of an image which should represent the content. The image must be at least 200 x 200 pixels in size'|t }}</p>
+
+                   <template x-if="seo.og_image_url">
+                     <img 
+                     :src="seo.og_image_url" 
+                     alt="Preview OG Image" 
+                     class="mt-2 max-w-full h-auto rounded border border-gray-300"
+                    @error="seo.og_image_url = ''"  <!-- Si l’image ne charge pas, on efface l’URL -->
+                     />
+                 </template>
+                </div>
+
+                <!-- OG Image Width -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'OG Image Width'|t }}</label>
+                    <input
+                            x-model="seo.og_image_width"
+                            type="number"
+                            name="meta.og_image_width"
+                            placeholder=""
+                            class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                    >
+                    <p class="mt-0.5 text-xs text-slate-400">{{ 'The width of the above image(s). Note: if both the unsecured and secured images are provided, they should both be the same size.e.g. 1200'|t }}</p>
+
+                </div>
+
+                <!-- OG Image Height -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'OG Image Height'|t }}</label>
+                    <input
+                            x-model="seo.og_image_height"
+                            type="number"
+                            name="meta.og_image_height"
+                            placeholder=""
+                            class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                    >
+                    <p class="mt-0.5 text-xs text-slate-400">
+                        {{ "The height of the above image(s). Note: if both the unsecured and secured images are provided, they should both be the same size. e.g. 630" | t }}
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+</div>

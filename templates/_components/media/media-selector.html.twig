@@ -1,0 +1,73 @@
+{# Image Selector Component #}
+
+<div>
+    {# Image Selected State #}
+    <template x-if="{{ path }}">
+        <button
+                @click="openMediaLibrary(fieldName, {{ path }}, {{ key }}, '{{ type }}')"
+                type="button"
+                class="w-full flex items-center justify-center px-4 py-2 border-2 border-dashed border-gray-300 rounded-md hover:border-primary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                 stroke="currentColor" class="h-5 w-5 mr-2 text-gray-400">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+            </svg>
+            {% if type == "file" %}
+                {{ 'Sélectionner un document'|t }}
+            {% elseif type == "private_file" %}
+                {{ 'Sélectionner un document privée'|t }}
+            {% elseif type == 'remote_video' %}
+                {{ 'Sélectionner un vidéo'|t }}
+            {% else %}
+                {{ 'Sélectionner une image'|t }}
+            {% endif %}
+        </button>
+    </template>
+
+    <template x-if="{{ url }}">
+        <div class="relative border border-gray-200 rounded-md overflow-hidden group">
+            {% if type == "file" or type == "private_file" %}
+                <div class="w-full h-32 bg-gray-100 rounded flex items-center justify-center">
+                    <svg class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z"/>
+                    </svg>
+                    <span x-text="{{ name }}"></span>
+                </div>
+            {% elseif type == 'remote_video' %}
+                <div class="w-full h-48 bg-gray-100 rounded overflow-hidden">
+                    {# Video Preview with YouTube URL conversion #}
+                    <iframe 
+                        :src="getVideoEmbedUrl({{ url }})" 
+                        class="w-full h-full object-cover"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                    >
+                    </iframe>
+                    {# URL display below video #}
+                    <div class="p-2 bg-gray-50 border-t">
+                        <span x-text="{{ name }}" class="text-sm text-gray-600 truncate block"></span>
+                    </div>
+                </div>
+            {% else %}
+                <img
+                        :src="{{ url }}"
+                        class="w-full h-48 object-cover">
+            {% endif %}
+            {# Overlay with Actions - modified for better video interaction #}
+            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                <button
+                        @click="clearImage(fieldName, {{ path }}, {{ key }})"
+                        type="button"
+                        class="p-2 bg-white rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                         stroke="currentColor" class="h-5 w-5 text-red-600">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </template>
+</div>

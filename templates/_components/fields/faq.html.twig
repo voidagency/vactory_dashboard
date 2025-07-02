@@ -1,0 +1,82 @@
+{# <div class="bg-white border p-4 rounded-md space-y-4">
+  <!-- Boucle sur les éléments FAQ -->
+  <template x-for="(faqItem, index) in formData.fields[field_name]" :key="index">
+    <div class="bg-gray-50 border rounded-md p-4 mb-4 relative space-y-3">
+      <!-- Bouton de suppression -->
+      <button
+        type="button"
+        class="absolute top-2 right-2 text-red-500 text-xl hover:text-red-700"
+        @click="formData.fields[field_name].splice(index, 1)"
+        title="Supprimer"
+      >&times;</button>
+
+      <!-- Question -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Question</label>
+        <input
+          type="text"
+          x-model="formData.fields[field_name][index].question"
+          placeholder="Saisir la question"
+          class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-300"
+          required
+        />
+      </div>
+
+      <!-- Réponse -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Answer</label>
+        <textarea
+          x-model="formData.fields[field_name][index].answer"
+          placeholder="Saisir la réponse"
+          class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-300"
+          rows="3"
+          required
+        ></textarea>
+      </div>
+    </div>
+  </template>
+
+  <!-- Bouton d'ajout -->
+  <button
+    type="button"
+    class="mt-2 px-3 py-1.5 bg-primary-500 text-white rounded hover:bg-primary-600"
+    @click="formData.fields[field_name].push({ question: '', answer: '' })"
+  >
+    + Ajouter une nouvelle FAQ
+  </button>
+</div>
+
+ #}
+
+
+<div class="bg-white border p-4 rounded-md space-y-4">
+
+  <!-- Boucle sur les éléments FAQ -->
+  <template x-for="(faqItem, index) in formData.fields[field.name]" :key="index">
+    <div class="bg-gray-50 border rounded-md p-4 mb-4 relative space-y-3">
+      <!-- Bouton de suppression -->
+      <button type="button" class="absolute top-2 right-2 text-red-500 text-xl hover:text-red-700" 
+              @click="formData.fields[field.name].splice(index, 1)" title="Supprimer">&times;</button>
+
+      <!-- Question -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Question</label>
+        <input type="text" x-model="formData.fields[field.name][index].question" placeholder="Saisir la question" 
+               class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-300" required/>
+      </div>
+
+      <!-- Answer -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Answer</label>
+        <textarea x-model="formData.fields[field.name][index].answer" placeholder="Saisir la réponse" 
+                  class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-300" rows="3" required></textarea>
+      </div>
+    </div>
+  </template>
+
+  <!-- Bouton d'ajout -->
+  <button type="button" class="mt-2 px-3 py-1.5 bg-primary-500 text-white rounded hover:bg-primary-600" 
+          @click="formData.fields[field.name].push({ question: '', answer: '' })">
+    + Ajouter une nouvelle FAQ
+  </button>
+</div>

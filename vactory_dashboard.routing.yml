@@ -1,0 +1,786 @@
+vactory_dashboard.home:
+  path: "/admin/dashboard"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardController::content'
+    _title: "Dashboard"
+  requirements:
+    _permission: "access dashboard"
+
+vactory_dashboard.users:
+  path: "/admin/dashboard/users"
+  defaults:
+    _title: "Gestion des utilisateurs"
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardUsersController::content'
+  requirements:
+    _permission: "administer users"
+
+vactory_dashboard.users.data:
+  path: "/admin/dashboard/users/data"
+  defaults:
+    _title: "Données des utilisateurs"
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardUsersController::getUsers'
+  requirements:
+    _permission: "administer users"
+
+vactory_dashboard.users.delete:
+  path: "/admin/dashboard/users/delete"
+  defaults:
+    _title: "Supprimer des utilisateurs"
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardUsersController::deleteUsers'
+  requirements:
+    _permission: "administer users"
+  methods: [POST]
+
+vactory_dashboard_update_user:
+  path: "/admin/dashboard/user/{userId}/edit"
+  defaults:
+    _title: "Edit Profile"
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardUsersController::pageUpdate'
+  requirements:
+    _permission: "administer users"
+
+vactory_dashboard.users.edit:
+  path: "/admin/dashboard/user/{userId}/edit/data"
+  defaults:
+    _title: "Données de utilisateur modifier"
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardUsersController::editUserPage'
+  requirements:
+    _permission: "administer users"
+
+vactory_dashboard.settings.user.edit:
+  path: "/admin/dashboard/settings/user/{userId}/edit"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardUsersController::editUser'
+    _title: "Edit User"
+  requirements:
+    _permission: "administer users"
+  methods: [PUT]
+
+vactory_dashboard.profile:
+  path: "/api/vactory-dashboard/profile"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardProfileController::getCurrentUserInfo'
+    _title: "Get profile"
+  requirements:
+    _permission: "access dashboard"
+
+vactory_dashboard.logout:
+  path: "/api/vactory-dashboard/logout"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardProfileController::logout'
+    _title: "Logout"
+  requirements:
+    _permission: "access dashboard"
+
+vactory_dashboard.vocabularies:
+  path: "/api/vactory-dashboard/vocabularies"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\VactoryDashboardController::getVocabularies'
+    _title: "Get Vocabularies"
+  methods: [GET]
+  requirements:
+    _permission: "access taxonomy overview"
+
+vactory_dashboard.module_exist:
+  path: "/api/vactory-dashboard/module-exist/{module_name}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\VactoryDashboardController::isModuleInstalled'
+    _title: "Check for module installation"
+  methods: [GET]
+  requirements:
+    _permission: "access content"
+
+vactory_dashboard.main_menu:
+  path: "/api/vactory-dashboard/menu"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\VactoryDashboardController::getPrincipalMenuItems'
+    _title: "Get Menu Items"
+  methods: [GET]
+  requirements:
+    _permission: "access content"
+
+vactory_dashboard.content_types_menu:
+  path: "/api/vactory-dashboard/content-types-menu"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\VactoryDashboardController::getContentTypesItems'
+    _title: "Get Menu Items"
+  methods: [GET]
+  requirements:
+    _permission: "access content"
+
+vactory_dashboard.taxonomies:
+  path: "/admin/dashboard/taxonomy/{vid}"
+  defaults:
+    _title: "Settings"
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTaxonomiesController::content'
+  requirements:
+    _permission: "access taxonomy overview"
+
+vactory_dashboard.settings.taxonomies.data:
+  path: "/admin/dashboard/settings/{vid}/data"
+  defaults:
+    _title: "Données"
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTaxonomiesController::getTaxonomyData'
+  requirements:
+    _permission: "access taxonomy overview"
+
+vactory_dashboard.settings.taxonomies.delete:
+  path: "/admin/dashboard/settings/{vid}/delete"
+  defaults:
+    _title: "Delete taxonomy term"
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTaxonomiesController::delete'
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\TaxonomyAccessCheck::checkAccess'
+  methods: [POST]
+
+vactory_dashboard.settings.taxonomies.add:
+  path: "/admin/dashboard/settings/taxonomies/{vid}/add"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTaxonomiesController::add'
+    _title: "Add taxonomy term"
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\TaxonomyAccessCheck::checkAccess'
+  methods: [POST]
+
+vactory_dashboard.settings.taxonomies.edit:
+  path: "/admin/dashboard/settings/taxonomies/{vid}/edit"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTaxonomiesController::edit'
+    _title: "Edit taxonomy term"
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\TaxonomyAccessCheck::checkAccess'
+  methods: [PUT]
+
+vactory_dashboard.media:
+  path: "/admin/dashboard/media"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::content'
+    _title: "Médiathèque"
+  requirements:
+    _permission: "access media overview"
+
+vactory_dashboard.media.data:
+  path: "/api/vactory-dashboard/media"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::getMediaData'
+    _title: "Get Media Data"
+  methods: [GET]
+  requirements:
+    _permission: "access media overview"
+
+vactory_dashboard_ajoute_media:
+  path: "/admin/dashboard/media/add"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::add'
+    _title: "choix media"
+  requirements:
+    _permission: "create media"
+
+vactory_dashboard_ajoute_medias_files:
+  path: "/admin/dashboard/media/add/files/{type_id}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::addFiles'
+    _title: "Page Add files"
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\MediaAccessCheck::checkAccess'
+
+vactory_dashboard_ajoute_medias_images:
+  path: "/admin/dashboard/media/add/images/{type_id}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::pageAddImage'
+    _title: "Page Add Images"
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\MediaAccessCheck::checkAccess'
+
+vactory_dashboard_ajoute_medias_remote_video:
+  path: "/admin/dashboard/media/add/remote-video/{type_id}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::pageAddRemoteVideo'
+    _title: "Page Add Remote video"
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\MediaAccessCheck::checkAccess'
+
+vactory_dashboard_ajoute_medias_upload_documents:
+  path: "/admin/dashboard/media/add/documents"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::pageAddUploadDocuments'
+    _title: "Page Add Documents"
+  requirements:
+    _permission: "create media"
+
+vactory_dashboard.media.add.upload.documents:
+  path: "/api/vactory-dashboard/media/add-documents"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::addUploadDocuments'
+    _title: "Add Documents"
+  methods: [POST]
+  requirements:
+    _permission: "create media"
+
+vactory_dashboard.media_delete_multiple:
+  path: "/api/vactory-dashboard/media/delete-multiple"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::deleteMultipleMedia'
+  methods: ["POST"]
+  requirements:
+    _permission: "delete any media"
+
+vactory_dashboard.media.add.file:
+  path: "/api/vactory-dashboard/media/add-file/{type_id}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::addFileUpload'
+    _title: "Add File"
+  methods: [POST]
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\MediaAccessCheck::checkAccess'
+
+vactory_dashboard.media.add.image:
+  path: "/api/vactory-dashboard/media/add-image/{type_id}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::addImage'
+    _title: "Add Image"
+  methods: [POST]
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\MediaAccessCheck::checkAccess'
+
+vactory_dashboard.media.add.remote.video:
+  path: "/api/vactory-dashboard/media/add-remote-video/{type_id}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::addRemoteVideo'
+    _title: "Add Remote Video"
+  methods: [POST]
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\MediaAccessCheck::checkAccess'
+
+vactory_dashboard.translations:
+  path: "/admin/dashboard/settings/translations"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTranslationsController::content'
+    _title: "Traductions mutualisées"
+  requirements:
+    _permission: "administer content translation"
+
+vactory_dashboard.translations.data:
+  path: "/api/vactory-dashboard/translations"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTranslationsController::getTranslations'
+    _title: "Get Translations"
+  methods: [GET]
+  requirements:
+    _permission: "administer content translation"
+
+vactory_dashboard.translations.languages:
+  path: "/api/vactory-dashboard/translations/languages"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTranslationsController::getSiteLanguages'
+    _title: "Get Translations"
+  methods: [GET]
+  requirements:
+    _permission: "administer content translation"
+
+vactory_dashboard.translations.import_front:
+  path: "/api/vactory-dashboard/translations/import"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTranslationsController::importKeywords'
+    _title: "Import Translations"
+  methods: [POST]
+  requirements:
+    _permission: "administer content translation"
+
+vactory_dashboard.translations.edit:
+  path: "/api/vactory-dashboard/translations/edit"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTranslationsController::editTranslation'
+    _title: "Edit Translation"
+  methods: [POST]
+  requirements:
+    _permission: "administer content translation"
+
+vactory_dashboard.translations.add:
+  path: "/api/vactory-dashboard/translations/add"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTranslationsController::addTranslation'
+    _title: "Add Translation"
+  methods: [POST]
+  requirements:
+    _permission: "administer content translation"
+
+vactory_dashboard.translations.delete:
+  path: "/api/vactory-dashboard/translations/delete"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTranslationsController::deleteTranslation'
+    _title: "Delete Translation"
+  methods: [POST]
+  requirements:
+    _permission: "administer content translation"
+
+vactory_dashboard.translations.bulk_delete:
+  path: "/api/vactory-dashboard/translations/bulk_delete"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTranslationsController::deleteTranslationsBulk'
+    _title: "Delete Translations in bulk"
+  methods: [POST]
+  requirements:
+    _permission: "administer content translation"
+
+vactory_dashboard.forms:
+  path: "/api/vactory-dashboard/forms"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\VactoryDashboardController::getForms'
+    _title: "Get Forms"
+  methods: [GET]
+  requirements:
+    _permission: "access webform overview"
+
+vactory_dashboard.webform:
+  path: "/admin/dashboard/forms/{id}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardWebformController::content'
+    _title: "Webform"
+  requirements:
+    _permission: "access webform overview"
+
+vactory_dashboard.webform.data:
+  path: "/api/vactory-dashboard/forms/{id}/submissions"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardWebformController::getSubmissions'
+    _title: "Webform Submissions"
+  requirements:
+    _permission: "access webform overview"
+
+vactory_dashboard.webform.delete:
+  path: "/api/vactory-dashboard/forms/delete"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::deleteSubmissions'
+    _title: "Supprimer des soumissions"
+  requirements:
+    _permission: "delete any webform submission"
+  methods: [POST]
+
+vactory_dashboard.webform.search:
+  path: "/api/vactory-dashboard/forms/{id}/search"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardWebformController::searchWebformSubmissions'
+    _title: "Effectuer une recherche"
+  requirements:
+    _permission: "access webform overview"
+  methods: [POST]
+
+vactory_dashboard.webform.submission:
+  path: "/admin/dashboard/forms/{id}/submissions/{submission_id}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::content'
+    _title: "Voir une soumission"
+  requirements:
+    _permission: "edit any webform submission"
+
+vactory_dashboard.webform.submission.page.edit:
+  path: "/admin/dashboard/forms/{id}/submissions/{submission_id}/edit"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::edit'
+    _title: "Modifier une soumission"
+  requirements:
+    _permission: "edit any webform submission"
+
+vactory_dashboard.webform.submission.data:
+  path: "/api/vactory-dashboard/forms/{id}/submissions/{submission_id}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::getSubmission'
+    _title: "Recuperer une submission"
+  requirements:
+    _permission: "edit any webform submission"
+
+vactory_dashboard.webform.submission.edit:
+  path: "/api/vactory-dashboard/forms/{id}/submissions/{submission_id}/edit"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::editSubmission'
+    _title: "Modifier une submission"
+  requirements:
+    _permission: "edit any webform submission"
+  methods: [POST]
+
+vactory_dashboard.webform.submission.export:
+  path: "/api/vactory-dashboard/forms/{id}/export"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::exportSubmissions'
+    _title: "Exporter toutes les submission"
+  requirements:
+    _permission: "administer dashboard configuration"
+
+vactory_dashboard.content_types:
+  path: "/admin/dashboard/content-types/{bundle}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::content'
+    _title: "Types de contenu"
+  requirements:
+    _permission: "access content overview"
+
+vactory_dashboard.content_types.data:
+  path: "/api/vactory-dashboard/content-types/{bundle}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::getData'
+    _title: "Data"
+  requirements:
+    _permission: "access content overview"
+
+vactory_dashboard.settings.captcha:
+  path: "/admin/dashboard/settings/captcha"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardCaptchaController::content'
+    _title: "Captcha"
+  requirements:
+    _permission: "administer dashboard configuration"
+
+vactory_dashboard.settings.languages:
+  path: "/admin/dashboard/settings/languages"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardLanguageController::content'
+    _title: "Languages"
+  requirements:
+    _permission: "administer dashboard configuration"
+
+vactory_dashboard.settings.languages.collection:
+  path: "/api/vactory-dashboard/languages"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardLanguageController::getLanguages'
+    _title: "Get Languages"
+  requirements:
+    _permission: "administer dashboard configuration"
+
+vactory_dashboard.settings.sitemaps:
+  path: "/admin/dashboard/settings/sitemaps"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardSitemapController::content'
+    _title: "Sitemaps"
+  requirements:
+    _permission: "access sitemap"
+
+vactory_dashboard.settings.sitemaps.collection:
+  path: "/api/vactory-dashboard/sitemaps"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardSitemapController::getSitemaps'
+    _title: "Get Sitemaps"
+  requirements:
+    _permission: "access sitemap"
+
+vactory_dashboard.settings.shield:
+  path: "/admin/dashboard/settings/shield"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardShieldController::content'
+    _title: "Shield"
+  requirements:
+    _permission: "administer dashboard configuration"
+
+vactory_dashboard.settings.banner_blocks:
+  path: "/admin/dashboard/settings/banner/blocks"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::banner'
+    _title: "Blocks"
+  requirements:
+    _permission: "administer block content"
+
+vactory_dashboard.vactory_page.add:
+  path: "/admin/dashboard/vactory_page/add"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardVactoryPageController::add'
+    _title: "Add new Page"
+  requirements:
+    _permission: "administer nodes"
+
+vactory_dashboard.vactory_page.edit:
+  path: "/admin/dashboard/vactory_page/edit/{id}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardVactoryPageController::edit'
+    _title: "Edit Page"
+  requirements:
+    _permission: "administer nodes"
+
+vactory_dashboard.vactory_page.add.translation:
+  path: "/admin/dashboard/vactory_page/edit/{id}/add/translation"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardVactoryPageController::translate'
+    _title: "Add translation Page"
+  requirements:
+    _permission: "administer content translation"
+
+vactory_dashboard.node.edit.save:
+  path: "/api/vactory-dashboard/node/{nid}/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardVactoryPageController::saveEdit'
+  methods: [POST]
+  requirements:
+    _permission: "administer nodes"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.node.save:
+  path: "/api/vactory-dashboard/node/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardVactoryPageController::save'
+  methods: [POST]
+  requirements:
+    _permission: "administer nodes"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.templates:
+  path: "/api/vactory-dashboard/templates"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardVactoryPageController::getTemplates'
+    _title: "Get Templates"
+  methods: [GET]
+  requirements:
+    _permission: "access content"
+  options:
+    no_cache: TRUE
+vactory_dashboard.node.add:
+  path: "/admin/dashboard/{bundle}/add"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::add'
+    _title: "Add"
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\BundleAccessCheck::access'
+
+vactory_dashboard.node.edit:
+  path: "/admin/dashboard/{bundle}/edit/{nid}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::edit'
+    _title: "Edit"
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\BundleAccessCheck::access'
+
+vactory_dashboard.node.delete:
+  path: "/admin/dashboard/{bundle}/delete/{nid}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::delete'
+    _title: 'Delete nodes'
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\BundleAccessCheck::access'
+  options:
+    parameters:
+      bundle:
+        type: 'string'
+
+vactory_dashboard.items.node.delete:
+  path: "/admin/dashboard/{bundle}/delete/items"
+  methods: [POST]
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::deleteNodes'
+    _title: 'Delete nodes in bulk'
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\BundleAccessCheck::access'
+
+
+
+vactory_dashboard.node.translate:
+  path: "/admin/dashboard/{bundle}/edit/{nid}/add/translation"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::translate'
+    _title: "Add translate"
+  requirements:
+    _permission: "access content"
+
+vactory_dashboard.bundle.node.save:
+  path: "/api/vactory-dashboard/{bundle}/node/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::save'
+  methods: [POST]
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\BundleAccessCheck::access'
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.bundle.node.save.edit:
+  path: "/api/vactory-dashboard/{bundle}/node/edit/{nid}/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::saveEdit'
+  methods: [POST]
+  requirements:
+    _custom_access: '\Drupal\vactory_dashboard\Access\BundleAccessCheck::access'
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.content_search:
+  path: "/api/vactory-dashboard/content-search"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardPageSearchController::search'
+    _title: 'Content Search'
+  requirements:
+    _permission: "access content"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.cross_content_search:
+  path: "/api/vactory-dashboard/cross-content-search"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardPageSearchController::crossSearch'
+    _title: 'Cross Content Search'
+  requirements:
+    _permission: "access content"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.entity_queue_save:
+  path: "/api/vactory-dashboard/entity-queue/{queue_name}/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::saveQueueOrder'
+    _title: "Save Queue Order"
+  requirements:
+    _permission: "administer entity queue"
+  options:
+    no_cache: TRUE
+    parameters:
+      queue_name:
+        type: string
+
+advanced_dashboard.settings:
+  path: "/admin/config/dashboard-settings"
+  defaults:
+    _form: '\Drupal\vactory_dashboard\Form\MyDashboardSettings'
+    _title: 'Advanced dashboard'
+  requirements:
+    _permission: "access dashboard"
+
+advanced_dashboard.data:
+  path: "/api/vactory-dashboard/advanced-dashboard"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\VactoryDashboardController::getAdvancedDashboard'
+    _title: 'Advanced dashboard data'
+  requirements:
+    _permission: "access dashboard"
+
+advanced_dashboard.support:
+  path: "/admin/config/dashboard-support"
+  defaults:
+    _form: '\Drupal\vactory_dashboard\Form\MyDashboardSettingsSupport'
+    _title: 'Advanced dashboard support'
+  requirements:
+    _permission: "access dashboard"
+
+advanced_dashboard.support.data:
+  path: "/api/vactory-dashboard/advanced-dashboard/support"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\VactoryDashboardController::getAdvancedDashboardSupport'
+    _title: 'Advanced dashboard support data'
+  requirements:
+    _permission: "access dashboard"
+
+vactory_dashboard.global_search:
+  path: "/api/vactory-dashboard/global-search"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardPageSearchController::globalSearch'
+    _title: 'Global Search'
+  requirements:
+    _permission: "access content"
+  options:
+    no_cache: TRUE
+
+dashboard.redmine_settings:
+  path: '/admin/config/dashboard-settings/redmine'
+  defaults:
+    _form: '\Drupal\vactory_dashboard\Form\RedmineSettingsForm'
+    _title: 'Redmine Configuration'
+  requirements:
+    _permission: 'access dashboard'
+  options:
+    _admin_route: TRUE
+
+vactory_dashboard.clear_cache:
+  path: '/admin/dashboard/clear-cache'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardController::clearCache'
+    _title: 'Clear Cache'
+  requirements:
+    _permission: 'administer dashboard configuration'
+  methods: ['POST']
+
+vactory_dashboard.ssl_status:
+  path: '/api/ssl-status'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardController::getSSLStatus'
+    _title: 'SSL Status'
+  requirements:
+    _permission: 'administer dashboard configuration'
+
+dashboard.ssl.domaine_settings:
+  path: '/admin/config/dashboard-settings/ssl-domaine'
+  defaults:
+    _form: '\Drupal\vactory_dashboard\Form\SSLDomaineSettingsForm'
+    _title: 'SSL Domaine Configuration'
+  requirements:
+    _permission: 'administer dashboard configuration'
+  options:
+    _admin_route: TRUE
+
+dashboard.content_types:
+  path: '/admin/config/dashboard-settings/content-types'
+  defaults:
+    _form: '\Drupal\vactory_dashboard\Form\ContentTypesSettingsForm'
+    _title: 'Content Types Configuration'
+  requirements:
+    _permission: 'administer dashboard configuration'
+  options:
+    _admin_route: TRUE
+
+dashboard.settings.global:
+  path: '/admin/config/dashboard-settings/global-settings'
+  defaults:
+    _form: '\Drupal\vactory_dashboard\Form\VactoryDashboardSettingsForm'
+    _title: 'Dashboard Global Settings'
+  requirements:
+    _permission: 'administer dashboard configuration'
+  options:
+    _admin_route: TRUE
+
+vactory_dashboard.export:
+  path: '/api/vactory-dashboard/export/{export_key}'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::exportCsvModel'
+    _title: 'Export'
+  requirements:
+    _permission: 'access content'
+
+vactory_dashboard.metatag.edit:
+  path: '/api/vactory-dashboard/metatag/edit'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::editMetatg'
+    _title: 'Edit metatag bulk'
+  requirements:
+    _permission: 'access content'
+  methods: ['POST']
+
+vactory_dashboard.ckeditor_field:
+  path: '/vactory-dashboard/ckeditor-field'
+  defaults:
+    _title: 'Ckeditor Field'
+    _form: 'Drupal\vactory_dashboard\Form\CkeditorFieldForm'
+  requirements:
+    _permission: 'access content'
+
+vactory_dashboard.banner_blocks:
+  path: '/admin/dashboard/banner-blocks'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::banner'
+    _title: 'Banner Blocks'
+  requirements:
+    _permission: 'access content'
+
+vactory_dashboard.banner_blocks.api:
+  path: '/api/dashboard/banner-blocks'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::getBlocks'
+    _title: 'Banner Blocks API'
+  requirements:
+    _permission: 'access content'
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.content_type.taxonomies:
+  path: '/api/dashboard/content-type/{bundle}/taxonomies'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::getReferencedTaxonomies'
+    _title: 'Taxonomies that belong to the specified content type'
+  requirements:
+    _permission: 'access dashboard'
+  options:
+    no_cache: TRUE

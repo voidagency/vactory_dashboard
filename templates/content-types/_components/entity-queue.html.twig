@@ -1,0 +1,319 @@
+{# Entity Queue Component #}
+<div x-data="entityQueue({
+    queues: '{{ entity_queues|json_encode|e('js') }}',
+    bundle: '{{ id }}'
+})" class="space-y-6">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div>
+            <h2 class="text-xl font-semibold flex items-center">
+                {{ "Sélection pour la page d'accueil"|t }}
+            </h2>
+            <p class="text-sm text-gray-600 mt-1">
+                {{ "Gérez les %bundle_label% mis en avant sur la page d'accueil et autres pages"|t({'%bundle_label%': bundle_label}) }}
+            </p>
+        </div>
+    </div>
+
+    {# Tabs Navigation #}
+    <div class="border-b border-gray-200 bg-white">
+        <nav class="flex overflow-x-auto" aria-label="Tabs">
+            <template x-for="(items, queueName) in queues" :key="queueName">
+                <button
+                    @click="$store.selectedTab = queueName"
+                    :class="$store.selectedTab === queueName ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
+                    class="whitespace-nowrap border-b-2 py-4 px-4 text-sm font-medium"
+                    x-text="queueName.replace(/_/g, ' ')"
+                ></button>
+            </template>
+        </nav>
+    </div>
+
+    {# Tab Panels #}
+    <template x-for="(items, queueName) in queues" :key="queueName">
+        <div x-show="$store.selectedTab === queueName">
+            <div class="border-b border-gray-200 bg-white px-4 py-4 shadow-sm overflow-hidden ring-1 ring-gray-900/5">
+                {# Add autocomplete search input #}
+                <div class="relative" x-data="autocomplete({ bundle: '{{ id }}' })">
+                    <div class="flex flex-col-reverse lg:flex-row items-start gap-4 lg:items-center">
+                        <div class="flex-1 w-full">
+                            <label for="search" class="sr-only">{{ "Rechercher un contenu"|t }}</label>
+                            <div class="relative">
+                                <input
+                                        type="text"
+                                        name="search"
+                                        id="search"
+                                        x-model="searchQuery"
+                                        @input.debounce.300ms="searchContent"
+                                        @keydown.escape="closeAutocomplete"
+                                        @click.away="closeAutocomplete"
+                                        class="block w-full rounded-md border-0 py-1.5 pl-10 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 text-sm leading-6"
+                                        placeholder="{{ "Rechercher et ajouter un contenu"|t }}"
+                                >
+                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                              d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                                              clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-none">
+                            {% include '@vactory_admin/components/button/button.twig' with {
+                                text: "Enregistrer"|t,
+                                variant: 'primary',
+                                size: 'md',
+                                disabled: false,
+                                alpine_attrs: ':disabled="isSaving" @click="saveQueueOrder(queueName)"',
+                                icon_left: '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>'
+                            } %}
+                        </div>
+                    </div>
+
+                    {# Autocomplete Results #}
+                    <div
+                            x-show="isOpen"
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 translate-y-1"
+                            x-transition:enter-end="opacity-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-150"
+                            x-transition:leave-start="opacity-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 translate-y-1"
+                            class="absolute z-10 mt-2 w-full rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 max-h-60 overflow-y-auto"
+                            role="listbox">
+                        <template x-for="result in searchResults" :key="result.id">
+                            <button
+                                    @click="addToQueue(result, queueName)"
+                                    class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                                    role="option">
+                                <div class="flex items-center">
+                                    <span x-text="result.title" class="font-medium"></span>
+                                </div>
+                            </button>
+                        </template>
+                        <div x-show="searchResults.length === 0 && searchQuery !== ''"
+                             class="px-4 py-2 text-sm text-gray-500">
+                            {{ "Aucun résultat trouvé"|t }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-300 mt-6 border border-gray-200 bg-white">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">{{ "PRIORITÉ"|t }}</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">{{ "TITRE"|t }}</th>
+                        <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                            <span class="sr-only">{{ "Actions"|t }}</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200"
+                       :id="'queue-' + queueName"
+                       @dragover.prevent
+                       @drop.prevent="handleDrop($event, queueName)">
+                <template x-for="(item, index) in items" :key="item.id">
+                    <tr draggable="true"
+                        :data-index="index"
+                        :data-id="item.id"
+                        @dragstart="handleDragStart($event, queueName, index)"
+                        @dragend="handleDragEnd"
+                        class="hover:bg-gray-50 cursor-move">
+                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                            <div class="flex items-center">
+                                <span x-text="index + 1" class="mr-2"></span>
+                                <div class="flex flex-col gap-1">
+                                    <button @click="moveItem(queueName, index, 'up')" :disabled="index === 0"
+                                            class="text-primary-400 hover:primary-gray-600 disabled:text-gray-400">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M5 15l7-7 7 7"/>
+                                        </svg>
+                                    </button>
+                                    <button @click="moveItem(queueName, index, 'down')"
+                                            :disabled="index === items.length - 1"
+                                            class="text-primary-400 hover:primary-gray-600 disabled:text-gray-400">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500" x-text="item.title"></td>
+                        <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                            <button @click="removeItem(queueName, index)" class="text-red-600 hover:text-red-900">
+                                {{ "Retirer"|t }}
+                            </button>
+                        </td>
+                    </tr>
+                </template>
+                </tbody>
+              </table>
+            </div>
+            {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
+        </div>
+    </template>
+</div>
+
+{% block javascripts %}
+    <script>
+      document.addEventListener('alpine:init', () => {
+        Alpine.store('selectedTab', '');
+
+        Alpine.data('autocomplete', (config) => ({
+          searchQuery: '',
+          bundle: config.bundle,
+          searchResults: [],
+          isOpen: false,
+
+          async searchContent() {
+            if (this.searchQuery.length < 2) {
+              this.searchResults = [];
+              this.isOpen = false;
+              return;
+            }
+
+            try {
+              const response = await fetch(`/api/vactory-dashboard/content-search?q=${encodeURIComponent(this.searchQuery)}&bundle=${this.bundle}`);
+              if (!response.ok) {
+                throw new Error('Search failed');
+              }
+
+              this.searchResults = await response.json();
+              this.isOpen = true;
+            } catch (error) {
+              console.error('Search error:', error);
+              this.$dispatch('show-notification', {
+                type: 'error',
+                message: '{{ "Erreur lors de la recherche"|t }}',
+              });
+            }
+          },
+
+          closeAutocomplete() {
+            this.isOpen = false;
+          },
+        }));
+
+        Alpine.data('entityQueue', (config) => ({
+          queues: {},
+          draggedItem: null,
+          draggedQueue: null,
+          draggedIndex: null,
+          isSaving: false,
+          notification: {
+            show: false,
+            type: 'success',
+            message: '',
+            timeout: null,
+          },
+          init() {
+            this.queues = JSON.parse(config.queues);
+            Alpine.store('selectedTab', Object.keys(this.queues)[0]);
+          },
+
+          handleDragStart(event, queueName, index) {
+            this.draggedItem = this.queues[queueName][index];
+            this.draggedQueue = queueName;
+            this.draggedIndex = index;
+            event.target.classList.add('bg-gray-100');
+          },
+
+          handleDragEnd(event) {
+            event.target.classList.remove('bg-gray-100');
+          },
+
+          handleDrop(event, queueName) {
+            const targetIndex = parseInt(event.target.closest('tr')?.dataset.index);
+            if (isNaN(targetIndex)) {
+              return;
+            }
+
+            if (this.draggedQueue === queueName) {
+              // Reorder within the same queue
+              const items = [...this.queues[queueName]];
+              items.splice(this.draggedIndex, 1);
+              items.splice(targetIndex, 0, this.draggedItem);
+              this.queues[queueName] = items;
+            }
+          },
+
+          moveItem(queueName, index, direction) {
+            const items = [...this.queues[queueName]];
+            if (direction === 'up' && index > 0) {
+              [items[index], items[index - 1]] = [items[index - 1], items[index]];
+            } else if (direction === 'down' && index < items.length - 1) {
+              [items[index], items[index + 1]] = [items[index + 1], items[index]];
+            }
+            this.queues[queueName] = items;
+          },
+
+          removeItem(queueName, index) {
+            if (confirm('{{ "Êtes-vous sûr de vouloir retirer cet élément ?"|t }}')) {
+              this.queues[queueName].splice(index, 1);
+            }
+          },
+
+          async saveQueueOrder(queueName) {
+            this.isSaving = true;
+            try {
+              const response = await fetch(`/api/vactory-dashboard/entity-queue/${queueName}/save`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  items: this.queues[queueName].map(item => item.id),
+                }),
+              });
+
+              if (!response.ok) {
+                throw new Error('{{ "Erreur lors de la sauvegarde"|t }}');
+              }
+
+              // Show success notification
+              this.showNotification('success', '{{ "Ordre sauvegardé avec succès"|t }}');
+            } catch (error) {
+              // Show error notification
+              this.showNotification('error', '{{ "Erreur lors de la sauvegarde"|t }}');
+            }
+            this.isSaving = false;
+          },
+
+          addToQueue(item, queueName) {
+            // Check if item already exists in queue
+            const exists = this.queues[queueName].some(existing => existing.id === item.id);
+            if (exists) {
+              this.showNotification('warning', '{{ "Cet élément existe déjà dans la file"|t }}');
+              return;
+            }
+
+            // Add item to queue
+            this.queues[queueName].push({
+              id: item.id,
+              title: item.title,
+            });
+
+            // Clear search
+            this.$root.querySelector('input[name="search"]').value = '';
+            this.showNotification('success', '{{ "Élément ajouté avec succès"|t }}');
+          },
+          showNotification(type, message) {
+            if (this.notification.timeout) {
+              clearTimeout(this.notification.timeout);
+            }
+            this.notification.type = type;
+            this.notification.message = message;
+            this.notification.show = true;
+            this.notification.timeout = setTimeout(() => {
+              this.notification.show = false;
+            }, 5000);
+          },
+        }));
+      });
+    </script>
+{% endblock %}

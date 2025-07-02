@@ -1,0 +1,87 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% block content %}
+    <div class="content-type-layout" x-data="languagesTable()">
+        {# Page header #}
+        <div class="mb-8">
+            <h1 class="text-2xl font-semibold text-slate-900">{{ "Liste des langues" | t }}</h1>
+        </div>
+
+        <div class="mt-8">
+            <div class="bg-white overflow-scroll shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
+                {# Loading state #}
+                <template x-if="loading">
+                    {% include '@vactory_dashboard/webform/dashboard-webform-loader.html.twig' %}
+                </template>
+                {# Empty state #}
+                <template x-if="!loading && languages.length === 0">
+                    <div class="text-center py-12">
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">{{ "Aucune langue" | t }}</h3>
+                        <p class="mt-1 text-sm text-gray-500">{{ "Il n'y a pas encore de langue pour ce site" | t }}</p>
+                    </div>
+                </template>
+                <template x-if="!loading && languages.length > 0">
+                    <table class="min-w-full">
+                        <thead>
+                        <tr>
+                            <th scope="col"
+                                class="capitalize text-center py-3.5 pl-4 pr-3 text-sm font-semibold text-gray-900">{{ "code" | t }}</th>
+                            <th scope="col"
+                                class="capitalize text-center py-3.5 pl-4 pr-3 text-sm font-semibold text-gray-900">{{ "name" | t }}</th>
+                            <th scope="col"
+                                class="capitalize text-center py-3.5 pl-4 pr-3 text-sm font-semibold text-gray-900">{{ "default" | t }}</th>
+                            <th scope="col"
+                                class="capitalize text-center py-3.5 pl-4 pr-3 text-sm font-semibold text-gray-900">{{ "direction" | t }}</th>
+                        </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                        <template x-for="language in languages" :key="language.id">
+                            <tr class="text-center even:bg-gray-50">
+                                <td class="max-w-52 truncate whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900"
+                                    x-text="language.id"></td>
+                                <td class="max-w-52 truncate whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900"
+                                    x-text="language.label"></td>
+                                <td class="max-w-52 truncate whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900"
+                                    x-text="language.default"></td>
+                                <td class="max-w-52 truncate whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900"
+                                    x-text="language.direction"></td>
+
+                            </tr>
+                        </template>
+                        </tbody>
+                    </table>
+                </template>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+      function languagesTable(id) {
+        return {
+          languages: [],
+          loading: true,
+          currentPage: 1,
+          totalPages: 1,
+          pages: [],
+          async loadLanguages(page = 1) {
+            this.currentPage = page;
+
+            try {
+              const response = await fetch(`{{ path('vactory_dashboard.settings.languages.collection') }}`);
+              const data = await response.json();
+              this.languages = data;
+            } catch (error) {
+              console.error('Error loading languages:', error);
+            } finally {
+              this.loading = false;
+            }
+          },
+          init() {
+            this.loadLanguages();
+          },
+        };
+      }
+    </script>
+{% endblock %}

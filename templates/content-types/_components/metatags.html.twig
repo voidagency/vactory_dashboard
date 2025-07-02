@@ -1,0 +1,225 @@
+<div class="mt-8" x-data="metatagEditor">
+    <template x-if="!loading && data.length > 0">
+        <div class="flex justify-end mb-3">
+            <button @click="saveChanges()" class="inline-flex items-center justify-center rounded-md transition-colors gap-x-2 bg-primary-500 text-white hover:bg-primary-600 px-4 py-2 text-sm">Save Changes</button>
+        </div>
+    </template>
+
+    {# Loading state #}
+    <div x-show="loading" class="flex justify-center items-center py-12">
+        <div class="text-center">
+            <div class="mx-auto animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mb-3"></div>
+            <p class="text-sm text-gray-600">{{ "Loading data..."|t }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white shadow-sm overflow-scroll ring-1 ring-gray-900/5">
+        {# Empty state #}
+        <template x-if="!loading && data.length === 0">
+            <div class="text-center py-12">
+                <h3 class="mt-2 text-sm font-semibold text-slate-900">{{ "Aucune résults" | t }}</h3>
+                <p class="mt-1 text-sm text-slate-500">{{ "Il n'y a pas encore de résults pour ce type." | t }}</p>
+            </div>
+        </template>
+
+        {# Metatags Data #}
+        <template x-if="!loading && data.length > 0">
+            
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        {# <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">{{ "Id" | t }}</th> #}
+                        <th scope="col"
+                            class="text-center py-3.5 pl-4 pr-3 text-sm font-semibold text-slate-900">{{ "Label" | t }}
+                        </th>
+                        <template x-for="(metatag, index) in metatagKeys" :key="index">
+                            <th x-text="normalizeColumn(metatag)" scope="col" class="w-full text-center py-3.5 pl-4 pr-3 text-sm font-semibold text-slate-900"></th>
+                        </template>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-slate-100">
+                    <template x-for="item in data" :key="item.id">
+                        <tr class="hover:bg-gray-50 cursor-pointer">
+                            <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-semibold text-slate-900"
+                                x-text="item.title"></td>
+
+                            <template x-for="(metatag, index) in metatagKeys" :key="index">
+                                <td scope="col" class="py-2 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">
+                                    <div
+                                        x-data="{ editing: false, hovered: false }"
+                                        @mouseenter="hovered = true"
+                                        @mouseleave="hovered = false"
+                                        @click="editing = true">
+
+                                        <!-- TEXT -->
+                                        <template x-if="item.metatags[metatag].type == 'text'">
+                                            <div>
+                                                <p
+                                                    x-show="!editing && !hovered"
+                                                    class="text-center w-[450px] truncate cursor-pointer"
+                                                    x-text="item.metatags[metatag].resolved || '---'">
+                                                </p>
+
+                                                <input
+                                                    x-show="hovered || editing"
+                                                    type="text"
+                                                    class="w-full border rounded px-2 py-1"
+                                                    :value="item.metatags[metatag].raw"
+                                                    @click.outside="editing = false"
+                                                    @input="event => {
+                                                        item.metatags[metatag].raw = event.target.value;
+                                                        markModified(item.id);
+                                                    }"
+                                                />
+                                            </div>
+                                        </template>
+
+                                        <!-- TEXTAREA -->
+                                        <template x-if="item.metatags[metatag].type == 'textarea'">
+                                            <div>
+                                                <p
+                                                    x-show="!editing && !hovered"
+                                                    class="text-center w-[450px] truncate cursor-pointer"
+                                                    x-text="item.metatags[metatag].resolved || '---'">
+                                                </p>
+
+                                                <textarea
+                                                    x-show="hovered || editing"
+                                                    class="w-full border resize rounded px-2 py-1"
+                                                    :value="item.metatags[metatag].raw"
+                                                    @click.outside="editing = false"
+                                                    @input="event => {
+                                                        item.metatags[metatag].raw = event.target.value;
+                                                        markModified(item.id);
+                                                    }">
+                                                </textarea>
+                                            </div>
+                                        </template>
+
+                                        <!-- IMAGE -->
+                                        <template x-if="item.metatags[metatag].type == 'image'">
+                                            <div>
+                                                <div x-show="!editing && !hovered"
+                                                    class="cursor-pointer w-[200px] max-h-20 truncate">
+                                                    <img loading="lazy"
+                                                        class="object-contain w-full"
+                                                        :src="item.metatags[metatag].resolved"
+                                                        :alt="item.metatags[metatag].resolved" />
+                                                </div>
+
+                                                <input
+                                                    x-show="hovered || editing"
+                                                    type="text"
+                                                    class="w-full border rounded px-2 py-1"
+                                                    :value="item.metatags[metatag].raw"
+                                                    @click.outside="editing = false"
+                                                    @input="event => {
+                                                        item.metatags[metatag].raw = event.target.value;
+                                                        markModified(item.id);
+                                                    }"
+                                                />
+                                            </div>
+                                        </template>
+
+                                    </div>
+                                </td>
+                            </template>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </template>
+    </div>
+    <div class="flex flex-col-reverse lg:flex-row items-end lg:items-center justify-between ">
+        <template x-if="!loading && data.length > 0">
+            <div class="flex justify-end mt-3">
+                <button @click="saveChanges()" class="inline-flex items-center justify-center rounded-md transition-colors gap-x-2 bg-primary-500 text-white hover:bg-primary-600 px-4 py-2 text-sm">Save Changes</button>
+            </div>
+        </template>
+
+        <div class="mt-4 flex items-center justify-end">
+            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                <button @click="loadData(currentPage - 1)"
+                        :disabled="currentPage === 1"
+                        class="relative inline-flex items-center rounded-l-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
+                    {{ "Précédent" | t }}
+                </button>
+
+                <template x-for="page in pages" :key="page">
+                    <button @click="loadData(page)"
+                            :class="page === currentPage ? 'z-10 bg-primary-500 text-white focus:z-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600' : 'text-gray-900 ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-50 focus:z-20 focus:outline-offset-0'"
+                            class="relative inline-flex items-center px-4 py-2 text-sm font-semibold">
+                        <span x-text="page"></span>
+                    </button>
+                </template>
+
+                <button @click="loadData(currentPage + 1)"
+                        :disabled="currentPage === totalPages"
+                        class="relative ml-3 inline-flex items-center rounded-r-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
+                    {{ "Suivant" | t }}
+                </button>
+            </nav>
+        </div>
+    </div>
+</div>
+
+{% block javascripts %}
+    <script>
+        function metatagEditor() {
+            return {
+                modifiedRows: [],
+                showValue: true,
+                showInput: false,
+
+                markModified(id) {
+                    if (!this.modifiedRows.includes(id)) {
+                        this.modifiedRows.push(id);
+                    }
+                    console.log("len: ", this.modifiedRows.length);
+                },
+            
+                normalizeColumn(column) {
+                    return column.replace(/[_-]/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+                },
+
+                saveChanges() {
+                    const changes = this.data
+                        .filter(item => this.modifiedRows.includes(item.id))
+                        .map(item => ({
+                        id: item.id,
+                        metatags: item.metatags 
+                        }));
+
+                    fetch("{{ path('vactory_dashboard.metatag.edit') }}", {
+                        method: 'POST',
+                        headers: {
+                        'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ changes })
+                    })
+                    .then(res => res.json())
+                    .then(response => {
+                        this.setNotification(false, '{{ "Changements appliqués avec succès" | t }}');
+                        this.modifiedRows = [];
+                        this.loadData(this.currentPage);
+                    })
+                    .catch(error => {
+                        console.error('Error saving changes:', error);
+                        this.setNotification(true, '{{ "Erreur lors de la sauvegarde des changements" | t }}');
+                    });
+                },
+
+                init() {
+                    window.addEventListener('beforeunload', (event) => {
+                        if (this.modifiedRows.length > 0) {
+                            event.preventDefault();
+                            event.returnValue = '';
+                        }
+                    });
+                },
+
+            };
+        }
+    </script>
+{% endblock %}

@@ -1,0 +1,190 @@
+<div class="mt-8">
+
+    <!-- Add term taxonomy -->
+    {% include "@vactory_dashboard/taxonomy/add.html.twig" %}
+
+    <!-- Confirmation Modal -->
+    {% include "@vactory_dashboard/_components/modals/delete-confirmation-modal.html.twig" with {
+        show_var: 'showConfirmModal',
+        confirm_action: 'confirmAction()',
+        title: confirmModalTitle,
+        message: confirmModalMessage,
+        confirm_text: 'Confirmer',
+        cancel_text: 'Annuler'
+    }%}
+
+    {# Filters #}
+    <div class="mt-4 bg-white shadow sm:rounded-lg">
+        <div class="p-4">
+            <div class="flex items-center justify-between">
+                {% include "@vactory_admin/components/input/input.twig" with {
+                    id: 'search',
+                    model: 'filters.search',
+                    placeholder: 'Rechercher par titre...',
+                    width: 'w-96',
+                    icon: '<svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewbox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                            </svg>',
+                    icon_position: 'left'
+                } %}
+                {% include "@vactory_admin/components/button/button.twig" with {
+                    class: 'h-10',
+                    variant: 'secondary',
+                    size: 'md',
+                    alpine_attrs: '@click="resetFilters"',
+                    icon_left: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" /></svg>'
+                } %}
+            </div>
+        </div>
+    </div>
+
+    {# Loading State #}
+    <div x-show="loading" class="flex justify-center items-center py-12">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mb-3"></div>
+            <p class="text-sm text-gray-600">{{ "Loading data..."|t }}</p>
+        </div>
+    </div>
+
+    {# Data Table - show only when not loading #}
+    <div x-show="!loading">
+        <!-- Selection header -->
+        <div x-show="selectedTerms.length > 0" x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform -translate-y-2"
+                x-transition:enter-end="opacity-100 transform translate-y-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform translate-y-0"
+                x-transition:leave-end="opacity-0 transform -translate-y-2" class="mb-6">
+            <div class="p-4 mt-2 bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-900">
+                        <span x-text="selectedTerms.length" class="font-semibold"></span>
+                        élément(s) sélectionné(s)
+                    </div>
+                    <button type="button" @click="confirmDeleteSelectedTaxo"
+                            class="inline-flex items-center px-3 py-2 text-sm font-medium leading-4 text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                        Supprimer la sélection
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- No data message -->
+        <div x-show="terms.length === 0" class="flex justify-center items-center py-12">
+            <div class="text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">{{ "Aucune donnée disponible"|t }}</h3>
+                <p class="mt-1 text-sm text-gray-500">{{ "Aucun terme trouvé pour cette taxonomie."|t }}</p>
+            </div>
+        </div>
+
+        <!-- Table and pagination - only show when there is data -->
+        <div class="flex justify-end mt-4">
+            {% include "@vactory_admin/components/button/button.twig" with {
+                text: 'Ajouter term',
+                variant: 'primary',
+                size: 'md',
+                alpine_attrs: '@click="editingTerm = false; showModal = true"',
+                icon_left: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>'
+            } %}
+        </div>
+        <div x-show="terms.length > 0">
+            <div class="flex flex-col mt-6">
+                <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                    <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+                        <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-300">
+                                <thead class="bg-gray-100">
+                                <tr>
+                                    {% if permissions.delete %}
+                                        <th scope="col" class="relative w-12 px-6 sm:w-16 sm:px-8">
+                                            <input id="term-check-toggle" type="checkbox" x-model="selectAll" @change="toggleAll"
+                                                    class="absolute w-4 h-4 -mt-2 text-indigo-600 border-gray-300 rounded left-4 top-1/2 focus:ring-indigo-600 sm:left-6">
+                                        </th>
+                                    {% endif %}
+                                    <th scope="col"
+                                        class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                                        Titre
+                                    </th>
+                                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                                        Statut
+                                    </th>
+                                    <th x-show="terms[0].edit || terms[0].delete" scope="col" class="px-3 py-3.5 text-sm font-semibold text-gray-900 text-right">
+                                        <span>Actions</span>
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="term in terms" :key="term.id">
+                                    <tr>
+                                        {% if permissions.delete %}
+                                            <td class="relative w-12 px-6 sm:w-16 sm:px-8">
+                                                <input type="checkbox" :value="term.id" x-model="selectedTerms"
+                                                        class="absolute w-4 h-4 -mt-2 text-indigo-600 border-gray-300 rounded left-4 top-1/2 focus:ring-indigo-600 sm:left-6">
+                                            </td>
+                                        {% endif %}
+                                        <td class="py-4 pl-4 pr-3 text-sm font-medium text-gray-900 whitespace-nowrap sm:pl-6"
+                                            x-text="term.name"></td>
+                                        <td class="px-3 py-4 text-sm text-gray-500 whitespace-nowrap">
+                                            <span class="inline-flex px-2 text-xs font-semibold leading-5 rounded-full"
+                                                    :class="term.status == 1 ? 'bg-green-50 text-green-700 ring-green-600/20' : 'bg-red-50 text-red-700 ring-red-600/20'"
+                                                    class="ring-1 ring-inset"
+                                                    x-text="term.status == 1 ? '{{ " publier" | t }}' : '{{ " non publié" | t }}'"></span>
+                                        </td>
+                                        <td class="relative py-4 pl-3 pr-4 text-sm font-medium text-right whitespace-nowrap sm:pr-6">
+                                            <div class="flex justify-end space-x-3">
+                                                <button x-show="term.edit" @click="editTerm(term)"
+                                                        class="text-gray-400 hover:text-primary-500">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                                            viewbox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                    </svg>
+                                                </button>
+                                                <button x-show="term.delete" @click="confirmDeleteTerm(term.id)"
+                                                        class="text-gray-400 hover:text-red-500">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                                            viewbox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {# Pagination #}
+            <div class="mt-4 flex items-center justify-end">
+                <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <button @click="loadTaxonomyData(currentPage - 1)" :disabled="currentPage === 1"
+                            class="relative inline-flex items-center rounded-l-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
+                        {{ "Précédent" | t }}</button>
+                    <template x-for="page in pages" :key="page">
+                        <button @click="loadTaxonomyData(page)"
+                                :class="page === currentPage ? 'z-10 bg-primary-500 text-white focus:z-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600' : 'text-gray-900 ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-50 focus:z-20 focus:outline-offset-0'"
+                                class="relative inline-flex items-center px-4 py-2 text-sm font-semibold">
+                            <span x-text="page"></span>
+                        </button>
+                    </template>
+                    <button @click="loadTaxonomyData(currentPage + 1)" :disabled="currentPage === totalPages"
+                            class="relative ml-3 inline-flex items-center rounded-r-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
+                        {{ "Suivant" | t }}</button>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block javascripts %}
+
+{% endblock %}

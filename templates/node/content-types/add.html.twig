@@ -1,0 +1,426 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% block content %}
+  <div
+    class="h-full flex flex-col" x-data="nodeForm({
+             bundle: '{{ bundle }}',
+             bundle_label: '{{ bundle_labeln }}',
+             language: '{{ language }}',
+             fields: '{{ fields|json_encode|e('js') }}'
+           })">
+    {# Header with back button, title and actions #}
+    <div class="bg-white py-4 px-4 border-b border-gray-200 flex justify-between items-center">
+      <div class="flex items-center">
+        <a href="{{ path('vactory_dashboard.content_types', {'bundle': bundle}) }}" class="mr-3 text-gray-500 hover:text-primary-500 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-4 w-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
+          </svg>
+        </a>
+        <h1 class="text-xl font-medium">{{ "Add"|t }}
+          {{ bundle_label }}</h1>
+      </div>
+      <div
+        class="flex items-center space-x-4">
+        {# Publish checkbox #}
+        <div class="flex items-center">
+          <input type="checkbox" id="publish-status" x-model="formData.status" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+          <label for="publish-status" class="ml-2 block text-sm text-gray-700">
+            {{ 'Publish'|t }}
+          </label>
+        </div>
+
+        {% include "@vactory_dashboard/node/_components/langs.html.twig" %}
+        <button
+          @click="saveNode()" :disabled="isSaving" :class="{
+                            'opacity-50 cursor-not-allowed': isSaving,
+                            'bg-primary-500 hover:bg-primary-600': !isSaving,
+                            'bg-primary-400': isSaving
+                        }" class="inline-flex items-center justify-center gap-x-2 rounded-md transition-colors px-4 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600">
+          <!-- Loading spinner (shown when saving) -->
+          <svg x-show="isSaving" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+
+          <!-- Button text (changes based on loading state) -->
+          <span x-text="isSaving ? '{{ 'Saving...'|t }}' : '{{ 'Save'|t }}'"></span>
+        </button>
+
+      </div>
+    </div>
+
+    {% include "@vactory_dashboard/node/content-types/_components/tabs.html.twig" %}
+
+    {# Notification #}
+    {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
+
+    {# Form Fields #}
+    <div class="flex-1 overflow-y-auto">
+      <div class="mx-auto">
+        <form id="node-form" @submit.prevent="saveNode()" class="bg-white rounded-lg shadow-sm p-6">
+          <div x-show="activeTab === 'content'" class="flex gap-y-6 flex-col">
+            <template x-for="(field, fieldName) in contentFields" :key="field.name">
+              <div>
+                <label :class="{'required': field.required}" class="block text-sm font-medium text-gray-700 mb-1">
+                  <span x-text="field.label"></span>
+                  <span x-show="field.required" class="text-red-500">*</span>
+                </label>
+
+                {# Text Input #}
+                <template x-if="field.type === 'string'">
+                  <input type="text" :required="field.required" x-model="formData.fields[field.name]" @invalid="$el.classList.add('border-red-500')" @input="$el.classList.remove('border-red-500')" class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+                </template>
+
+
+                <template x-if="field.type === 'text_with_summary'">
+                  <div x-html="field.textFormatField"></div>
+                </template>
+
+                {# Textarea #}
+                <template x-if="field.type === 'text_long' || field.type === 'string_long'">
+                  <textarea :required="field.required" x-model="formData.fields[field.name]" rows="4" class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"></textarea>
+                </template>
+
+                {# Image Upload #}
+                <template x-if="field.type === 'image'">
+                  <div>
+                    {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'url': 'formData.fields[field.name].url', 'path': 'formData.fields[field.name].path', 'key': 'formData.fields[field.name].key', 'type': 'image'} %}
+                  </div>
+                </template>
+
+                {# Field FAQ #}
+                <template x-if="field.type === 'faqfield'">
+                  {% include "@vactory_dashboard/_components/fields/faq.html.twig" %}
+                </template>
+
+                {# Remote video #}
+                <template x-if="field.type === 'remote_video'">
+                  <div>
+                    {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'formData.fields[field.name].name', 'url': 'formData.fields[field.name].url', 'path': 'formData.fields[field.name].path', 'key': 'formData.fields[field.name].key', 'type': 'remote_video'} %}
+                  </div>
+                </template>
+
+                {# File Upload #}
+                <template x-if="field.type === 'file'">
+                  <div>
+                    {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'formData.fields[field.name].name', 'url': 'formData.fields[field.name].url', 'path': 'formData.fields[field.name].path', 'key': 'formData.fields[field.name].key', 'type': 'file'} %}
+                  </div>
+                </template>
+
+                {# Private File Upload #}
+                <template x-if="field.type === 'private_file'">
+                  <div>
+                    {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'formData.fields[field.name].name', 'url': 'formData.fields[field.name].url', 'path': 'formData.fields[field.name].path', 'key': 'formData.fields[field.name].key', 'type': 'private_file'} %}
+                  </div>
+                </template>
+
+                <template x-if="field.type === 'link'">
+                  <input type="text" :required="field.required" x-model="formData.fields[field.name]" class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+                </template>
+
+                {# mail Input #}
+                <template x-if="field.type === 'email'">
+                  <input type="email" :required="field.required" x-model="formData.fields[field.name]" class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+                </template>
+
+                {# datetime #}
+                <template x-if="field.type === 'datetime'">
+                  <input type="date" :required="field.required" x-model="formData.fields[field.name]" class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+                </template>
+                {# Entity Reference #}
+                <template x-if="field.type === 'select'">
+                  <div>
+                    <select :required="field.required" :multiple="field.multiple" x-model="formData.fields[field.name]" class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+                      <template x-for="key in Object.keys(field.options)" :key="key">
+                        <option :value="key" x-text="field.options[key]"></option>
+                      </template>
+                    </select>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+          <div x-show="activeTab === 'cross_content'">
+            <template x-for="(field, fieldName) in crossContentFields" :key="field.name">
+              <div>
+                <label :class="{'required': field.required}" class="block text-sm font-medium text-gray-700 mb-1">
+                  <span x-text="field.label"></span>
+                  <span x-show="field.required" class="text-red-500">*</span>
+                </label>
+                <template x-if="field.type == 'field_cross_content'">
+                  {% include "@vactory_dashboard/node/content-types/_components/cross-content-field.html.twig" %}
+                </template>
+              </div>
+            </template>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
+
+    {# SEO Tab #}
+    {% include "@vactory_dashboard/node/_components/seo-form.html.twig" %}
+
+  </div>
+{% endblock %}
+
+
+{% block javascripts %}
+    <script>
+      document.addEventListener('alpine:init', () => {
+        Alpine.data('nodeForm', (config) => ({
+          bundle: config.bundle,
+          bundle_label: config.bundle_label,
+          language: config.language,
+          fields: config.fields,
+          activeTab: 'content',
+          seo: {},
+          formData: {
+            fields: {},
+            status: true,
+          },
+          isSaving: false,
+          notification: {
+            show: false,
+            type: 'success',
+            message: '',
+            timeout: null,
+          },
+          
+          get contentFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content'),
+            );
+          },
+          get crossContentFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => field.type === 'field_cross_content'),
+            );
+          },
+
+          init() {
+            this.fields = JSON.parse(this.fields);
+            console.log('fields', this.fields);
+            // Initialize form data based on fields
+            Object.keys(this.fields).forEach((fieldKey) => {
+              const field = this.fields[fieldKey];
+
+              if (field?.textFormatField) {
+                setTimeout(() => {
+                  const label = document.getElementById(`edit-${field.name}-format-help`);
+                  label.style.display = 'none';
+                  Drupal.editors.ckeditor5.onChange(document.getElementById(`edit-${field.name}-value`), () => {
+                    const ckInstance = Drupal.CKEditor5Instances.values().next().value;
+                    this.formData.fields[field.name] = ckInstance.getData();
+                  });
+                }, '2000');
+              }
+                        
+            if (field.type === 'faqfield') {
+             this.formData.fields[fieldKey] = Array.isArray(field.value) && field.value.length
+             ? field.value
+             : [{ question: '', answer: '' }];
+             return;
+             }
+
+              if (field.type === 'image' || field.type === 'file' || field.type === 'remote_video' || field.type === 'private_file') {
+                this.formData.fields[fieldKey] = {
+                  id: null,
+                  url: null,
+                  name: null,
+                  path: fieldKey,
+                  key: new Date().getTime(),
+                };
+              }  else {
+                this.formData.fields[fieldKey] = '';
+              }
+            });
+          },
+          showNotification(type, message) {
+            if (this.notification.timeout) {
+              clearTimeout(this.notification.timeout);
+            }
+            this.notification.type = type;
+            this.notification.message = message;
+            this.notification.show = true;
+            this.notification.timeout = setTimeout(() => {
+              this.notification.show = false;
+            }, 5000);
+          },
+          validateForm() {
+            const form = document.getElementById('node-form');
+            const requiredInputs = form.querySelectorAll('[required]');
+            let isValid = true;
+
+            requiredInputs.forEach(input => {
+              if (!input.value) {
+                input.classList.add('border-red-500');
+                isValid = false;
+              }
+            });
+
+            return isValid;
+          },
+          async saveNode() {
+            if (!this.validateForm()) {
+              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              return;
+            }
+
+            if (this.isSaving) {
+              return;
+            }
+            this.isSaving = true;
+            try {
+              const response = await fetch(`/api/vactory-dashboard/${this.bundle}/node/save`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  bundle: this.bundle,
+                  language: this.language,
+                  seo: this.seo,
+                  fields: this.formData.fields,
+                  status: this.formData.status,
+                }),
+              });    
+              
+              const data = await response.json();
+              
+              if (!response.ok) {
+                throw new Error(data.message || '{{ 'Failed to save node'|t }}');
+              }
+              
+              this.showNotification('success', '{{ 'Node created successfully'|t }}');
+               
+              window.location.href = data?.list;
+            } catch (error) {
+              console.error('Error saving node:', error);
+              this.showNotification('error', error.message);
+            } finally {
+              this.isSaving = false;
+            }
+          },
+          getVideoEmbedUrl(url) {
+            if (!url) {
+              return '';
+            }
+            const youtubePatterns = [
+              /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+              /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+            ];
+
+            for (const pattern of youtubePatterns) {
+              const match = url?.match(pattern);
+              if (match) {
+                const videoId = match[1];
+                return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+              }
+            }
+
+            return url;
+          },
+          // Media Library Methods and states (@todo: must be shared across multiple files)
+          showMediaLibrary: false,
+          mediaLoading: false,
+          mediaError: null,
+          mediaItems: [],
+          currentMediaPage: 1,
+          totalMediaPages: 1,
+          totalMedia: 0,
+          mediaFilters: {
+            search: '',
+            type: 'image',
+            limit: Alpine.store('limit'),
+          },
+          selectedType: 'image',
+          selectedMedia: null,
+          // Media Library Methods
+          async loadMedia(page = 1) {
+            this.mediaLoading = true;
+            this.mediaError = null;
+            this.currentMediaPage = page;
+
+            try {
+              const params = new URLSearchParams({
+                page: this.currentMediaPage.toString(),
+                limit: this.mediaFilters.limit.toString(),
+                search: this.mediaFilters.search,
+                type: this.selectedType,
+              });
+
+              const response = await fetch(`{{ path('vactory_dashboard.media.data') }}?${params.toString()}`);
+
+              if (!response.ok) {
+                throw new Error('{{ "Une erreur est survenue lors du chargement des médias"|t }}');
+              }
+               console.log('FAQ data to save:', JSON.stringify(this.formData.fields.field_faq, null, 2));
+
+              const data = await response.json();
+
+              this.mediaItems = data.data.map(item => ({
+                id: item.id,
+                url: item.url,
+                name: item.name,
+                type: item.type,
+              }));
+              this.totalMedia = data.total;
+              this.totalMediaPages = data.pages;
+            } catch (error) {
+              console.error('Error loading media:', error);
+              this.mediaError = error.message;
+              this.mediaItems = [];
+            } finally {
+              this.mediaLoading = false;
+            }
+          },
+          openMediaLibrary(fieldName, path, key = null, type = 'image') {
+            this.selectedType = type;
+            this.currentField = fieldName;
+            this.currentFieldPath = path;
+            this.currentFieldKey = key;
+            this.showMediaLibrary = true;
+            this.loadMedia(1);
+          },
+          clearImage(fieldName, path = '', key = '') {
+            this.formData.fields[fieldName] = {
+              id: null,
+              url: null,
+              name: null,
+              path: fieldName,
+              key: new Date().getTime(),
+            };
+          },
+          closeMediaLibrary() {
+            this.showMediaLibrary = false;
+            this.selectedMedia = null;
+            this.currentField = null;
+            this.mediaItems = [];
+            this.currentMediaPage = 1;
+            this.mediaFilters.search = '';
+          },
+          selectMedia(media) {
+            this.selectedMedia = media;
+            if (!this.selectedMedia || !this.currentField) {
+              return;
+            }
+            // Create the image data structure
+            const imageData = {
+              id: media.id,
+              url: media.url,
+              name: media.name,
+              path: this.currentFieldPath,
+              key: this.currentFieldKey,
+            };
+
+            //this.currentFieldPath
+            this.formData.fields[this.currentFieldPath] = imageData;
+
+            this.closeMediaLibrary();
+            this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
+          },
+        }));
+      });
+    </script>
+{% endblock %}

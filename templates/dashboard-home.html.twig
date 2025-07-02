@@ -1,0 +1,33 @@
+{# Dashboard layout template #}
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+{% block content %}
+	<div
+		class="dashboard-layout">
+		{# Page header #}
+		<div class="mb-8">
+			<h1 class="text-2xl font-semibold text-slate-900">{{ "Tableau de bord" | t }}</h1>
+		</div>
+
+		{# Stats grid #}
+		{% include "@vactory_dashboard/_components/stats.html.twig" with {
+            total_pages: total_pages,
+            total_users: total_users,
+            total_media: total_media,
+            pages_modified_this_week: pages_modified_this_week,
+        } %}
+
+		{# Recently tickets Redmin #}
+		{% include "@vactory_dashboard/_components/tickets-redmin.html.twig" with {
+           issues: issues,
+        } %}
+
+		{# Recently modified pages #}
+		{% include "@vactory_dashboard/_components/last-modified-pages.html.twig" with {
+            last_modified_pages: last_modified_pages,
+        } %}
+
+		{# Quick actions #}
+		{% include "@vactory_dashboard/_components/quick-actions.html.twig" %}
+
+	</div>
+{% endblock %}

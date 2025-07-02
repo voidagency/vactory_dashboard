@@ -1,0 +1,16 @@
+<div class="max-lg:hidden flex space-x-2">
+    {% for lang in available_languages %}
+        <a
+            href="{{ lang.url }}"
+            class="relative flex items-center gap-1 justify-center px-3 py-1 rounded-lg text-xs font-semibold h-8 transition-all duration-150
+                {{ language == lang.id
+                    ? 'bg-primary-100 text-primary-700 ring-2 ring-primary-300 shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-primary-50 hover:text-primary-700' }}"
+            title="{{ language == lang.id ? 'Current language'|t : 'View in '~ lang.id|upper ~''|t }}">
+            <span>{{ lang.id|upper }}</span>
+            {% if lang.id == node_default_lang %}
+                <span class="ml-1 text-[10px] text-slate-400">({{ 'Original'|t }})</span>
+            {% endif %}
+        </a>
+    {% endfor %}
+</div>

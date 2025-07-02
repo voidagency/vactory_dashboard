@@ -1,0 +1,30 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% block content %}
+    <div class="content-type-layout">
+        {# Page header #}
+        <div class="mb-8">
+            <h1 class="text-2xl font-semibold text-slate-900">{{ "Settings shield" | t }}</h1>
+        </div>
+
+        {# Settings form #}
+        {% if isShieldEnabled %}
+            <div id="shield-form" class="bg-white rounded-lg shadow p-6">
+                {{ form }}
+            </div>
+        {% else %}
+            <div class="bg-white overflow-scroll shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
+                <div class="text-center py-12">
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">{{ "Module Shield désactivé" | t }}</h3>
+                    <p class="mt-1 text-sm text-gray-500">{{ "Activez le module Shield pour afficher ses données depuis le tableau de bord." | t }}</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+      // Additional JavaScript if needed
+    </script>
+{% endblock %}

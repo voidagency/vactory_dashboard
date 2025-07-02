@@ -1,0 +1,133 @@
+{% extends '@vactory_dashboard/_layout/main-content-layout.html.twig' %}
+
+{% block content %}
+  <div x-data="submission()">
+    <template x-if="loading">
+      {% include '@vactory_dashboard/submission/dashboard-submission-loader.html.twig' %}
+    </template>
+    
+    <div x-show="!loading">
+      <div class="w-fit rounded-lg cursor-pointer hover:bg-gray-100 pr-4 py-2 transition duration-100 flex items-center mb-5">
+        <span class="mr-2">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+          </svg>
+        </span>
+        <a href="{{ path('vactory_dashboard.webform', {'id': id}) }}" class="text-base/7 font-medium text-gray-900">
+          Go Back
+        </a>
+      </div>
+      <div class="px-4 sm:px-0">
+        <h3 class="text-base/7 font-semibold text-gray-900" x-text="`${fields.label} - Submission ID: ${fields.id}`"></h3>
+      </div>
+      <div class="mt-6 border-t border-gray-100">
+        <dl class="divide-y divide-gray-100">
+          <!-- Loop for non file fields -->
+          <template x-for="[key, field] in Object.entries(fields).filter(([key, field]) => field.type !== 'file')" :key="key">
+            <template x-if="!excludedFields.includes(key) && field.type">
+              <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900" x-text="field.name"></dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0" x-text="normalizeValue(field.value)"></dd>
+              </div>
+            </template>
+          </template>
+          
+          <!-- Loop for file fields only -->
+          <template x-for="[key, field] in Object.entries(fields).filter(([key, field]) => field.type === 'file')" :key="key">
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+              <dt class="text-sm/6 font-medium text-gray-900" x-text="field.name || 'Attachments'"></dt>
+              <dd class="mt-2 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                <template x-if="field.value && (Array.isArray(field.value) ? field.value.length > 0 : field.value.url)">
+                  <ul role="list" class="divide-y divide-gray-100 rounded-md border border-gray-200">
+                    <!-- Handle multiple files -->
+                    <template x-if="Array.isArray(field.value)">
+                      <template x-for="file in field.value" :key="file.url">
+                        <li class="flex items-center justify-between py-4 pl-4 pr-5 text-sm/6">
+                          <div class="flex w-0 flex-1 items-center">
+                            <svg class="size-5 shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                              <path fill-rule="evenodd" d="M15.621 4.379a3 3 0 0 0-4.242 0l-7 7a3 3 0 0 0 4.241 4.243h.001l.497-.5a.75.75 0 0 1 1.064 1.057l-.498.501-.002.002a4.5 4.5 0 0 1-6.364-6.364l7-7a4.5 4.5 0 0 1 6.368 6.36l-3.455 3.553A2.625 2.625 0 1 1 9.52 9.52l3.45-3.451a.75.75 0 1 1 1.061 1.06l-3.45 3.451a1.125 1.125 0 0 0 1.587 1.595l3.454-3.553a3 3 0 0 0 0-4.242Z" clip-rule="evenodd" />
+                            </svg>
+                            <div class="ml-4 flex min-w-0 flex-1 gap-2">
+                              <span class="truncate font-medium" x-text="file.filename"></span>
+                              <span class="shrink-0 text-gray-400" x-text="field.value.filesize"></span>
+                            </div>
+                          </div>
+                          <div class="ml-4 shrink-0">
+                            <a :href="file.url" class="font-medium text-indigo-600 hover:text-indigo-500" download>Download</a>
+                          </div>
+                        </li>
+                      </template>
+                    </template>
+
+                    <!-- Handle single file -->
+                    <template x-if="!Array.isArray(field.value)">
+                      <li class="flex items-center justify-between py-4 pl-4 pr-5 text-sm/6">
+                        <div class="flex w-0 flex-1 items-center">
+                          <svg class="size-5 shrink-0 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M15.621 4.379a3 3 0 0 0-4.242 0l-7 7a3 3 0 0 0 4.241 4.243h.001l.497-.5a.75.75 0 0 1 1.064 1.057l-.498.501-.002.002a4.5 4.5 0 0 1-6.364-6.364l7-7a4.5 4.5 0 0 1 6.368 6.36l-3.455 3.553A2.625 2.625 0 1 1 9.52 9.52l3.45-3.451a.75.75 0 1 1 1.061 1.06l-3.45 3.451a1.125 1.125 0 0 0 1.587 1.595l3.454-3.553a3 3 0 0 0 0-4.242Z" clip-rule="evenodd" />
+                          </svg>
+                          <div class="ml-4 flex min-w-0 flex-1 gap-2">
+                            <span class="truncate font-medium" x-text="field.value.filename"></span>
+                            <span class="shrink-0 text-gray-400" x-text="field.value.filesize"></span>
+                          </div>
+                        </div>
+                        <div class="ml-4 shrink-0">
+                          <a :href="field.value.url" class="font-medium text-indigo-600 hover:text-indigo-500" download>Download</a>
+                        </div>
+                      </li>
+                    </template>
+                  </ul>
+                </template>
+
+                <!-- If no file is uploaded -->
+                <template x-if="!field.value || (Array.isArray(field.value) && field.value.length === 0)">
+                  <span class="text-sm text-gray-500">---</span>
+                </template>
+              </dd>
+            </div>
+          </template>
+        </dl>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block javascripts %}
+  <script>
+    function submission(id, submission_id) {
+      return {
+        id: id,
+        submission_id: submission_id,
+        fields: [],
+        loading: true,
+        excludedFields: ['csrfToken', 'csrf_token', 'g-recaptcha-response', 'in_draft'],
+        pages: [],
+        async loadSubmission() {
+          try {
+            const response = await fetch(`{{ path('vactory_dashboard.webform.submission.data', {'id': id, 'submission_id': submission_id}) }}`)
+            const data = await response.json()
+            this.fields = data
+          } catch (error) {
+            console.error('Error loading submission:', error)
+          } finally {
+            this.loading = false
+          }
+        },
+        normalizeValue(value) {
+            if (!value || value === null || value === undefined || value === '') {
+              return '___';
+            }
+
+            if (Array.isArray(value)) {
+              return value.length ? value.join(', ') : '___';
+            }
+
+            return value;
+        },
+        init() {
+          this.loadSubmission()
+        }
+      }
+    }
+  </script>
+{% endblock %}

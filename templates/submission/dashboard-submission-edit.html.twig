@@ -1,0 +1,166 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% block content %}
+    <div class="submission-layout" x-data="submission()">
+        <h1 class="text-2xl font-semibold text-slate-900">Soumission</h1>
+
+        <div>
+            <template x-if="loading">
+                <p>Loading...</p>
+            </template>
+
+            <template x-if="!loading">
+                <form>
+                    <template x-for="[key, field] in Object.entries(fields)" :key="key">
+                        <template x-if="!excludedFields.includes(key) && field.type">
+                            <div class="mb-4">
+                                <label class="w-fit block font-semibold capitalize mb-1" data-key="key" :for="key"
+                                       x-text="key.replace(/_/g, ' ')"></label>
+
+                                <!-- Input: textfield, email, tel -->
+                                <template x-if="['textfield', 'email', 'tel'].includes(field.type)">
+                                    <input :id="key"
+                                           :type="field.type === 'textfield' ? 'text' : field.type"
+                                           class="inline-block w-1/2 border rounded p-2"
+                                           x-model="field.value"
+                                           placeholder="Aucune valeur"
+                                    />
+                                </template>
+
+                                <!-- Textarea -->
+                                <template x-if="field.type === 'textarea'">
+                                    <textarea x-model="field.value" data-key="key" :id="key" placeholder="Aucune valeur"
+                                              class="w-1/2 border rounded p-2" x-text="field.value"></textarea>
+                                </template>
+
+                                <!-- Checkbox (single boolean) -->
+                                <template x-if="field.type === 'checkbox'">
+                                    <label data-key="key" class="inline-flex w-fit items-center">
+                                        <input type="checkbox"
+                                               :id="key"
+                                               x-model="field.value"
+                                               class="mr-2 inline-block w-fit"
+                                               :checked="field.value === '1' || field.value === true || field.value === 'true'"
+                                        />
+                                        <span>Yes</span>
+                                    </label>
+                                </template>
+
+                                <!-- Checkboxes (multiple) -->
+                                <template x-if="field.value && field.type === 'checkboxes'">
+                                    <div>
+                                        <template
+                                                x-for="(option, index) in field.value.split(',').map(item => item.trim())"
+                                                :key="index">
+                                            <label data-key="key" class="block w-fit">
+                                                <input type="checkbox" class="mr-2 inline-block w-fit" x-model="option"
+                                                       checked/>
+                                                <span x-text="option"></span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <template x-if="field.type === 'select'">
+                                    <div class="mt-2 grid grid-cols-1 w-fit">
+                                        <select data-key="key" x-model="field.value"
+                                                class="col-start-1 row-start-1 w-fit appearance-none rounded-md bg-white py-1.5 pl-3 pr-8 text-base text-gray-900 outline -outline-offset-1 outline-gray-300 focus:outline focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6">
+                                            <option x-model="field.value" x-text="field.value"></option>
+                                        </select>
+                                        <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"
+                                             viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"
+                                             data-slot="icon">
+                                            <path fill-rule="evenodd"
+                                                  d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z"
+                                                  clip-rule="evenodd"/>
+                                        </svg>
+                                    </div>
+                                </template>
+
+                                <!-- Fallback (unknown types) -->
+                                <template
+                                        x-if="!['textfield', 'email', 'tel', 'textarea', 'checkbox', 'checkboxes', 'select'].includes(field.type)">
+                                    <input data-key="key" :id="key"
+                                           type="text"
+                                           class="w-1/2 border rounded p-2 bg-white"
+                                           x-model="JSON.stringify(field.value)"
+                                    />
+                                </template>
+                            </div>
+                        </template>
+                    </template>
+                    {% if edit %}
+                    <button @click.prevent="editSubmission"
+                            class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 flex items-center">
+                        Editer
+                    </button>
+                    {% endif %}
+                </form>
+            </template>
+        </div>
+
+        <!-- Global notification live region, render this permanently at the end of the document -->
+        {% include '@vactory_dashboard/_components/notification.html.twig' %}
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+      function submission(id, submission_id) {
+        return {
+          id: id,
+          submission_id: submission_id,
+          fields: [],
+          loading: true,
+          excludedFields: ['csrfToken', 'csrf_token', 'g-recaptcha-response', 'in_draft'],
+          notification: {
+            show: false,
+            error: false,
+            message: '',
+          },
+          pages: [],
+          async loadSubmission() {
+            try {
+              const response = await fetch(`{{ path('vactory_dashboard.webform.submission.data', {'id': id, 'submission_id': submission_id}) }}`);
+              const data = await response.json();
+              this.fields = data;
+            } catch (error) {
+              console.error('Error loading submission:', error);
+            } finally {
+              this.loading = false;
+            }
+          },
+          flattenFormData(formData) {
+            const result = {};
+            for (const key in formData) {
+              const value = formData[key];
+              if (typeof value === 'object' && value !== null && 'value' in value) {
+                result[key] = value.value;
+              } else {
+                result[key] = value;
+              }
+            }
+            return result;
+          },
+          async editSubmission() {
+            try {
+              const response = await fetch(`{{ path('vactory_dashboard.webform.submission.edit', {'id': id, 'submission_id': submission_id}) }}`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(this.flattenFormData(this.fields)),
+              });
+              const result = await response.json();
+              this.setNotification(false, '{{ "La soumission a été modifié" | t }}');
+            } catch (error) {
+              this.setNotification(true, '{{ "Une erreur est survenue lors de la modification de la soumission" | t }}');
+            }
+          },
+          init() {
+            this.loadSubmission();
+          },
+        };
+      }
+    </script>
+{% endblock %}

@@ -1,0 +1,458 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% set vocabulary_ids = [] %}
+{% set vocabulary_map = {} %}
+
+{% for vocab in taxonomies %}
+  {% set vocabulary_map = vocabulary_map|merge({ (vocab.id): vocab.id }) %}
+  {% set vocabulary_ids = vocabulary_ids|merge([vocab.id]) %}
+{% endfor %}
+
+{% block content %}
+    <div class="content-type-layout" x-data="dataTable()">
+        {# Page header #}
+        <div class="mb-6 flex justify-between items-center">
+            <h1 class="text-2xl font-semibold text-slate-900">{{ bundle_label|t }}</h1>
+            <div class="flex space-x-3">
+                {% if dynamic_exports is not empty %}
+                    <button
+                            @click="showExportModal = true"
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        {{ "Exporter CSV Model"|t }}
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% include "@vactory_dashboard/content-types/_components/tabs.html.twig" %}
+
+        <div x-show="activeTab === 'list'">
+            {# Filters #}
+            {% include "@vactory_dashboard/content-types/_components/filters.html.twig" %}
+
+            {# Loading State #}
+            <div x-show="loading" class="flex justify-center items-center py-12">
+                <div class="text-center">
+                    <div class="mx-auto animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mb-3"></div>
+                    <p class="text-sm text-gray-600">{{ "Loading data..."|t }}</p>
+                </div>
+            </div>
+
+            {# data table - show only when not loading #}
+            <div x-show="!loading">
+                {% include "@vactory_dashboard/content-types/_components/list.html.twig" %}
+
+                {# Pagination #}
+                <div class="mt-4 flex items-center justify-end">
+                    <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                        <button @click="loadData(currentPage - 1)"
+                                :disabled="currentPage === 1"
+                                class="relative inline-flex items-center rounded-l-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
+                            {{ "Précédent" | t }}
+                        </button>
+
+                        <template x-for="page in pages" :key="page">
+                            <button @click="loadData(page)"
+                                    :class="page === currentPage ? 'z-10 bg-primary-500 text-white focus:z-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600' : 'text-gray-900 ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-50 focus:z-20 focus:outline-offset-0'"
+                                    class="relative inline-flex items-center px-4 py-2 text-sm font-semibold">
+                                <span x-text="page"></span>
+                            </button>
+                        </template>
+
+                        <button @click="loadData(currentPage + 1)"
+                                :disabled="currentPage === totalPages"
+                                class="relative ml-3 inline-flex items-center rounded-r-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
+                            {{ "Suivant" | t }}
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="activeTab === 'entity_queue'">
+            {% include "@vactory_dashboard/content-types/_components/entity-queue.html.twig" %}
+        </div>
+
+        <div x-show="activeTab === 'metatags'">
+            {% include "@vactory_dashboard/content-types/_components/metatags.html.twig" %}
+        </div>
+
+        <div x-show="vocabularyIds.includes(activeTab)">
+            {% include "@vactory_dashboard/content-types/_components/categories.html.twig" %}
+        </div>
+
+        {% if dynamic_exports is not empty %}
+            {# Export Modal #}
+            <div x-show="showExportModal"
+                 class="fixed inset-0 z-50 overflow-y-auto"
+                 aria-labelledby="modal-title"
+                 role="dialog"
+                 aria-modal="true">
+                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+                         aria-hidden="true"
+                         @click="showExportModal = false"></div>
+
+                    <div class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                        <div>
+                            <div class="mt-3 text-center sm:mt-5">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                    {{ "Select Export Model"|t }}
+                                </h3>
+                                <div class="mt-4">
+                                    <div class="space-y-2">
+                                        {% for key, label in dynamic_exports %}
+                                            <button
+                                                    @click="handleExport('{{ key }}')"
+                                                    class="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                                {{ label }}
+                                            </button>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-5 sm:mt-6">
+                            <button
+                                    type="button"
+                                    class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-600 text-base font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:text-sm"
+                                    @click="showExportModal = false">
+                                {{ "Close"|t }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+      function dataTable(id) {
+        return {
+          id: id,
+          vocabularyIds: {{ vocabulary_ids|json_encode|raw }},
+          data: [],
+          taxonomies: [],
+          metatagKeys: [],
+          loading: false,
+          currentPage: 1,
+          totalPages: 1,
+          activeTab: 'list',
+          showExportModal: false,
+          filters: {
+            search: '',
+          },
+          pages: [],
+          
+          // taxonomies
+          terms: [],
+          vid: "",
+          selectedTerms: [],
+          selectAll: false,
+          loading: false,
+          currentPage: 1,
+          showModal: false,
+          showConfirmModal: false,
+          confirmModalTitle: '',
+          confirmModalMessage: '',
+          confirmAction: null,
+          editingTerm: null,
+          termName: '',
+          termDescription: '',
+          termLang: '',
+          limit: Alpine.store('limit'),
+          total: 0,
+          totalPages: 1,
+          pages: [],
+          extra_data: {},
+          filters: {
+            status: '',
+            search: '',
+          },
+
+          async loadData(page = 1) {
+            this.loading = true;
+            this.currentPage = page;
+            const params = new URLSearchParams({
+              page: page,
+              limit: Alpine.store('limit'),
+              search: this.filters.search,
+            });
+
+            try {
+              const response = await fetch(`{{ path('vactory_dashboard.content_types.data', {'bundle': id}) }}?${params.toString()}`);
+              const data = await response.json();
+
+              this.data = data.data;
+
+              this.data.forEach(item => {
+                Object.keys(item.metatags || {}).forEach(key => {
+                  if (!this.metatagKeys.includes(key)) {
+                    this.metatagKeys.push(key);
+                  }
+                });
+              });
+
+              this.totalPages = data.pages;
+              this.pages = this.generatePageNumbers(data.page, data.pages);
+            } catch (error) {
+              console.error('Error loading data:', error);
+            } finally {
+              this.loading = false;
+            }
+          },
+          generatePageNumbers(currentPage, totalPages) {
+            const pages = [];
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage + 1 < maxVisiblePages) {
+              startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+              pages.push(i);
+            }
+
+            return pages;
+          },
+          async handleExport(exportKey) {
+            try {
+              window.open(`/api/vactory-dashboard/export/${exportKey}`, '_blank');
+              this.showExportModal = false;
+            } catch (error) {
+              console.error('Export error:', error);
+            }
+          },
+          async deleteSelected() {
+            try {
+              const response = await fetch(`{{ path('vactory_dashboard.items.node.delete', {'bundle': id}) }}`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ nodeIds: this.itemToDelete ? [this.itemToDelete] : this.selectedItems }),
+              });
+
+              if (response.ok) {
+                
+                const itemsToDeleteCount = this.itemToDelete ? 1 : this.selectedItems.length;
+                if (this.currentPage > 1 && (this.data.length - itemsToDeleteCount ) == 0) {
+                  this.currentPage -= 1;
+                }
+                await this.$nextTick();
+                await this.loadData(this.currentPage);
+                this.selectedItems = [];
+                this.itemToDelete = null;
+                this.showDeleteModal = false;
+              } else {
+                const error = await response.json();
+                this.setNotification(true, "{{ 'Erreur lors de la suppression' | t }}");
+              }
+            } catch (error) {
+              console.error('Error deleting items:', error);
+              this.setNotification(true, "{{ 'Erreur lors de la suppression' | t }}");
+            }
+          },
+          async laodTaxonomies(page = 1) {
+            this.loading = true;
+            this.currentPage = page;
+            const params = new URLSearchParams({
+              page: page,
+              limit: Alpine.store('limit'),
+            });
+
+            try {
+              const response = await fetch(`{{ path('vactory_dashboard.content_type.taxonomies', {'bundle': id}) }}?${params.toString()}`);
+              const data = await response.json();
+
+              this.taxonomies = data.data;
+              this.totalPages = data.pages;
+              this.pages = this.generatePageNumbers(data.page, data.pages);
+            } catch (error) {
+              console.error('Error loading data:', error);
+            } finally {
+              this.loading = false;
+            }
+          },
+          init() {
+            console.log(this.id);
+            this.loadData();
+            this.$watch('filters', () => {
+              this.currentPage = 1;
+              this.loadTaxonomyData();
+            }, { deep: true });
+          },
+
+          // taxonomies functions
+          async loadTaxonomyData(page = 1) {
+            this.loading = true;
+            this.currentPage = page;
+            const params = new URLSearchParams({
+              page: page,
+              limit: this.limit,
+              ...this.filters,
+            });
+
+            try {
+              const response = await fetch(`{{ path('vactory_dashboard.settings.taxonomies.data', { vid: 'REPLACE_VID' }) }}`.replace('REPLACE_VID', this.vid) + `?${params}`);
+              const data = await response.json();
+              this.terms = data.data;
+              console.log("terms: ", this.terms);
+              this.total = data.total;
+              this.totalPages = data.pages;
+              this.pages = this.generatePageNumbers(data.page, data.pages);
+              this.extra_data = data.extra_data || {};
+            } catch (error) {
+              console.error('Error loading terms:', error);
+            } finally {
+              this.loading = false;
+            }
+          },
+          toggleAll() {
+            if (this.selectAll) {
+              this.selectedTerms = this.terms.map(term => term.id);
+            } else {
+              this.selectedTerms = [];
+            }
+          },
+          confirmDeleteSelectedTaxo() {
+            this.confirmModalTitle = 'Confirmer la suppression';
+            this.confirmModalMessage = 'Êtes-vous sûr de vouloir supprimer les termes sélectionnés ?';
+            this.confirmAction = async () => {
+              await this.deleteSelectedTaxo();
+              this.closeConfirmModalTaxo();
+            };
+            this.showConfirmModal = true;
+          },
+          async deleteSelectedTaxo() {
+            try {
+              const response = await fetch(`{{ path('vactory_dashboard.settings.taxonomies.delete', { vid: 'REPLACE_VID' }) }}`.replace('REPLACE_VID', this.vid), {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ids: this.selectedTerms }),
+              });
+
+              if (response.ok) {
+                // Remove the deleted terms from local state
+                const remainingTerms = this.terms.length - this.selectedTerms.length;
+                const shouldGoToPreviousPage = this.currentPage > 1 && remainingTerms <= 0;
+
+                if (shouldGoToPreviousPage) {
+                  this.currentPage -= 1;
+                }
+
+                
+
+                await this.$nextTick();
+                await this.loadTaxonomyData(this.currentPage);
+                this.selectedTerms = [];
+                this.selectAll = false;
+              }
+            } catch (error) {
+              console.error('Error deleting terms:', error);
+            }
+          },
+          confirmDeleteTerm(id) {
+            this.confirmModalTitle = 'Confirmer la suppression';
+            this.confirmModalMessage = 'Êtes-vous sûr de vouloir supprimer ce terme ?';
+            this.confirmAction = async () => {
+              await this.deleteTerm(id);
+              this.closeConfirmModalTaxo();
+            };
+            this.showConfirmModal = true;
+          },
+          async deleteTerm(id) {
+            try {
+              const response = await fetch(`{{ path('vactory_dashboard.settings.taxonomies.delete', { vid: 'REPLACE_VID' }) }}`.replace('REPLACE_VID', this.vid), {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ids: [id] }),
+              });
+
+              if (response.ok) {
+                const remainingTerms = this.terms.length - 1;
+                const shouldGoToPreviousPage = this.currentPage > 1 && remainingTerms <= 0;
+
+                if (shouldGoToPreviousPage) {
+                  this.currentPage -= 1;
+                }
+
+                await this.$nextTick();
+                await this.loadTaxonomyData(this.currentPage);
+              }
+            } catch (error) {
+              console.error('Error deleting term:', error);
+            }
+          },
+          closeConfirmModalTaxo() {
+            this.showConfirmModal = false;
+            this.confirmAction = null;
+          },
+          resetFilters() {
+            this.filters = {
+              status: '',
+              search: '',
+            };
+          },
+          editTerm(term) {
+            this.editingTerm = term;
+            this.termName = term.name;
+            this.termDescription = term.description || '';
+            this.showModal = true;
+          },
+          closeModal() {
+            this.editingTerm = true;
+            this.showModal = false;
+            this.editingTerm = null;
+            this.termName = '';
+            this.termLang = '';
+            this.termDescription = '';
+          },
+          async saveTerm() {
+            if (!this.termName.trim()) {
+              return;
+            }
+
+            const url = this.editingTerm ? `{{ path('vactory_dashboard.settings.taxonomies.edit', { vid: 'REPLACE_VID' }) }}`.replace('REPLACE_VID', this.vid) : `{{ path('vactory_dashboard.settings.taxonomies.add', { vid: 'REPLACE_VID' }) }}`.replace('REPLACE_VID', this.vid);
+            const method = this.editingTerm ? 'PUT' : 'POST';
+
+            try {
+              const response = await fetch(url, {
+                method: method,
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(
+                  {
+                    id: this.editingTerm?.id,
+                    name: this.termName,
+                    description: this.termDescription,
+                    lang: this.termLang,
+                  },
+                ),
+              });
+
+              if (response.ok) {
+                this.closeModal();
+                await this.loadTaxonomyData(this.currentPage);
+              }
+            } catch (error) {
+              console.error('Error saving term:', error);
+            }
+          },
+          uncheck() {
+            document.getElementById("term-check-toggle").checked = false;
+          },
+
+        };
+      }
+    </script>
+{% endblock %}
