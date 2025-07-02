@@ -43,3 +43,12 @@ function _assign_permissions_to_webmaster() {
     $role->save();
   }
 }
+
+/**
+ * Implements hook_uninstall().
+ */
+function vactory_dashboard_uninstall() {
+  $config_factory = \Drupal::configFactory();
+
+  $config_factory->getEditable('search_api.index.vactory_dashboard_search')->delete();
+}
