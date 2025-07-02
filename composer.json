@@ -1,0 +1,7 @@
+{
+    "name": "voidagency/vactory_dashboard",
+    "description": "Vactory dashboard is a custom Drupal module which is developed and released by VOID Agency.",
+    "type": "drupal-module",
+    "minimum-stability": "dev",
+    "require": {}
+}
