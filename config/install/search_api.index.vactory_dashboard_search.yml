@@ -9,6 +9,7 @@ dependencies:
     - field.storage.user.field_last_name
     - search_api.server.default_server
   module:
+    - vactory_dashboard
     - file
     - media
     - node
