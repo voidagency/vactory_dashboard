@@ -42,8 +42,9 @@
         <ul
           x-show="showList && results.length"
           x-cloak
+          style="max-height: 9.5rem; overflow-y: auto;"
           class="absolute z-10 mt-1 w-full max-h-64 overflow-y-auto
-                 bg-white border border-slate-300 rounded shadow-lg"
+                 bg-white border border-slate-300 rounded shadow-lg overscroll-auto"
           @wheel.stop
         >
           <template x-for="item in results" :key="item.url">
