@@ -19,11 +19,27 @@ fields:
     type: number
     label: 'Index'
     options:
-        '#description': 'If the selector is a class (like .categories), and there are multiple elements with that class, it is best to specify which one to use by setting the index (0 means the first one).'
+      '#description': 'If the selector is a class (like .categories), and there are multiple elements with that class, it is best to specify which one to use by setting the index (0 means the first one).'
   is_sidebar:
     type: checkbox
     label: 'Is sidebar'
+  is_bottom:
+    type: checkbox
+    label: 'Is bottom'
+    options:
+      '#description': 'Is the element located at the bottom of the page'
 extra_fields:
+  tourguide_id:
+      type: text
+      label: 'Tour guide id'
+      options:
+        '#description': 'The id to distinguish between the created tour guides (id must be unique).'
+        '#required': true
+  show_time:
+      type: number
+      label: 'Time Show'
+      options:
+        '#description': 'How many times the tour guide should be displayed.'
   next_btn:
     type: text
     label: 'Next Button Label'
