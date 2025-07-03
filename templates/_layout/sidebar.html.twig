@@ -445,7 +445,7 @@
                                 </div>
                             {% endif %}
                             {% if user.hasPermission('administer dashboard configuration') %}
-                                <div class="w-full">
+                                <div x-show="recaptchaInstalled" class="w-full">
                                     <a href="{{ path('vactory_dashboard.settings.captcha') }}"
                                        :class="{ 'bg-primary-50 text-primary-600': isCurrentPage('{{ url('vactory_dashboard.settings.captcha', {}, {absolute: true}) }}') }"
                                        class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
@@ -568,6 +568,7 @@
       loading: false,
       error: null,
       shieldInstalled: '',
+      recaptchaInstalled: '',
       advancedDashboard: {},
       showCaptcha: '',
       showSitemap: '',
@@ -584,7 +585,10 @@
           {% if user.hasPermission('access webform overview') %}this.fetchForms();{% endif %}
         this.initializeOpenDropdowns();
         this.observeAsideLinks();
-          {% if user.hasPermission('administer dashboard configuration') %}this.isModuleInstalled();{% endif %}
+          {% if user.hasPermission('administer dashboard configuration') %}
+            this.isShieldModuleInstalled();
+            this.isRecaptchaModuleInstalled();
+          {% endif %}
         this.getAdvancedDashboardData();
         
         this.$watch('nodeTypes', () => {
@@ -824,11 +828,21 @@
         this.applySingleHighlight(Array.from(initialLinks));
       },
 
-      async isModuleInstalled() {
+      async isShieldModuleInstalled() {
         try {
           const response = await fetch('{{ path('vactory_dashboard.module_exist', {'module_name': 'shield'}) }}');
           const data = await response.json();
           this.shieldInstalled = data.exists;
+        } catch (error) {
+          console.error('Error checking for module installation:', error);
+        }
+      },
+
+      async isRecaptchaModuleInstalled() {
+        try {
+          const response = await fetch('{{ path('vactory_dashboard.module_exist', {'module_name': 'recaptcha'}) }}');
+          const data = await response.json();
+          this.recaptchaInstalled = data.exists;
         } catch (error) {
           console.error('Error checking for module installation:', error);
         }
