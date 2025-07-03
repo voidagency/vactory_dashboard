@@ -119,18 +119,19 @@ class ContentTypesSettingsForm extends ConfigFormBase {
         }
       }
 
-
-      $form[$type_id] = [
-        '#type' => 'details',
-        '#title' => $type->label(),
-        '#open' => FALSE,
-        'taxonomies' => [
-          '#type' => 'checkboxes',
-          '#title' => $this->t('Taxonomies'),
-          '#options' => $options,
-          '#default_value' => $default_vocabularies,
-        ],
-      ];
+      if (count($options) > 0) {
+        $form[$type_id] = [
+          '#type' => 'details',
+          '#title' => $type->label(),
+          '#open' => FALSE,
+          'taxonomies' => [
+            '#type' => 'checkboxes',
+            '#title' => $this->t('Taxonomies'),
+            '#options' => $options,
+            '#default_value' => $default_vocabularies,
+          ],
+        ];
+      }
     }
 
     return parent::buildForm($form, $form_state) + $form;
