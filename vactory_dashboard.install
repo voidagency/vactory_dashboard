@@ -14,7 +14,6 @@ use Drupal\block_content\Entity\BlockContent;
  */
 function vactory_dashboard_update_9956() {
   _assign_permissions_to_webmaster();
-  _create_tourguide_block();
 }
 
 /**
@@ -30,7 +29,6 @@ function vactory_dashboard_update_9965() {
  */
 function vactory_dashboard_install() {
   _assign_permissions_to_webmaster();
-  _create_tourguide_block();
 }
 
 /**
