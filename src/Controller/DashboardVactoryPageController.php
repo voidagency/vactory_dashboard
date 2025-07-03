@@ -583,7 +583,7 @@ class DashboardVactoryPageController extends ControllerBase {
             }
             else {
               $paragraph_entity = Paragraph::load($block['id']);
-              $paragraph_entity->set('field_vactory_component', [
+              $paragraph_entity->getTranslation($language)->set('field_vactory_component', [
                 "widget_id" => $block['widget_id'],
                 "widget_data" => json_encode($block['widget_data']),
               ]);
