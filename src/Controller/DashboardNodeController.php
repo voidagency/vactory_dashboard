@@ -1279,40 +1279,37 @@ class DashboardNodeController extends ControllerBase {
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    */
   public function getNodeLinks(Request $request) {
-
     $query = $request->query->get('q', '');
-  
+
     $entityQuery = \Drupal::entityQuery('node')
       ->accessCheck(TRUE)
       ->condition('status', 1);
-  
+
     if ($query !== '') {
       $entityQuery->condition('title', '%' . $query . '%', 'LIKE');
     }
-  
-    $entityQuery->range(0, 10); 
-  
+
+    $entityQuery->range(0, 10);
+
     $nids = $entityQuery->execute();
-  
+
     $nodes = Node::loadMultiple($nids);
     $links = [];
-  
+    $entity_repository = \Drupal::service('entity.repository');
     foreach ($nodes as $node) {
-      $url = $node->toUrl();
-      $path = $url->getInternalPath();
-  
-      $alias = $this->aliasManager->getAliasByPath('/' . $path);
-  
+      $node = $entity_repository->getTranslationFromContext($node);
+      $url = $node->toUrl()->getInternalPath();
       $links[] = [
         'title' => $node->label(),
-        'url' => $alias,
+        'url' => '/' . $url,
         'type' => $node->bundle(),
         'created' => $node->getCreatedTime(),
         'id' => $node->id(),
         'author' => $node->getOwner()->getDisplayName(),
       ];
     }
-  
+
     return new JsonResponse($links);
   }
+
 }
