@@ -784,3 +784,10 @@ vactory_dashboard.content_type.taxonomies:
     _permission: 'access dashboard'
   options:
     no_cache: TRUE
+
+vactory_dashboard.node_links:
+  path: '/api/nodes/links'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::getNodeLinks'
+  requirements:
+    _permission: 'access dashboard'
