@@ -94,25 +94,7 @@
 
                                                 {# URL Extended Input #}
                                                 <template x-if="field.type === 'url_extended'">
-                                                    <div class="border border-slate-200 rounded-xl p-4 bg-slate-50">
-                                                        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                                                            <div class="flex-1">
-                                                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Link title'|t }}</label>
-                                                                <input type="text"
-                                                                       :required="field.options?.['#required'] ?? false"
-                                                                       x-model="blockForm.extra_fields[fieldName].title"
-                                                                       class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
-                                                            </div>
-                                                            <div class="flex-1">
-                                                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Link URL'|t }}</label>
-                                                                <input type="url"
-                                                                       :required="field.options?.['#required'] ?? false"
-                                                                       x-model="blockForm.extra_fields[fieldName].url"
-                                                                       class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150"
-                                                                       placeholder="https://">
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                    {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { xmodel: 'blockForm.extra_fields' } %}
                                                 </template>
 
                                                 {# Image Input #}
@@ -207,24 +189,7 @@
 
                                                     {# URL Extended Input #}
                                                     <template x-if="field.type === 'url_extended'">
-                                                        <div class="border border-slate-200 rounded-xl p-4 bg-slate-50">
-                                                            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                                                                <div class="flex-1">
-                                                                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Link title'|t }}</label>
-                                                                    <input type="text"
-                                                                           :required="field.options?.['#required'] ?? false"
-                                                                           x-model="blockForm.fields[fieldName].title"
-                                                                           class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
-                                                                </div>
-                                                                <div class="flex-1">
-                                                                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Link URL'|t }}</label>
-                                                                    <input type="text"
-                                                                           :required="field.options?.['#required'] ?? false"
-                                                                           x-model="blockForm.fields[fieldName].url"
-                                                                           class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                        {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { xmodel: 'blockForm.fields' }   %}
                                                     </template>
 
                                                     {# Image Input #}
@@ -370,26 +335,10 @@
                                                                     </template>
 
                                                                     {# URL Extended Input #}
-                                                                    <template x-if="field.type === 'url_extended'">
-                                                                        <div class="border border-slate-200 rounded-xl p-4 bg-slate-50">
-                                                                            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                                                                                <div class="flex-1">
-                                                                                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Link title'|t }}</label>
-                                                                                    <input type="text"
-                                                                                           :required="field.options?.['#required'] ?? false"
-                                                                                           x-model="item[fieldName].title"
-                                                                                           class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
-                                                                                </div>
-                                                                                <div class="flex-1">
-                                                                                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Link URL'|t }}</label>
-                                                                                    <input type="text"
-                                                                                           :required="field.options?.['#required'] ?? false"
-                                                                                           x-model="item[fieldName].url"
-                                                                                           class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </template>
+                                                                  <template x-if="field.type === 'url_extended'">
+                                                                           {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { xmodel: 'item' } %}
+                                                                   </template>
+
 
                                                                     {# Image Input #}
                                                                     <template x-if="field.type === 'image'">
@@ -617,5 +566,58 @@
           },
         }));
       });
+
+       function autocompleteLinks(models, fieldName) {
+       return {
+        models,
+        fieldName,
+        results: [],
+        showList: false,
+        searchTimeout: null,
+
+         async search(query) {
+        clearTimeout(this.searchTimeout);
+
+          if (!query) {
+           this.results = [];
+           this.showList = false;
+           return;
+         }
+
+       this.searchTimeout = setTimeout(async () => {
+        try {
+          const res = await fetch('/api/nodes/links?q=' + encodeURIComponent(query));
+          const data = await res.json();
+          this.results = data;
+          this.showList = this.results.length > 0;
+        } catch (e) {
+          console.error('Erreur fetch links:', e);
+          this.results = [];
+          this.showList = false;
+        }
+      }, 1000);
+    },
+
+    select(item) {
+      if (!item || !item.url) {
+        console.warn('item ou item.url est vide ou indéfini', item);
+        return;
+      }
+
+     
+
+      const input = this.$refs.urlInput;
+      if (input) {
+        input.value = item.url;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.focus();
+      }
+
+      this.results = [];
+      this.showList = false;
+    }
+  };
+}
+
     </script>
 {% endblock %}
