@@ -102,7 +102,7 @@
                             x-text="new Date(item.created * 1000).toLocaleString()"></td>
                         <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                             <div class="flex justify-end space-x-3">
-                                {% if permissions.edit_own or permissions.edit_any %}
+                                {% if user.hasPermission("edit own " ~ id ~ " content") or user.hasPermission("edit any " ~ id ~ " content") %}
                                     <a :href="item.edit_url" class="text-slate-400 hover:text-green-600">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                                              viewbox="0 0 24 24" stroke="currentColor">
@@ -120,7 +120,7 @@
                                               d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                     </svg>
                                 </a>
-                                {% if permissions.delete_own or permissions.delete_any %}
+                                {% if user.hasPermission("delete any " ~ id ~ " content") or user.hasPermission("delete own " ~ id ~ " content") %}
                                     <button :disabled="selectedItems.length > 0" @click="itemToDelete = item.id; showDeleteModal = true"
                                             class="text-slate-400 hover:text-red-500"
                                             :class="[

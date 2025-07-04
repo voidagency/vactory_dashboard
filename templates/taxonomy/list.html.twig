@@ -9,7 +9,7 @@
                         <h1 class="text-2xl font-semibold text-gray-900">Taxonomies</h1>
                     </div>
                     <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-                        {% if permissions.create %}
+                        {% if user.hasPermission("create terms in " ~ taxonomy_vid) %}
                             {% include "@vactory_admin/components/button/button.twig" with {
                                 text: 'Ajouter term',
                                 variant: 'primary',
@@ -111,7 +111,7 @@
                                     <table class="min-w-full divide-y divide-gray-300">
                                         <thead class="bg-gray-100">
                                         <tr>
-                                            {% if permissions.delete %}
+                                            {% if user.hasPermission("delete terms in " ~ taxonomy_vid) %}
                                                 <th scope="col" class="relative w-12 px-6 sm:w-16 sm:px-8">
                                                     <input id="term-check-toggle" type="checkbox" x-model="selectAll" @change="toggleAll"
                                                            class="absolute w-4 h-4 -mt-2 text-indigo-600 border-gray-300 rounded left-4 top-1/2 focus:ring-indigo-600 sm:left-6">
@@ -124,7 +124,7 @@
                                             <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                                 Statut
                                             </th>
-                                            {% if permissions.edit or permissions.delete %}
+                                            {% if user.hasPermission("edit terms in " ~ taxonomy_vid) or user.hasPermission("delete terms in " ~ taxonomy_vid) %}
                                                 <th scope="col" class="px-3 py-3.5 text-sm font-semibold text-gray-900 text-right">
                                                     <span class="sr-only">Actions</span>
                                                 </th>
@@ -134,7 +134,7 @@
                                         <tbody class="bg-white divide-y divide-gray-200">
                                         <template x-for="term in terms" :key="term.id">
                                             <tr>
-                                                {% if permissions.delete %}
+                                                {% if user.hasPermission("delete terms in " ~ taxonomy_vid) %}
                                                     <td class="relative w-12 px-6 sm:w-16 sm:px-8">
                                                         <input type="checkbox" :value="term.id" x-model="selectedTerms"
                                                                class="absolute w-4 h-4 -mt-2 text-indigo-600 border-gray-300 rounded left-4 top-1/2 focus:ring-indigo-600 sm:left-6">
@@ -150,7 +150,7 @@
                                                 </td>
                                                 <td class="relative py-4 pl-3 pr-4 text-sm font-medium text-right whitespace-nowrap sm:pr-6">
                                                     <div class="flex justify-end space-x-3">
-                                                        {% if permissions.edit %}
+                                                        {% if user.hasPermission("edit terms in " ~ taxonomy_vid) %}
                                                             <button @click="editTerm(term)"
                                                                     class="text-gray-400 hover:text-green-500">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
@@ -161,7 +161,7 @@
                                                                 </svg>
                                                             </button>
                                                         {% endif %}
-                                                        {% if permissions.delete %}
+                                                        {% if user.hasPermission("delete terms in " ~ taxonomy_vid) %}
                                                             <button @click="confirmDeleteTerm(term.id)"
                                                                     class="text-gray-400 hover:text-red-500">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"

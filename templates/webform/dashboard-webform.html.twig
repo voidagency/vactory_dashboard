@@ -112,7 +112,7 @@
                     <table class="min-w-full bg-white">
                         <thead>
                           <tr class="border-b border-slate-200 bg-slate-100 hover:bg-slate-100">
-                              {% if permissions.delete_any_submission %}
+                              {% if user.hasPermission('delete any webform submission') %}
                                   <th scope="col" class="relative py-4 pl-6 pr-3 w-12">
                                       <input type="checkbox" @click="toggleAll" id="form-check-toggle"
                                             :checked="selectedSubmissions.length === webforms.length && webforms.length > 0"
@@ -127,7 +127,7 @@
                                   <th class="px-6 py-4 text-left font-semibold text-slate-700 uppercase tracking-wider truncate max-w-44"
                                       x-text="normalizeColumn(column)"></th>
                               </template>
-                              {% if permissions.edit_any_submission  or permissions.delete_any_submission %}
+                              {% if user.hasPermission('edit any webform submission')  or  user.hasPermission('delete any webform submission') %}
                                   <th scope="col"
                                       class="px-6 py-4 text-center font-semibold text-slate-700 uppercase tracking-wider">
                                       {{ "Actions" | t }}
@@ -138,7 +138,7 @@
                         <tbody class="divide-y divide-slate-100">
                           <template x-for="webform in webforms" :key="webform.id">
                               <tr class="hover:bg-slate-50 transition-colors duration-150 group">
-                                  {% if permissions.delete_any_submission %}
+                                  {% if user.hasPermission('delete any webform submission') %}
                                       <td class="relative py-5 pl-6 pr-3">
                                           <input type="checkbox" :value="webform.id" x-model="selectedSubmissions"
                                                 class="h-4 w-4 rounded-md border-slate-300 text-primary-600 shadow-sm focus:ring-2 focus:ring-primary-500 focus:ring-offset-0 transition-colors">
@@ -175,8 +175,8 @@
                                               <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                                               <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                             </svg>
-                                          </a>
-                                          {% if permissions.edit_any_submission and false %}
+                                          </a> 
+                                          {% if user.hasPermission('edit any webform submission') %}
                                               <a :href="'{{ path('vactory_dashboard.webform.submission.page.edit', {'id': 'ID', 'submission_id': 'SUB_ID'}) }}'.replace('SUB_ID', webform.id).replace('ID', formID)"
                                                 class="text-gray-400 hover:text-green-500">
                                                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
@@ -187,7 +187,7 @@
                                                   </svg>
                                               </a>
                                           {% endif %}
-                                          {% if permissions.delete_any_submission %}
+                                          {% if user.hasPermission('delete any webform submission') %}
                                               <button @click="itemToDelete = webform.id; showDeleteModal = true"
                                                       class="text-gray-400 hover:text-red-500">
                                                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"

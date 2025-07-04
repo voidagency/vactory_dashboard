@@ -335,9 +335,12 @@ protected static $cache = [];
       ->getPathByAlias(str_replace('/' . $current_lang, '', $url));
     if (str_starts_with($path, '/node/')) {
       $node_id = str_replace('/node/', '', $path);
-      $returnArray['nid'] = $node_id;
-      $returnArray['url'] = Url::fromRoute('vactory_dashboard.vactory_page.edit', ['id' => $node_id], ['absolute' => TRUE])
+      if (is_numeric($node_id)) {
+        $node_id = (int) $node_id;
+        $returnArray['nid'] = $node_id;
+        $returnArray['url'] = Url::fromRoute('vactory_dashboard.vactory_page.edit', ['id' => $node_id], ['absolute' => TRUE])
         ->toString();
+      }
     }
     return $returnArray;
   }
