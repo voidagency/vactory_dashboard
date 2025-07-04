@@ -19,7 +19,7 @@ function vactory_dashboard_update_9956() {
 /**
  * Assign permissions (access dash, sitemap, media ..) to webmaster.
  */
-function vactory_dashboard_update_9965() {
+function vactory_dashboard_update_9970() {
   _assign_permissions_to_webmaster();
   _create_tourguide_block();
 }
