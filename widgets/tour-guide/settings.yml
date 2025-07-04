@@ -1,0 +1,54 @@
+name: 'New Tour guide'
+multiple: TRUE
+category: 'User Guide'
+enabled: TRUE
+fields:
+  selector:
+    type: text
+    label: 'Selector'
+  title:
+    type: text
+    label: 'Tilte'
+  content:
+    type: text
+    label: 'Content'
+  class:
+    type: text
+    label: 'CSS Classes'
+  index:
+    type: number
+    label: 'Index'
+    options:
+      '#description': 'If the selector is a class (like .categories), and there are multiple elements with that class, it is best to specify which one to use by setting the index (0 means the first one).'
+  is_sidebar:
+    type: checkbox
+    label: 'Is sidebar'
+  is_bottom:
+    type: checkbox
+    label: 'Is bottom'
+    options:
+      '#description': 'Is the element located at the bottom of the page'
+extra_fields:
+  tourguide_id:
+      type: text
+      label: 'Tour guide id'
+      options:
+        '#description': 'The id to distinguish between the created tour guides (id must be unique).'
+        '#required': true
+  show_time:
+      type: number
+      label: 'Time Show'
+      options:
+        '#description': 'How many times the tour guide should be displayed.'
+  next_btn:
+    type: text
+    label: 'Next Button Label'
+  prev_btn:
+    type: text
+    label: 'Previous Button Label'
+  skip_btn:
+    type: text
+    label: 'Skip Button Label'
+  end_btn:
+    type: text
+    label: 'End Button Label'

@@ -103,7 +103,7 @@
 
                         {# bloc ssl  #}
                         {% if user.hasPermission('administer dashboard configuration') %}
-                        <div x-data="sslStatusComponent()" x-init="fetchStatus()" x-show="status" class="relative   ">
+                        <div id="ssl" x-data="sslStatusComponent()" x-init="fetchStatus()" x-show="status" class="relative   ">
                             <template x-if="loading">
                                 <div class="inline-flex items-center text-xs text-gray-500">
                                     <div class="animate-pulse h-3 w-3 bg-gray-300 rounded-full mr-1.5"></div>
@@ -204,7 +204,7 @@
                         </div>
                         {% endif %}
                         {# translation dropdown #}
-                        <div x-data="{ open: false }" class="relative inline-block text-left">
+                        <div id="language" x-data="{ open: false }" class="relative inline-block text-left">
                           <div>
                             <button
                               @click="open = !open"
@@ -296,7 +296,7 @@
 						</template>
 
 						{# profile section #}
-						<div class="relative">
+						<div id="profile" class="relative">
 							<template x-if="profileLoading">
 								<button class="flex items-center gap-2 px-4 rounded-lg hover:bg-slate-50 border border-slate-200 transition-colors shadow-sm h-10">
 									<span class="animate-pulse inline-block h-2 bg-slate-300 w-20 rounded"></span>

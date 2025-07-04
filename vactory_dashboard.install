@@ -6,12 +6,22 @@
  */
 
 use Drupal\user\Entity\Role;
+use Drupal\block\Entity\Block;
+use Drupal\block_content\Entity\BlockContent;
 
 /**
  * Assign permissions (access dash, sitemap, media ..) to webmaster.
  */
 function vactory_dashboard_update_9956() {
   _assign_permissions_to_webmaster();
+}
+
+/**
+ * Assign permissions (access dash, sitemap, media ..) to webmaster.
+ */
+function vactory_dashboard_update_9970() {
+  _assign_permissions_to_webmaster();
+  _create_tourguide_block();
 }
 
 /**
@@ -51,4 +61,42 @@ function vactory_dashboard_uninstall() {
   $config_factory = \Drupal::configFactory();
 
   $config_factory->getEditable('search_api.index.vactory_dashboard_search')->delete();
+}
+
+/**
+ * Creates a new block content and add to the main section of vactory_admin theme.
+ */
+function _create_tourguide_block() {
+  $widget_data['extra_field']['next_btn'] = 'Next';
+  $widget_data['extra_field']['prev_btn'] = 'Previous';
+  $widget_data['extra_field']['skip_btn'] = 'Skip';
+  $widget_data['extra_field']['end_btn'] = 'Finish';
+  $widget_data['extra_field']['tourguide_id'] = 'homepage';
+  $widget_data['extra_field']['show_time'] = '1';
+
+  $block_content = BlockContent::create([
+    'type' => 'vactory_block_component',
+    'info' => 'Tour Guide',
+    'block_machine_name' => 'vactory_dashboard_tour_guide',
+    'field_dynamic_block_components' => [
+      'widget_id' => 'vactory_dashboard:tour-guide',
+      'widget_data' => json_encode($widget_data),
+    ],
+  ]);
+  $block_content->save();
+
+  $block = Block::create([
+    'id' => 'vactory_dashboard_tour_guide',
+    'plugin' => 'block_content:' . $block_content->get('uuid')->value,
+    'region' => 'content',
+    'theme' => 'vactory_admin',
+    'status' => TRUE,
+    'settings' => [
+      'label' => 'Vactory Dashboard Tour guide',
+      'label_display' => FALSE,
+    ],
+    'visibility' => [],
+  ]);
+
+  $block->save();
 }

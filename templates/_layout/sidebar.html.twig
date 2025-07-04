@@ -12,21 +12,23 @@
 
     {# shadow-[#00000029_0px_3px_8px_0px] #}
   <div class="px-3 py-2 border-b border-slate-200">
-    <a href="{{ path('vactory_dashboard.vactory_page.add') }}">
-      <button type="button" class="group relative w-full text-left px-4 text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between overflow-hidden h-10">
-        <span>{{ "Créer une page"|t }}</span>
-        <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
-          <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-        </svg>
-      </button>
-    </a>
+    <div class="create-page-btn">
+      <a href="{{ path('vactory_dashboard.vactory_page.add') }}">
+        <button type="button" class="group relative w-full text-left px-4 text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between overflow-hidden h-10">
+          <span>{{ "Créer une page"|t }}</span>
+          <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+            <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+          </svg>
+        </button>
+      </a>
+    </div>
   </div>
-    <nav class="flex-1 flex flex-col overflow-y-auto py-6 px-4 text-sm">
+    <nav class="flex-1 flex flex-col py-6 px-4 text-sm overflow-y-auto">
         <div>
             <h2 class="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3">{{ "Contenu"|t }}</h2>
             {% if user.hasPermission('access content overview') %}
             <div class="flex flex-col gap-1">
-                <div class="w-full">
+                <div class="pages w-full">
                     <button @click="openDropdowns.pages = !openDropdowns.pages"
                             class="flex items-center w-full rounded-lg transition-all duration-200 text-slate-700 px-3 hover:bg-primary-50 hover:text-primary-700 group h-8 font-semibold">
               <span class="text-slate-500 mr-3 group-hover:text-primary-600 transition-colors">
@@ -182,7 +184,7 @@
 
                 {# Categories #}
                 <div class="w-full">
-                    <div class="w-full">
+                    <div class="categories w-full">
                         {% if user.hasPermission('access taxonomy overview') %}
                             <button @click="openDropdowns.taxonomies = !openDropdowns.taxonomies"
                                     class="flex items-center w-full rounded-lg transition-all duration-200 text-slate-700 px-3 hover:bg-primary-50 hover:text-primary-700 group h-8 font-semibold">
@@ -249,7 +251,7 @@
 
                     {# Types de contenues #}
                     {% if user.hasPermission('access content overview') %}
-                        <div class="w-full">
+                        <div class="content-types w-full">
                             <button @click="openDropdowns.contentTypes = !openDropdowns.contentTypes"
                                     class="flex items-center w-full rounded-lg transition-all duration-200 text-slate-700 px-3 hover:bg-primary-50 hover:text-primary-700 group h-8 font-semibold">
                 <span class="text-slate-500 mr-3 group-hover:text-primary-600 transition-colors">
@@ -307,7 +309,7 @@
                 <h2 class="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3">{{ "Ressources"|t }}</h2>
                 {# Media #}
                 {% if user.hasPermission('view media') %}
-                    <div class="w-full">
+                    <div class="media w-full">
                         <a href="{{ path('vactory_dashboard.media') }}"
                            :class="{ 'bg-primary-50 text-primary-600': isCurrentPage('{{ url('vactory_dashboard.media', {}, {absolute: true}) }}') }"
                            class="h-8 flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 font-semibold text-slate-700 px-3 py-2 group hover:bg-primary-50"
@@ -328,7 +330,7 @@
 
                 {# Personne #}
                 {% if user.hasPermission('access user profiles') %}
-                    <div class="w-full">
+                    <div class="users w-full">
                         <a href="{{ path('vactory_dashboard.users') }}"
                            :class="{ 'bg-primary-50 text-primary-600': isCurrentPage('{{ url('vactory_dashboard.users', {}, {absolute: true}) }}') }"
                            class="h-8 flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 font-semibold text-slate-700 px-3 py-2 group hover:bg-primary-50"
@@ -350,7 +352,7 @@
 
                 {# Formulaires #}
                 {% if user.hasPermission('access webform overview') %}
-                    <div class="w-full">
+                    <div class="forms w-full">
                         <button @click="openDropdowns.forms = !openDropdowns.forms"
                                 class="h-8 flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 font-semibold text-slate-700 px-3 py-2 group hover:bg-primary-50"
                                 style="padding-left: 12px;">
@@ -409,7 +411,7 @@
                 {% endif %}
 
                 {# Parametres #}
-                <div class="w-full">
+                <div class="settings w-full">
                     <button @click="openDropdowns.settings = !openDropdowns.settings"
                             class="flex items-center w-full rounded-lg transition-all duration-200 text-slate-700 px-3 hover:bg-primary-50 hover:text-primary-700 group h-8 font-semibold">
               <span class="text-slate-500 mr-3 group-hover:text-primary-600 transition-colors">
@@ -443,7 +445,7 @@
                                 </div>
                             {% endif %}
                             {% if user.hasPermission('administer dashboard configuration') %}
-                                <div class="w-full">
+                                <div x-show="recaptchaInstalled" class="w-full">
                                     <a href="{{ path('vactory_dashboard.settings.captcha') }}"
                                        :class="{ 'bg-primary-50 text-primary-600': isCurrentPage('{{ url('vactory_dashboard.settings.captcha', {}, {absolute: true}) }}') }"
                                        class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
@@ -506,23 +508,25 @@
     </nav>
 
     <div class="border-t border-slate-200 shadow-[-1px_-3px_11px_0px_#00000029] p-4">
-        <button @click="clearCache"
-                class="group w-full text-left px-4 text-sm font-semibold hover:bg-red-100 rounded-lg transition-all duration-200 flex items-center justify-start border border-gray-300 hover:border-red-200 hover:shadow-sm h-10">
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 class="h-4 w-4 mr-2 group-hover:scale-110 text-red-600 transition-transform duration-200" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-            </svg>
-            {{ 'Vider le cache'|t }}
-        </button>
+        <div class="clear-cache ">
+          <button @click="clearCache"
+                  class="group w-full text-left px-4 text-sm font-semibold hover:bg-red-100 rounded-lg transition-all duration-200 flex items-center justify-start border border-gray-300 hover:border-red-200 hover:shadow-sm h-10">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 mr-2 group-hover:scale-110 text-red-600 transition-transform duration-200" fill="none"
+                  viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              {{ 'Vider le cache'|t }}
+          </button>
+        </div>
 
         {# Separator #}
         <div class="border-t border-slate-200 my-3"></div>
 
         <div>
             <h3 class="text-sm font-bold text-slate-700 mb-4 px-2">{{ "Aide"|t }}</h3>
-            <div :title="!advancedDashboard?.video_url ? 'Vidéo non disponible' : ''" class="mb-2">
+            <div :title="!advancedDashboard?.video_url ? 'Vidéo non disponible' : ''" class="tutoriel-video mb-2">
                 <a :href="advancedDashboard?.video_url" target="_blank" rel="noopener noreferrer"
                    :class="!advancedDashboard?.video_url ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white'"
                    class="flex items-center text-sm hover:bg-white rounded-lg px-3 transition-all duration-200 group h-8 font-semibold">
@@ -535,7 +539,7 @@
                     <span class="text-sm font-medium group-hover:text-slate-900 transition-colors">{{ "Tutoriel vidéo"|t }}</span>
                 </a>
             </div>
-            <div :title="!advancedDashboard?.file_url ? 'Fichier non disponible' : ''">
+            <div :title="!advancedDashboard?.file_url ? 'Fichier non disponible' : ''" class="manuel">
                 <a :href="advancedDashboard?.file_url" download=""
                    :class="!advancedDashboard?.file_url ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white'"
                    class="flex items-center text-sm hover:bg-white rounded-lg px-3 transition-all duration-200 group h-8 font-semibold">
@@ -564,6 +568,7 @@
       loading: false,
       error: null,
       shieldInstalled: '',
+      recaptchaInstalled: '',
       advancedDashboard: {},
       showCaptcha: '',
       showSitemap: '',
@@ -580,7 +585,10 @@
           {% if user.hasPermission('access webform overview') %}this.fetchForms();{% endif %}
         this.initializeOpenDropdowns();
         this.observeAsideLinks();
-          {% if user.hasPermission('administer dashboard configuration') %}this.isModuleInstalled();{% endif %}
+          {% if user.hasPermission('administer dashboard configuration') %}
+            this.isShieldModuleInstalled();
+            this.isRecaptchaModuleInstalled();
+          {% endif %}
         this.getAdvancedDashboardData();
         
         this.$watch('nodeTypes', () => {
@@ -820,11 +828,21 @@
         this.applySingleHighlight(Array.from(initialLinks));
       },
 
-      async isModuleInstalled() {
+      async isShieldModuleInstalled() {
         try {
           const response = await fetch('{{ path('vactory_dashboard.module_exist', {'module_name': 'shield'}) }}');
           const data = await response.json();
           this.shieldInstalled = data.exists;
+        } catch (error) {
+          console.error('Error checking for module installation:', error);
+        }
+      },
+
+      async isRecaptchaModuleInstalled() {
+        try {
+          const response = await fetch('{{ path('vactory_dashboard.module_exist', {'module_name': 'recaptcha'}) }}');
+          const data = await response.json();
+          this.recaptchaInstalled = data.exists;
         } catch (error) {
           console.error('Error checking for module installation:', error);
         }
