@@ -234,12 +234,8 @@ class DashboardVactoryPageController extends ControllerBase {
 
     // Get node fields.
     $node_data['title'] = $node->getTitle();
-    if ($node->hasField('node_summary') && !$node->get('node_summary')->isEmpty()) {
-      $node_data['body'] = $node->get('node_summary')->value;
-    }
-    else {
-      $node_data['body'] = null;
-    }    
+    $node_data['body'] = $node->hasField('node_summary') ? $node->get('node_summary')->value ?? "" : "";
+      
     $paragraphs = [];
     $lang = \Drupal::languageManager()->getCurrentLanguage()->getId();
     if ($node->hasField('field_vactory_paragraphs')) {

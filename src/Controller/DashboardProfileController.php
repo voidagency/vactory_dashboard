@@ -9,6 +9,7 @@ use Drupal\Core\Session\AccountProxyInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\Session\SessionManagerInterface;
+use Drupal\user\Entity\Role;
 
 /**
  * Controller for the profile dashboard.
@@ -56,12 +57,24 @@ class DashboardProfileController extends ControllerBase {
   public function getCurrentUserInfo(): JsonResponse {
     $account = $this->currentUser->getAccount();
 
+    // Filtrer les rôles (exclure 'authenticated')
+  $role_ids = array_filter($account->getRoles(), function ($role) {
+    return $role !== 'authenticated';
+  });
+
+  // Charger les rôles avec leur label
+  $roles = array_map(function ($role_id) {
+    $role = Role::load($role_id);
+    return [
+      'id' => $role_id,
+      'label' => $role->label(),
+    ];
+  }, $role_ids);
+
     return new JsonResponse([
       'name' => $account->getDisplayName(),
       'email' => $account->getEmail(),
-      'roles' => array_filter($account->getRoles(), function($role) {
-        return $role !== 'authenticated';
-      }),
+      'roles' => $roles,
       'hasAdvancedRoleAccess' => $account->hasPermission('access drupal advanced mode'),
     ]);
   }
