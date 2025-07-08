@@ -441,6 +441,13 @@
                   this.blockForm.extra_fields[fieldName] = {
                     title: '',
                     url: '',
+                    attributes: {
+                      label: '',
+                      class: '',
+                      id: 'link-' + Math.random().toString(36).slice(2),
+                      target: '',
+                      rel: ''
+                    },
                   };
                 } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
                   this.blockForm.extra_fields[fieldName] = {
@@ -470,6 +477,14 @@
                   this.blockForm.fields[fieldName] = {
                     title: '',
                     url: '',
+                    attributes: {
+                      label: '',
+                      class: '',
+                      id: 'link-' + Math.random().toString(36).slice(2),
+                      target: '',
+                      rel: ''
+                    },
+
                   };
                 } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
                   this.blockForm.fields[fieldName] = {
@@ -543,6 +558,13 @@
                 newItem[fieldName] = {
                   title: '',
                   url: '',
+                  attributes: {
+                      label: '',
+                      class: '',
+                      id: 'link-' + Math.random().toString(36).slice(2),
+                      target: '',
+                      rel: ''
+                    },
                 };
               } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
                 newItem[fieldName] = {
@@ -592,6 +614,7 @@
             // Fetch templates when component initializes
             this.fetchTemplates();
           },
+
           showNotification(type, message) {
             // Clear any existing timeout
             if (this.notification.timeout) {
