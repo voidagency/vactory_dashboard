@@ -155,22 +155,6 @@ class DashboardVactoryPageController extends ControllerBase {
 
     $meta_tags = $this->metatagService->prepareMetatags($node_translation ?? $node);
 
-    $permissions = [
-      'create' => $this->currentUser()->hasPermission("create $id content"),
-      'edit_own' => $this->currentUser()->hasPermission("edit own $id content"),
-      'edit_any' => $this->currentUser()->hasPermission("edit any $id content"),
-      'delete_own' => $this->currentUser()
-        ->hasPermission("delete own $id content"),
-      'delete_any' => $this->currentUser()
-        ->hasPermission("delete any $id content"),
-      'view_revisions' => $this->currentUser()
-        ->hasPermission("view $id revisions"),
-      'revert_revisions' => $this->currentUser()
-        ->hasPermission("revert $id revisions"),
-      'delete_revisions' => $this->currentUser()
-        ->hasPermission("delete $id revisions"),
-    ];
-
     return [
       '#theme' => 'vactory_dashboard_vactory_page_edit',
       '#language' => $node_translation ? $node_translation->language()
@@ -183,7 +167,6 @@ class DashboardVactoryPageController extends ControllerBase {
       '#available_languages' => $available_languages_list,
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => $node_translation ? TRUE : FALSE,
-      '#permissions' => $permissions,
       '#meta_tags' => $meta_tags,
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
     ];
@@ -251,7 +234,8 @@ class DashboardVactoryPageController extends ControllerBase {
 
     // Get node fields.
     $node_data['title'] = $node->getTitle();
-    $node_data['body'] = $node->get('node_summary')->value;
+    $node_data['body'] = $node->hasField('node_summary') ? $node->get('node_summary')->value ?? "" : "";
+      
     $paragraphs = [];
     $lang = \Drupal::languageManager()->getCurrentLanguage()->getId();
     if ($node->hasField('field_vactory_paragraphs')) {

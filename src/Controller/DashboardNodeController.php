@@ -152,24 +152,6 @@ class DashboardNodeController extends ControllerBase {
       }
     }
 
-    $permissions = [
-      'create' => $this->currentUser()->hasPermission("create $bundle content"),
-      'edit_own' => $this->currentUser()
-        ->hasPermission("edit own $bundle content"),
-      'edit_any' => $this->currentUser()
-        ->hasPermission("edit any $bundle content"),
-      'delete_own' => $this->currentUser()
-        ->hasPermission("delete own $bundle content"),
-      'delete_any' => $this->currentUser()
-        ->hasPermission("delete any $bundle content"),
-      'view_revisions' => $this->currentUser()
-        ->hasPermission("view $bundle revisions"),
-      'revert_revisions' => $this->currentUser()
-        ->hasPermission("revert $bundle revisions"),
-      'delete_revisions' => $this->currentUser()
-        ->hasPermission("delete $bundle revisions"),
-    ];
-
     $dynamic_exports = [];
     if (\Drupal::moduleHandler()->moduleExists('vactory_dynamic_import')) {
       // Get all exports.
@@ -194,7 +176,6 @@ class DashboardNodeController extends ControllerBase {
       '#id' => $bundle,
       '#bundle_label' => $bundle_label,
       '#entity_queues' => $results,
-      '#permissions' => $permissions,
       '#dynamic_exports' => $dynamic_exports,
       '#taxonomies' => $this->getReferencedTaxonomies($bundle),
       '#langs' => $langs,

@@ -182,7 +182,6 @@ class DashboardUsersController extends ControllerBase {
       'limit' => $limit,
       'pages' => ceil($total / $limit),
       'roles' => $role_options,
-      'has_edit_permission' => $currentUser->hasPermission('administer users'),
       'current_user_role' => $user_roles,
 
     ]);
@@ -261,7 +260,6 @@ class DashboardUsersController extends ControllerBase {
       '#userId' => $userId, // Passing userId to the template
       '#user_data' => $user_data,
       '#roles' => $role_options,
-      '#has_permission_edit_role' => $this->currentUser->hasPermission('administer permissions'),
     ];
   }
 
