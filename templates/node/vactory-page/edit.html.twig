@@ -350,7 +350,8 @@
                       ],
                     },
                   };
-                } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
+                } 
+                else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
                   // Nothing to change here
                   blockData[0][fieldName] = this.blockForm.fields[fieldName];
                 } else {
@@ -463,6 +464,13 @@
                   this.blockForm.extra_fields[fieldName] = {
                     title: '',
                     url: '',
+                    attributes: {
+                      label: '',
+                      class: '',
+                      id: 'link-' + Math.random().toString(36).slice(2),
+                      target: '',
+                      rel: ''
+                    },
                   };
                 } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
                   this.blockForm.extra_fields[fieldName] = {
@@ -491,6 +499,13 @@
                   this.blockForm.fields[fieldName] = {
                     title: '',
                     url: '',
+                    attributes: {
+                      label: '',
+                      class: '',
+                      id: 'link-' + Math.random().toString(36).slice(2),
+                      target: '',
+                      rel: ''
+                    },
                   };
                 } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
                   this.blockForm.fields[fieldName] = {
@@ -564,6 +579,13 @@
                 newItem[fieldName] = {
                   title: '',
                   url: '',
+                  attributes: {
+                      label: '',
+                      class: '',
+                      id: 'link-' + Math.random().toString(36).slice(2),
+                      target: '',
+                      rel: ''
+                    },
                 };
               } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
                 newItem[fieldName] = {
@@ -715,6 +737,7 @@
                       this.isFirstAddBlockVisible = entry.isIntersecting;
                     });
                   },
+                  
                   {
                     threshold: 0,
                     rootMargin: '0px',
