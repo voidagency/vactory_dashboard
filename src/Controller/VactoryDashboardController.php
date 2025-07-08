@@ -254,10 +254,6 @@ protected static $cache = [];
     if (empty($tree)) {
       $response = [
         'items' => [],
-        'has_captcha_permission' => $this->currentUser->hasPermission('administer CAPTCHA settings'),
-        'has_sitemap_permission' => $this->currentUser->hasPermission('access sitemap'),
-        'has_shield_permission' => $this->currentUser->hasPermission('administer shield'),
-        'has_translation_permission' => $this->currentUser->hasPermission('Administer translation settings'),
       ];
       self::$cache[$cid] = $response;
       \Drupal::cache()->set($cid, $response, Cache::PERMANENT, ['config:vactory_dashboard.menu.settings', 'menu:' . $menu_id]);
@@ -277,10 +273,6 @@ protected static $cache = [];
   
     $response = [
       'items' => array_values($items),
-      'has_captcha_permission' => $this->currentUser->hasPermission('administer CAPTCHA settings'),
-      'has_sitemap_permission' => $this->currentUser->hasPermission('access sitemap'),
-      'has_shield_permission' => $this->currentUser->hasPermission('administer shield'),
-      'has_translation_permission' => $this->currentUser->hasPermission('Administer translation settings'),
     ];
 
     \Drupal::cache()->set($cid, $response, Cache::PERMANENT, [

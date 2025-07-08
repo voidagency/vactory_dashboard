@@ -359,7 +359,6 @@
               const data = await response.json();
               this.users = data.data;
               this.roles = data.roles;
-              this.hasPermission = data.has_edit_permission;
               this.totalPages = data.pages;
               this.pages = this.generatePageNumbers(data.page, data.pages);
             } catch (error) {
