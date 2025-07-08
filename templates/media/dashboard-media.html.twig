@@ -182,7 +182,7 @@
                         <li
                                 class="px-6 py-4 flex items-center">
                             <!-- Case à cocher -->
-                            {% if permission_delete_media %}
+                            {% if user.hasPermission('delete any media') %}
                                 <input type="checkbox" x-model="selectedItems" :value="media.id"
                                        class="h-4 w-4 text-primary-600 border-gray-300 rounded mr-4">
                             {% endif %}

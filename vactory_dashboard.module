@@ -37,7 +37,6 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
       'variables' => [
         'content' => NULL,
         'roles' => [],
-        'has_edit_permission' => NULL,
       ],
       'template' => 'users/list',
     ],
@@ -46,7 +45,6 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'taxonomy_vid' => NULL,
         'langs' => NULL,
         'default_lang' => NULL,
-        'permissions' => NULL,
       ],
       'template' => 'taxonomy/list',
     ],
@@ -95,7 +93,6 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
       'template' => 'webform/dashboard-webform',
       'variables' => [
         'id' => NULL,
-        'permissions' => [],
       ],
     ],
     'vactory_dashboard_update_user' => [

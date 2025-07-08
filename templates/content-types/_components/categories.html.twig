@@ -82,6 +82,7 @@
 
         <!-- Table and pagination - only show when there is data -->
         <div class="flex justify-end mt-4">
+        {% if user.hasPermission("create terms in " ~ taxonomy_vid) %}
             {% include "@vactory_admin/components/button/button.twig" with {
                 text: 'Ajouter term',
                 variant: 'primary',
@@ -89,6 +90,7 @@
                 alpine_attrs: '@click="editingTerm = false; showModal = true"',
                 icon_left: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>'
             } %}
+        {% endif %}
         </div>
         <div x-show="terms.length > 0">
             <div class="flex flex-col mt-6">
@@ -98,28 +100,29 @@
                             <table class="min-w-full divide-y divide-gray-300">
                                 <thead class="bg-gray-100">
                                 <tr>
-                                    {% if permissions.delete %}
+                                    {% if user.hasPermission("delete terms in " ~ taxonomy_vid) %}
                                         <th scope="col" class="relative w-12 px-6 sm:w-16 sm:px-8">
                                             <input id="term-check-toggle" type="checkbox" x-model="selectAll" @change="toggleAll"
                                                     class="absolute w-4 h-4 -mt-2 text-indigo-600 border-gray-300 rounded left-4 top-1/2 focus:ring-indigo-600 sm:left-6">
                                         </th>
                                     {% endif %}
-                                    <th scope="col"
-                                        class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                                    <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
                                         Titre
                                     </th>
                                     <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                         Statut
                                     </th>
+                                    {% if user.hasPermission("edit terms in " ~ taxonomy_vid) or user.hasPermission("delete terms in " ~ taxonomy_vid) %}
                                     <th x-show="terms[0].edit || terms[0].delete" scope="col" class="px-3 py-3.5 text-sm font-semibold text-gray-900 text-right">
                                         <span>Actions</span>
                                     </th>
+                                    {% endif %}
                                 </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                 <template x-for="term in terms" :key="term.id">
                                     <tr>
-                                        {% if permissions.delete %}
+                                        {% if user.hasPermission("delete terms in " ~ taxonomy_vid) %}
                                             <td class="relative w-12 px-6 sm:w-16 sm:px-8">
                                                 <input type="checkbox" :value="term.id" x-model="selectedTerms"
                                                         class="absolute w-4 h-4 -mt-2 text-indigo-600 border-gray-300 rounded left-4 top-1/2 focus:ring-indigo-600 sm:left-6">
@@ -135,6 +138,7 @@
                                         </td>
                                         <td class="relative py-4 pl-3 pr-4 text-sm font-medium text-right whitespace-nowrap sm:pr-6">
                                             <div class="flex justify-end space-x-3">
+                                            {% if user.hasPermission("edit terms in " ~ taxonomy_vid) %}
                                                 <button x-show="term.edit" @click="editTerm(term)"
                                                         class="text-gray-400 hover:text-primary-500">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
@@ -144,6 +148,7 @@
                                                                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                                     </svg>
                                                 </button>
+                                            {% endif %}
                                                 <button x-show="term.delete" @click="confirmDeleteTerm(term.id)"
                                                         class="text-gray-400 hover:text-red-500">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"

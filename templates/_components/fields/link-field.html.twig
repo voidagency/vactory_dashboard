@@ -64,5 +64,87 @@
         </ul>
       </div>
     </div>
+
+    <!-- Extension des attributs du lien -->
+    <div x-data="{ openAttrs: false }" class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6 mt-6">
+    <!-- En-tête repliable -->
+    <div class="flex justify-between items-center cursor-pointer select-none" @click="openAttrs = !openAttrs">
+        <h3 class="text-lg font-semibold text-slate-900">
+            {{ 'Link Attributes'|t }}
+        </h3>
+        <svg :class="{'rotate-180': openAttrs}"
+             class="w-5 h-5 transform transition-transform duration-300 text-slate-400" fill="none"
+             stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </div>
+    <div x-show="openAttrs" x-transition class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Link Label -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    {{ 'Link Label'|t }}
+                </label>
+                <input
+                    type="text"
+                    x-model="{{ xmodel }}[fieldName].attributes.label"
+                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg"
+                >
+            </div>
+            <!-- Link classes -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    {{ 'Link classes'|t }}
+                </label>
+                <input
+                    type="text"
+                    x-model="{{ xmodel }}[fieldName].attributes.class"
+                    placeholder="{{ 'Link classes separated with spaces'|t }}"
+                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg"
+                >
+            </div>
+            <!-- Link ID -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    {{ 'Link ID'|t }}
+                </label>
+                <input
+                    type="text"
+                    x-model="{{ xmodel }}[fieldName].attributes.id"
+                    placeholder="{{ 'Enter a valid CSS ID for the link'|t }}"
+                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg"
+                >
+            </div>
+            <!-- Link Target -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    {{ 'Link Target'|t }}
+                </label>
+                <select
+                    x-model="{{ xmodel }}[fieldName].attributes.target"
+                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg"
+                >
+                    <option value="_self">{{ 'Load in the same frame as it was clicked (_self)'|t }}</option>
+                    <option value="_blank">{{ 'Load in a new window (_blank)'|t }}</option>
+                    <option value="_parent">{{ 'Load in the parent frameset (_parent)'|t }}</option>
+                    <option value="_top">{{ 'Load in the full body of the window (_top)'|t }}</option>
+                    <option value="framename">{{ 'Load in a named frame (framename)'|t }}</option>
+                </select>
+            </div>
+            <!-- Link rel -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    {{ 'Link rel'|t }}
+                </label>
+                <input
+                    type="text"
+                    x-model="{{ xmodel }}[fieldName].attributes.rel"
+                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg"
+                >
+            </div>
+        </div>
+    </div>
+</div>
+
   </div>
 </template>

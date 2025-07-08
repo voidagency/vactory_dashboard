@@ -94,16 +94,9 @@ class DashboardMediaController extends ControllerBase {
       $types[$type_id] = $type->label();
     }
 
-    $permission_create_media = $this->currentUser()
-      ->hasPermission('create media');
-    $permission_delete_media = $this->currentUser()
-      ->hasPermission('delete any media');
-
     return [
       '#theme' => 'vactory_dashboard_media',
       '#media_types' => $types,
-      '#permission_create_media' => $permission_create_media,
-      '#permission_delete_media' => $permission_delete_media,
     ];
   }
 
