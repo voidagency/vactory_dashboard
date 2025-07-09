@@ -115,7 +115,7 @@ class DashboardVactoryPageController extends ControllerBase {
     }
 
     return [
-      '#theme' => 'vactory_dashboard_vactory_page_add',
+      '#theme' => 'vactory_dashboard_node_add',
       '#type' => 'page',
       '#language' => $current_language,
       '#node_default_lang' => $current_language,
@@ -167,7 +167,7 @@ class DashboardVactoryPageController extends ControllerBase {
     $meta_tags = $this->metatagService->prepareMetatags($node_translation ?? $node);
 
     return [
-      '#theme' => 'vactory_dashboard_vactory_page_edit',
+      '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'page',
       '#language' => $node_translation ? $node_translation->language()
         ->getId() : $node->language()->getId(),
@@ -225,7 +225,7 @@ class DashboardVactoryPageController extends ControllerBase {
     $meta_tags = $this->metatagService->prepareMetatags($node);
 
     return [
-      '#theme' => 'vactory_dashboard_vactory_page_edit',
+      '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'page',
       '#language' => $current_language,
       '#node' => $this->nodeService->processVactoryPageData($node),

@@ -1,10 +1,11 @@
 {% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
 {% block content %}
     {% if type == 'page' %}
-        {% include "@vactory_dashboard/node/vactory-page/edit-vactory-page.html.twig" %}
+        {% include "@vactory_dashboard/node/add-vactory-page.html.twig" %}
     {% endif %}
     {% if type == 'not_page' %}
-        {% include "@vactory_dashboard/node/vactory-page/edit-node.html.twig" %}
+        {% include "@vactory_dashboard/node/add-node.html.twig" %}
     {% endif %}
 {% endblock %}
 
@@ -12,37 +13,20 @@
     <script>
       document.addEventListener('alpine:init', () => {
         Alpine.data('pageEditor', (config) => ({
-          // Other bundle specific vars.
           bundle: config.bundle,
           bundle_label: config.bundle_label,
-          fields: config.fields,
+          fields: config.fields ?? {},
           formData: {
             fields: {},
-            status: config.status === '1',
+            status: true,
           },
-          get contentFields() {
-            return Object.fromEntries(
-              Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content'),
-            );
-          },
-          get crossContentFields() {
-            return Object.fromEntries(
-              Object.entries(this.fields).filter(([key, field]) => field.type === 'field_cross_content'),
-            );
-          },
-          // End other bundle specific vars.
-          nid: config.nid,
-          errorMessage: '',
           language: config.language,
-          node: config.node,
-          has_translation: config.has_translation,
           activeTab: 'content',
           blocks: [],
-          changed: config.changed,
           settings: {
             title: '',
             alias: '',
-            status: config.status === '1',
+            status: true,
           },
           seo: {},
           showBlocksModal: false,
@@ -63,9 +47,76 @@
           currentBlockIndex: null,
           dragStartIndex: null,
           dragStartItemIndex: null,
-          // Add intersection observer state
-          isFirstAddBlockVisible: true,
-          firstAddBlockObserver: null,
+
+          // node
+          get contentFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content'),
+            );
+          },
+          get crossContentFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => field.type === 'field_cross_content'),
+            );
+          },
+          validateForm() {
+            const form = document.getElementById('node-form');
+            const requiredInputs = form.querySelectorAll('[required]');
+            let isValid = true;
+            requiredInputs.forEach(input => {
+              if (!input.value) {
+                console.log({input})
+                input.classList.add('border-red-500');
+                isValid = false;
+              }
+            });
+
+            return isValid;
+          },
+          async saveNode() {
+            if (!this.validateForm()) {
+              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              return;
+            }
+
+            if (this.isSaving) {
+              return;
+            }
+            this.isSaving = true;
+            try {
+              const response = await fetch(`/api/vactory-dashboard/${this.bundle}/node/save`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  bundle: this.bundle,
+                  language: this.language,
+                  seo: this.seo,
+                  blocks: this.blocks,
+                  fields: this.formData.fields,
+                  status: this.formData.status,
+                }),
+              });
+
+              const data = await response.json();
+
+              if (!response.ok) {
+                throw new Error(data.message || '{{ 'Failed to save node'|t }}');
+              }
+
+              this.showNotification('success', '{{ 'Node created successfully'|t }}');
+
+              window.location.href = data?.list;
+            } catch (error) {
+              console.error('Error saving node:', error);
+              this.showNotification('error', error.message);
+            } finally {
+              this.isSaving = false;
+            }
+          },
+          // end node
+
           dragStart(event) {
             this.dragStartIndex = parseInt(event.target.dataset.index);
             event.dataTransfer.effectAllowed = 'move';
@@ -88,9 +139,6 @@
 
               // Show success notification
               this.showNotification('success', '{{ 'Block order updated'|t }}');
-              if (!this.bundle) {
-                this.saveChanges();
-              }
             }
           },
           dragEndItem(event) {
@@ -121,11 +169,11 @@
               fields: {},
               items: [],
               config: {
-                title: block.title || template.name || '',
-                show_title: block.show_title || false,
-                width: block.width || 'full_width',
-                spacing: block.spacing || '_none',
-                css_classes: block.css_classes || '',
+                title: template.name || '',
+                show_title: false,
+                width: 'full_width',
+                spacing: '_none',
+                css_classes: '',
               },
             };
 
@@ -141,9 +189,9 @@
                   if (template.fields[fieldName].type === 'text_format') {
                     mappedItem[fieldName] = item[fieldName].value || '';
                   } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
-                    const imageKey = Object.keys(item?.[fieldName] ?? {})?.[0] ?? null;
-                    const imageData = item?.[fieldName]?.[imageKey] ?? {};
-                    const imageId = imageData?.selection?.[0]?.target_id ?? null;
+                    const imageKey = Object.keys(item[fieldName])[0];
+                    const imageData = item[fieldName][imageKey];
+                    const imageId = imageData.selection[0].target_id;
                     if (imageId) {
                       mappedItem[fieldName] = {
                         id: imageId,
@@ -164,9 +212,8 @@
                   } else if (template.fields[fieldName].type === 'json_api_collection') {
                     mappedItem[fieldName] = item[fieldName];
                   } else {
-                    mappedItem[fieldName] = item[fieldName];
+                    mappedItem[fieldName] = item[fieldName] ?? '';
                   }
-
                 });
                 items.push(mappedItem);
                 i++;
@@ -186,9 +233,9 @@
                     if (template.fields[fieldName].type === 'text_format') {
                       this.blockForm.fields[fieldName] = block.widget_data[0][fieldName].value || '';
                     } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
-                      const imageKey = Object.keys(block?.widget_data?.[0]?.[fieldName] ?? {})?.[0] ?? null;
-                      const imageData = block?.widget_data?.[0]?.[fieldName]?.[imageKey] ?? {};
-                      const imageId = imageData?.selection ? imageData?.selection?.[0]?.target_id : null;
+                      const imageKey = Object.keys(block.widget_data[0][fieldName])[0];
+                      const imageData = block.widget_data[0][fieldName][imageKey];
+                      const imageId = imageData?.selection ? imageData?.selection[0]?.target_id : null;
                       if (imageId) {
                         this.blockForm.fields[fieldName] = {
                           id: imageId ?? null,
@@ -206,7 +253,6 @@
                           key: imageKey ?? new Date().getTime(),
                         };
                       }
-
                     } else if (template.fields[fieldName].type === 'json_api_collection') {
                       this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
                     } else {
@@ -224,9 +270,9 @@
                   if (template.extra_fields[fieldName].type === 'text_format') {
                     this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName].value || '';
                   } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
-                    const imageKey = Object.keys(block?.widget_data?.extra_field?.[fieldName] ?? {})?.[0] ?? null;
-                    const imageData = block?.widget_data?.extra_field?.[fieldName]?.[imageKey] ?? {};
-                    const imageId = imageData?.selection?.[0]?.target_id ?? null;
+                    const imageKey = Object.keys(block.widget_data.extra_field[fieldName])[0];
+                    const imageData = block.widget_data.extra_field[fieldName][imageKey];
+                    const imageId = imageData.selection[0].target_id;
                     if (imageId) {
                       this.blockForm.extra_fields[fieldName] = {
                         id: imageId,
@@ -252,6 +298,7 @@
                 }
               });
             }
+
             this.showBlockForm = true;
           },
           saveBlock() {
@@ -274,7 +321,7 @@
                         media_library_selection: '',
                         media_library_update_widget: 'Update widget',
                         open_button: 'Add media',
-                        name: item?.[fieldName]?.id ?? '',
+                        name: item[fieldName]?.name ?? '',
                         selection: [
                           {
                             remove_button: 'Remove',
@@ -286,7 +333,7 @@
                       },
                     };
                   } else {
-                    blockData[index][fieldName] = item[fieldName];
+                    blockData[index][fieldName] = item[fieldName] ?? '';
                   }
                 });
               });
@@ -322,7 +369,7 @@
                   // Nothing to change here
                   blockData[0][fieldName] = this.blockForm.fields[fieldName];
                 } else {
-                  blockData[0][fieldName] = this.blockForm.fields[fieldName];
+                  blockData[0][fieldName] = this.blockForm.fields[fieldName] ?? '';
                 }
               });
             }
@@ -354,7 +401,7 @@
                     },
                   };
                 } else {
-                  blockData.extra_field[fieldName] = this.blockForm.extra_fields[fieldName];
+                  blockData.extra_field[fieldName] = this.blockForm.extra_fields[fieldName] ?? '';
                 }
               });
             }
@@ -404,9 +451,6 @@
             };
             this.currentBlockIndex = null;
             this.showBlockForm = false;
-            if (!this.bundle) {
-              this.saveChanges();
-            }
           },
           selectTemplate(template) {
             this.selectedTemplate = template;
@@ -463,6 +507,7 @@
               this.addItem(); // Add first item
             } else {
               Object.keys(template.fields).forEach(fieldName => {
+                console.log('template.fields[fieldName]', template.fields[fieldName]);
                 // Initialize url_extended fields with both title and url
                 if (template.fields[fieldName].type === 'url_extended') {
                   this.blockForm.fields[fieldName] = {
@@ -475,6 +520,7 @@
                       target: '',
                       rel: '',
                     },
+
                   };
                 } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
                   this.blockForm.fields[fieldName] = {
@@ -601,172 +647,47 @@
             timeout: null,
           },
           init() {
-            const node = JSON.parse(this.node);
-            // Node specific process.
-            if (this.bundle) {
-              this.fields = JSON.parse(this?.fields);
-              // Initialize form data based on fields
-              Object.keys(this.fields).forEach((fieldKey) => {
-                const field = this.fields[fieldKey];
-
-                if (field.type === 'faqfield') {
-                  if (Array.isArray(field.value) && field.value.length) {
-                    this.formData.fields[fieldKey] = field.value;
-                  } else if (Array.isArray(node[fieldKey]) && node[fieldKey].length) {
-                    this.formData.fields[fieldKey] = node[fieldKey];
-                  } else {
-                    this.formData.fields[fieldKey] = [{ question: '', answer: '' }];
-                  }
-
-                  console.log(`FAQ data for field "${fieldKey}":`, this.formData.fields[fieldKey]);
-                  return;
-                }
-
-                if (field?.textFormatField) {
-                  setTimeout(() => {
-                    Drupal.editors.ckeditor5.onChange(document.getElementById(`edit-${field.name}-value`), () => {
-                      const ckInstance = Drupal.CKEditor5Instances.values().next().value;
-                      this.formData.fields[field.name] = ckInstance.getData();
-                    });
-                  }, '3000');
-                }
-
-                if (field.type === 'image' || field.type === 'file' || field.type === 'remote_video' || field.type === 'private_file') {
-                  this.formData.fields[fieldKey] = node[fieldKey] ?? {
-                    id: null,
-                    url: null,
-                    name: null,
-                    path: fieldKey,
-                    key: new Date().getTime(),
-                  };
-                } else {
-                  this.formData.fields[fieldKey] = node[fieldKey] ?? '';
-                }
-              });
-            }
-
-            // End Node specific process.
-            if (node?.paragraphs && node?.paragraphs?.length > 0) {
-              this.blocks = node.paragraphs.map((paragraph) => ({
-                title: paragraph.title,
-                show_title: paragraph.show_title,
-                width: paragraph.width,
-                spacing: paragraph.spacing,
-                css_classes: paragraph.css_classes,
-                preview: paragraph.widget_config.screenshot,
-                id: paragraph.pid,
-                widget_id: paragraph.widget_id,
-                widget_config: paragraph.widget_config,
-                widget_data: paragraph.widget_data,
-              }));
-            }
-            this.settings.title = node?.title || '';
-            this.settings.alias = node?.alias || '';
-            // this.settings.status = node.status || false;
-
-            window.seoData = {{ meta_tags|json_encode|raw }};
-            this.seo = {
-              title: window.seoData.title || '',
-              description: window.seoData.description || '',
-              keywords: window.seoData.keywords || '',
-              abstract: window.seoData.abstract || '',
-              article_author: window.seoData.article_author || '',
-              article_expiration_time: window.seoData.article_expiration_time || '',
-              article_modified_time: window.seoData.article_modified_time || '',
-              article_published_time: window.seoData.article_published_time || '',
-              article_section: window.seoData.article_section || '',
-              article_publisher: window.seoData.article_publisher || '',
-              article_tag: window.seoData.article_tag || '',
-              book_author: window.seoData.book_author || '',
-              book_isbn: window.seoData.book_isbn || '',
-              book_release_date: window.seoData.book_release_date || '',
-              book_tag: window.seoData.book_tag || '',
-              og_audio: window.seoData.og_audio || '',
-              og_audio_secure_url: window.seoData.og_audio_secure_url || '',
-              og_audio_type: window.seoData.og_audio_type || '',
-              og_country_name: window.seoData.og_country_name || '',
-              og_determiner: window.seoData.og_determiner || '',
-              og_email: window.seoData.og_email || '',
-              og_fax_number: window.seoData.og_fax_number || '',
-              og_image: window.seoData.og_image || '',
-              og_image_secure_url: window.seoData.og_image_secure_url || '',
-              og_image_alt: window.seoData.og_image_alt || '',
-              og_image_height: window.seoData.og_image_height || '',
-              og_image_width: window.seoData.og_image_width || '',
-              og_image_type: window.seoData.og_image_type || '',
-              og_image_url: window.seoData.og_image_url || '',
-              og_latitude: window.seoData.og_latitude || '',
-              og_locale: window.seoData.og_locale || '',
-              og_locale_alternative: window.seoData.og_locale_alternative || '',
-              og_locality: window.seoData.og_locality || '',
-              og_longitude: window.seoData.og_longitude || '',
-              og_phone_number: window.seoData.og_phone_number || '',
-              og_description: window.seoData.og_description || '',
-              og_postal_code: window.seoData.og_postal_code || '',
-              og_region: window.seoData.og_region || '',
-              og_see_also: window.seoData.og_see_also || '',
-              og_site_name: window.seoData.og_site_name || '',
-              og_street_address: window.seoData.og_street_address || '',
-              og_title: window.seoData.og_title || '',
-              og_type: window.seoData.og_type || '',
-              og_url: window.seoData.og_url || '',
-              og_updated_time: window.seoData.og_updated_time || '',
-              og_video: window.seoData.og_video || '',
-              og_video_duration: window.seoData.og_video_duration || '',
-              og_video_height: window.seoData.og_video_height || '',
-              og_video_secure_url: window.seoData.og_video_secure_url || '',
-              og_video_type: window.seoData.og_video_type || '',
-              og_video_width: window.seoData.og_video_width || '',
-              profile_first_name: window.seoData.profile_first_name || '',
-              profile_gender: window.seoData.profile_gender || '',
-              profile_last_name: window.seoData.profile_last_name || '',
-              profile_username: window.seoData.profile_username || '',
-              video_actor: window.seoData.video_actor || '',
-              video_actor_role: window.seoData.video_actor_role || '',
-              video_tag: window.seoData.video_tag || '',
-              video_writer: window.seoData.video_writer || '',
-              og_updated_time: window.seoData.og_updated_time || '',
-              video_series: window.seoData.video_series || '',
-              video_release_date: window.seoData.video_release_date || '',
-              video_director: window.seoData.video_director || '',
-
-            };
-
             // Fetch templates when component initializes
             this.fetchTemplates();
 
-            // Setup intersection observer for first add block button
-            this.setupFirstAddBlockObserver();
-          },
-          setupFirstAddBlockObserver() {
-            // Wait for the next tick to ensure DOM is ready
-            this.$nextTick(() => {
-              const firstAddBlockButton = this.$refs.firstAddBlockButton;
+            this.fields = JSON.parse(this.fields);
+            // Initialize form data based on fields
+            Object.keys(this.fields).forEach((fieldKey) => {
+              const field = this.fields[fieldKey];
 
-              if (firstAddBlockButton) {
-                this.firstAddBlockObserver = new IntersectionObserver(
-                  (entries) => {
-                    entries.forEach((entry) => {
-                      this.isFirstAddBlockVisible = entry.isIntersecting;
-                    });
-                  },
+              if (field?.textFormatField) {
+                setTimeout(() => {
+                  const label = document.getElementById(`edit-${field.name}-format-help`);
+                  label.style.display = 'none';
+                  Drupal.editors.ckeditor5.onChange(document.getElementById(`edit-${field.name}-value`), () => {
+                    const ckInstance = Drupal.CKEditor5Instances.values().next().value;
+                    this.formData.fields[field.name] = ckInstance.getData();
+                  });
+                }, '2000');
+              }
 
-                  {
-                    threshold: 0,
-                    rootMargin: '0px',
-                  },
-                );
+              if (field.type === 'faqfield') {
+                this.formData.fields[fieldKey] = Array.isArray(field.value) && field.value.length
+                  ? field.value
+                  : [{ question: '', answer: '' }];
+                return;
+              }
 
-                this.firstAddBlockObserver.observe(firstAddBlockButton);
+              if (field.type === 'image' || field.type === 'file' || field.type === 'remote_video' || field.type === 'private_file') {
+                this.formData.fields[fieldKey] = {
+                  id: null,
+                  url: null,
+                  name: null,
+                  path: fieldKey,
+                  key: new Date().getTime(),
+                };
+              } else {
+                this.formData.fields[fieldKey] = '';
               }
             });
+
           },
-          destroy() {
-            // Cleanup intersection observer when component is destroyed
-            if (this.firstAddBlockObserver) {
-              this.firstAddBlockObserver.disconnect();
-            }
-          },
+
           showNotification(type, message) {
             // Clear any existing timeout
             if (this.notification.timeout) {
@@ -789,31 +710,28 @@
             }
             this.isSaving = true;
             try {
-              const node = JSON.parse(this.node);
-              const response = await fetch(`/api/vactory-dashboard/node/${this.nid}/save`, {
+              const response = await fetch("{{ path('vactory_dashboard.node.save') }}", {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                  id: node.id,
                   language: this.language,
-                  has_translation: this.has_translation,
                   settings: this.settings,
                   seo: this.seo,
                   blocks: this.blocks,
                   status: this.settings.status,
-                  changed: this.changed,
                 }),
               });
+
               const data = await response.json();
 
               if (!response.ok) {
                 throw new Error(data.message || 'Failed to save changes');
               }
-              this.has_translation = true;
+
               this.showNotification('success', '{{ 'Changes saved successfully'|t }}');
-              window.location.reload();
+              window.location.href = data?.edit_path;
             } catch (error) {
               console.error('Error saving changes:', error);
               this.showNotification('error', error.message || '{{ 'An error occurred while saving'|t }}');
@@ -826,67 +744,7 @@
             this.blocks.splice(index, 1);
             // Show success notification
             this.showNotification('success', '{{ 'Block removed successfully'|t }}');
-            if (!this.bundle) {
-              this.saveChanges();
-            }
           },
-          // Node Specific logique for saving node
-          validateForm() {
-            const form = document.getElementById('node-form');
-            const requiredInputs = form.querySelectorAll('[required]');
-            let isValid = true;
-
-            requiredInputs.forEach(input => {
-              if (!input.value && !input.disabled) {
-                input.classList.add('border-red-500');
-                isValid = false;
-              }
-            });
-
-            return isValid;
-          },
-          async saveNode() {
-            if (!this.validateForm()) {
-              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
-              return;
-            }
-
-            if (this.isSaving) {
-              return;
-            }
-            this.isSaving = true;
-            try {
-              const response = await fetch(`/api/vactory-dashboard/${this.bundle}/node/edit/${this.nid}/save`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  language: this.language,
-                  fields: this.formData.fields,
-                  status: this.formData.status,
-                  seo: this.seo,
-                  blocks: this.blocks,
-                  has_translation: this.has_translation,
-                  changed: this.changed,
-                }),
-              });
-
-              const data = await response.json();
-
-              if (!response.ok) {
-                throw new Error(data.message || '{{ 'Failed to save node'|t }}');
-              }
-              this.showNotification('success', '{{ 'Node created successfully'|t }}');
-              window.location.reload();
-            } catch (error) {
-              console.error('Error saving node:', error);
-              this.showNotification('error', error.message);
-            } finally {
-              this.isSaving = false;
-            }
-          },
-          // Node Specific loguique for saving node.
           // Media Library States
           showMediaLibrary: false,
           mediaLoading: false,
@@ -979,7 +837,6 @@
           },
           selectMedia(media) {
             this.selectedMedia = media;
-            console.log('path', this.blockForm, this.currentFieldPath);
             if (!this.selectedMedia || !this.currentField) {
               return;
             }
@@ -992,24 +849,15 @@
               path: this.currentFieldPath,
               key: this.currentFieldKey,
             };
-            if (this.bundle) {
-              this.formData.fields[this.currentFieldPath] = imageData;
-            }
+
             this.setValueByPath(this.blockForm, this.currentFieldPath, imageData);
+            this.formData.fields[this.currentFieldPath] = imageData;
 
             this.closeMediaLibrary();
             this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
           },
           clearImage(fieldName, path, key) {
-            if (this.bundle) {
-              this.formData.fields[fieldName] = {
-                id: null,
-                url: null,
-                name: null,
-                path: fieldName,
-                key: new Date().getTime(),
-              };
-            }
+            // for vactory page.
             this.setValueByPath(this.blockForm, path, {
               id: null,
               url: null,
@@ -1017,8 +865,15 @@
               path: path,
               key: key ?? new Date().getTime(),
             });
-            // for node.
 
+            // for node.
+            this.formData.fields[fieldName] = {
+              id: null,
+              url: null,
+              name: null,
+              path: fieldName,
+              key: new Date().getTime(),
+            };
           },
           getFieldValue(fieldName, index = null) {
             if (index !== null) {
@@ -1049,120 +904,6 @@
             return url;
           },
         }));
-        document.addEventListener('alpine:init', () => {
-          Alpine.data('alpineMuliSelect', (obj) => ({
-            elementId: obj.elementId,
-            options: [],
-            selected: obj.selected,
-            selectedElms: [],
-            show: false,
-            search: '',
-            open() {
-              this.show = true;
-            },
-            close() {
-              this.show = false;
-            },
-            toggle() {
-              this.show = !this.show;
-            },
-            isOpen() {
-              return this.show === true;
-            },
-
-            // Initializing component
-            init() {
-              const options = document.getElementById(this.elementId).options;
-              for (let i = 0; i < options.length; i++) {
-
-                this.options.push({
-                  value: options[i].value,
-                  text: options[i].innerText,
-                  search: options[i].dataset.search,
-                  selected: Object.values(this.selected).includes(options[i].value),
-                });
-
-                if (this.options[i].selected) {
-                  this.selectedElms.push(this.options[i]);
-                }
-              }
-
-              // searching for the given value
-              this.$watch('search', (e => {
-                this.options = [];
-                const options = document.getElementById(this.elementId).options;
-                Object.values(options).filter((el) => {
-                  var reg = new RegExp(this.search, 'gi');
-                  return el.dataset.search.match(reg);
-                }).forEach((el) => {
-                  let newel = {
-                    value: el.value,
-                    text: el.innerText,
-                    search: el.dataset.search,
-                    selected: Object.values(this.selected).includes(el.value),
-                  };
-                  this.options.push(newel);
-                });
-              }));
-            },
-            // clear search field
-            clear() {
-              this.search = '';
-            },
-            // deselect selected options
-            deselect() {
-              setTimeout(() => {
-                this.selected = [];
-                this.selectedElms = [];
-                Object.keys(this.options).forEach((key) => {
-                  this.options[key].selected = false;
-                });
-              }, 100);
-            },
-            // select given option
-            select(index, event) {
-              if (!this.options[index].selected) {
-                this.options[index].selected = true;
-                this.options[index].element = event.target;
-                this.selected.push(this.options[index].value);
-                this.selectedElms.push(this.options[index]);
-
-              } else {
-                this.selected.splice(this.selected.lastIndexOf(index), 1);
-                this.options[index].selected = false;
-                Object.keys(this.selectedElms).forEach((key) => {
-                  if (this.selectedElms[key].value == this.options[index].value) {
-                    setTimeout(() => {
-                      this.selectedElms.splice(key, 1);
-                    }, 100);
-                  }
-                });
-              }
-            },
-            // remove from selected option
-            remove(index, option) {
-              this.selectedElms.splice(index, 1);
-              Object.keys(this.selected).forEach((skey) => {
-                if (this.selected[skey] == option.value) {
-                  this.selected.splice(skey, 1);
-                }
-              });
-              Object.keys(this.options).forEach((key) => {
-                if (this.options[key].value == option.value) {
-                  this.options[key].selected = false;
-                }
-              });
-            },
-            // filter out selected elements
-            selectedElements() {
-              return this.options.filter(op => op.selected === true);
-            },
-            // get selected values
-            selectedValues() {
-              return this.options.filter(op => op.selected === true).map(el => el.value);
-            },
-          }));
-        });
       });
     </script>
 {% endblock %}

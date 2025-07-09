@@ -3,11 +3,16 @@
 namespace Drupal\vactory_dashboard\Service;
 
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\file\FileInterface;
 use Drupal\media\MediaInterface;
+use Drupal\node\Entity\NodeType;
 use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\vactory_dashboard\Constants\DashboardConstants;
 
 /**
  * Service for node utilities.
@@ -19,8 +24,24 @@ class NodeService {
    */
   protected $entityTypeManager;
 
-  public function __construct(EntityTypeManagerInterface $entityTypeManager) {
+  /**
+   * The entity field manager.
+   *
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   */
+  protected $entityFieldManager;
+
+  /**
+   * The config factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
+
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager, ConfigFactoryInterface $configFactory) {
     $this->entityTypeManager = $entityTypeManager;
+    $this->entityFieldManager = $entityFieldManager;
+    $this->configFactory = $configFactory;
   }
 
   /**
@@ -314,6 +335,213 @@ class NodeService {
         }
       }
     }
+  }
+
+  /**
+   * Get bundle fields information.
+   *
+   * @param string $bundle
+   *   The bundle name.
+   *
+   * @return array
+   *   Array of field definitions with their settings.
+   */
+  public function getBundleFields($bundle, $countActiveLangs = 0) {
+    $fields = $this->entityFieldManager->getFieldDefinitions('node', $bundle);
+    $field_definitions = [];
+
+    $form_mode = 'default';
+    $form_display = \Drupal::service('entity_display.repository')
+      ->getFormDisplay('node', $bundle, $form_mode);
+
+    foreach ($fields as $field_name => $field_definition) {
+      if ($form_display->getComponent($field_name)) {
+        // Skip technical/system fields
+        if (in_array($field_name, DashboardConstants::SKIPPED_FIELDS)) {
+          continue;
+        }
+
+        $field_type = $field_definition->getType();
+        $field_settings = $field_definition->getSettings();
+        $cardinality = $field_definition->getFieldStorageDefinition()
+          ->getCardinality();
+        $field_required = $field_definition->isRequired();
+        $field_label = $field_definition->getLabel();
+
+        $field_info = [
+          'name' => $field_name,
+          'type' => $field_type,
+          'label' => $field_label,
+          'required' => $field_required,
+          'settings' => $field_settings,
+        ];
+        // Add specific settings based on field type
+        switch ($field_type) {
+          case 'entity_reference':
+            $field_info['target_type'] = $field_settings['target_type'];
+            if ($field_settings['target_type'] === 'taxonomy_term' || $field_settings['target_type'] === 'user') {
+              $field_info['type'] = 'select';
+              $field_info['multiple'] = $cardinality == -1;
+              $field_info['options'] = $this->load_entity_reference_options($field_info);
+            }
+            if ($field_settings['target_type'] === 'media') {
+              $field_info['type'] = reset($field_settings['handler_settings']['target_bundles']);
+            }
+            break;
+          case 'list_string':
+            $field_info['type'] = 'select';
+            $field_info['multiple'] = $cardinality == -1;
+            $field_info['options'] = $field_definition->getSettings()['allowed_values'] ?? [];
+            break;
+
+          case 'text_with_summary':
+          case 'text_long':
+            $field_info['format'] = 'full_html';
+            $field_info['type'] = 'text_with_summary';
+            $form = \Drupal::formBuilder()
+              ->getForm('Drupal\vactory_dashboard\Form\CkeditorFieldForm', $field_name);
+            $field_info['textFormatField'] = \Drupal::service('renderer')
+              ->render($form);
+            break;
+
+          case 'field_cross_content':
+            $field_info['options'] = $this->getCrossContentOptions($bundle, $field_info);
+            $field_info['multiple'] = TRUE;
+            break;
+        }
+        $field_info['is_translatable'] = $countActiveLangs === 0 || $field_definition->isTranslatable();
+        $field_definitions[$field_name] = $field_info;
+      }
+    }
+    return $field_definitions;
+  }
+
+  /**
+   * Get cross content options.
+   */
+  public function getCrossContentOptions($type, array $field_definition) {
+    $language = \Drupal::languageManager()->getCurrentLanguage()->getId();
+    $node_type = NodeType::load($type);
+    if ($node_type->getThirdPartySetting('vactory_cross_content', 'enabling', '') == 1) {
+      $content_type_selected = $node_type->getThirdPartySetting('vactory_cross_content', 'content_type', '');
+      if (!empty($content_type_selected) && $content_type_selected != 'none') {
+        $type = $content_type_selected;
+      }
+    }
+    $node_list = \Drupal::entityTypeManager()
+      ->getListBuilder('node')
+      ->getStorage()
+      ->loadByProperties([
+        'type' => $type,
+      ]);
+
+    foreach ($node_list as $key => $node) {
+      $node_list[$key] = \Drupal::service('entity.repository')
+        ->getTranslationFromContext($node, $language);
+    }
+
+    // @todo: implement for edit.
+    $current_node = "";
+    if (empty($current_node)) {
+      $current_node = 0;
+    }
+    else {
+      // $current_node = $current_node[0]['value'];
+    }
+    $options = [];
+    foreach ($node_list as $key => $value) {
+      if ($key == $current_node) {
+        continue;
+      }
+      $options[$key] = $value->label();
+    }
+    return $options;
+  }
+
+  /**
+   * Load entity reference options.
+   */
+  public function load_entity_reference_options(array $field_definition): array {
+    $target_type = $field_definition['settings']['target_type'] ?? NULL;
+    $handler_settings = $field_definition['settings']['handler_settings'] ?? [];
+
+    if (!$target_type) {
+      return [];
+    }
+
+    $entity_storage = \Drupal::entityTypeManager()->getStorage($target_type);
+
+    // Add conditions for bundles if specified
+    $query = $entity_storage->getQuery();
+    $query->accessCheck(TRUE);
+
+    // Handle target bundles (e.g. specific vocabularies or content types)
+    if (!empty($handler_settings['target_bundles'])) {
+      $bundle_keys = array_keys($handler_settings['target_bundles']);
+      if ($target_type === 'taxonomy_term') {
+        $query->condition('vid', $bundle_keys, 'IN');
+      }
+      elseif ($this->entityTypeManager
+        ->getDefinition($target_type)
+        ->getKey('bundle')
+      ) {
+        $query->condition('bundle', $bundle_keys, 'IN');
+      }
+    }
+
+    $ids = $query->execute();
+    $entities = $entity_storage->loadMultiple($ids);
+
+    $options = [];
+    foreach ($entities as $entity) {
+      if ($entity->label()) {
+        $options[$entity->id()] = $entity->label();
+      }
+    }
+
+    return $options;
+  }
+
+  /**
+   * If the bundle has a paragraphs field.
+   */
+  public function hasParagraphsField(array &$fields): bool {
+    if (!in_array('field_vactory_paragraphs', array_keys($fields))) {
+      return FALSE;
+    }
+
+    $settings = $fields['field_vactory_paragraphs']['settings'];
+    if (in_array('vactory_component', $settings['handler_settings']['target_bundles'] ?? [])) {
+      unset($fields['field_vactory_paragraphs']);
+      return TRUE;
+    }
+
+    return FALSE;
+  }
+
+  /**
+   * Get referenced taxonomies.
+   */
+  public function getReferencedTaxonomies($bundle) {
+    // Load saved config with selected vocabularies.
+    $config = $this->configFactory->get('vactory_dashboard.advanced.content_types');
+    $taxonomy_selections = $config->get('taxonomy_selections') ?? [];
+
+    // Get selected vocabularies for this bundle.
+    $selected_vocabularies = $taxonomy_selections[$bundle] ?? [];
+
+    $result = [];
+    foreach ($selected_vocabularies as $vocab_id) {
+      $vocabulary = Vocabulary::load($vocab_id);
+      if ($vocabulary) {
+        $result[] = [
+          'id' => $vocab_id,
+          'label' => $vocabulary->label(),
+        ];
+      }
+    }
+
+    return $result;
   }
 
 }
