@@ -13,6 +13,7 @@ use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\paragraphs\ParagraphInterface;
 use Drupal\pathauto\PathautoState;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
+use Drupal\vactory_dashboard\Service\NodeService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -58,16 +59,24 @@ class DashboardVactoryPageController extends ControllerBase {
   protected AliasValidationService $aliasValidationService;
 
   /**
+   * The node service.
+   *
+   * @var \Drupal\vactory_dashboard\Service\NodeService
+   */
+  protected $nodeService;
+
+  /**
    * Constructs a new DashboardUsersController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, MetatagService $metatag_Service, AliasValidationService $aliasValidationService, PreviewUrlService $previewUrlService) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, MetatagService $metatag_Service, AliasValidationService $aliasValidationService, PreviewUrlService $previewUrlService, NodeService $node_service) {
     $this->entityTypeManager = $entity_type_manager;
     $this->metatagService = $metatag_Service;
     $this->aliasValidationService = $aliasValidationService;
     $this->previewUrlService = $previewUrlService;
+    $this->nodeService = $node_service;
   }
 
   /**
@@ -78,7 +87,8 @@ class DashboardVactoryPageController extends ControllerBase {
       $container->get('entity_type.manager'),
       $container->get('vactory_dashboard.metatag_service'),
       $container->get('vactory_dashboard.alias_validation'),
-      $container->get('vactory_dashboard.preview_url')
+      $container->get('vactory_dashboard.preview_url'),
+      $container->get('vactory_dashboard.node_service'),
     );
   }
 
@@ -158,9 +168,10 @@ class DashboardVactoryPageController extends ControllerBase {
 
     return [
       '#theme' => 'vactory_dashboard_vactory_page_edit',
+      '#type' => 'page',
       '#language' => $node_translation ? $node_translation->language()
         ->getId() : $node->language()->getId(),
-      '#node' => $this->processNode($node_translation ?? $node),
+      '#node' => $this->nodeService->processVactoryPageData($node_translation ?? $node),
       '#changed' => $node_translation ? $node_translation->get('changed')->value : $node->get('changed')->value,
       '#label' => $node_translation ? $node_translation->label() : $node->label(),
       '#nid' => $id,
@@ -215,8 +226,9 @@ class DashboardVactoryPageController extends ControllerBase {
 
     return [
       '#theme' => 'vactory_dashboard_vactory_page_edit',
+      '#type' => 'page',
       '#language' => $current_language,
-      '#node' => $this->processNode($node),
+      '#node' => $this->nodeService->processVactoryPageData($node),
       '#nid' => $id,
       '#label' => $node->label(),
       '#status' => $node->get('status')->value,
@@ -225,152 +237,6 @@ class DashboardVactoryPageController extends ControllerBase {
       '#has_translation' => FALSE,
       '#meta_tags' => $meta_tags,
     ];
-  }
-
-  /**
-   *
-   */
-  private function processNode($node) {
-    $node_data = [];
-
-    // Get node fields.
-    $node_data['title'] = $node->getTitle();
-    $node_data['body'] = $node->hasField('node_summary') ? $node->get('node_summary')->value ?? "" : "";
-      
-    $paragraphs = [];
-    $lang = \Drupal::languageManager()->getCurrentLanguage()->getId();
-    if ($node->hasField('field_vactory_paragraphs')) {
-      $paragraphsData = $node->get('field_vactory_paragraphs')->getValue();
-      foreach ($paragraphsData as $paragraphData) {
-        $paragraph = Paragraph::load($paragraphData['target_id']);
-        if ($paragraph->hasTranslation($lang)) {
-          $paragraph = $paragraph->getTranslation($lang);
-        }
-        if ($paragraph && $paragraph->hasField('field_vactory_component') && $paragraph->bundle() == 'vactory_component') {
-          $vactoryComponents = $paragraph->field_vactory_component->getValue();
-          foreach ($vactoryComponents as $component) {
-            $widgetData = Json::decode($component['widget_data']);
-            $widgetConfig = \Drupal::service('vactory_dynamic_field.vactory_provider_manager')
-              ->loadSettings($component['widget_id']);
-            $this->processWidgetData($widgetData, $widgetConfig);
-            $widgetId = $component['widget_id'];
-            $paragraphs[] = [
-              'title' => $paragraph->get('field_vactory_title')->value,
-              'show_title' => $paragraph->get('field_vactory_flag')->value === "1",
-              'width' => $paragraph->get('paragraph_container')->value,
-              'spacing' => $paragraph->get('container_spacing')->value,
-              'css_classes' => $paragraph->get('paragraph_css_class')->value,
-              'pid' => $paragraphData['target_id'],
-              'widget_id' => $widgetId,
-              'widget_data' => $widgetData,
-              'widget_config' => $widgetConfig,
-            ];
-          }
-        }
-      }
-    }
-    $node_data['paragraphs'] = $paragraphs;
-
-    $alias = \Drupal::service('path_alias.manager')
-      ->getAliasByPath('/node/' . $node->id());
-    $node_data['alias'] = $alias;
-    $node_data['status'] = $node->isPublished();
-    return $node_data;
-  }
-
-  /**
-   * Process widget data to add media URLs.
-   *
-   * @param array $widgetData
-   *   The widget data to process.
-   * @param array $widgetConfig
-   *   The widget configuration.
-   */
-  private function processWidgetData(&$widgetData, $widgetConfig) {
-    // Get fields with type image.
-    $imageFields = array_filter($widgetConfig['fields'], function($field) {
-      return ($field['type'] ?? "") === 'image';
-    });
-
-    $extraFieldsImageFields = array_filter($widgetConfig['extra_fields'] ?? [], function($field) {
-      return ($field['type'] ?? "") === 'image';
-    });
-
-    $imageFields = array_keys($imageFields);
-
-    $extraFieldsImageFields = array_keys($extraFieldsImageFields);
-
-    // Process extra fields image fields.
-    foreach ($widgetData['extra_field'] ?? [] as $key => &$item) {
-      foreach ($extraFieldsImageFields as $fieldName) {
-        if ($key === $fieldName) {
-          $randomKey = array_key_first($item ?? []);
-          if ($randomKey && isset($item[$randomKey]['selection'][0]['target_id'])) {
-            $mediaId = $item[$randomKey]['selection'][0]['target_id'];
-            // Load the media entity.
-            /** @var \Drupal\media\Entity\Media $media */
-            $media = $this->entityTypeManager->getStorage('media')
-              ->load($mediaId);
-            if ($media instanceof MediaInterface) {
-              // Get the file URL.
-              $url = '';
-              if ($media->hasField('field_media_image') && !$media->get('field_media_image')
-                  ->isEmpty()) {
-                /** @var \Drupal\file\Entity\File $file */
-                $file = $media->get('field_media_image')->entity;
-                if ($file instanceof FileInterface) {
-                  $url = $file->createFileUrl();
-                }
-              }
-
-              // Add the URL to the image data.
-              $item[$randomKey]['selection'][0]['url'] = $url;
-              $widgetData[$key][$randomKey]['selection'][0]['url'] = $url;
-            }
-          }
-        }
-      }
-    }
-
-    // Process each numeric key (0, 1, etc.) in widgetData.
-    foreach ($widgetData ?? [] as $key => &$item) {
-      // Skip non-numeric keys like 'extra_field' and 'pending_content'.
-      if (!is_numeric($key)) {
-        continue;
-      }
-
-      // Process each image field in the item.
-      foreach ($imageFields as $fieldName) {
-        if (isset($item[$fieldName]) && is_array($item[$fieldName])) {
-          // Get the random key (e.g., f998c32812bd2cc9395e57409a3f6986)
-          $randomKey = array_key_first($item[$fieldName]);
-
-          if ($randomKey && isset($item[$fieldName][$randomKey]['selection'][0]['target_id'])) {
-            $mediaId = $item[$fieldName][$randomKey]['selection'][0]['target_id'];
-            // Load the media entity.
-            /** @var \Drupal\media\Entity\Media $media */
-            $media = $this->entityTypeManager->getStorage('media')
-              ->load($mediaId);
-            if ($media instanceof MediaInterface) {
-              // Get the file URL.
-              $url = '';
-              if ($media->hasField('field_media_image') && !$media->get('field_media_image')
-                  ->isEmpty()) {
-                /** @var \Drupal\file\Entity\File $file */
-                $file = $media->get('field_media_image')->entity;
-                if ($file instanceof FileInterface) {
-                  $url = $file->createFileUrl();
-                }
-              }
-
-              // Add the URL to the image data.
-              $item[$fieldName][$randomKey]['selection'][0]['url'] = $url;
-              $widgetData[$key][$fieldName][$randomKey]['selection'][0]['url'] = $url;
-            }
-          }
-        }
-      }
-    }
   }
 
   /**
@@ -568,10 +434,11 @@ class DashboardVactoryPageController extends ControllerBase {
             }
             else {
               $paragraph_entity = Paragraph::load($block['id']);
-              $paragraph_entity->getTranslation($language)->set('field_vactory_component', [
-                "widget_id" => $block['widget_id'],
-                "widget_data" => json_encode($block['widget_data']),
-              ]);
+              $paragraph_entity->getTranslation($language)
+                ->set('field_vactory_component', [
+                  "widget_id" => $block['widget_id'],
+                  "widget_data" => json_encode($block['widget_data']),
+                ]);
 
               if (isset($block['title'])) {
                 $paragraph_entity->getTranslation($language)

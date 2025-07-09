@@ -165,6 +165,13 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
       'template' => 'node/vactory-page/edit',
       'variables' => [
         'node' => NULL,
+        'type' => NULL,
+        'alias' => NULL,
+        'has_paragraphs_field' => NULL,
+        'bundle' => NULL,
+        'has_seo' => NULL,
+        'bundle_label' => NULL,
+        'fields' => NULL,
         'language' => NULL,
         'nid' => NULL,
         'label' => NULL,

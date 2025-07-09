@@ -1,70 +1,36 @@
 {% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
-
 {% block content %}
-    <div x-data="{ isRTL: document.dir === 'rtl' }" :dir="isRTL ? 'rtl' : 'ltr'">
-        <div class="h-full flex flex-col"
-             x-data="pageEditor({nid: '{{ nid }}', language: '{{ language }}', node: '{{ node|json_encode|e('js') }}', has_translation: '{{ has_translation }}', changed: '{{ changed }}', status: '{{ status }}'})">
-            <div class="sticky top-0 z-10 bg-slate-50">
-                <div x-show="!showBlockForm">
-                    {# Header with back button, title and actions #}
-                    {% include "@vactory_dashboard/node/_components/actions.html.twig" %}
-                </div>
-
-                {# Notification #}
-                {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
-
-                <div x-show="!showBlockForm">
-                    {# Tabs #}
-                    {% include "@vactory_dashboard/node/_components/tabs.html.twig" %}
-                </div>
-            </div>
-            {# Node Edit View #}
-            <div x-show="!showBlockForm">
-                {# Content Tab #}
-                <div x-show="activeTab === 'content'">
-                    <div class="w-full">
-                        <div x-ref="firstAddBlockButton">
-                            {% include "@vactory_dashboard/node/_components/add-block-action.html.twig" with {
-                                show: node_default_lang == language
-                            } %}
-                        </div>
-                        <div class="space-y-1">
-                            {% include "@vactory_dashboard/_components/paragraph/blocks.html.twig" %}
-                        </div>
-                        <div x-show="!isFirstAddBlockVisible && {{ node_default_lang == language ? 'true' : 'false' }}"
-                             class="flex justify-end mt-4">
-                            {% include '@vactory_admin/components/button/button.twig' with {
-                                text: 'Add block'|t,
-                                size: 'md',
-                                variant: 'primary',
-                                click_handler: 'showBlocksModal = true',
-                                icon_left: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path></svg>'
-                            } %}
-                        </div>
-                    </div>
-                </div>
-                {# Settings Tab #}
-                {% include "@vactory_dashboard/node/_components/settings-form.html.twig" %}
-                {# SEO Tab #}
-                {% include "@vactory_dashboard/node/_components/seo-form.html.twig" %}
-            </div>
-            {# Block Form View #}
-            <div x-show="showBlockForm" class="h-full">
-                {% include "@vactory_dashboard/_components/paragraph/block-form.html.twig" with {
-                    node_default_lang: node_default_lang,
-                    language: language,
-                } %}
-            </div>
-            {# Include the blocks modal #}
-            {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}
-        </div>
-    </div>
+    {% if type == 'page' %}
+        {% include "@vactory_dashboard/node/vactory-page/edit-vactory-page.html.twig" %}
+    {% endif %}
+    {% if type == 'not_page' %}
+        {% include "@vactory_dashboard/node/vactory-page/edit-node.html.twig" %}
+    {% endif %}
 {% endblock %}
 
 {% block javascripts %}
     <script>
       document.addEventListener('alpine:init', () => {
         Alpine.data('pageEditor', (config) => ({
+          // Other bundle specific vars.
+          bundle: config.bundle,
+          bundle_label: config.bundle_label,
+          fields: config.fields,
+          formData: {
+            fields: {},
+            status: config.status === '1',
+          },
+          get contentFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content'),
+            );
+          },
+          get crossContentFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => field.type === 'field_cross_content'),
+            );
+          },
+          // End other bundle specific vars.
           nid: config.nid,
           errorMessage: '',
           language: config.language,
@@ -122,7 +88,9 @@
 
               // Show success notification
               this.showNotification('success', '{{ 'Block order updated'|t }}');
-              this.saveChanges();
+              if (!this.bundle) {
+                this.saveChanges();
+              }
             }
           },
           dragEndItem(event) {
@@ -350,8 +318,7 @@
                       ],
                     },
                   };
-                } 
-                else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
+                } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
                   // Nothing to change here
                   blockData[0][fieldName] = this.blockForm.fields[fieldName];
                 } else {
@@ -437,7 +404,9 @@
             };
             this.currentBlockIndex = null;
             this.showBlockForm = false;
-            this.saveChanges();
+            if (!this.bundle) {
+              this.saveChanges();
+            }
           },
           selectTemplate(template) {
             this.selectedTemplate = template;
@@ -469,7 +438,7 @@
                       class: '',
                       id: 'link-' + Math.random().toString(36).slice(2),
                       target: '',
-                      rel: ''
+                      rel: '',
                     },
                   };
                 } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
@@ -504,7 +473,7 @@
                       class: '',
                       id: 'link-' + Math.random().toString(36).slice(2),
                       target: '',
-                      rel: ''
+                      rel: '',
                     },
                   };
                 } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
@@ -580,12 +549,12 @@
                   title: '',
                   url: '',
                   attributes: {
-                      label: '',
-                      class: '',
-                      id: 'link-' + Math.random().toString(36).slice(2),
-                      target: '',
-                      rel: ''
-                    },
+                    label: '',
+                    class: '',
+                    id: 'link-' + Math.random().toString(36).slice(2),
+                    target: '',
+                    rel: '',
+                  },
                 };
               } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
                 newItem[fieldName] = {
@@ -633,7 +602,51 @@
           },
           init() {
             const node = JSON.parse(this.node);
-            if (node.paragraphs && node.paragraphs.length > 0) {
+            // Node specific process.
+            if (this.bundle) {
+              this.fields = JSON.parse(this?.fields);
+              // Initialize form data based on fields
+              Object.keys(this.fields).forEach((fieldKey) => {
+                const field = this.fields[fieldKey];
+
+                if (field.type === 'faqfield') {
+                  if (Array.isArray(field.value) && field.value.length) {
+                    this.formData.fields[fieldKey] = field.value;
+                  } else if (Array.isArray(node[fieldKey]) && node[fieldKey].length) {
+                    this.formData.fields[fieldKey] = node[fieldKey];
+                  } else {
+                    this.formData.fields[fieldKey] = [{ question: '', answer: '' }];
+                  }
+
+                  console.log(`FAQ data for field "${fieldKey}":`, this.formData.fields[fieldKey]);
+                  return;
+                }
+
+                if (field?.textFormatField) {
+                  setTimeout(() => {
+                    Drupal.editors.ckeditor5.onChange(document.getElementById(`edit-${field.name}-value`), () => {
+                      const ckInstance = Drupal.CKEditor5Instances.values().next().value;
+                      this.formData.fields[field.name] = ckInstance.getData();
+                    });
+                  }, '3000');
+                }
+
+                if (field.type === 'image' || field.type === 'file' || field.type === 'remote_video' || field.type === 'private_file') {
+                  this.formData.fields[fieldKey] = node[fieldKey] ?? {
+                    id: null,
+                    url: null,
+                    name: null,
+                    path: fieldKey,
+                    key: new Date().getTime(),
+                  };
+                } else {
+                  this.formData.fields[fieldKey] = node[fieldKey] ?? '';
+                }
+              });
+            }
+
+            // End Node specific process.
+            if (node?.paragraphs && node?.paragraphs?.length > 0) {
               this.blocks = node.paragraphs.map((paragraph) => ({
                 title: paragraph.title,
                 show_title: paragraph.show_title,
@@ -647,8 +660,8 @@
                 widget_data: paragraph.widget_data,
               }));
             }
-            this.settings.title = node.title || '';
-            this.settings.alias = node.alias || '';
+            this.settings.title = node?.title || '';
+            this.settings.alias = node?.alias || '';
             // this.settings.status = node.status || false;
 
             window.seoData = {{ meta_tags|json_encode|raw }};
@@ -737,7 +750,7 @@
                       this.isFirstAddBlockVisible = entry.isIntersecting;
                     });
                   },
-                  
+
                   {
                     threshold: 0,
                     rootMargin: '0px',
@@ -813,8 +826,67 @@
             this.blocks.splice(index, 1);
             // Show success notification
             this.showNotification('success', '{{ 'Block removed successfully'|t }}');
-            this.saveChanges();
+            if (!this.bundle) {
+              this.saveChanges();
+            }
           },
+          // Node Specific logique for saving node
+          validateForm() {
+            const form = document.getElementById('node-form');
+            const requiredInputs = form.querySelectorAll('[required]');
+            let isValid = true;
+
+            requiredInputs.forEach(input => {
+              if (!input.value && !input.disabled) {
+                input.classList.add('border-red-500');
+                isValid = false;
+              }
+            });
+
+            return isValid;
+          },
+          async saveNode() {
+            if (!this.validateForm()) {
+              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              return;
+            }
+
+            if (this.isSaving) {
+              return;
+            }
+            this.isSaving = true;
+            try {
+              const response = await fetch(`/api/vactory-dashboard/${this.bundle}/node/edit/${this.nid}/save`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  language: this.language,
+                  fields: this.formData.fields,
+                  status: this.formData.status,
+                  seo: this.seo,
+                  blocks: this.blocks,
+                  has_translation: this.has_translation,
+                  changed: this.changed,
+                }),
+              });
+
+              const data = await response.json();
+
+              if (!response.ok) {
+                throw new Error(data.message || '{{ 'Failed to save node'|t }}');
+              }
+              this.showNotification('success', '{{ 'Node created successfully'|t }}');
+              window.location.reload();
+            } catch (error) {
+              console.error('Error saving node:', error);
+              this.showNotification('error', error.message);
+            } finally {
+              this.isSaving = false;
+            }
+          },
+          // Node Specific loguique for saving node.
           // Media Library States
           showMediaLibrary: false,
           mediaLoading: false,
@@ -920,13 +992,24 @@
               path: this.currentFieldPath,
               key: this.currentFieldKey,
             };
-
+            if (this.bundle) {
+              this.formData.fields[this.currentFieldPath] = imageData;
+            }
             this.setValueByPath(this.blockForm, this.currentFieldPath, imageData);
 
             this.closeMediaLibrary();
             this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
           },
           clearImage(fieldName, path, key) {
+            if (this.bundle) {
+              this.formData.fields[fieldName] = {
+                id: null,
+                url: null,
+                name: null,
+                path: fieldName,
+                key: new Date().getTime(),
+              };
+            }
             this.setValueByPath(this.blockForm, path, {
               id: null,
               url: null,
@@ -934,6 +1017,8 @@
               path: path,
               key: key ?? new Date().getTime(),
             });
+            // for node.
+
           },
           getFieldValue(fieldName, index = null) {
             if (index !== null) {
@@ -964,6 +1049,120 @@
             return url;
           },
         }));
+        document.addEventListener('alpine:init', () => {
+          Alpine.data('alpineMuliSelect', (obj) => ({
+            elementId: obj.elementId,
+            options: [],
+            selected: obj.selected,
+            selectedElms: [],
+            show: false,
+            search: '',
+            open() {
+              this.show = true;
+            },
+            close() {
+              this.show = false;
+            },
+            toggle() {
+              this.show = !this.show;
+            },
+            isOpen() {
+              return this.show === true;
+            },
+
+            // Initializing component
+            init() {
+              const options = document.getElementById(this.elementId).options;
+              for (let i = 0; i < options.length; i++) {
+
+                this.options.push({
+                  value: options[i].value,
+                  text: options[i].innerText,
+                  search: options[i].dataset.search,
+                  selected: Object.values(this.selected).includes(options[i].value),
+                });
+
+                if (this.options[i].selected) {
+                  this.selectedElms.push(this.options[i]);
+                }
+              }
+
+              // searching for the given value
+              this.$watch('search', (e => {
+                this.options = [];
+                const options = document.getElementById(this.elementId).options;
+                Object.values(options).filter((el) => {
+                  var reg = new RegExp(this.search, 'gi');
+                  return el.dataset.search.match(reg);
+                }).forEach((el) => {
+                  let newel = {
+                    value: el.value,
+                    text: el.innerText,
+                    search: el.dataset.search,
+                    selected: Object.values(this.selected).includes(el.value),
+                  };
+                  this.options.push(newel);
+                });
+              }));
+            },
+            // clear search field
+            clear() {
+              this.search = '';
+            },
+            // deselect selected options
+            deselect() {
+              setTimeout(() => {
+                this.selected = [];
+                this.selectedElms = [];
+                Object.keys(this.options).forEach((key) => {
+                  this.options[key].selected = false;
+                });
+              }, 100);
+            },
+            // select given option
+            select(index, event) {
+              if (!this.options[index].selected) {
+                this.options[index].selected = true;
+                this.options[index].element = event.target;
+                this.selected.push(this.options[index].value);
+                this.selectedElms.push(this.options[index]);
+
+              } else {
+                this.selected.splice(this.selected.lastIndexOf(index), 1);
+                this.options[index].selected = false;
+                Object.keys(this.selectedElms).forEach((key) => {
+                  if (this.selectedElms[key].value == this.options[index].value) {
+                    setTimeout(() => {
+                      this.selectedElms.splice(key, 1);
+                    }, 100);
+                  }
+                });
+              }
+            },
+            // remove from selected option
+            remove(index, option) {
+              this.selectedElms.splice(index, 1);
+              Object.keys(this.selected).forEach((skey) => {
+                if (this.selected[skey] == option.value) {
+                  this.selected.splice(skey, 1);
+                }
+              });
+              Object.keys(this.options).forEach((key) => {
+                if (this.options[key].value == option.value) {
+                  this.options[key].selected = false;
+                }
+              });
+            },
+            // filter out selected elements
+            selectedElements() {
+              return this.options.filter(op => op.selected === true);
+            },
+            // get selected values
+            selectedValues() {
+              return this.options.filter(op => op.selected === true).map(el => el.value);
+            },
+          }));
+        });
       });
     </script>
 {% endblock %}
