@@ -70,27 +70,10 @@ class DashboardWebformController extends ControllerBase {
    *   A render array for the webform dashboard.
    */
   public function content($id) {
-    $permissions = [
-      'view_any_submission' => $this->currentUser()
-        ->hasPermission('view any webform submission'),
-      'view_own_submission' => $this->currentUser()
-        ->hasPermission('view own webform submission'),
-      'edit_any_submission' => $this->currentUser()
-        ->hasPermission('edit any webform submission'),
-      'edit_own_submission' => $this->currentUser()
-        ->hasPermission('edit own webform submission'),
-      'delete_any_submission' => $this->currentUser()
-        ->hasPermission('delete any webform submission'),
-      'delete_own_submission' => $this->currentUser()
-        ->hasPermission('delete own webform submission'),
-      'permission_export' => $this->currentUser()
-        ->hasPermission('administer webform'),
-    ];
 
     return [
       '#theme' => 'vactory_dashboard_webform',
       '#id' => $id,
-      '#permissions' => $permissions,
     ];
   }
 

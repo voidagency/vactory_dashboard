@@ -37,7 +37,6 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
       'variables' => [
         'content' => NULL,
         'roles' => [],
-        'has_edit_permission' => NULL,
       ],
       'template' => 'users/list',
     ],
@@ -46,7 +45,6 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'taxonomy_vid' => NULL,
         'langs' => NULL,
         'default_lang' => NULL,
-        'permissions' => NULL,
       ],
       'template' => 'taxonomy/list',
     ],
@@ -95,7 +93,6 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
       'template' => 'webform/dashboard-webform',
       'variables' => [
         'id' => NULL,
-        'permissions' => [],
       ],
     ],
     'vactory_dashboard_update_user' => [
@@ -164,10 +161,17 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'block_types' => [],
       ],
     ],
-    'vactory_dashboard_vactory_page_edit' => [
-      'template' => 'node/vactory-page/edit',
+    'vactory_dashboard_node_edit' => [
+      'template' => 'node/edit',
       'variables' => [
         'node' => NULL,
+        'type' => NULL,
+        'alias' => NULL,
+        'has_paragraphs_field' => NULL,
+        'bundle' => NULL,
+        'has_seo' => NULL,
+        'bundle_label' => NULL,
+        'fields' => NULL,
         'language' => NULL,
         'nid' => NULL,
         'label' => NULL,
@@ -181,42 +185,17 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'preview_url' => NULL,
       ],
     ],
-    'vactory_dashboard_vactory_page_add' => [
-      'template' => 'node/vactory-page/add',
-      'variables' => [
-        'language' => NULL,
-        'available_languages' => NULL,
-        'node_default_lang' => NULL,
-      ],
-    ],
     'vactory_dashboard_node_add' => [
-      'template' => 'node/content-types/add',
+      'template' => 'node/add',
       'variables' => [
+        'type' => NULL,
+        'has_paragraphs_field' => NULL,
         'language' => NULL,
         'available_languages' => NULL,
         'node_default_lang' => NULL,
         'bundle' => NULL,
         'fields' => NULL,
         'bundle_label' => NULL,
-      ],
-    ],
-    'vactory_dashboard_node_edit' => [
-      'template' => 'node/content-types/edit',
-      'variables' => [
-        'alias' => NULL,
-        'language' => NULL,
-        'available_languages' => NULL,
-        'node_default_lang' => NULL,
-        'bundle' => NULL,
-        'nid' => NULL,
-        'fields' => NULL,
-        'node' => NULL,
-        'status' => NULL,
-        'changed' => NULL,
-        'bundle_label' => NULL,
-        'has_translation' => NULL,
-        'meta_tags' => NULL,
-        'has_seo' => NULL,
       ],
     ],
   ];
@@ -785,28 +764,32 @@ function getLanguages() {
  * Implémentation de hook_cron().
  */
 function vactory_dashboard_cron() {
-  \Drupal::logger('vactory_dashboard')->notice('Début du cron personnalisé SSL.');
+  \Drupal::logger('vactory_dashboard')
+    ->notice('Début du cron personnalisé SSL.');
 
-  $config = \Drupal::configFactory()->getEditable('vactory_dashboard.ssl.settings');
+  $config = \Drupal::configFactory()
+    ->getEditable('vactory_dashboard.ssl.settings');
   $last_check = $config->get('ssl_info_last_check') ?? 0;
 
   if (\Drupal::time()->getRequestTime() - $last_check < 30 * 24 * 60 * 60) {
-    \Drupal::logger('vactory_dashboard')->notice('Pas encore 30 jours depuis la dernière vérification SSL.');
+    \Drupal::logger('vactory_dashboard')
+      ->notice('Pas encore 30 jours depuis la dernière vérification SSL.');
     return;
   }
 
   try {
-    \Drupal::logger('vactory_dashboard')->notice('Lancement automatique du check SSL via cron.');
+    \Drupal::logger('vactory_dashboard')
+      ->notice('Lancement automatique du check SSL via cron.');
 
     /** @var \Drupal\vactory_dashboard\Service\SslService $ssl_service */
     $ssl_service = \Drupal::service('vactory_dashboard.ssl_service');
     $ssl_service->getSSLStatus();
-
   }
   catch (\Exception $e) {
-    \Drupal::logger('vactory_dashboard')->error('Erreur lors du cron SSL : @msg', [
-      '@msg' => $e->getMessage(),
-    ]);
+    \Drupal::logger('vactory_dashboard')
+      ->error('Erreur lors du cron SSL : @msg', [
+        '@msg' => $e->getMessage(),
+      ]);
   }
 
   \Drupal::logger('vactory_dashboard')->notice('Fin du cron personnalisé SSL.');

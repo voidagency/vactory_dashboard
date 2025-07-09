@@ -136,9 +136,11 @@
 				<table class="min-w-full divide-y divide-gray-300 overflow-x-auto">
 					<thead class="bg-gray-50">
 						<tr>
-							<th x-show="showEditButton" scope="col" class="relative py-3.5 pl-4 pr-3">
+            {% if user.hasPermission('administer users') %}
+							<th  scope="col" class="relative py-3.5 pl-4 pr-3">
 								<input if="users-check-toggle" type="checkbox" @click="toggleAll" :checked="selectedUsers.length === users.length && users.length > 0" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
 							</th>
+            {% endif %}
 							<th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">{{ "Nom" | t }}</th>
 							<th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">{{ "Email" | t }}</th>
 							<th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">{{ "Rôle" | t }}</th>
@@ -210,10 +212,12 @@
 						<template x-if="!loading && (users.length > 0)">
                 <template x-for="user in users" :key="user.id">
                     <tr>
-                        <td x-show="showEditButton" class="relative py-4 pl-4 pr-3">
+                    {% if user.hasPermission('administer users') %}
+                        <td class="relative py-4 pl-4 pr-3">
                             <input type="checkbox" :value="user.id" x-model="selectedUsers"
                                     class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
                         </td>
+                    {% endif %}
                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900"
                             x-text="user.name"></td>
                         <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500" x-text="user.email"></td>
@@ -224,7 +228,8 @@
                                   x-text="user.status_label"></span>
                         </td>
                         <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500" x-text="user.last_access"></td>
-                        <td x-show="showEditButton"
+                        {% if user.hasPermission('administer users') %}
+                        <td
                             class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                             <a :href="'{{ path('vactory_dashboard_update_user', {'userId': 0}) }}'.replace('0', user.id)"
                                 class="text-gray-400 hover:text-green-500">
@@ -235,6 +240,7 @@
                                 </svg>
                             </a>
                         </td>
+                        {% endif %}
 
 
                     </tr>
@@ -287,7 +293,6 @@
             order: 'desc'
           },
           roles: {},
-          showEditButton: '',
           pages: [],
           loading: false,
           error: null,
@@ -354,14 +359,6 @@
               const data = await response.json();
               this.users = data.data;
               this.roles = data.roles;
-              this.hasPermission = data.has_edit_permission;
-              if (this.hasPermission) {
-                // Afficher le bouton "Éditer" dans votre interface
-                // Par exemple, vous pouvez activer un certain état ou un élément dans l'interface
-                this.showEditButton = true;
-              } else {
-                this.showEditButton = false;
-              }
               this.totalPages = data.pages;
               this.pages = this.generatePageNumbers(data.page, data.pages);
             } catch (error) {

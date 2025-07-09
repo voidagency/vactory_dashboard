@@ -59,12 +59,6 @@ class DashboardTaxonomiesController extends ControllerBase {
       $langs[$lang->getId()] = $lang->getName();
     }
 
-    $permissions = [
-      'create' => $this->currentUser()->hasPermission("create terms in $vid"),
-      'edit' => $this->currentUser()->hasPermission("edit terms in $vid"),
-      'delete' => $this->currentUser()->hasPermission("delete terms in $vid"),
-    ];
-
     return [
       '#theme' => 'vactory_dashboard_taxonomies',
       '#taxonomy_vid' => $vid,
@@ -72,7 +66,6 @@ class DashboardTaxonomiesController extends ControllerBase {
       '#default_lang' => \Drupal::languageManager()
         ->getDefaultLanguage()
         ->getId(),
-      '#permissions' => $permissions,
     ];
   }
 

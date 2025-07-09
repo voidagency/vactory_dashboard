@@ -254,10 +254,6 @@ protected static $cache = [];
     if (empty($tree)) {
       $response = [
         'items' => [],
-        'has_captcha_permission' => $this->currentUser->hasPermission('administer CAPTCHA settings'),
-        'has_sitemap_permission' => $this->currentUser->hasPermission('access sitemap'),
-        'has_shield_permission' => $this->currentUser->hasPermission('administer shield'),
-        'has_translation_permission' => $this->currentUser->hasPermission('Administer translation settings'),
       ];
       self::$cache[$cid] = $response;
       \Drupal::cache()->set($cid, $response, Cache::PERMANENT, ['config:vactory_dashboard.menu.settings', 'menu:' . $menu_id]);
@@ -277,10 +273,6 @@ protected static $cache = [];
   
     $response = [
       'items' => array_values($items),
-      'has_captcha_permission' => $this->currentUser->hasPermission('administer CAPTCHA settings'),
-      'has_sitemap_permission' => $this->currentUser->hasPermission('access sitemap'),
-      'has_shield_permission' => $this->currentUser->hasPermission('administer shield'),
-      'has_translation_permission' => $this->currentUser->hasPermission('Administer translation settings'),
     ];
 
     \Drupal::cache()->set($cid, $response, Cache::PERMANENT, [
@@ -335,9 +327,12 @@ protected static $cache = [];
       ->getPathByAlias(str_replace('/' . $current_lang, '', $url));
     if (str_starts_with($path, '/node/')) {
       $node_id = str_replace('/node/', '', $path);
-      $returnArray['nid'] = $node_id;
-      $returnArray['url'] = Url::fromRoute('vactory_dashboard.vactory_page.edit', ['id' => $node_id], ['absolute' => TRUE])
+      if (is_numeric($node_id)) {
+        $node_id = (int) $node_id;
+        $returnArray['nid'] = $node_id;
+        $returnArray['url'] = Url::fromRoute('vactory_dashboard.vactory_page.edit', ['id' => $node_id], ['absolute' => TRUE])
         ->toString();
+      }
     }
     return $returnArray;
   }

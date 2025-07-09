@@ -436,7 +436,7 @@
                          :class="{ 'max-h-0': !openDropdowns.settings, 'pb-2': openDropdowns.settings }">
                         <div class="">
                             {% if user.hasPermission('administer content translation') %}
-                                <div x-showtranslation class="w-full">
+                                <div  class="w-full">
                                     <a href="{{ path('vactory_dashboard.translations') }}"
                                        :class="{ 'bg-primary-50 text-primary-600': isCurrentPage('{{ url('vactory_dashboard.translations', {}, {absolute: true}) }}') }"
                                        class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
@@ -469,13 +469,15 @@
                                     </a>
                                 </div>
                             {% endif %}
-                            <div x-show="showShield" class="w-full">
+                            {% if user.hasPermission('administer shield') %}
+                            <div class="w-full">
                                 <a href="{{ path('vactory_dashboard.settings.shield') }}"
                                    :class="{ 'bg-primary-50 text-primary-600': isCurrentPage('{{ url('vactory_dashboard.settings.shield', {}, {absolute: true}) }}') }"
                                    class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
                                     <span class="truncate">{{ 'Shield'|t }}</span>
                                 </a>
                             </div>
+                            {% endif %}
                             {% if user.hasPermission('administer block content') %}
                                 <div class="w-full">
                                     <a href="{{ path('vactory_dashboard.settings.banner_blocks') }}"
@@ -570,10 +572,6 @@
       shieldInstalled: '',
       recaptchaInstalled: '',
       advancedDashboard: {},
-      showCaptcha: '',
-      showSitemap: '',
-      showShield: '',
-      showTranslation: '',
       cacheClearing: false,
       successMessage: '',
       erreurMessage: '',
@@ -710,16 +708,6 @@
           })
           .then((data) => {
             this.menuItems = data.items ?? [];
-            this.hasCaptchaPermission = data.has_captcha_permission ?? false;
-            this.hasSitemapPermission = data.has_sitemap_permission ?? false;
-            this.hasShieldPermission = data.has_shield_permission ?? false;
-            this.hasTranslationPermission = data.has_translation_permission ?? false;
-
-            this.showCaptcha = this.hasCaptchaPermission;
-            this.showSitemap = this.hasSitemapPermission;
-            this.showShield = this.shieldInstalled && this.hasShieldPermission;
-            this.showTranslation = this.hasTranslationPermission;
-
             console.log(this.menuItems);
             this.loading = false;
           })
