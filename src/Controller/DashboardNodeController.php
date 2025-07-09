@@ -8,13 +8,12 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Url;
 use Drupal\entityqueue\Entity\EntityQueue;
-use Drupal\file\FileInterface;
-use Drupal\language\Entity\ConfigurableLanguage;
-use Drupal\media\MediaInterface;
 use Drupal\node\Entity\Node;
-use Drupal\node\Entity\NodeType;
-use Drupal\node\NodeInterface;
+use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\paragraphs\ParagraphInterface;
+use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
+use Drupal\vactory_dashboard\Service\NodeService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,13 +21,11 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Drupal\vactory_dashboard\Service\MetatagService;
 use Drupal\token\Token;
-use Drupal\taxonomy\Entity\Vocabulary;
-use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\vactory_dashboard\Service\PreviewUrlService;
 use Drupal\path_alias\AliasManagerInterface;
 
 /**
- * Controller for the vactory_page dashboard.
+ * Controller for the node dashboard.
  */
 class DashboardNodeController extends ControllerBase {
 
@@ -62,15 +59,26 @@ class DashboardNodeController extends ControllerBase {
    */
   protected $metatagService;
 
-    /**
+  /**
    * Le service AliasManager.
    *
    * @var \Drupal\Core\Path\AliasManagerInterface
    */
   protected $aliasManager;
 
-
+  /**
+   * The token service.
+   *
+   * @var \Drupal\token\Token
+   */
   protected $tokenService;
+
+  /**
+   * The node service.
+   *
+   * @var \Drupal\vactory_dashboard\Service\NodeService
+   */
+  protected $nodeService;
 
   /**
    * Constructs a new DashboardUsersController object.
@@ -85,17 +93,17 @@ class DashboardNodeController extends ControllerBase {
     EntityFieldManagerInterface $entity_field_manager,
     MetatagService $metatag_service,
     Token $tokenService,
-    ConfigFactoryInterface $configFactory,
     PreviewUrlService $previewUrlService,
     AliasManagerInterface $alias_manager,
+    NodeService $node_service
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
     $this->metatagService = $metatag_service;
     $this->tokenService = $tokenService;
-    $this->configFactory = $configFactory;
     $this->previewUrlService = $previewUrlService;
     $this->aliasManager = $alias_manager;
+    $this->nodeService = $node_service;
   }
 
   /**
@@ -107,9 +115,9 @@ class DashboardNodeController extends ControllerBase {
       $container->get('entity_field.manager'),
       $container->get('vactory_dashboard.metatag_service'),
       $container->get('token'),
-      $container->get('config.factory'),
       $container->get('vactory_dashboard.preview_url'),
       $container->get('path_alias.manager'),
+      $container->get('vactory_dashboard.node_service'),
     );
   }
 
@@ -177,7 +185,7 @@ class DashboardNodeController extends ControllerBase {
       '#bundle_label' => $bundle_label,
       '#entity_queues' => $results,
       '#dynamic_exports' => $dynamic_exports,
-      '#taxonomies' => $this->getReferencedTaxonomies($bundle),
+      '#taxonomies' => $this->nodeService->getReferencedTaxonomies($bundle),
       '#langs' => $langs,
       '#has_metatag' => array_key_exists('field_vactory_meta_tags', $this->entityFieldManager->getFieldDefinitions('node', $bundle)),
     ];
@@ -313,165 +321,6 @@ class DashboardNodeController extends ControllerBase {
   }
 
   /**
-   * Get bundle fields information.
-   *
-   * @param string $bundle
-   *   The bundle name.
-   *
-   * @return array
-   *   Array of field definitions with their settings.
-   */
-  protected function getBundleFields($bundle, $countActiveLangs = 0) {
-    $fields = $this->entityFieldManager->getFieldDefinitions('node', $bundle);
-    $field_definitions = [];
-
-    $form_mode = 'default';
-    $form_display = \Drupal::service('entity_display.repository')
-      ->getFormDisplay('node', $bundle, $form_mode);
-
-    foreach ($fields as $field_name => $field_definition) {
-      if ($form_display->getComponent($field_name)) {
-        // Skip technical/system fields
-        if (in_array($field_name, DashboardConstants::SKIPPED_FIELDS)) {
-          continue;
-        }
-
-        $field_type = $field_definition->getType();
-        $field_settings = $field_definition->getSettings();
-        $cardinality = $field_definition->getFieldStorageDefinition()
-          ->getCardinality();
-        $field_required = $field_definition->isRequired();
-        $field_label = $field_definition->getLabel();
-
-        $field_info = [
-          'name' => $field_name,
-          'type' => $field_type,
-          'label' => $field_label,
-          'required' => $field_required,
-          'settings' => $field_settings,
-        ];
-        // Add specific settings based on field type
-        switch ($field_type) {
-          case 'entity_reference':
-            $field_info['target_type'] = $field_settings['target_type'];
-            if ($field_settings['target_type'] === 'taxonomy_term' || $field_settings['target_type'] === 'user') {
-              $field_info['type'] = 'select';
-              $field_info['multiple'] = $cardinality == -1;
-              $field_info['options'] = $this->load_entity_reference_options($field_info);
-            }
-            if ($field_settings['target_type'] === 'media') {
-              $field_info['type'] = reset($field_settings['handler_settings']['target_bundles']);
-            }
-            break;
-          case 'list_string':
-            $field_info['type'] = 'select';
-            $field_info['multiple'] = $cardinality == -1;
-            $field_info['options'] = $field_definition->getSettings()['allowed_values'] ?? [];
-            break;
-
-          case 'text_with_summary':
-          case 'text_long':
-            $field_info['format'] = 'full_html';
-            $field_info['type'] = 'text_with_summary';
-            $form = \Drupal::formBuilder()
-              ->getForm('Drupal\vactory_dashboard\Form\CkeditorFieldForm', $field_name);
-            $field_info['textFormatField'] = \Drupal::service('renderer')
-              ->render($form);
-            break;
-
-          case 'field_cross_content':
-            $field_info['options'] = $this->getCrossContentOptions($bundle, $field_info);
-            $field_info['multiple'] = TRUE;
-            break;
-        }
-        $field_info['is_translatable'] = $countActiveLangs === 0 || $field_definition->isTranslatable();
-        $field_definitions[$field_name] = $field_info;
-      }
-    }
-    return $field_definitions;
-  }
-
-  private function getCrossContentOptions($type, array $field_definition) {
-    $language = \Drupal::languageManager()->getCurrentLanguage()->getId();
-    $node_type = NodeType::load($type);
-    if ($node_type->getThirdPartySetting('vactory_cross_content', 'enabling', '') == 1) {
-      $content_type_selected = $node_type->getThirdPartySetting('vactory_cross_content', 'content_type', '');
-      if (!empty($content_type_selected) && $content_type_selected != 'none') {
-        $type = $content_type_selected;
-      }
-    }
-    $node_list = \Drupal::entityTypeManager()
-      ->getListBuilder('node')
-      ->getStorage()
-      ->loadByProperties([
-        'type' => $type,
-      ]);
-
-    foreach ($node_list as $key => $node) {
-      $node_list[$key] = \Drupal::service('entity.repository')
-        ->getTranslationFromContext($node, $language);
-    }
-
-    // @todo: implement for edit.
-    $current_node = "";
-    if (empty($current_node)) {
-      $current_node = 0;
-    }
-    else {
-      // $current_node = $current_node[0]['value'];
-    }
-    $options = [];
-    foreach ($node_list as $key => $value) {
-      if ($key == $current_node) {
-        continue;
-      }
-      $options[$key] = $value->label();
-    }
-    return $options;
-  }
-
-  function load_entity_reference_options(array $field_definition): array {
-    $target_type = $field_definition['settings']['target_type'] ?? NULL;
-    $handler_settings = $field_definition['settings']['handler_settings'] ?? [];
-
-    if (!$target_type) {
-      return [];
-    }
-
-    $entity_storage = \Drupal::entityTypeManager()->getStorage($target_type);
-
-    // Add conditions for bundles if specified
-    $query = $entity_storage->getQuery();
-    $query->accessCheck(TRUE);
-
-    // Handle target bundles (e.g. specific vocabularies or content types)
-    if (!empty($handler_settings['target_bundles'])) {
-      $bundle_keys = array_keys($handler_settings['target_bundles']);
-      if ($target_type === 'taxonomy_term') {
-        $query->condition('vid', $bundle_keys, 'IN');
-      }
-      elseif (\Drupal::entityTypeManager()
-        ->getDefinition($target_type)
-        ->getKey('bundle')
-      ) {
-        $query->condition('bundle', $bundle_keys, 'IN');
-      }
-    }
-
-    $ids = $query->execute();
-    $entities = $entity_storage->loadMultiple($ids);
-
-    $options = [];
-    foreach ($entities as $entity) {
-      if ($entity->label()) {
-        $options[$entity->id()] = $entity->label();
-      }
-    }
-
-    return $options;
-  }
-
-  /**
    * Returns the node add form page.
    *
    * @param string $bundle
@@ -497,7 +346,10 @@ class DashboardNodeController extends ControllerBase {
     }
 
     // Get bundle fields.
-    $fields = $this->getBundleFields($bundle);
+    $fields = $this->nodeService->getBundleFields($bundle);
+
+    // Check bundle if has a paragraphs field (field_vactory_paragraphs) with a dynamic field.
+    $has_paragraphs_field = $this->nodeService->hasParagraphsField($fields);
 
     // Get bundle label.
     $bundle_info = \Drupal::service('entity_type.bundle.info')
@@ -505,7 +357,10 @@ class DashboardNodeController extends ControllerBase {
     $bundle_label = $bundle_info['label'];
 
     return [
+      //'#theme' => 'vactory_dashboard_node_add',
       '#theme' => 'vactory_dashboard_node_add',
+      '#type' => 'not_page',
+      '#has_paragraphs_field' => $has_paragraphs_field,
       '#language' => $current_language,
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
@@ -568,16 +423,22 @@ class DashboardNodeController extends ControllerBase {
     }
 
     // Get bundle fields.
-    $fields = $this->getBundleFields($bundle, count($available_languages_list));
+    $fields = $this->nodeService->getBundleFields($bundle, count($available_languages_list));
+
+    // Check bundle if has a paragraphs field (field_vactory_paragraphs) with a dynamic field.
+    $has_paragraphs_field = $this->nodeService->hasParagraphsField($fields);
 
     // Get bundle label.
     $bundle_info = \Drupal::service('entity_type.bundle.info')
       ->getBundleInfo('node')[$bundle];
     $bundle_label = $bundle_info['label'];
     return [
+      // '#theme' => 'vactory_dashboard_node_edit',
       '#theme' => 'vactory_dashboard_node_edit',
+      '#type' => 'not_page',
+      '#has_paragraphs_field' => $has_paragraphs_field,
       '#alias' => $this->previewUrlService->getPreviewUrl($node),
-      '#node' => $this->processNode($node_translation ?? $node, $fields),
+      '#node' => $this->nodeService->processNode($node_translation ?? $node, $fields),
       '#language' => $node_translation ? $node_translation->language()
         ->getId() : $node->language()->getId(),
       '#node_default_lang' => $node->language()->getId(),
@@ -642,7 +503,10 @@ class DashboardNodeController extends ControllerBase {
     }
 
     // Get bundle fields.
-    $fields = $this->getBundleFields($bundle);
+    $fields = $this->nodeService->getBundleFields($bundle);
+
+    // Check bundle if has a paragraphs field (field_vactory_paragraphs) with a dynamic field.
+    $has_paragraphs_field = $this->nodeService->hasParagraphsField($fields);
 
     // Get bundle label.
     $bundle_info = \Drupal::service('entity_type.bundle.info')
@@ -653,7 +517,9 @@ class DashboardNodeController extends ControllerBase {
 
     return [
       '#theme' => 'vactory_dashboard_node_edit',
-      '#node' => $this->processNode($node, $fields),
+      '#type' => 'not_page',
+      '#has_paragraphs_field' => $has_paragraphs_field,
+      '#node' => $this->nodeService->processNode($node, $fields),
       '#language' => $current_language,
       '#node_default_lang' => $node->language()->getId(),
       '#available_languages' => $available_languages_list,
@@ -665,115 +531,6 @@ class DashboardNodeController extends ControllerBase {
       '#has_translation' => FALSE,
       '#meta_tags' => $meta_tags,
     ];
-  }
-
-  private function processNode(NodeInterface $node, $fields) {
-    $node_data = [];
-    // Get node fields
-    foreach ($fields as $field) {
-      if ($field['type'] === 'faqfield' || $field['name'] === 'field_faq') {
-        // Récupérer les valeurs FAQ
-        $faq_values = $node->get($field['name'])->getValue();
-
-        $formatted_faq = [];
-        foreach ($faq_values as $item) {
-          if (!empty($item['question']) || !empty($item['answer'])) {
-            $formatted_faq[] = [
-              'question' => $item['question'] ?? '',
-              'answer' => $item['answer'] ?? '',
-            ];
-          }
-        }
-
-        $node_data[$field['name']] = $formatted_faq;
-        continue;
-      }
-
-      if ($field['type'] == 'image') {
-        $target_id = $node->get($field['name'])->target_id;
-        $media = $this->entityTypeManager->getStorage('media')
-          ->load($target_id);
-        if ($media instanceof MediaInterface) {
-          if ($media->hasField('field_media_image') && !$media->get('field_media_image')
-              ->isEmpty()) {
-            /** @var \Drupal\file\Entity\File $file */
-            $file = $media->get('field_media_image')->entity;
-            if ($file instanceof FileInterface) {
-              $node_data[$field['name']] = [
-                'id' => $target_id,
-                'url' => $file->createFileUrl(),
-                'path' => $field['name'],
-                'key' => -1,
-              ];
-            }
-          }
-        }
-      }
-      elseif ($field['type'] == 'remote_video') {
-        $target_id = $node->get($field['name'])->target_id;
-        $media = $this->entityTypeManager->getStorage('media')
-          ->load($target_id);
-        if ($media instanceof MediaInterface) {
-          if ($media->hasField('field_media_oembed_video') && !$media->get('field_media_oembed_video')
-              ->isEmpty()) {
-            $remote_video = $media->get('field_media_oembed_video')->value;
-            if (!empty($remote_video)) {
-              $node_data[$field['name']] = [
-                'id' => $target_id,
-                'url' => $remote_video,
-                'path' => $field['name'],
-                'key' => -1,
-                'name' => $media->get('field_media_oembed_video')
-                  ->getEntity()
-                  ->label(),
-              ];
-            }
-          }
-        }
-      }
-      elseif ($field['type'] == 'file' || $field['type'] == 'private_file') {
-        $field_name = $field['type'] === 'file' ? 'field_media_file' : 'field_media_file_1';
-        $target_id = $node->get($field['name'])->target_id;
-        $media = $this->entityTypeManager->getStorage('media')
-          ->load($target_id);
-        if ($media instanceof MediaInterface) {
-          if ($media->hasField($field_name) && !$media->get($field_name)
-              ->isEmpty()) {
-            $file = $media->get($field_name)->entity;
-            if ($file instanceof FileInterface) {
-              $node_data[$field['name']] = [
-                'id' => $target_id,
-                'url' => $file->createFileUrl(),
-                'path' => $field['name'],
-                'key' => -1,
-                'name' => $media->label(),
-              ];
-            }
-          }
-        }
-      }
-      elseif ($field['type'] === "field_cross_content") {
-        $node_data[$field['name']] = array_values(explode(" ", $node->get($field['name'])->value) ?? []);
-        $node_data[$field['name']] = array_filter($node_data[$field['name']], function($vccNode) {
-          return $vccNode !== "";
-        });
-      }
-      elseif ($field['type'] == 'select' && isset($field['target_type'])) {
-        if ($field['multiple']) {
-          $ids = $node->get($field['name'])->getValue() ?? [];
-          $node_data[$field['name']] = array_values(array_map(function($value) {
-            return $value['target_id'];
-          }, $ids));
-        }
-        else {
-          $node_data[$field['name']] = $node->get($field['name'])->target_id ?? NULL;
-        }
-      }
-      else {
-        $node_data[$field['name']] = $node->get($field['name'])->value ?? "";
-      }
-    }
-    return $node_data;
   }
 
   /**
@@ -791,10 +548,14 @@ class DashboardNodeController extends ControllerBase {
 
       $status = $data['status'] ?? TRUE;
 
+      $language = $data['language'] ?? \Drupal::languageManager()
+        ->getDefaultLanguage()
+        ->getId();
+
       // Create node
       $node = Node::create([
         'type' => $data['bundle'],
-        'langcode' => $data['language'],
+        'langcode' => $language,
         'status' => $status,
         'path' => [
           'pathauto' => 1,
@@ -802,6 +563,8 @@ class DashboardNodeController extends ControllerBase {
       ]);
 
       $seo = $data['seo'] ?? [];
+
+      $blocks = $data['blocks'] ?? [];
 
       if ($node->hasField('moderation_state')) {
         $node->set('moderation_state', $status ? 'published' : 'draft');
@@ -825,6 +588,40 @@ class DashboardNodeController extends ControllerBase {
 
         if ($field_value) {
           $node->set($field_name, $field_value);
+        }
+      }
+
+      if ($node->hasField('field_vactory_paragraphs')) {
+        $ordered_paragraphs = [];
+        if (!empty($blocks)) {
+          foreach ($blocks as $block) {
+            $paragraph_entity = NULL;
+            $paragraph = [
+              "type" => "vactory_component",
+              "field_vactory_title" => $block['title'],
+              "field_vactory_flag" => $block['show_title'],
+              "paragraph_container" => $block['width'],
+              "container_spacing" => $block['spacing'],
+              "paragraph_css_class" => $block['css_classes'],
+
+              "field_vactory_component" => [
+                "widget_id" => $block['widget_id'],
+                "widget_data" => json_encode($block['widget_data']),
+              ],
+            ];
+            $paragraph['langcode'] = $language;
+            $paragraph_entity = Paragraph::create($paragraph);
+            $paragraph_entity->save();
+            $ordered_paragraphs[] = [
+              'target_id' => $paragraph_entity->id(),
+              'target_revision_id' => \Drupal::entityTypeManager()
+                ->getStorage('paragraph')
+                ->getLatestRevisionId($paragraph_entity->id()),
+            ];
+          }
+        }
+        if (!empty($ordered_paragraphs)) {
+          $node->set('field_vactory_paragraphs', $ordered_paragraphs);
         }
       }
 
@@ -870,6 +667,7 @@ class DashboardNodeController extends ControllerBase {
       $seo = $content['seo'] ?? [];
 
       // Extract data from request.
+      $node_default_lang = NULL;
       $language = $content['language'] ?? \Drupal::languageManager()
         ->getDefaultLanguage()
         ->getId();
@@ -879,6 +677,8 @@ class DashboardNodeController extends ControllerBase {
       $has_translation = $has_translation !== "" ? $has_translation : FALSE;
 
       $status = $content['status'] ?? TRUE;
+
+      $blocks = $content['blocks'] ?? [];
 
       $client_changed = $content['changed'] ?? NULL;
 
@@ -894,6 +694,7 @@ class DashboardNodeController extends ControllerBase {
         if (!$node) {
           throw new \Exception('Node not found');
         }
+        $node_default_lang = $node->language()->getId();
       }
       if (!$has_translation) {
         $node->addTranslation($language);
@@ -947,6 +748,125 @@ class DashboardNodeController extends ControllerBase {
         }
         $node->getTranslation($language)
           ->set('field_vactory_meta_tags', serialize($meta_tags));
+      }
+
+      // Update blocks/paragraphs if they exist.
+      if ($node->hasField('field_vactory_paragraphs')) {
+        if (!empty($blocks)) {
+          $ordered_paragraphs = [];
+          foreach ($blocks as $block) {
+            $paragraph_entity = NULL;
+            $paragraph = [
+              "type" => "vactory_component",
+              "field_vactory_title" => $block['title'],
+              "field_vactory_flag" => $block['show_title'],
+              "paragraph_container" => $block['width'],
+              "container_spacing" => $block['spacing'],
+              "paragraph_css_class" => $block['css_classes'],
+              "field_vactory_component" => [
+                "widget_id" => $block['widget_id'],
+                "widget_data" => json_encode($block['widget_data']),
+              ],
+            ];
+            $is_new = $block['is_new'] ?? FALSE;
+            // Paragraph translate.
+            if ($language != $node_default_lang) {
+              // Handle translations.
+              $paragraph_entity = Paragraph::load($block['id']);
+
+              // Check if translation exists, if not create it first.
+              if (!$paragraph_entity->hasTranslation($language)) {
+                $paragraph_entity->addTranslation($language, $paragraph_entity->toArray());
+              }
+
+              // Now we can safely access and modify the translation.
+              $paragraph_entity->getTranslation($language)
+                ->set('field_vactory_component', [
+                  "widget_id" => $block['widget_id'],
+                  "widget_data" => json_encode($block['widget_data']),
+                ]);
+
+              if (isset($block['title'])) {
+                $paragraph_entity->getTranslation($language)
+                  ->set('field_vactory_title', $block['title']);
+              }
+
+              $paragraph_entity->getTranslation($language)
+                ->set('field_vactory_flag', $block['show_title']);
+
+              if (isset($block['width'])) {
+                $paragraph_entity->getTranslation($language)
+                  ->set('paragraph_container', $block['width']);
+              }
+
+              if (isset($block['spacing'])) {
+                $paragraph_entity->getTranslation($language)
+                  ->set('container_spacing', $block['spacing']);
+              }
+
+              if (isset($block['css_classes'])) {
+                $paragraph_entity->getTranslation($language)
+                  ->set('paragraph_css_class', $block['css_classes']);
+              }
+
+              $paragraph_entity->save();
+            }
+            else {
+              if ($is_new) {
+                $paragraph['langcode'] = $language;
+                $paragraph_entity = Paragraph::create($paragraph);
+                $paragraph_entity->save();
+              }
+              else {
+                $paragraph_entity = Paragraph::load($block['id']);
+                $paragraph_entity->getTranslation($language)
+                  ->set('field_vactory_component', [
+                    "widget_id" => $block['widget_id'],
+                    "widget_data" => json_encode($block['widget_data']),
+                  ]);
+
+                if (isset($block['title'])) {
+                  $paragraph_entity->getTranslation($language)
+                    ->set('field_vactory_title', $block['title']);
+                }
+
+                $paragraph_entity->getTranslation($language)
+                  ->set('field_vactory_flag', $block['show_title']);
+
+                if (isset($block['width'])) {
+                  $paragraph_entity->getTranslation($language)
+                    ->set('paragraph_container', $block['width']);
+                }
+
+                if (isset($block['spacing'])) {
+                  $paragraph_entity->getTranslation($language)
+                    ->set('container_spacing', $block['spacing']);
+                }
+
+                if (isset($block['css_classes'])) {
+                  $paragraph_entity->getTranslation($language)
+                    ->set('paragraph_css_class', $block['css_classes']);
+                }
+
+                $paragraph_entity->save();
+              }
+              if ($paragraph_entity instanceof ParagraphInterface) {
+                $ordered_paragraphs[] = [
+                  'target_id' => $paragraph_entity->id(),
+                  'target_revision_id' => \Drupal::entityTypeManager()
+                    ->getStorage('paragraph')
+                    ->getLatestRevisionId($paragraph_entity->id()),
+                ];
+              }
+            }
+          }
+          if (!empty($ordered_paragraphs)) {
+            $node->set('field_vactory_paragraphs', $ordered_paragraphs);
+          }
+        }
+        else {
+          $node->set('field_vactory_paragraphs', []);
+        }
       }
 
       // Save the node
@@ -1230,33 +1150,12 @@ class DashboardNodeController extends ControllerBase {
     }
   }
 
-  public function getReferencedTaxonomies($bundle) {
-    // Load saved config with selected vocabularies.
-    $config = $this->configFactory->get('vactory_dashboard.advanced.content_types');
-    $taxonomy_selections = $config->get('taxonomy_selections') ?? [];
-
-    // Get selected vocabularies for this bundle.
-    $selected_vocabularies = $taxonomy_selections[$bundle] ?? [];
-
-    $result = [];
-    foreach ($selected_vocabularies as $vocab_id) {
-      $vocabulary = Vocabulary::load($vocab_id);
-      if ($vocabulary) {
-        $result[] = [
-          'id' => $vocab_id,
-          'label' => $vocabulary->label(),
-        ];
-      }
-    }
-
-    return $result;
-  }
-
   /**
    * Returns the list of aliases of published nodes accessible to the user,
    * filtered by an optional search query
    *
    * @param Request $request
+   *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    */
   public function getNodeLinks(Request $request) {
@@ -1291,6 +1190,13 @@ class DashboardNodeController extends ControllerBase {
     }
 
     return new JsonResponse($links);
+  }
+
+  /**
+   * Get referenced taxonomies.
+   */
+  public function getReferencedTaxonomies($bundle) {
+    return $this->nodeService->getReferencedTaxonomies($bundle);
   }
 
 }
