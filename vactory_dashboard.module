@@ -181,9 +181,14 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
     'vactory_dashboard_vactory_page_add' => [
       'template' => 'node/vactory-page/add',
       'variables' => [
+        'type' => NULL,
+        'has_paragraphs_field' => NULL,
         'language' => NULL,
         'available_languages' => NULL,
         'node_default_lang' => NULL,
+        'bundle' => NULL,
+        'fields' => NULL,
+        'bundle_label' => NULL,
       ],
     ],
     'vactory_dashboard_node_add' => [

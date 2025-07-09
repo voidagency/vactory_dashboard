@@ -14,6 +14,7 @@ use Drupal\media\MediaInterface;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
 use Drupal\node\NodeInterface;
+use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -62,13 +63,12 @@ class DashboardNodeController extends ControllerBase {
    */
   protected $metatagService;
 
-    /**
+  /**
    * Le service AliasManager.
    *
    * @var \Drupal\Core\Path\AliasManagerInterface
    */
   protected $aliasManager;
-
 
   protected $tokenService;
 
@@ -499,13 +499,19 @@ class DashboardNodeController extends ControllerBase {
     // Get bundle fields.
     $fields = $this->getBundleFields($bundle);
 
+    // Check bundle if has a paragraphs field (field_vactory_paragraphs) with a dynamic field.
+    $has_paragraphs_field = $this->hasParagraphsField($fields);
+
     // Get bundle label.
     $bundle_info = \Drupal::service('entity_type.bundle.info')
       ->getBundleInfo('node')[$bundle];
     $bundle_label = $bundle_info['label'];
 
     return [
-      '#theme' => 'vactory_dashboard_node_add',
+      //'#theme' => 'vactory_dashboard_node_add',
+      '#theme' => 'vactory_dashboard_vactory_page_add',
+      '#type' => 'not_page',
+      '#has_paragraphs_field' => $has_paragraphs_field,
       '#language' => $current_language,
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
@@ -513,6 +519,23 @@ class DashboardNodeController extends ControllerBase {
       '#bundle_label' => $bundle_label,
       '#fields' => $fields,
     ];
+  }
+
+  /**
+   * If the bundle has a paragraphs field.
+   */
+  private function hasParagraphsField(array &$fields): bool {
+    if (!in_array('field_vactory_paragraphs', array_keys($fields))) {
+      return FALSE;
+    }
+
+    $settings = $fields['field_vactory_paragraphs']['settings'];
+    if (in_array('vactory_component', $settings['handler_settings']['target_bundles'] ?? [])) {
+      unset($fields['field_vactory_paragraphs']);
+      return TRUE;
+    }
+
+    return FALSE;
   }
 
   /**
@@ -791,10 +814,14 @@ class DashboardNodeController extends ControllerBase {
 
       $status = $data['status'] ?? TRUE;
 
+      $language = $data['language'] ?? \Drupal::languageManager()
+        ->getDefaultLanguage()
+        ->getId();
+
       // Create node
       $node = Node::create([
         'type' => $data['bundle'],
-        'langcode' => $data['language'],
+        'langcode' => $language,
         'status' => $status,
         'path' => [
           'pathauto' => 1,
@@ -802,6 +829,8 @@ class DashboardNodeController extends ControllerBase {
       ]);
 
       $seo = $data['seo'] ?? [];
+
+      $blocks = $data['blocks'] ?? [];
 
       if ($node->hasField('moderation_state')) {
         $node->set('moderation_state', $status ? 'published' : 'draft');
@@ -825,6 +854,40 @@ class DashboardNodeController extends ControllerBase {
 
         if ($field_value) {
           $node->set($field_name, $field_value);
+        }
+      }
+
+      if ($node->hasField('field_vactory_paragraphs')) {
+        $ordered_paragraphs = [];
+        if (!empty($blocks)) {
+          foreach ($blocks as $block) {
+            $paragraph_entity = NULL;
+            $paragraph = [
+              "type" => "vactory_component",
+              "field_vactory_title" => $block['title'],
+              "field_vactory_flag" => $block['show_title'],
+              "paragraph_container" => $block['width'],
+              "container_spacing" => $block['spacing'],
+              "paragraph_css_class" => $block['css_classes'],
+
+              "field_vactory_component" => [
+                "widget_id" => $block['widget_id'],
+                "widget_data" => json_encode($block['widget_data']),
+              ],
+            ];
+            $paragraph['langcode'] = $language;
+            $paragraph_entity = Paragraph::create($paragraph);
+            $paragraph_entity->save();
+            $ordered_paragraphs[] = [
+              'target_id' => $paragraph_entity->id(),
+              'target_revision_id' => \Drupal::entityTypeManager()
+                ->getStorage('paragraph')
+                ->getLatestRevisionId($paragraph_entity->id()),
+            ];
+          }
+        }
+        if (!empty($ordered_paragraphs)) {
+          $node->set('field_vactory_paragraphs', $ordered_paragraphs);
         }
       }
 
@@ -1257,6 +1320,7 @@ class DashboardNodeController extends ControllerBase {
    * filtered by an optional search query
    *
    * @param Request $request
+   *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    */
   public function getNodeLinks(Request $request) {

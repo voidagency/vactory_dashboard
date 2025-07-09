@@ -1,59 +1,25 @@
 {% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
 
 {% block content %}
-    <div class="h-full flex flex-col"
-         x-data="pageEditor({language: '{{ language }}'})">
-        <div x-show="!showBlockForm">
-            {# Header with back button, title and actions #}
-            {% include "@vactory_dashboard/node/_components/actions.html.twig" with {
-                label: 'Create Page'|t
-            } %}
-        </div>
-        {# Notification #}
-        {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
-
-        <div x-show="!showBlockForm">
-            {# Tabs #}
-            {% include "@vactory_dashboard/node/_components/tabs.html.twig" %}
-        </div>
-
-        {# Node Edit View #}
-        <div x-show="!showBlockForm">
-            {# Content Tab #}
-            <div x-show="activeTab === 'content'" class="flex-1 overflow-y-auto p-3">
-                <div class="w-full">
-
-                    {% include "@vactory_dashboard/node/_components/add-block-action.html.twig" with {
-                        show: true
-                    } %}
-
-                    <div class="space-y-1">
-                        {% include "@vactory_dashboard/_components/paragraph/blocks.html.twig" %}
-                    </div>
-                </div>
-            </div>
-
-            {# Settings Tab #}
-            {% include "@vactory_dashboard/node/_components/settings-form.html.twig" %}
-
-            {# SEO Tab #}
-            {% include "@vactory_dashboard/node/_components/seo-form.html.twig" %}
-        </div>
-
-        {# Block Form View #}
-        <div x-show="showBlockForm" class="h-full">
-            {% include "@vactory_dashboard/_components/paragraph/block-form.html.twig" %}
-        </div>
-
-        {# Include the blocks modal #}
-        {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}
-    </div>
+    {% if type == 'page' %}
+        {% include "@vactory_dashboard/node/vactory-page/add-vactory-page.html.twig" %}
+    {% endif %}
+    {% if type == 'not_page' %}
+        {% include "@vactory_dashboard/node/vactory-page/add-node.html.twig" %}
+    {% endif %}
 {% endblock %}
 
 {% block javascripts %}
     <script>
       document.addEventListener('alpine:init', () => {
         Alpine.data('pageEditor', (config) => ({
+          bundle: config.bundle,
+          bundle_label: config.bundle_label,
+          fields: config.fields ?? {},
+          formData: {
+            fields: {},
+            status: true,
+          },
           language: config.language,
           activeTab: 'content',
           blocks: [],
@@ -81,6 +47,76 @@
           currentBlockIndex: null,
           dragStartIndex: null,
           dragStartItemIndex: null,
+
+          // node
+          get contentFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content'),
+            );
+          },
+          get crossContentFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => field.type === 'field_cross_content'),
+            );
+          },
+          validateForm() {
+            const form = document.getElementById('node-form');
+            const requiredInputs = form.querySelectorAll('[required]');
+            let isValid = true;
+            requiredInputs.forEach(input => {
+              if (!input.value) {
+                console.log({input})
+                input.classList.add('border-red-500');
+                isValid = false;
+              }
+            });
+
+            return isValid;
+          },
+          async saveNode() {
+            if (!this.validateForm()) {
+              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              return;
+            }
+
+            if (this.isSaving) {
+              return;
+            }
+            this.isSaving = true;
+            try {
+              const response = await fetch(`/api/vactory-dashboard/${this.bundle}/node/save`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  bundle: this.bundle,
+                  language: this.language,
+                  seo: this.seo,
+                  blocks: this.blocks,
+                  fields: this.formData.fields,
+                  status: this.formData.status,
+                }),
+              });
+
+              const data = await response.json();
+
+              if (!response.ok) {
+                throw new Error(data.message || '{{ 'Failed to save node'|t }}');
+              }
+
+              this.showNotification('success', '{{ 'Node created successfully'|t }}');
+
+              // window.location.href = data?.list;
+            } catch (error) {
+              console.error('Error saving node:', error);
+              this.showNotification('error', error.message);
+            } finally {
+              this.isSaving = false;
+            }
+          },
+          // end node
+
           dragStart(event) {
             this.dragStartIndex = parseInt(event.target.dataset.index);
             event.dataTransfer.effectAllowed = 'move';
@@ -446,7 +482,7 @@
                       class: '',
                       id: 'link-' + Math.random().toString(36).slice(2),
                       target: '',
-                      rel: ''
+                      rel: '',
                     },
                   };
                 } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
@@ -482,7 +518,7 @@
                       class: '',
                       id: 'link-' + Math.random().toString(36).slice(2),
                       target: '',
-                      rel: ''
+                      rel: '',
                     },
 
                   };
@@ -559,12 +595,12 @@
                   title: '',
                   url: '',
                   attributes: {
-                      label: '',
-                      class: '',
-                      id: 'link-' + Math.random().toString(36).slice(2),
-                      target: '',
-                      rel: ''
-                    },
+                    label: '',
+                    class: '',
+                    id: 'link-' + Math.random().toString(36).slice(2),
+                    target: '',
+                    rel: '',
+                  },
                 };
               } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
                 newItem[fieldName] = {
@@ -613,6 +649,43 @@
           init() {
             // Fetch templates when component initializes
             this.fetchTemplates();
+
+            this.fields = JSON.parse(this.fields);
+            // Initialize form data based on fields
+            Object.keys(this.fields).forEach((fieldKey) => {
+              const field = this.fields[fieldKey];
+
+              if (field?.textFormatField) {
+                setTimeout(() => {
+                  const label = document.getElementById(`edit-${field.name}-format-help`);
+                  label.style.display = 'none';
+                  Drupal.editors.ckeditor5.onChange(document.getElementById(`edit-${field.name}-value`), () => {
+                    const ckInstance = Drupal.CKEditor5Instances.values().next().value;
+                    this.formData.fields[field.name] = ckInstance.getData();
+                  });
+                }, '2000');
+              }
+
+              if (field.type === 'faqfield') {
+                this.formData.fields[fieldKey] = Array.isArray(field.value) && field.value.length
+                  ? field.value
+                  : [{ question: '', answer: '' }];
+                return;
+              }
+
+              if (field.type === 'image' || field.type === 'file' || field.type === 'remote_video' || field.type === 'private_file') {
+                this.formData.fields[fieldKey] = {
+                  id: null,
+                  url: null,
+                  name: null,
+                  path: fieldKey,
+                  key: new Date().getTime(),
+                };
+              } else {
+                this.formData.fields[fieldKey] = '';
+              }
+            });
+
           },
 
           showNotification(type, message) {
@@ -778,11 +851,13 @@
             };
 
             this.setValueByPath(this.blockForm, this.currentFieldPath, imageData);
+            this.formData.fields[this.currentFieldPath] = imageData;
 
             this.closeMediaLibrary();
             this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
           },
           clearImage(fieldName, path, key) {
+            // for vactory page.
             this.setValueByPath(this.blockForm, path, {
               id: null,
               url: null,
@@ -790,6 +865,15 @@
               path: path,
               key: key ?? new Date().getTime(),
             });
+
+            // for node.
+            this.formData.fields[fieldName] = {
+              id: null,
+              url: null,
+              name: null,
+              path: fieldName,
+              key: new Date().getTime(),
+            };
           },
           getFieldValue(fieldName, index = null) {
             if (index !== null) {

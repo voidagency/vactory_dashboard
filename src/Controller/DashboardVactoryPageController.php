@@ -106,6 +106,7 @@ class DashboardVactoryPageController extends ControllerBase {
 
     return [
       '#theme' => 'vactory_dashboard_vactory_page_add',
+      '#type' => 'page',
       '#language' => $current_language,
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,

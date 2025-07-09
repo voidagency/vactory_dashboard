@@ -24,8 +24,9 @@
                 {% include '@vactory_admin/components/button/button.twig' with {
                     'variant': 'primary',
                     'size': 'md',
+                    'type': 'button',
                     'text': 'Enregistrer'|t,
-                    'attributes': create_attribute().setAttribute('type', 'submit').setAttribute('form', 'block-form')
+                    'attributes': create_attribute().setAttribute('@click', 'saveBlock()')
                 } %}
             </div>
         </div>
@@ -444,7 +445,7 @@
                                         {{ 'Block Title'|t }}
                                         <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" required x-model="blockForm.config.title"
+                                    <input type="text" x-model="blockForm.config.title"
                                            @invalid="$el.classList.add('border-red-500')"
                                            @input="$el.classList.remove('border-red-500')"
                                            class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">

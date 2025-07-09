@@ -22,20 +22,31 @@
         </div>
 
         {% if has_seo %}
-        <button
-                @click="activeTab = 'seo'" 
-                :class="{
+            <button
+                    @click="activeTab = 'seo'"
+                    :class="{
                     'border-primary-500 text-primary-600 bg-primary-50/50': activeTab === 'seo',
                     'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50': activeTab !== 'seo'
                 }"
-                class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
-            {{ 'SEO'|t }}
-        </button> 
-        {% endif  %}
+                    class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
+                {{ 'SEO'|t }}
+            </button>
+        {% endif %}
+        {% if has_paragraphs_field %}
+            <button
+                    @click="activeTab = 'templates'"
+                    :class="{
+                    'border-primary-500 text-primary-600 bg-primary-50/50': activeTab === 'templates',
+                    'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50': activeTab !== 'templates'
+                }"
+                    class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
+                {{ 'Templates'|t }}
+            </button>
+        {% endif %}
     </div>
     {% if alias %}
         <div class="flex justify-end mr-1">
             {% include "@vactory_dashboard/node/_components/page-speed.html.twig" with { url: alias } %}
         </div>
-    {% endif %} 
+    {% endif %}
 </div>
