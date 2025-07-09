@@ -354,64 +354,68 @@ class NodeService {
     $form_display = \Drupal::service('entity_display.repository')
       ->getFormDisplay('node', $bundle, $form_mode);
 
-    foreach ($fields as $field_name => $field_definition) {
-      if ($form_display->getComponent($field_name)) {
-        // Skip technical/system fields
-        if (in_array($field_name, DashboardConstants::SKIPPED_FIELDS)) {
-          continue;
-        }
+    $components = $form_display->getComponents();
+    uasort($components, function ($a, $b) {
+      return ($a['weight'] ?? 0) <=> ($b['weight'] ?? 0);
+    });
 
-        $field_type = $field_definition->getType();
-        $field_settings = $field_definition->getSettings();
-        $cardinality = $field_definition->getFieldStorageDefinition()
-          ->getCardinality();
-        $field_required = $field_definition->isRequired();
-        $field_label = $field_definition->getLabel();
+    foreach ($components as $field_name => $component) {
+      // Skip technical/system fields
+      if (!isset($fields[$field_name]) || in_array($field_name, DashboardConstants::SKIPPED_FIELDS)) {
+        continue;
+      }
 
-        $field_info = [
-          'name' => $field_name,
-          'type' => $field_type,
-          'label' => $field_label,
-          'required' => $field_required,
-          'settings' => $field_settings,
-        ];
-        // Add specific settings based on field type
-        switch ($field_type) {
-          case 'entity_reference':
-            $field_info['target_type'] = $field_settings['target_type'];
-            if ($field_settings['target_type'] === 'taxonomy_term' || $field_settings['target_type'] === 'user') {
-              $field_info['type'] = 'select';
-              $field_info['multiple'] = $cardinality == -1;
-              $field_info['options'] = $this->load_entity_reference_options($field_info);
-            }
-            if ($field_settings['target_type'] === 'media') {
-              $field_info['type'] = reset($field_settings['handler_settings']['target_bundles']);
-            }
-            break;
-          case 'list_string':
+      $field_definition = $fields[$field_name];
+      $field_type = $field_definition->getType();
+      $field_settings = $field_definition->getSettings();
+      $cardinality = $field_definition->getFieldStorageDefinition()->getCardinality();
+      $field_required = $field_definition->isRequired();
+      $field_label = $field_definition->getLabel();
+
+      $field_info = [
+        'name' => $field_name,
+        'type' => $field_type,
+        'label' => $field_label,
+        'required' => $field_required,
+        'settings' => $field_settings,
+      ];
+
+      // Continue with your custom logic...
+      switch ($field_type) {
+        case 'entity_reference':
+          $field_info['target_type'] = $field_settings['target_type'];
+          if ($field_settings['target_type'] === 'taxonomy_term' || $field_settings['target_type'] === 'user') {
             $field_info['type'] = 'select';
             $field_info['multiple'] = $cardinality == -1;
-            $field_info['options'] = $field_definition->getSettings()['allowed_values'] ?? [];
-            break;
+            $field_info['options'] = $this->load_entity_reference_options($field_info);
+          }
+          if ($field_settings['target_type'] === 'media') {
+            $field_info['type'] = reset($field_settings['handler_settings']['target_bundles']);
+          }
+          break;
 
-          case 'text_with_summary':
-          case 'text_long':
-            $field_info['format'] = 'full_html';
-            $field_info['type'] = 'text_with_summary';
-            $form = \Drupal::formBuilder()
-              ->getForm('Drupal\vactory_dashboard\Form\CkeditorFieldForm', $field_name);
-            $field_info['textFormatField'] = \Drupal::service('renderer')
-              ->render($form);
-            break;
+        case 'list_string':
+          $field_info['type'] = 'select';
+          $field_info['multiple'] = $cardinality == -1;
+          $field_info['options'] = $field_definition->getSettings()['allowed_values'] ?? [];
+          break;
 
-          case 'field_cross_content':
-            $field_info['options'] = $this->getCrossContentOptions($bundle, $field_info);
-            $field_info['multiple'] = TRUE;
-            break;
-        }
-        $field_info['is_translatable'] = $countActiveLangs === 0 || $field_definition->isTranslatable();
-        $field_definitions[$field_name] = $field_info;
+        case 'text_with_summary':
+        case 'text_long':
+          $field_info['format'] = 'full_html';
+          $field_info['type'] = 'text_with_summary';
+          $form = \Drupal::formBuilder()->getForm('Drupal\vactory_dashboard\Form\CkeditorFieldForm', $field_name);
+          $field_info['textFormatField'] = \Drupal::service('renderer')->render($form);
+          break;
+
+        case 'field_cross_content':
+          $field_info['options'] = $this->getCrossContentOptions($bundle, $field_info);
+          $field_info['multiple'] = TRUE;
+          break;
       }
+
+      $field_info['is_translatable'] = $countActiveLangs === 0 || $field_definition->isTranslatable();
+      $field_definitions[$field_name] = $field_info;
     }
     return $field_definitions;
   }
