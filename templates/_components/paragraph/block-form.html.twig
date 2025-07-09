@@ -3,7 +3,7 @@
     <div class="h-full flex flex-col bg-slate-50">
         <div class="sticky top-0 z-10 bg-white rounded-xl py-4 px-6 border-b border-slate-200 flex justify-between items-center mb-6">
             <div class="flex items-center gap-x-3">
-                <button @click="showBlockForm = false"
+                <button @click="showBlockForm = false" type="button"
                         class="me-3 text-slate-400 hover:text-primary-500 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                          stroke="currentColor" class="h-4 w-4">
@@ -18,14 +18,16 @@
                 {% include '@vactory_admin/components/button/button.twig' with {
                     'variant': 'secondary',
                     'size': 'md',
+                    'type': 'button',
                     'text': 'Annuler'|t,
                     'attributes': create_attribute().setAttribute('@click', 'showBlockForm = false')
                 } %}
                 {% include '@vactory_admin/components/button/button.twig' with {
                     'variant': 'primary',
                     'size': 'md',
+                    'type': 'button',
                     'text': 'Enregistrer'|t,
-                    'attributes': create_attribute().setAttribute('type', 'submit').setAttribute('form', 'block-form')
+                    'attributes': create_attribute().setAttribute('@click', 'saveBlock()')
                 } %}
             </div>
         </div>
@@ -444,7 +446,7 @@
                                         {{ 'Block Title'|t }}
                                         <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" required x-model="blockForm.config.title"
+                                    <input type="text" x-model="blockForm.config.title"
                                            @invalid="$el.classList.add('border-red-500')"
                                            @input="$el.classList.remove('border-red-500')"
                                            class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
