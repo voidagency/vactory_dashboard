@@ -813,3 +813,28 @@ function vactory_dashboard_user_login($account) {
   }
 }
 
+/**
+ * Implements hook_preprocess_menu_local_task().
+ */
+function vactory_preprocess_menu_local_task(&$variables) {
+  if (!\Drupal::moduleHandler()->moduleExists('vactory_dashboard')) {
+    return;
+  }
+
+  $url = $variables['link']['#url'];
+  
+  if ($url instanceof Url && $url->getRouteName() == 'entity.node.edit_form') {
+    $route_parameters = $url->getRouteParameters();
+    $node_id = $route_parameters['node'] ?? null;
+
+    $node = Node::load($node_id);
+    $bundle = $node?->bundle();
+    
+    $new_url = Url::fromRoute('vactory_dashboard.node.edit', [
+      'bundle' => $bundle,
+      'nid' => $node_id
+    ]);
+    
+    $variables['link']['#url'] = $new_url;
+  }  
+}
