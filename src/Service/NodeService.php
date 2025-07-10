@@ -172,12 +172,12 @@ class NodeService {
             $this->processWidgetData($widgetData, $widgetConfig);
             $widgetId = $component['widget_id'];
             $paragraphs[] = [
-              'title' => $paragraph->get('field_vactory_title')->value,
-              'show_title' => $paragraph->get('field_vactory_flag')->value === "1",
-              'width' => $paragraph->get('paragraph_container')->value,
-              'spacing' => $paragraph->get('container_spacing')->value,
-              'css_classes' => $paragraph->get('paragraph_css_class')->value,
-              'pid' => $paragraphData['target_id'],
+              'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
+              'show_title' => $paragraph->hasField('field_vactory_flag') ??  $paragraph->get('field_vactory_flag')->value === "1",
+              'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
+              'spacing' =>  $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
+              'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
+              'pid' => $paragraph->hasField('target_id') ? $paragraphData['target_id'] : "",
               'widget_id' => $widgetId,
               'widget_data' => $widgetData,
               'widget_config' => $widgetConfig,
@@ -219,12 +219,12 @@ class NodeService {
             $this->processWidgetData($widgetData, $widgetConfig);
             $widgetId = $component['widget_id'];
             $paragraphs[] = [
-              'title' => $paragraph->get('field_vactory_title')->value,
-              'show_title' => $paragraph->get('field_vactory_flag')->value === "1",
-              'width' => $paragraph->get('paragraph_container')->value,
-              'spacing' => $paragraph->get('container_spacing')->value,
-              'css_classes' => $paragraph->get('paragraph_css_class')->value,
-              'pid' => $paragraphData['target_id'],
+              'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
+              'show_title' => $paragraph->hasField('field_vactory_flag') ??  $paragraph->get('field_vactory_flag')->value === "1",
+              'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
+              'spacing' =>  $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
+              'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
+              'pid' => $paragraph->hasField('target_id') ? $paragraphData['target_id'] : "",
               'widget_id' => $widgetId,
               'widget_data' => $widgetData,
               'widget_config' => $widgetConfig,
