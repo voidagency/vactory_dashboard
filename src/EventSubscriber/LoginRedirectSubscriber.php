@@ -84,6 +84,12 @@ class LoginRedirectSubscriber implements EventSubscriberInterface
                 return;
             }
 
+            $config = \Drupal::config('vactory_dashboard.global.settings');
+            $redirect_enabled = $config->get('dashboard');
+            if(!$redirect_enabled) {
+                return;
+            }
+
             if ($this->currentUser->hasPermission('access dashboard')) {
                 $redirect_url = $this->urlGenerator->generate('vactory_dashboard.home');
                 $response = new RedirectResponse($redirect_url);

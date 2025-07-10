@@ -807,6 +807,12 @@ function vactory_dashboard_user_login($account) {
     return;
   }
 
+  $config = \Drupal::config('vactory_dashboard.global.settings');
+  $redirect_enabled = $config->get('dashboard');
+  if(!$redirect_enabled) {
+      return;
+  }
+
   if ($current_user->hasPermission('access dashboard')) {
     $url = Url::fromRoute('vactory_dashboard.home');
     $request->query->set('destination', $url->toString());
