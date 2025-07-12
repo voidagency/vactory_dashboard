@@ -20,13 +20,14 @@ final class CkeditorFieldForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $my_param = NULL): array {
+  public function buildForm(array $form, FormStateInterface $form_state, $my_param = NULL, $x_model = 'formData.fields[field.name]', $required = 'field.required'): array {
     $form[$my_param] = [
       '#type' => 'text_format',
       '#format' => 'full_html',
       '#attributes' => [
-        'x-model' => 'formData.fields[field.name]',
-        ':required' => 'field.required',
+        'x-model' => $x_model,
+        'x-init' => "if (\$el) {\$el.setAttribute('name', `blockForm.fields[\${fieldName}]`); \$el.setAttribute('id', edit-`blockForm.fields[\${fieldName}]`-value); }",
+        ':required' => $required,
       ],
     ];
 
