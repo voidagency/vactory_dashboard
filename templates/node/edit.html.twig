@@ -624,7 +624,7 @@
 
                 if (field?.textFormatField) {
                   setTimeout(() => {
-                    Drupal.editors.ckeditor5.onChange(document.getElementById(`edit-${field.name}-value`), () => {
+                    Drupal.editors.ckeditor5.onChange(document.getElementById(`edit-${field.name.replaceAll('_', '-')}-value`), () => {
                       const ckInstance = Drupal.CKEditor5Instances.values().next().value;
                       this.formData.fields[field.name] = ckInstance.getData();
                     });

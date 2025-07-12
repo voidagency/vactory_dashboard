@@ -657,9 +657,9 @@
 
               if (field?.textFormatField) {
                 setTimeout(() => {
-                  const label = document.getElementById(`edit-${field.name}-format-help`);
+                  const label = document.getElementById(`edit-${field.name.replaceAll('_', '-')}-format-help`);
                   label.style.display = 'none';
-                  Drupal.editors.ckeditor5.onChange(document.getElementById(`edit-${field.name}-value`), () => {
+                  Drupal.editors.ckeditor5.onChange(document.getElementById(`edit-${field.name.replaceAll('_', '-')}-value`), () => {
                     const ckInstance = Drupal.CKEditor5Instances.values().next().value;
                     this.formData.fields[field.name] = ckInstance.getData();
                   });

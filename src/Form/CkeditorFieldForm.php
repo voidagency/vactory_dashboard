@@ -20,7 +20,22 @@ final class CkeditorFieldForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $my_param = NULL, $x_model = 'formData.fields[field.name]', $required = 'field.required'): array {
+  public function buildForm(array $form, FormStateInterface $form_state, $my_param = NULL, $isDF=FALSE, $x_model = 'formData.fields[field.name]', $required = 'field.required'): array {
+    // content type - add, edit page
+    if (!$isDF) {
+      $form[$my_param] = [
+        '#type' => 'text_format',
+        '#format' => 'full_html',
+        '#attributes' => [
+          'x-model' => $x_model,
+          ':required' => 'field.required',
+        ],
+      ];
+
+      return $form;
+    }
+    
+    // Dynamic field - single
     $form[$my_param] = [
       '#type' => 'text_format',
       '#format' => 'full_html',

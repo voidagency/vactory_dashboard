@@ -89,10 +89,22 @@
 
                                                 {# Text Format #}
                                                 <template x-if="field.type === 'text_format'">
-                                                    <textarea :required="field.options?.['#required'] ?? false"
-                                                              x-model="blockForm.extra_fields[fieldName]" rows="4"
-                                                              class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"></textarea>
-                                                </template>
+                                                        <div
+                                                            x-init="$nextTick(() => Drupal.attachBehaviors($el))
+                                                                setTimeout(() => {
+                                                                const textarea = $el.querySelector('textarea');
+                                                                const match = textarea.name.match(/\['?([^'\]]+)'?\]/);
+                                                                const fieldName = match ? match[1] : 'content';
+                                                                Drupal.editors.ckeditor5.onChange(document.getElementsByName(textarea.name)[0], () => {
+                                                                    const ckInstance = Drupal.CKEditor5Instances.values().next().value;
+                                                                    blockForm.extra_fields[fieldName] = ckInstance.getData();
+                                                                });
+                                                                }, '3000');
+                                                            "
+                                                        >
+                                                            {{ drupal_form('Drupal\\vactory_dashboard\\Form\\CkeditorFieldForm', 'GENERIC', true, 'blockForm.extra_fields[fieldName]', "field.options?.['#required'] ?? false") }}
+                                                        </div>
+                                                    </template>
 
                                                 {# URL Extended Input #}
                                                 <template x-if="field.type === 'url_extended'">
@@ -186,25 +198,20 @@
                                                     <template x-if="field.type === 'text_format'">
                                                         <div
                                                             x-init="$nextTick(() => Drupal.attachBehaviors($el))
-                                                        setTimeout(() => {
-                                                        const textarea = $el.querySelector('textarea');
-                                                        const match = textarea.name.match(/\['?([^'\]]+)'?\]/);
-                                                        console.log('match: ', match);
-                                                        const fieldName = match ? match[1] : 'content';
-                                                        console.log('el: ', $el);
-                                                        console.log(document.getElementsByName(document.getElementsByName(textarea.name)));
-                                                        Drupal.editors.ckeditor5.onChange(document.getElementsByName(textarea.name)[0], () => {
-                                                            const ckInstance = Drupal.CKEditor5Instances.values().next().value;
-                                                            blockForm.fields[fieldName] = ckInstance.getData();
-                                                        });
-                                                        }, '2000');
-                                                    "
+                                                                setTimeout(() => {
+                                                                const textarea = $el.querySelector('textarea');
+                                                                const match = textarea.name.match(/\['?([^'\]]+)'?\]/);
+                                                                const fieldName = match ? match[1] : 'content';
+                                                                Drupal.editors.ckeditor5.onChange(document.getElementsByName(textarea.name)[0], () => {
+                                                                    const ckInstance = Drupal.CKEditor5Instances.values().next().value;
+                                                                    blockForm.fields[fieldName] = ckInstance.getData();
+                                                                });
+                                                                }, '3000');
+                                                            "
                                                         >
-                                                            {{ drupal_form('Drupal\\vactory_dashboard\\Form\\CkeditorFieldForm', 'GENERIC', 'blockForm.fields[fieldName]', "field.options?.['#required'] ?? false") }}
+                                                            {{ drupal_form('Drupal\\vactory_dashboard\\Form\\CkeditorFieldForm', 'GENERIC', true, 'blockForm.fields[fieldName]', "field.options?.['#required'] ?? false") }}
                                                         </div>
                                                     </template>
-                                                    
-                                                    
 
                                                     {# URL Extended Input #}
                                                     <template x-if="field.type === 'url_extended'">
@@ -332,10 +339,21 @@
 
                                                                     {# Text Format #}
                                                                     <template x-if="field.type === 'text_format'">
-                                                                        <textarea
-                                                                                :required="field.options?.['#required'] ?? false"
-                                                                                x-model="item[fieldName]" rows="4"
-                                                                                class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150"></textarea>
+                                                                        <div
+                                                                            x-init="$nextTick(() => Drupal.attachBehaviors($el))
+                                                                                setTimeout(() => {
+                                                                                const textarea = $el.querySelector('textarea');
+                                                                                const match = textarea.name.match(/\['?([^'\]]+)'?\]/);
+                                                                                const fieldName = match ? match[1] : 'content';
+                                                                                Drupal.editors.ckeditor5.onChange(document.getElementsByName(textarea.name)[0], () => {
+                                                                                    const ckInstance = Drupal.CKEditor5Instances.values().next().value;
+                                                                                    item[fieldName] = ckInstance.getData();
+                                                                                });
+                                                                                }, '3000');
+                                                                            "
+                                                                        >
+                                                                            {{ drupal_form('Drupal\\vactory_dashboard\\Form\\CkeditorFieldForm', 'GENERIC', true, 'item[fieldName]', "field.options?.['#required'] ?? false") }}
+                                                                        </div>
                                                                     </template>
 
                                                                     {# Select Input #}
