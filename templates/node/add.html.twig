@@ -47,6 +47,9 @@
           currentBlockIndex: null,
           dragStartIndex: null,
           dragStartItemIndex: null,
+          inputLabelsList: {},
+          inputLabels: {},
+          suggestions: {},
 
           // node
           get contentFields() {
@@ -59,6 +62,27 @@
               Object.entries(this.fields).filter(([key, field]) => field.type === 'field_cross_content'),
             );
           },
+          async fetchSuggestions(fieldName, query) {
+              if (!query || query.length < 1) {
+               this.suggestions[fieldName] = [];
+               return;
+              }
+              try {
+              const response = await fetch(`{{ path('vactory_dashboard.autocomplete') }}?field=${fieldName}&q=${encodeURIComponent(query)}&bundle=${this.bundle}`);
+              if (!response.ok) throw new Error('Failed to fetch suggestions');
+              const data = await response.json();
+              this.suggestions[fieldName] = data.results;
+              } catch (e) {
+              console.error(e);
+              this.suggestions[fieldName] = [];
+             }
+            },
+
+          selectSuggestion(fieldName, item) {
+            this.formData.fields[fieldName] = item.id;       
+            this.inputLabels[fieldName] = item.label;        
+            this.suggestions[fieldName] = [];
+            },
           validateForm() {
             const form = document.getElementById('node-form');
             const requiredInputs = form.querySelectorAll('[required]');
@@ -666,8 +690,36 @@
                 }, '2000');
               }
 
+              // Autocomplete multiple
+            if (field.type === 'autocomplete' && field.multiple) {
+               this.formData.fields[fieldKey] = [];
+               this.inputLabels[fieldKey] = '';
+               this.inputLabelsList[fieldKey] = []; 
+               return;
+            }
+
+            // Autocomplete simple
+            if (field.type === 'autocomplete' && !field.multiple) {
+               this.formData.fields[fieldKey] = '';
+               this.inputLabels[fieldKey] = '';
+               return;
+            }
+
+            // Checkboxes
+            if (field.type === 'checkboxes') {
+                this.formData.fields[fieldKey] = [];
+                return;
+            }
+
+            // Radios
+            if (field.type === 'radios') {
+                this.formData.fields[fieldKey] = '';
+                return;
+            }
+
               if (field.type === 'faqfield') {
                 this.formData.fields[fieldKey] = Array.isArray(field.value) && field.value.length
+
                   ? field.value
                   : [{ question: '', answer: '' }];
                 return;
@@ -902,6 +954,22 @@
             }
 
             return url;
+          },
+          selectAutocompleteItem(fieldName, item) {
+            if (!this.formData.fields[fieldName].includes(item.id)) {
+              this.formData.fields[fieldName].push(item.id); // Stocke uniquement l'id
+            if (!this.inputLabelsList[fieldName]) {
+              this.inputLabelsList[fieldName] = [];
+            }
+            this.inputLabelsList[fieldName].push(item.label); // Stocke le label pour affichage
+           }
+           this.inputLabels[fieldName] = '';
+           this.suggestions[fieldName] = [];
+          },
+
+          removeAutocompleteItem(fieldName, idx) {
+            this.formData.fields[fieldName].splice(idx, 1);
+            this.inputLabelsList[fieldName].splice(idx, 1);
           },
         }));
       });
