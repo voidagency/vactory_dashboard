@@ -73,7 +73,7 @@ Configuration pour afficher les tickets Redmine assignés à l’utilisateur aut
   Identifiant : `vactory-4-next`
 
 - **API Key**  
-  Clé API Redmine pour accéder aux tickets (nDwB38RsSPex).
+  Clé API Redmine pour accéder aux tickets (XXXXXX).
 
 - **Redmine URL**  
   URL de l’API Redmine (modifiable selon le serveur).  

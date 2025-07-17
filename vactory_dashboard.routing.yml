@@ -791,3 +791,12 @@ vactory_dashboard.node_links:
     _controller: '\Drupal\vactory_dashboard\Controller\DashboardNodeController::getNodeLinks'
   requirements:
     _permission: 'access dashboard'
+
+vactory_dashboard.autocomplete:
+  path: '/api/autocomplete'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\AutocompleteController::autocomplete'
+    _title: 'Autocomplete'
+  requirements:
+    _permission: 'access dashboard'
+

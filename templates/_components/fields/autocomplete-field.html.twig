@@ -1,0 +1,60 @@
+{# Autocomplete simple #}
+<template x-if="field.type === 'autocomplete' && !field.multiple">
+    <div class="relative">
+        <input type="text" :ref="`input_${field.name}`" x-model="inputLabels[field.name]"
+               @input.debounce.300ms="fetchSuggestions(field.name, $event.target.value)"
+               autocomplete="off"
+               placeholder="Start typing or add a new value..."
+               class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md"/>
+        <input type="hidden" :name="field.name" :value="formData.fields[field.name]"/>
+
+        <ul x-show="suggestions[field.name]?.length > 0"
+          
+            class="absolute z-10 bg-white border border-gray-300 rounded-md mt-1 max-h-48 overflow-auto w-full"
+            @click.away="suggestions[field.name] = []">
+            <template x-for="item in suggestions[field.name]" :key="item.id">
+                <li @click="selectSuggestion(field.name, item)"
+                    class="cursor-pointer px-3 py-2 hover:bg-primary-100"
+                    x-text="item.label"></li>
+            </template>
+        </ul>
+    </div>
+</template>
+
+{# Autocomplete multiple #}
+<template x-if="field.type === 'autocomplete' && field.multiple">
+    <div>
+        <div class="flex flex-col gap-2">
+            <div class="flex gap-2">
+                <input type="text" x-model="inputLabels[field.name]"
+                       @input.debounce.300ms="fetchSuggestions(field.name, $event.target.value)"
+                       autocomplete="off"
+                       placeholder="Start typing or add a new value..."
+                       class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md"/>
+            </div>
+            <p class="text-sm text-gray-600">You can enter multiple items.</p>
+            <ul x-show="suggestions[field.name]?.length > 0"
+                
+                class="absolute z-10 bg-white border border-gray-300 rounded-md mt-1 max-h-48 overflow-auto w-full"
+                @click.away="suggestions[field.name] = []">
+                <template x-for="item in suggestions[field.name]" :key="item.id">
+                    <li @click="selectAutocompleteItem(field.name, item)"
+                        class="cursor-pointer px-3 py-2 hover:bg-primary-100"
+                        x-text="item.label"></li>
+                </template>
+            </ul>
+            <div class="flex flex-wrap gap-2 mt-2">
+                <template x-for="(label, idx) in inputLabelsList[field.name]" :key="idx">
+                    <span class="bg-gray-200 px-2 py-1 rounded flex items-center">
+                        <span x-text="label"></span>
+                        <button type="button" @click="removeAutocompleteItem(field.name, idx)" class="ml-1 text-red-500">&times;</button>
+                    </span>
+                </template>
+            </div>
+        </div>
+        <!-- Stockage des ids -->
+        <template x-for="item in formData.fields[field.name]" :key="item.id">
+            <input type="hidden" :name="field.name + '[]'" :value="item.id"/>
+        </template>
+    </div>
+</template>

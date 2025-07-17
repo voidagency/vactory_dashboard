@@ -45,6 +45,9 @@
             status: config.status === '1',
           },
           seo: {},
+          inputLabelsList: {},
+          suggestions: {},
+          inputLabels: {},
           showBlocksModal: false,
           showBlockForm: false,
           selectedTemplate: null,
@@ -600,6 +603,26 @@
             message: '',
             timeout: null,
           },
+          async fetchSuggestions(fieldName, query) {
+              if (!query || query.length < 1) {
+              this.suggestions[fieldName] = [];
+              return;
+            }
+            try {
+              const response = await fetch(`{{ path('vactory_dashboard.autocomplete') }}?field=${fieldName}&q=${encodeURIComponent(query)}&bundle=${this.bundle}`);
+              if (!response.ok) throw new Error('Failed to fetch suggestions');
+              const data = await response.json();
+              this.suggestions[fieldName] = data.results;
+            } catch (e) {
+              console.error(e);
+              this.suggestions[fieldName] = [];
+           }
+         },
+          selectSuggestion(fieldName, item) {
+             this.formData.fields[fieldName] = item.id;       
+             this.inputLabels[fieldName] = item.label;      
+             this.suggestions[fieldName] = [];
+          },
           init() {
             const node = JSON.parse(this.node);
             // Node specific process.
@@ -608,6 +631,41 @@
               // Initialize form data based on fields
               Object.keys(this.fields).forEach((fieldKey) => {
                 const field = this.fields[fieldKey];
+                 const value = node[fieldKey];
+             // autocomplete multiple
+             if (field.type === 'autocomplete' && field.multiple) {
+             if (Array.isArray(value) && value.length && typeof value[0] === "object") {
+                 this.formData.fields[fieldKey] = value.map(item => item.id);
+                 this.inputLabelsList[fieldKey] = value.map(item => item.label);
+              } else {
+                   this.formData.fields[fieldKey] = [];
+                   this.inputLabelsList[fieldKey] = [];
+              }
+                return;
+            }
+
+            if (field.type === 'autocomplete' && !field.multiple) {
+              if (typeof value === "object" && value !== null) {
+                this.formData.fields[fieldKey] = value.id;
+                this.inputLabels[fieldKey] = value.label;
+              } else {
+                 this.formData.fields[fieldKey] = '';
+                 this.inputLabels[fieldKey] = '';
+              }
+              return;
+            }
+
+              if (field.type === 'checkboxes') {
+                    this.formData.fields[fieldKey] = Array.isArray(value) ? value.map(v => String(v)) : [];
+                   return;
+              }
+
+
+              if (field.type === 'radios') {
+                  this.formData.fields[fieldKey] = value ? String(value) : '';
+                  return;
+              }
+              console.log('node',node)
 
                 if (field.type === 'faqfield') {
                   if (Array.isArray(field.value) && field.value.length) {
@@ -1048,6 +1106,28 @@
 
             return url;
           },
+          selectAutocompleteItem(fieldName, item) {
+           const alreadyExists = this.formData.fields[fieldName].some(existing => {
+           const existingId = typeof existing === 'object' ? existing.id : existing;
+              return String(existingId) === String(item.id);
+            });
+
+            if (!alreadyExists) {
+                this.formData.fields[fieldName].push(item.id);
+                this.inputLabelsList[fieldName].push(item.label);
+             }
+
+             this.inputLabels[fieldName] = '';
+             this.suggestions[fieldName] = [];
+            },
+
+            removeAutocompleteItem(fieldName, idx) {
+               if (!Array.isArray(this.formData.fields[fieldName]) || !Array.isArray(this.inputLabelsList[fieldName])) {
+               return;
+              }
+               this.inputLabelsList[fieldName] = this.inputLabelsList[fieldName].filter((_, i) => i !== idx);
+               this.formData.fields[fieldName] = this.formData.fields[fieldName].filter((_, i) => i !== idx);
+            },
         }));
         document.addEventListener('alpine:init', () => {
           Alpine.data('alpineMuliSelect', (obj) => ({
