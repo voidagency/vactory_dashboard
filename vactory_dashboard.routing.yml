@@ -792,6 +792,14 @@ vactory_dashboard.node_links:
   requirements:
     _permission: 'access dashboard'
 
+vactory_dashboard.wysiwyg:
+  path: '/api/dashboard/wysiwyg'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardWysiwyg::getForm'
+  requirements:
+    _permission: 'access dashboard'
+  methods: [POST]
+
 vactory_dashboard.autocomplete:
   path: '/api/autocomplete'
   defaults:

@@ -132,29 +132,32 @@ class DashboardNodeController extends ControllerBase {
     $bundle_info = \Drupal::service('entity_type.bundle.info')
       ->getBundleInfo('node')[$bundle];
     $bundle_label = $bundle_info['label'];
-    // Load all queues targeting 'node'.
-    $queues = EntityQueue::loadMultipleByTargetType("node");
-
-    // Filter queues that target the specific bundle.
-    $filtered_queues = array_filter($queues, function($queue) use ($bundle) {
-      $settings = $queue->getEntitySettings();
-      return isset($settings['handler_settings']['target_bundles']) && in_array($bundle, $settings['handler_settings']['target_bundles']);
-    });
 
     $results = [];
-    foreach ($filtered_queues as $queue) {
-      $entity_subqueue = $this->entityTypeManager->getStorage('entity_subqueue')
-        ->load($queue->id());
-      $items = $entity_subqueue->get('items')->getValue();
-      $results[$queue->id()] = [];
-      if (!empty($items)) {
-        foreach ($items as $item) {
-          $node = Node::load($item['target_id']);
-          if ($node) {
-            $results[$queue->id()][] = [
-              'id' => $item['target_id'],
-              'title' => $node->label(),
-            ];
+    if (\Drupal::moduleHandler()->moduleExists('entityqueue')) {
+      // Load all queues targeting 'node'.
+      $queues = EntityQueue::loadMultipleByTargetType("node");
+
+      // Filter queues that target the specific bundle.
+      $filtered_queues = array_filter($queues, function($queue) use ($bundle) {
+        $settings = $queue->getEntitySettings();
+        return isset($settings['handler_settings']['target_bundles']) && in_array($bundle, $settings['handler_settings']['target_bundles']);
+      });
+
+      foreach ($filtered_queues as $queue) {
+        $entity_subqueue = $this->entityTypeManager->getStorage('entity_subqueue')
+          ->load($queue->id());
+        $items = $entity_subqueue->get('items')->getValue();
+        $results[$queue->id()] = [];
+        if (!empty($items)) {
+          foreach ($items as $item) {
+            $node = Node::load($item['target_id']);
+            if ($node) {
+              $results[$queue->id()][] = [
+                'id' => $item['target_id'],
+                'title' => $node->label(),
+              ];
+            }
           }
         }
       }
