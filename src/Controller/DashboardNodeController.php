@@ -733,7 +733,7 @@ class DashboardNodeController extends ControllerBase {
           continue;
         }
 
-        if ($field_value) {
+        if ($field_value || is_array($field_value)) {
           $node->getTranslation($language)->set($field_name, $field_value);
         }
       }
