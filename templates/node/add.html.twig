@@ -336,11 +336,11 @@
 
             // Handle extra fields if they exist
             if (block.widget_data.extra_field) {
-              Object.keys(template.extra_fields || {}).forEach(fieldName => {
+              Object.keys(template.extra_fields || {}).forEach((fieldName, index) => {
                 if (block.widget_data.extra_field[fieldName]) {
                   if (template.extra_fields[fieldName].type === 'text_format') {
                     this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName].value || '';
-                    this.getForm('wysi1', -1, false, false, true, block.widget_data.extra_field[fieldName].value || '');
+                    this.getForm(`wysi-extra-${index}`, -1, false, false, true, block.widget_data.extra_field[fieldName].value || '');
                   } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
                     const imageKey = Object.keys(block.widget_data.extra_field[fieldName])[0];
                     const imageData = block.widget_data.extra_field[fieldName][imageKey];
@@ -543,7 +543,7 @@
             };
             // Initialize extra_fields if they exist
             if (template.extra_fields) {
-              Object.keys(template.extra_fields).forEach(fieldName => {
+              Object.keys(template.extra_fields).forEach((fieldName, index) => {
                 // Initialize url_extended fields with both title and url
                 if (template.extra_fields[fieldName].type === 'url_extended') {
                   this.blockForm.extra_fields[fieldName] = {
@@ -569,7 +569,7 @@
                   // Nothing to change here
                   this.blockForm.extra_fields[fieldName] = template.extra_fields[fieldName]['options']['#default_value'];
                 } else if (template.extra_fields[fieldName].type === 'text_format') {
-                  this.getForm('wysi1', -1, false, false, true);
+                  this.getForm(`wysi-extra-${index}`, -1, false, false, true);
                 } else {
                   this.blockForm.extra_fields[fieldName] = '';
                 }
