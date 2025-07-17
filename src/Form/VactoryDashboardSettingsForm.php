@@ -38,6 +38,18 @@ class VactoryDashboardSettingsForm extends ConfigFormBase {
     $form = parent::buildForm($form, $form_state);
     $config = $this->config('vactory_dashboard.global.settings');
 
+    $form['redirect'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Redirect to dashboard'),
+      '#open' => TRUE,
+    ];
+
+    $form['redirect']['dashboard'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Redirect to vactory dashboard after login'),
+      '#default_value' => $config->get('dashboard') ?? true,
+    ];
+
     $form['image'] = [
       '#type' => 'managed_file',
       '#title' => $this->t('Logo'),
@@ -187,6 +199,10 @@ class VactoryDashboardSettingsForm extends ConfigFormBase {
 
     $this->configFactory()->getEditable('vactory_dashboard.global.settings')
       ->set('image', $form_state->getValue('image') ?? "")
+      ->save();
+
+    $this->configFactory()->getEditable('vactory_dashboard.global.settings')
+      ->set('dashboard', $form_state->getValue('dashboard') ?? "")
       ->save();
 
     \Drupal::cache()->delete('vactory_dashboard.vocabularies');

@@ -10,6 +10,8 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Drupal\Core\Config\ConfigFactoryInterface;
+
 
 /**
  * Redirects user to dashboard after login.
@@ -46,6 +48,13 @@ class LoginRedirectSubscriber implements EventSubscriberInterface
     protected $urlGenerator;
 
     /**
+     * The configuration factory.
+     *
+     * @var \Drupal\Core\Config\ConfigFactoryInterface
+     */
+    protected $configFactory;
+
+    /**
      * Constructs the LoginRedirectSubscriber.
      *
      * @param \Drupal\Core\Session\AccountProxyInterface $current_user
@@ -61,12 +70,14 @@ class LoginRedirectSubscriber implements EventSubscriberInterface
         AccountProxyInterface $current_user,
         RouteMatchInterface $route_match,
         RequestStack $request_stack,
-        UrlGeneratorInterface $url_generator
+        UrlGeneratorInterface $url_generator,
+        ConfigFactoryInterface $configFactory
     ) {
         $this->currentUser = $current_user;
         $this->routeMatch = $route_match;
         $this->requestStack = $request_stack;
         $this->urlGenerator = $url_generator;
+        $this->configFactory = $configFactory;
     }
 
     /**
@@ -81,6 +92,12 @@ class LoginRedirectSubscriber implements EventSubscriberInterface
             $request = $this->requestStack->getCurrentRequest();
 
             if ($request->query->has('destination')) {
+                return;
+            }
+
+            $config = $this->configFactory->get('vactory_dashboard.global.settings');
+            $redirect_enabled = $config->get('dashboard');
+            if(!$redirect_enabled) {
                 return;
             }
 
