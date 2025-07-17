@@ -5,8 +5,26 @@ namespace Drupal\vactory_dashboard\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Drupal\Core\Form\FormBuilderInterface;
+use Drupal\Core\Render\RendererInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class DashboardWysiwyg extends ControllerBase {
+
+    protected $formBuilder;
+    protected $renderer;
+
+    public function __construct(FormBuilderInterface $formBuilder, RendererInterface $renderer) {
+        $this->formBuilder = $formBuilder;
+        $this->renderer = $renderer;
+    }
+
+    public static function create(ContainerInterface $container) {
+        return new static(
+        $container->get('form_builder'),
+        $container->get('renderer')
+        );
+    }
 
     public function getForm(Request $request) {
         $data = json_decode($request->getContent(), true);
@@ -18,10 +36,10 @@ class DashboardWysiwyg extends ControllerBase {
 
         // Step 1: Build the form.
         $id = uniqid('ck_', true);
-        $form = \Drupal::formBuilder()->getForm(\Drupal\vactory_dashboard\Form\CkeditorFieldForm::class, $id, true, $isMultiple, $isSingle, $isExtra, $defaultValue);
+        $form = $this->formBuilder->getForm(\Drupal\vactory_dashboard\Form\CkeditorFieldForm::class, $id, true, $isMultiple, $isSingle, $isExtra, $defaultValue);
 
         // Step 2: Render the form to HTML.
-        $form_html = \Drupal::service('renderer')->renderRoot($form);
+        $form_html = $this->renderer->renderRoot($form);
 
         // Step 3: Extract JS/CSS asset libraries.
         $attached_libraries = $form['#attached']['library'] ?? [];

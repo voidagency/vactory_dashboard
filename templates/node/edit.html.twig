@@ -13,6 +13,7 @@
       document.addEventListener('alpine:init', () => {
         Alpine.data('pageEditor', (config) => ({
           // Other bundle specific vars.
+          loaderCK: false,
           bundle: config.bundle,
           bundle_label: config.bundle_label,
           fields: config.fields,
@@ -77,6 +78,7 @@
             return result;
           },
           getForm(id, index = -1, isMultiple = false, isSingle = false, isExtra = false, defaultValue = "") {
+            this.loaderCK = true;
             fetch('/api/dashboard/wysiwyg', {
               method: 'POST',
               headers: {
@@ -101,6 +103,12 @@
                 container.innerHTML = data.html;
                 Drupal.attachBehaviors(container);
               }
+            })
+            .catch(e => {
+              console.log("error: ", e);
+            })
+            .finally(() => {
+              this.loaderCK = false;
             });
           },
           dragStart(event) {
@@ -219,11 +227,11 @@
               // Handle single item case
               // widget_data[0] contains the fields
               if (block.widget_data && block.widget_data[0]) {
-                Object.keys(template.fields).forEach(fieldName => {
+                Object.keys(template.fields).forEach((fieldName, index) => {
                   if (block.widget_data[0][fieldName]) {
                     if (template.fields[fieldName].type === 'text_format') {
                       this.blockForm.fields[fieldName] = block.widget_data[0][fieldName].value || '';
-                      this.getForm("wysi2", -1, false, true, false, block.widget_data[0][fieldName].value);
+                      this.getForm(`wysi-single-${index}`, -1, false, true, false, block.widget_data[0][fieldName].value);
                     } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
                       const imageKey = Object.keys(block?.widget_data?.[0]?.[fieldName] ?? {})?.[0] ?? null;
                       const imageData = block?.widget_data?.[0]?.[fieldName]?.[imageKey] ?? {};
@@ -258,11 +266,11 @@
 
             // Handle extra fields if they exist
             if (block.widget_data.extra_field) {
-              Object.keys(template.extra_fields || {}).forEach(fieldName => {
+              Object.keys(template.extra_fields || {}).forEach((fieldName, index) => {
                 if (block.widget_data.extra_field[fieldName]) {
                   if (template.extra_fields[fieldName].type === 'text_format') {
                     this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName].value || '';
-                    this.getForm('wysi1', -1, false, false, true, block.widget_data.extra_field[fieldName].value || '');
+                    this.getForm(`wysi-extra-${index}`, -1, false, false, true, block.widget_data.extra_field[fieldName].value || '');
                   } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
                     const imageKey = Object.keys(block?.widget_data?.extra_field?.[fieldName] ?? {})?.[0] ?? null;
                     const imageData = block?.widget_data?.extra_field?.[fieldName]?.[imageKey] ?? {};
@@ -467,7 +475,7 @@
             };
             // Initialize extra_fields if they exist
             if (template.extra_fields) {
-              Object.keys(template.extra_fields).forEach(fieldName => {
+              Object.keys(template.extra_fields).forEach((fieldName, index) => {
                 // Initialize url_extended fields with both title and url
                 if (template.extra_fields[fieldName].type === 'url_extended') {
                   this.blockForm.extra_fields[fieldName] = {
@@ -493,7 +501,7 @@
                   // Nothing to change here
                   this.blockForm.extra_fields[fieldName] = template.extra_fields[fieldName]['options']['#default_value'];
                 } else if (template.extra_fields[fieldName].type === 'text_format') {
-                  this.getForm('wysi1', -1, false, false, true);
+                  this.getForm(`wysi-extra-${index}`, -1, false, false, true);
                 } else {
                   this.blockForm.extra_fields[fieldName] = '';
                 }
@@ -504,7 +512,7 @@
             if (template.multiple) {
               this.addItem(); // Add first item
             } else {
-              Object.keys(template.fields).forEach(fieldName => {
+              Object.keys(template.fields).forEach((fieldName, index) => {
                 // Initialize url_extended fields with both title and url
                 if (template.fields[fieldName].type === 'url_extended') {
                   this.blockForm.fields[fieldName] = {
@@ -529,7 +537,7 @@
                 } else if (template.fields[fieldName].type === 'json_api_collection') {
                   this.blockForm.fields[fieldName] = template.fields[fieldName]['options']['#default_value'];
                 } else if (template.fields[fieldName].type === 'text_format') {
-                  this.getForm('wysi2', -1, false, true, false);
+                  this.getForm(`wysi-single-${index}`, -1, false, true, false);
                 } else {
                   this.blockForm.fields[fieldName] = '';
                 }
