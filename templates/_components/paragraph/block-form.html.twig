@@ -1,4 +1,7 @@
 {# Block Form #}
+<div class="hidden">
+    {{ drupal_form('Drupal\\vactory_dashboard\\Form\\CkeditorFieldForm', 'GENERIC', true, 'item[fieldName]', "field.options?.['#required'] ?? false") }}
+</div>
 <div x-data="{ isRTL: document.dir === 'rtl' }" :dir="isRTL ? 'rtl' : 'ltr'">
     <div class="h-full flex flex-col bg-slate-50">
         <div class="sticky top-0 z-10 bg-white rounded-xl py-4 px-6 border-b border-slate-200 flex justify-between items-center mb-6">
@@ -89,22 +92,37 @@
 
                                                 {# Text Format #}
                                                 <template x-if="field.type === 'text_format'">
-                                                        <div
-                                                            x-init="$nextTick(() => Drupal.attachBehaviors($el))
-                                                                setTimeout(() => {
-                                                                const textarea = $el.querySelector('textarea');
-                                                                const match = textarea.name.match(/\['?([^'\]]+)'?\]/);
-                                                                const fieldName = match ? match[1] : 'content';
-                                                                Drupal.editors.ckeditor5.onChange(document.getElementsByName(textarea.name)[0], () => {
-                                                                    const ckInstance = Drupal.CKEditor5Instances.values().next().value;
-                                                                    blockForm.extra_fields[fieldName] = ckInstance.getData();
-                                                                });
-                                                                }, '3000');
-                                                            "
-                                                        >
-                                                            {{ drupal_form('Drupal\\vactory_dashboard\\Form\\CkeditorFieldForm', 'GENERIC', true, 'blockForm.extra_fields[fieldName]', "field.options?.['#required'] ?? false") }}
-                                                        </div>
-                                                    </template>
+                                                    <div id="wysi1" x-init="
+                                                        (() => {
+                                                            $nextTick(() => {
+                                                                new MutationObserver((records, observer) => {
+
+                                                                    setTimeout(() => {
+
+                                                                        const textarea = $el.querySelector('textarea');
+                                                                        const instanceID = textarea.getAttribute('data-ckeditor5-id');
+                                                                        let ckeditor = null;
+
+                                                                        Drupal.CKEditor5Instances.forEach(function(instance, id) {
+                                                                            if (instanceID == id) {
+                                                                                ckeditor = instance;
+                                                                            }
+                                                                        });
+
+                                                                        if (ckeditor) {
+                                                                            ckeditor.model.document.on('change:data', () => {
+                                                                                blockForm.extra_fields[fieldName] = ckeditor.getData();
+                                                                                console.log(blockForm.extra_fields[fieldName]);
+                                                                            });
+                                                                        }
+                                                                    }, 1000);
+
+                                                                }).observe($el, { childList: true, subtree: true });
+                                                            });
+                                                        })()"
+                                                    >
+                                                    </div>
+                                                </template>
 
                                                 {# URL Extended Input #}
                                                 <template x-if="field.type === 'url_extended'">
@@ -196,20 +214,36 @@
 
                                                     {# Text Format #}
                                                     <template x-if="field.type === 'text_format'">
-                                                        <div
-                                                            x-init="$nextTick(() => Drupal.attachBehaviors($el))
-                                                                setTimeout(() => {
-                                                                const textarea = $el.querySelector('textarea');
-                                                                const match = textarea.name.match(/\['?([^'\]]+)'?\]/);
-                                                                const fieldName = match ? match[1] : 'content';
-                                                                Drupal.editors.ckeditor5.onChange(document.getElementsByName(textarea.name)[0], () => {
-                                                                    const ckInstance = Drupal.CKEditor5Instances.values().next().value;
-                                                                    blockForm.fields[fieldName] = ckInstance.getData();
+                                                        <div id="wysi2" 
+                                                            x-init="
+                                                            (() => {
+                                                                $nextTick(() => {
+                                                                    new MutationObserver((records, observer) => {
+
+                                                                        setTimeout(() => {
+
+                                                                            const textarea = $el.querySelector('textarea');
+                                                                            const instanceID = textarea.getAttribute('data-ckeditor5-id');
+                                                                            let ckeditor = null;
+
+                                                                            Drupal.CKEditor5Instances.forEach(function(instance, id) {
+                                                                                if (instanceID == id) {
+                                                                                    ckeditor = instance;
+                                                                                }
+                                                                            });
+
+                                                                            if (ckeditor) {
+                                                                                ckeditor.model.document.on('change:data', () => {
+                                                                                    blockForm.fields[fieldName] = ckeditor.getData();
+                                                                                });
+                                                                            }
+                                                                        }, 3000);
+
+                                                                    }).observe($el, { childList: true, subtree: true });
                                                                 });
-                                                                }, '3000');
-                                                            "
+                                                            })()"
                                                         >
-                                                            {{ drupal_form('Drupal\\vactory_dashboard\\Form\\CkeditorFieldForm', 'GENERIC', true, 'blockForm.fields[fieldName]', "field.options?.['#required'] ?? false") }}
+                                                            
                                                         </div>
                                                     </template>
 
@@ -339,20 +373,35 @@
 
                                                                     {# Text Format #}
                                                                     <template x-if="field.type === 'text_format'">
-                                                                        <div
-                                                                            x-init="$nextTick(() => Drupal.attachBehaviors($el))
+                                                                        <div class="wysiwyg-container" x-init="
+                                                                        (() => {
+                                                                            $nextTick(() => {
+                                                                            new MutationObserver((records, observer) => {
                                                                                 setTimeout(() => {
                                                                                 const textarea = $el.querySelector('textarea');
-                                                                                const match = textarea.name.match(/\['?([^'\]]+)'?\]/);
-                                                                                const fieldName = match ? match[1] : 'content';
-                                                                                Drupal.editors.ckeditor5.onChange(document.getElementsByName(textarea.name)[0], () => {
-                                                                                    const ckInstance = Drupal.CKEditor5Instances.values().next().value;
-                                                                                    item[fieldName] = ckInstance.getData();
+                                                                                console.log('textarea', textarea);
+                                                                                if (!textarea) return;
+                                                                                const instanceID = textarea.getAttribute('data-ckeditor5-id');
+                                                                                let ckeditor = null;
+                                                                                Drupal.CKEditor5Instances.forEach((instance, id) => {
+                                                                                    if (id === instanceID) {
+                                                                                    ckeditor = instance;
+                                                                                    }
                                                                                 });
-                                                                                }, '3000');
-                                                                            "
-                                                                        >
-                                                                            {{ drupal_form('Drupal\\vactory_dashboard\\Form\\CkeditorFieldForm', 'GENERIC', true, 'item[fieldName]', "field.options?.['#required'] ?? false") }}
+                                                                                console.log('instanceID', instanceID);
+                                                                                console.log('ckeditor', ckeditor)
+                                                                                if (ckeditor) {
+                                                                                    ckeditor.model.document.on('change:data', () => {
+                                                                                    //document.getElementById('edit-vactory-page').__x.$data.item[field] = ckeditor.getData();
+                                                                                    item[fieldName] = ckeditor.getData();
+                                                                                    console.log('CKEditor data:', ckeditor.getData());
+                                                                                    });
+                                                                                }
+                                                                                }, 1000);
+                                                                            }).observe($el, { childList: true, subtree: true });
+                                                                            });
+                                                                        })()
+                                                                    ">
                                                                         </div>
                                                                     </template>
 

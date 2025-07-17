@@ -239,6 +239,48 @@ function vactory_dashboard_preprocess(&$variables) {
   $variables['current_language'] = $currentlang;
 }
 
+function vactory_dashboard_page_attachments(array &$attachments) {
+  $ckeditor_libraries = [
+    "filter/drupal.filter",
+    "editor/drupal.editor",
+    "ckeditor5/internal.drupal.ckeditor5",
+    "ckeditor5/internal.drupal.ckeditor5.emphasis",
+    "ckeditor5/internal.drupal.ckeditor5.htmlEngine",
+    "ckeditor5/internal.drupal.ckeditor5.image",
+    "ckeditor5/internal.drupal.ckeditor5.media",
+    "ckeditor5/internal.drupal.ckeditor5.mediaAlign",
+    "ckeditor5/internal.drupal.ckeditor5.table",
+    "core/ckeditor5.alignment",
+    "core/ckeditor5.autoformat",
+    "core/ckeditor5.basic",
+    "core/ckeditor5.blockquote",
+    "core/ckeditor5.essentials",
+    "core/ckeditor5.horizontalLine",
+    "core/ckeditor5.htmlSupport",
+    "core/ckeditor5.link",
+    "core/ckeditor5.list",
+    "core/ckeditor5.pasteFromOffice",
+    "core/ckeditor5.removeFormat",
+    "core/ckeditor5.sourceEditing",
+    "core/ckeditor5.specialCharacters",
+    "core/ckeditor5.style",
+    "core/ckeditor5.table",
+    "editor/drupal.editor.dialog",
+    "editor_advanced_link/ckeditor5",
+    "linkit/ckeditor5",
+    "core/ckeditor5.translations.en",
+  ];
+
+  // Remove duplicates
+  $ckeditor_libraries = array_unique($ckeditor_libraries);
+
+  // Attach to page
+  $attachments['#attached']['library'] = array_merge(
+    $attachments['#attached']['library'] ?? [],
+    $ckeditor_libraries
+  );
+}
+
 /**
  * Get all taxonomy vocabularies with their names and vocabulary IDs.
  *

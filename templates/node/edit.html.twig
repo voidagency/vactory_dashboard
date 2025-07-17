@@ -66,6 +66,43 @@
           // Add intersection observer state
           isFirstAddBlockVisible: true,
           firstAddBlockObserver: null,
+          formID: null,
+          generateRandomString(length) {
+            let result = '';
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            const charactersLength = characters.length;
+            for (let i = 0; i < length; i++) {
+              result += characters.charAt(Math.floor(Math.random() * charactersLength));
+            }
+            return result;
+          },
+          getForm(id, index = -1, isMultiple = false, isSingle = false, isExtra = false, defaultValue = "") {
+            fetch('/api/dashboard/wysiwyg', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                isMultiple,
+                isSingle,
+                isExtra,
+                defaultValue,
+              }),
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (index >= 0) {
+                let draggable = document.querySelector(`[data-item-index="${index}"]`);
+                let element = draggable.querySelector(`.wysiwyg-container`);
+                element.innerHTML = data.html;
+                Drupal.attachBehaviors(element);
+              } else {
+                const container = document.getElementById(id);
+                container.innerHTML = data.html;
+                Drupal.attachBehaviors(container);
+              }
+            });
+          },
           dragStart(event) {
             this.dragStartIndex = parseInt(event.target.dataset.index);
             event.dataTransfer.effectAllowed = 'move';
@@ -137,9 +174,10 @@
                 const item = block.widget_data[i];
                 const mappedItem = {};
                 // Map each field in the item
-                Object.keys(template.fields).forEach(fieldName => {
+                Object.keys(template.fields).forEach((fieldName) => {
                   if (template.fields[fieldName].type === 'text_format') {
                     mappedItem[fieldName] = item[fieldName].value || '';
+                    this.getForm(`wysi-${this.generateRandomString(4)}`, i, true, false, false, item[fieldName].value);
                   } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
                     const imageKey = Object.keys(item?.[fieldName] ?? {})?.[0] ?? null;
                     const imageData = item?.[fieldName]?.[imageKey] ?? {};
@@ -185,6 +223,7 @@
                   if (block.widget_data[0][fieldName]) {
                     if (template.fields[fieldName].type === 'text_format') {
                       this.blockForm.fields[fieldName] = block.widget_data[0][fieldName].value || '';
+                      this.getForm("wysi2", -1, false, true, false, block.widget_data[0][fieldName].value);
                     } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
                       const imageKey = Object.keys(block?.widget_data?.[0]?.[fieldName] ?? {})?.[0] ?? null;
                       const imageData = block?.widget_data?.[0]?.[fieldName]?.[imageKey] ?? {};
@@ -223,6 +262,7 @@
                 if (block.widget_data.extra_field[fieldName]) {
                   if (template.extra_fields[fieldName].type === 'text_format') {
                     this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName].value || '';
+                    this.getForm('wysi1', -1, false, false, true, block.widget_data.extra_field[fieldName].value || '');
                   } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
                     const imageKey = Object.keys(block?.widget_data?.extra_field?.[fieldName] ?? {})?.[0] ?? null;
                     const imageData = block?.widget_data?.extra_field?.[fieldName]?.[imageKey] ?? {};
@@ -452,6 +492,8 @@
                 } else if (template.extra_fields[fieldName].type === 'json_api_collection') {
                   // Nothing to change here
                   this.blockForm.extra_fields[fieldName] = template.extra_fields[fieldName]['options']['#default_value'];
+                } else if (template.extra_fields[fieldName].type === 'text_format') {
+                  this.getForm('wysi1', -1, false, false, true);
                 } else {
                   this.blockForm.extra_fields[fieldName] = '';
                 }
@@ -486,6 +528,8 @@
                   };
                 } else if (template.fields[fieldName].type === 'json_api_collection') {
                   this.blockForm.fields[fieldName] = template.fields[fieldName]['options']['#default_value'];
+                } else if (template.fields[fieldName].type === 'text_format') {
+                  this.getForm('wysi2', -1, false, true, false);
                 } else {
                   this.blockForm.fields[fieldName] = '';
                 }
@@ -580,8 +624,10 @@
             this.$nextTick(() => {
               const newItemIndex = this.blockForm.items.length - 1;
               const newItemElement = document.querySelector(`[data-item-index="${newItemIndex}"]`);
+
               if (newItemElement) {
                 newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                this.getForm("", newItemIndex, true, false, false);
 
                 // Remove highlight after 3 seconds
                 setTimeout(() => {
