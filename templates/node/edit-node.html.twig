@@ -193,6 +193,32 @@
                                         </select>
                                     </div>
                                 </template>
+
+                                {# Autocomplete  #}
+                                 {% include "@vactory_dashboard/_components/fields/autocomplete-field.html.twig" %}
+                                 
+									<template x-if="field.type === 'checkboxes'">
+										<div class="space-y-1 flex flex-col">
+											<template x-for="(label, key) in field.options" :key="key">
+												<label class=" items-center space-x-2">
+													<input type="checkbox" :value="key" x-model="formData.fields[field.name]"/>
+													<span x-text="label"></span>
+												</label>
+											</template>
+										</div>
+									</template>
+
+									<template x-if="field.type === 'radios'">
+										<div class="space-y-1 flex flex-col">
+											<template x-for="(label, key) in field.options" :key="key">
+												<label class="items-center space-x-2">
+													<input type="radio" :value="key" x-model="formData.fields[field.name]"/>
+													<span x-text="label"></span>
+												</label>
+											</template>
+										</div>
+									</template>
+
                             </div>
                         </template>
                     </div>

@@ -799,3 +799,12 @@ vactory_dashboard.wysiwyg:
   requirements:
     _permission: 'access dashboard'
   methods: [POST]
+
+vactory_dashboard.autocomplete:
+  path: '/api/autocomplete'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\AutocompleteController::autocomplete'
+    _title: 'Autocomplete'
+  requirements:
+    _permission: 'access dashboard'
+

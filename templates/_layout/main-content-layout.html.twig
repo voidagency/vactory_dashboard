@@ -103,7 +103,7 @@
 
                         {# bloc ssl  #}
                         {% if user.hasPermission('administer dashboard configuration') %}
-                        <div id="ssl" x-data="sslStatusComponent()" x-init="fetchStatus()" x-show="status" class="relative   ">
+                        <div id="ssl" x-data="sslStatusComponent()" x-init="fetchStatus()" x-show="status && status.valid_till && status.issuer_o" class="relative   ">
                             <template x-if="loading">
                                 <div class="inline-flex items-center text-xs text-gray-500">
                                     <div class="animate-pulse h-3 w-3 bg-gray-300 rounded-full mr-1.5"></div>
