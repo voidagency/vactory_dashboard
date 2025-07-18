@@ -8,11 +8,24 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Ajax\HtmlCommand;
+use Drupal\vactory_dashboard\Service\SslService;
 
-/**
- * Formulaire de configuration du nom de domaine SSL.
- */
+
 class SSLDomaineSettingsForm extends ConfigFormBase {
+
+  protected $sslService;
+
+  public function __construct($config_factory, SslService $ssl_service) {
+    parent::__construct($config_factory);
+    $this->sslService = $ssl_service;
+  }
+
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('config.factory'),
+      $container->get('vactory_dashboard.ssl_service') 
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -119,43 +132,12 @@ class SSLDomaineSettingsForm extends ConfigFormBase {
    */
   public function refreshSSLInfoCallback(array &$form, FormStateInterface $form_state) {
     $domain = $form_state->getValue('name_domain');
-    if (empty($domain)) {
-      return $form['ssl']['ssl_info'];
+    if (!empty($domain)) {
+      $this->sslService->getSSLStatus($domain, true);
     }
-
-    try {
-      $http_client = \Drupal::httpClient();
-      $response = $http_client->get("https://ssl-checker.io/api/v1/check/{$domain}", [
-        'timeout' => 10,
-      ]);
-
-      if ($response->getStatusCode() === 200) {
-        $content = json_decode($response->getBody(), TRUE);
-        if (isset($content['result'])) {
-          $result = $content['result'];
-          $data = [
-            'host' => $result['host'] ?? $domain,
-            'issuer_o' => $result['issuer_o'] ?? '',
-            'valid_till' => $result['valid_till'] ?? '',
-            'cert_valid' => $result['cert_valid'] ?? FALSE,
-            'cert_exp' => $result['cert_exp'] ?? TRUE,
-            'days_left' => $result['days_left'] ?? 0,
-          ];
-          // Sauvegarde en config.
-          $this->configFactory()->getEditable('vactory_dashboard.ssl.settings')
-            ->set('ssl_info', $data)
-            ->save();
-        }
-      }
-    }
-    catch (\Exception $e) {
-      // Log ou ignorer l'erreur si l'appel API échoue.
-    }
-
-    // Reconstruire la section.
     return $this->buildForm([], $form_state)['ssl']['ssl_info'];
   }
-
+  
   /**
    * {@inheritdoc}
    */
@@ -172,40 +154,12 @@ class SSLDomaineSettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $domain = $form_state->getValue('name_domain');
   
-    // Sauvegarde du nom de domaine
+    // Sauvegarde du domaine
     $config_editable = $this->configFactory()->getEditable('vactory_dashboard.ssl.settings');
     $config_editable->set('name_domain', $domain)->save();
   
-    // Appeler l'API SSL pour récupérer les infos
     if (!empty($domain)) {
-      try {
-        $http_client = \Drupal::httpClient();
-        $response = $http_client->get("https://ssl-checker.io/api/v1/check/{$domain}", [
-          'timeout' => 10,
-        ]);
-  
-        if ($response->getStatusCode() === 200) {
-          $content = json_decode($response->getBody(), TRUE);
-          if (isset($content['result'])) {
-            $result = $content['result'];
-            $data = [
-              'host' => $result['host'] ?? $domain,
-              'issuer_o' => $result['issuer_o'] ?? '',
-              'valid_till' => $result['valid_till'] ?? '',
-              'cert_valid' => $result['cert_valid'] ?? FALSE,
-              'cert_exp' => $result['cert_exp'] ?? TRUE,
-              'days_left' => $result['days_left'] ?? 0,
-            ];
-  
-            // Sauvegarder les infos SSL dans la config
-            $config_editable->set('ssl_info', $data)->save();
-          }
-        }
-      }
-      catch (\Exception $e) {
-        // Gérer ou logger l'erreur si besoin
-        \Drupal::logger('vactory_dashboard')->error('Erreur récupération SSL: @msg', ['@msg' => $e->getMessage()]);
-      }
+      $this->sslService->getSSLStatus($domain, true);
     }
   
     parent::submitForm($form, $form_state);

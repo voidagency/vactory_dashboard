@@ -965,7 +965,7 @@
               this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
               return;
             }
-
+            
             if (this.isSaving) {
               return;
             }
@@ -992,7 +992,7 @@
               if (!response.ok) {
                 throw new Error(data.message || '{{ 'Failed to save node'|t }}');
               }
-              this.showNotification('success', '{{ 'Node created successfully'|t }}');
+              this.showNotification('success', '{{ 'Node updated successfully'|t }}');
               window.location.reload();
             } catch (error) {
               console.error('Error saving node:', error);

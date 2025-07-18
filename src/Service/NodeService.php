@@ -114,6 +114,23 @@ class NodeService {
         continue;
       }
 
+      if ($field['type'] === 'daterange') {
+        $values = $node->get($field['name'])->getValue();
+        if (!empty($values)) {
+          // Cardinalité simple
+          $node_data[$field['name']] = [
+            'value' => $values[0]['value'] ?? '',
+            'end_value'   => $values[0]['end_value'] ?? '',
+          ];
+        } else {
+          $node_data[$field['name']] = [
+            'value' => '',
+            'end_value' => '',
+          ];
+        }
+        continue;
+      }
+
       if ($field['type'] === 'faqfield' || $field['name'] === 'field_faq') {
         // Récupérer les valeurs FAQ
         $faq_values = $node->get($field['name'])->getValue();
@@ -430,8 +447,7 @@ class NodeService {
       $field_definition = $fields[$field_name];
       $field_type = $field_definition->getType();
       $field_settings = $field_definition->getSettings();
-      $cardinality = $field_definition->getFieldStorageDefinition()
-        ->getCardinality();
+      $cardinality = $field_definition->getFieldStorageDefinition()->getCardinality();
       $field_required = $field_definition->isRequired();
       $field_label = $field_definition->getLabel();
 
@@ -494,6 +510,11 @@ class NodeService {
         case 'field_cross_content':
           $field_info['options'] = $this->getCrossContentOptions($bundle, $field_info);
           $field_info['multiple'] = TRUE;
+          break;
+
+        case 'daterange':
+          $field_info['type'] = 'daterange';
+          $field_info['multiple'] = FALSE;
           break;
       }
 
