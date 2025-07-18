@@ -20,13 +20,43 @@ final class CkeditorFieldForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $my_param = NULL): array {
+  public function buildForm(array $form, FormStateInterface $form_state, $my_param = NULL, $isDF=FALSE, $isMultiple=FALSE, $isSingle=FALSE, $isExtra=FALSE, $defaultValue='', $x_model = 'formData.fields[field.name]', $required = 'field.required'): array {
+    // content type - add, edit page
+    if (!$isDF) {
+      $form[$my_param] = [
+        '#type' => 'text_format',
+        '#format' => 'full_html',
+        '#attributes' => [
+          'x-model' => $x_model,
+          ':required' => 'field.required',
+        ],
+      ];
+
+      return $form;
+    }
+
+    if ($isMultiple == "true") {
+      $x_model = "item[fieldName]";
+      $x_init = "if (\$el) { \$el.setAttribute('name', `item[\${fieldName}]`);}";
+    }
+    else if ($isSingle == "true") {
+      $x_model = "blockForm.fields[fieldName]";
+      $x_init = "if (\$el) { \$el.setAttribute('name', `blockForm.fields[\${fieldName}]`);}";
+    } 
+    else if ($isExtra == "true") {
+      $x_model = "blockForm.extra_fields[fieldName]";
+      $x_init = "if (\$el) { \$el.setAttribute('name', `blockForm.extra_fields[\${fieldName}]`);}";
+    } 
+
+    // Dynamic field
     $form[$my_param] = [
       '#type' => 'text_format',
       '#format' => 'full_html',
+      '#default_value' => $defaultValue,
       '#attributes' => [
-        'x-model' => 'formData.fields[field.name]',
-        ':required' => 'field.required',
+        'x-model' => $x_model,
+        'x-init' => $x_init,
+        ':required' => $required,
       ],
     ];
 

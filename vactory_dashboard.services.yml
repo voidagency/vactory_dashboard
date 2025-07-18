@@ -35,6 +35,7 @@ services:
       - '@current_route_match'
       - '@request_stack'
       - '@url_generator'
+      - '@config.factory'
     tags:
       - { name: 'event_subscriber', priority: 2048 }
     
