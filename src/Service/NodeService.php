@@ -12,6 +12,7 @@ use Drupal\media\MediaInterface;
 use Drupal\node\Entity\NodeType;
 use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\paragraphs\ParagraphInterface;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
 use Drupal\Core\TypedData\TranslatableInterface;
@@ -233,39 +234,7 @@ class NodeService {
       }
     }
 
-    $paragraphs = [];
-    $lang = \Drupal::languageManager()->getCurrentLanguage()->getId();
-    if ($node->hasField('field_vactory_paragraphs')) {
-      $paragraphsData = $node->get('field_vactory_paragraphs')->getValue();
-      foreach ($paragraphsData as $paragraphData) {
-        $paragraph = Paragraph::load($paragraphData['target_id']);
-        if ($paragraph->hasTranslation($lang)) {
-          $paragraph = $paragraph->getTranslation($lang);
-        }
-        if ($paragraph && $paragraph->hasField('field_vactory_component') && $paragraph->bundle() == 'vactory_component') {
-          $vactoryComponents = $paragraph->field_vactory_component->getValue();
-          foreach ($vactoryComponents as $component) {
-            $widgetData = Json::decode($component['widget_data']);
-            $widgetConfig = \Drupal::service('vactory_dynamic_field.vactory_provider_manager')
-              ->loadSettings($component['widget_id']);
-            $this->processWidgetData($widgetData, $widgetConfig);
-            $widgetId = $component['widget_id'];
-            $paragraphs[] = [
-              'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
-              'show_title' => $paragraph->hasField('field_vactory_flag') ??  $paragraph->get('field_vactory_flag')->value === "1",
-              'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
-              'spacing' =>  $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
-              'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
-              'pid' => $paragraphData['target_id'],
-              'widget_id' => $widgetId,
-              'widget_data' => $widgetData,
-              'widget_config' => $widgetConfig,
-            ];
-          }
-        }
-      }
-    }
-    $node_data['paragraphs'] = $paragraphs;
+    $this->prepareVactoryParagraphsData($node, $node_data);
 
     return $node_data;
   }
@@ -280,6 +249,19 @@ class NodeService {
     $node_data['title'] = $node->getTitle();
     $node_data['body'] = $node->hasField('node_summary') ? $node->get('node_summary')->value ?? "" : "";
 
+    $this->prepareVactoryParagraphsData($node, $node_data);
+
+    $alias = \Drupal::service('path_alias.manager')
+      ->getAliasByPath('/node/' . $node->id());
+    $node_data['alias'] = $alias;
+    $node_data['status'] = $node->isPublished();
+    return $node_data;
+  }
+
+  /**
+   * Prepare vactory paragraphs data.
+   */
+  private function prepareVactoryParagraphsData($node, &$node_data) {
     $paragraphs = [];
     $lang = \Drupal::languageManager()->getCurrentLanguage()->getId();
     if ($node->hasField('field_vactory_paragraphs')) {
@@ -289,7 +271,10 @@ class NodeService {
         if ($paragraph->hasTranslation($lang)) {
           $paragraph = $paragraph->getTranslation($lang);
         }
-        if ($paragraph && $paragraph->hasField('field_vactory_component') && $paragraph->bundle() == 'vactory_component') {
+        if (!$paragraph) {
+          continue;
+        }
+        if ($paragraph->hasField('field_vactory_component') && $paragraph->bundle() == 'vactory_component') {
           $vactoryComponents = $paragraph->field_vactory_component->getValue();
           foreach ($vactoryComponents as $component) {
             $widgetData = Json::decode($component['widget_data']);
@@ -299,26 +284,41 @@ class NodeService {
             $widgetId = $component['widget_id'];
             $paragraphs[] = [
               'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
-              'show_title' => $paragraph->hasField('field_vactory_flag') ??  $paragraph->get('field_vactory_flag')->value === "1",
+              'bundle' => $paragraph->bundle(),
+              'show_title' => $paragraph->hasField('field_vactory_flag') ?? $paragraph->get('field_vactory_flag')->value === "1",
               'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
-              'spacing' =>  $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
+              'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
               'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
               'pid' => $paragraphData['target_id'],
+              'revision_id' => $paragraph->getRevisionId(),
               'widget_id' => $widgetId,
               'widget_data' => $widgetData,
               'widget_config' => $widgetConfig,
             ];
           }
         }
+        if (in_array($paragraph->bundle(), [
+          'vactory_paragraph_block',
+          'vactory_paragraph_multi_template',
+          'views_reference',
+        ])) {
+          $paragraphs[] = [
+            'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
+            'bundle' => $paragraph->bundle(),
+            'show_title' => $paragraph->hasField('field_vactory_flag') ?? $paragraph->get('field_vactory_flag')->value === "1",
+            'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
+            'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
+            'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
+            'pid' => $paragraphData['target_id'],
+            'revision_id' => $paragraph->getRevisionId(),
+            'screenshot' => \Drupal::service('file_url_generator')
+              ->generateAbsoluteString(\Drupal::service('extension.path.resolver')
+                  ->getPath('module', 'vactory_dashboard') . '/assets/images/default-screenshot.png'),
+          ];
+        }
       }
     }
     $node_data['paragraphs'] = $paragraphs;
-
-    $alias = \Drupal::service('path_alias.manager')
-      ->getAliasByPath('/node/' . $node->id());
-    $node_data['alias'] = $alias;
-    $node_data['status'] = $node->isPublished();
-    return $node_data;
   }
 
   /**
@@ -657,6 +657,137 @@ class NodeService {
     }
 
     return $result;
+  }
+
+  /**
+   * Update paragraphs in given node.
+   */
+  public function updateParagraphsInNode(&$node, $blocks, $language, $node_default_lang) {
+    if (!empty($blocks)) {
+      $ordered_paragraphs = [];
+      foreach ($blocks as $block) {
+        $bundle = $block['bundle'] ?? "vactory_component";
+        if ($bundle === 'vactory_component') {
+          $paragraph_entity = NULL;
+          $paragraph = [
+            "type" => "vactory_component",
+            "field_vactory_title" => $block['title'],
+            "field_vactory_flag" => $block['show_title'],
+            "paragraph_container" => $block['width'],
+            "container_spacing" => $block['spacing'],
+            "paragraph_css_class" => $block['css_classes'],
+            "field_vactory_component" => [
+              "widget_id" => $block['widget_id'],
+              "widget_data" => json_encode($block['widget_data']),
+            ],
+          ];
+          $is_new = $block['is_new'] ?? FALSE;
+          // Paragraph translate.
+          if ($language != $node_default_lang) {
+            // Handle translations.
+            $paragraph_entity = Paragraph::load($block['id']);
+
+            // Check if translation exists, if not create it first.
+            if (!$paragraph_entity->hasTranslation($language)) {
+              $paragraph_entity->addTranslation($language, $paragraph_entity->toArray());
+            }
+
+            // Now we can safely access and modify the translation.
+            $paragraph_entity->getTranslation($language)
+              ->set('field_vactory_component', [
+                "widget_id" => $block['widget_id'],
+                "widget_data" => json_encode($block['widget_data']),
+              ]);
+
+            if (isset($block['title'])) {
+              $paragraph_entity->getTranslation($language)
+                ->set('field_vactory_title', $block['title']);
+            }
+
+            $paragraph_entity->getTranslation($language)
+              ->set('field_vactory_flag', $block['show_title']);
+
+            if (isset($block['width'])) {
+              $paragraph_entity->getTranslation($language)
+                ->set('paragraph_container', $block['width']);
+            }
+
+            if (isset($block['spacing'])) {
+              $paragraph_entity->getTranslation($language)
+                ->set('container_spacing', $block['spacing']);
+            }
+
+            if (isset($block['css_classes'])) {
+              $paragraph_entity->getTranslation($language)
+                ->set('paragraph_css_class', $block['css_classes']);
+            }
+
+            $paragraph_entity->save();
+
+          }
+          else {
+            if ($is_new) {
+              $paragraph['langcode'] = $language;
+              $paragraph_entity = Paragraph::create($paragraph);
+              $paragraph_entity->save();
+            }
+            else {
+              $paragraph_entity = Paragraph::load($block['id']);
+              $paragraph_entity->getTranslation($language)
+                ->set('field_vactory_component', [
+                  "widget_id" => $block['widget_id'],
+                  "widget_data" => json_encode($block['widget_data']),
+                ]);
+
+              if (isset($block['title'])) {
+                $paragraph_entity->getTranslation($language)
+                  ->set('field_vactory_title', $block['title']);
+              }
+
+              $paragraph_entity->getTranslation($language)
+                ->set('field_vactory_flag', $block['show_title']);
+
+              if (isset($block['width'])) {
+                $paragraph_entity->getTranslation($language)
+                  ->set('paragraph_container', $block['width']);
+              }
+
+              if (isset($block['spacing'])) {
+                $paragraph_entity->getTranslation($language)
+                  ->set('container_spacing', $block['spacing']);
+              }
+
+              if (isset($block['css_classes'])) {
+                $paragraph_entity->getTranslation($language)
+                  ->set('paragraph_css_class', $block['css_classes']);
+              }
+
+              $paragraph_entity->save();
+            }
+          }
+          if ($paragraph_entity instanceof ParagraphInterface) {
+            $ordered_paragraphs[] = [
+              'target_id' => $paragraph_entity->id(),
+              'target_revision_id' => \Drupal::entityTypeManager()
+                ->getStorage('paragraph')
+                ->getLatestRevisionId($paragraph_entity->id()),
+            ];
+          }
+        }
+        else {
+          $ordered_paragraphs[] = [
+            'target_id' => $block['id'],
+            'target_revision_id' => $block['revision_id'],
+          ];
+        }
+      }
+      if (!empty($ordered_paragraphs)) {
+        $node->set('field_vactory_paragraphs', $ordered_paragraphs);
+      }
+    }
+    else {
+      $node->set('field_vactory_paragraphs', []);
+    }
   }
 
 }
