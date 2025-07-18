@@ -586,9 +586,17 @@ class DashboardNodeController extends ControllerBase {
           continue;
         }
 
+        if (is_array($field_value) && isset($field_value['value'], $field_value['end_value'])) {
+          if ($field_value['end_value'] < $field_value['value']) {
+            throw new \Exception('End date cannot be before start date');
+          }
+          $node->set($field_name, $field_value);
+          continue;
+        }
+        
         if ($field_value) {
           $node->set($field_name, $field_value);
-        }
+        }   
       }
 
       if ($node->hasField('field_vactory_paragraphs')) {
@@ -733,9 +741,18 @@ class DashboardNodeController extends ControllerBase {
           continue;
         }
 
-        if ($field_value || is_array($field_value)) {
+        if (is_array($field_value) && isset($field_value['value'], $field_value['end_value'])) {
+          if ($field_value['end_value'] < $field_value['value']) {
+            throw new \Exception('End date cannot be before start date');
+          }
+          $node->set($field_name, $field_value);
+          continue;
+        }
+
+        if ($field_value) {
           $node->getTranslation($language)->set($field_name, $field_value);
         }
+        
       }
 
       // Update SEO fields if they exist
