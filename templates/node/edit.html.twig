@@ -761,15 +761,17 @@
             if (node?.paragraphs && node?.paragraphs?.length > 0) {
               this.blocks = node.paragraphs.map((paragraph) => ({
                 title: paragraph.title,
+                bundle: paragraph.bundle,
                 show_title: paragraph.show_title,
                 width: paragraph.width,
                 spacing: paragraph.spacing,
                 css_classes: paragraph.css_classes,
-                preview: paragraph.widget_config.screenshot,
+                preview: paragraph?.widget_config?.screenshot ?? paragraph?.screenshot ?? null,
                 id: paragraph.pid,
-                widget_id: paragraph.widget_id,
-                widget_config: paragraph.widget_config,
-                widget_data: paragraph.widget_data,
+                revision_id: paragraph.revision_id,
+                widget_id: paragraph?.widget_id ?? null,
+                widget_config: paragraph?.widget_config ?? null,
+                widget_data: paragraph?.widget_data ?? null,
               }));
             }
             this.settings.title = node?.title || '';
@@ -848,6 +850,7 @@
             this.fetchTemplates();
 
             // Setup intersection observer for first add block button
+            console.log('blocks', this.blocks);
             this.setupFirstAddBlockObserver();
           },
           setupFirstAddBlockObserver() {
