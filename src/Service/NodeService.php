@@ -5,6 +5,7 @@ namespace Drupal\vactory_dashboard\Service;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
+use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\file\FileInterface;
 use Drupal\media\MediaInterface;
@@ -14,7 +15,6 @@ use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
 use Drupal\Core\TypedData\TranslatableInterface;
-
 
 /**
  * Service for node utilities.
@@ -40,10 +40,18 @@ class NodeService {
    */
   protected $configFactory;
 
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager, ConfigFactoryInterface $configFactory) {
+  /**
+   * The entity repository.
+   *
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   */
+  protected $entityRepository;
+
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager, ConfigFactoryInterface $configFactory, EntityRepositoryInterface $entityRepository) {
     $this->entityTypeManager = $entityTypeManager;
     $this->entityFieldManager = $entityFieldManager;
     $this->configFactory = $configFactory;
+    $this->entityRepository = $entityRepository;
   }
 
   /**
@@ -53,47 +61,54 @@ class NodeService {
     $node_data = [];
     // Get node fields
     foreach ($fields as $field) {
-
       if ($field['type'] === 'autocomplete') {
         $field_name = $field['name'];
         $entity_reference_field = $node->get($field_name);
 
         if ($field['multiple']) {
-            $node_data[$field_name] = [];
-            foreach ($entity_reference_field as $item) {
-                if ($item->target_id) {
-                    $referenced_entity = $this->entityTypeManager->getStorage($field['target_type'])->load($item->target_id);
-                    if ($referenced_entity) {
-                        $node_data[$field_name][] = [
-                            'id' => (string) $referenced_entity->id(),
-                            'label' => $referenced_entity->label(),
-                        ];
-                    }
-                }
+          $node_data[$field_name] = [];
+          foreach ($entity_reference_field as $item) {
+            if ($item->target_id) {
+              $referenced_entity = $this->entityTypeManager->getStorage($field['target_type'])
+                ->load($item->target_id);
+              if ($referenced_entity) {
+                $referenced_entity = $this->entityRepository->getTranslationFromContext($referenced_entity);
+                $node_data[$field_name][] = [
+                  'id' => (string) $referenced_entity->id(),
+                  'label' => $referenced_entity->label(),
+                ];
+              }
             }
-        } else {
-            $target_id = $entity_reference_field->target_id;
-            if ($target_id) {
-                $referenced_entity = $this->entityTypeManager->getStorage($field['target_type'])->load($target_id);
-                if ($referenced_entity) {
-                    $node_data[$field_name] = [
-                        'id' => (string) $referenced_entity->id(),
-                        'label' => $referenced_entity->label(),
-                    ];
-                }
-            } else {
-                $node_data[$field_name] = null;
-            }
+          }
         }
-        continue; 
+        else {
+          $target_id = $entity_reference_field->target_id;
+          if ($target_id) {
+            $referenced_entity = $this->entityTypeManager->getStorage($field['target_type'])
+              ->load($target_id);
+            if ($referenced_entity) {
+              $referenced_entity = $this->entityRepository->getTranslationFromContext($referenced_entity);
+
+              $node_data[$field_name] = [
+                'id' => (string) $referenced_entity->id(),
+                'label' => $referenced_entity->label(),
+              ];
+            }
+          }
+          else {
+            $node_data[$field_name] = NULL;
+          }
+        }
+        continue;
       }
 
       if ($field['type'] === 'radios') {
-        $target_id = $node->get($field['name'])->target_id ?? null;
-        if ($target_id !== null) {
-            $node_data[$field['name']] = (string) $target_id;
-        } else {
-            $node_data[$field['name']] = $node->get($field['name'])->value ?? "";
+        $target_id = $node->get($field['name'])->target_id ?? NULL;
+        if ($target_id !== NULL) {
+          $node_data[$field['name']] = (string) $target_id;
+        }
+        else {
+          $node_data[$field['name']] = $node->get($field['name'])->value ?? "";
         }
         continue;
       }
@@ -114,7 +129,7 @@ class NodeService {
         }
         continue;
       }
-      
+
       if ($field['type'] === 'faqfield' || $field['name'] === 'field_faq') {
         // Récupérer les valeurs FAQ
         $faq_values = $node->get($field['name'])->getValue();
@@ -236,11 +251,11 @@ class NodeService {
             $this->processWidgetData($widgetData, $widgetConfig);
             $widgetId = $component['widget_id'];
             $paragraphs[] = [
-              'title' => $paragraph->get('field_vactory_title')->value,
-              'show_title' => $paragraph->get('field_vactory_flag')->value === "1",
-              'width' => $paragraph->get('paragraph_container')->value,
-              'spacing' => $paragraph->get('container_spacing')->value,
-              'css_classes' => $paragraph->get('paragraph_css_class')->value,
+              'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
+              'show_title' => $paragraph->hasField('field_vactory_flag') ??  $paragraph->get('field_vactory_flag')->value === "1",
+              'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
+              'spacing' =>  $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
+              'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
               'pid' => $paragraphData['target_id'],
               'widget_id' => $widgetId,
               'widget_data' => $widgetData,
@@ -283,11 +298,11 @@ class NodeService {
             $this->processWidgetData($widgetData, $widgetConfig);
             $widgetId = $component['widget_id'];
             $paragraphs[] = [
-              'title' => $paragraph->get('field_vactory_title')->value,
-              'show_title' => $paragraph->get('field_vactory_flag')->value === "1",
-              'width' => $paragraph->get('paragraph_container')->value,
-              'spacing' => $paragraph->get('container_spacing')->value,
-              'css_classes' => $paragraph->get('paragraph_css_class')->value,
+              'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
+              'show_title' => $paragraph->hasField('field_vactory_flag') ??  $paragraph->get('field_vactory_flag')->value === "1",
+              'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
+              'spacing' =>  $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
+              'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
               'pid' => $paragraphData['target_id'],
               'widget_id' => $widgetId,
               'widget_data' => $widgetData,
@@ -419,7 +434,7 @@ class NodeService {
       ->getFormDisplay('node', $bundle, $form_mode);
 
     $components = $form_display->getComponents();
-    uasort($components, function ($a, $b) {
+    uasort($components, function($a, $b) {
       return ($a['weight'] ?? 0) <=> ($b['weight'] ?? 0);
     });
 
@@ -454,13 +469,16 @@ class NodeService {
               $widget_type = $component['type'];
               if ($widget_type === 'entity_reference_autocomplete') {
                 $field_info['type'] = 'autocomplete';
-              } elseif ($widget_type === 'options_select') {
+              }
+              elseif ($widget_type === 'options_select') {
                 $field_info['type'] = 'select';
-              } elseif ($widget_type === 'options_buttons' || $widget_type === 'options_checkboxes') {
+              }
+              elseif ($widget_type === 'options_buttons' || $widget_type === 'options_checkboxes') {
                 // Choix dynamique selon cardinalité
                 if ($cardinality == -1) {
                   $field_info['type'] = 'checkboxes';
-                } else {
+                }
+                else {
                   $field_info['type'] = 'radios';
                 }
               }
@@ -483,8 +501,10 @@ class NodeService {
         case 'text_long':
           $field_info['format'] = 'full_html';
           $field_info['type'] = 'text_with_summary';
-          $form = \Drupal::formBuilder()->getForm('Drupal\vactory_dashboard\Form\CkeditorFieldForm', $field_name);
-          $field_info['textFormatField'] = \Drupal::service('renderer')->render($form);
+          $form = \Drupal::formBuilder()
+            ->getForm('Drupal\vactory_dashboard\Form\CkeditorFieldForm', $field_name);
+          $field_info['textFormatField'] = \Drupal::service('renderer')
+            ->render($form);
           break;
 
         case 'field_cross_content':
@@ -493,10 +513,9 @@ class NodeService {
           break;
 
         case 'daterange':
-            $field_info['type'] = 'daterange';
-            $field_info['multiple'] = FALSE;
-            break;
-            
+          $field_info['type'] = 'daterange';
+          $field_info['multiple'] = FALSE;
+          break;
       }
 
       $field_info['is_translatable'] = $countActiveLangs === 0 || $field_definition->isTranslatable();
@@ -553,7 +572,9 @@ class NodeService {
   public function load_entity_reference_options(array $field_definition): array {
     $target_type = $field_definition['settings']['target_type'] ?? NULL;
     $handler_settings = $field_definition['settings']['handler_settings'] ?? [];
-    $langcode = $field_definition['langcode'] ?? \Drupal::languageManager()->getCurrentLanguage()->getId();
+    $langcode = $field_definition['langcode'] ?? \Drupal::languageManager()
+      ->getCurrentLanguage()
+      ->getId();
 
     if (!$target_type) {
       return [];
@@ -587,12 +608,12 @@ class NodeService {
       if ($entity instanceof TranslatableInterface && $entity->hasTranslation($langcode)) {
         $entity = $entity->getTranslation($langcode);
       }
-  
+
       if ($entity->label()) {
         $options[$entity->id()] = $entity->label();
       }
     }
-    
+
     return $options;
   }
 
@@ -606,7 +627,7 @@ class NodeService {
 
     $settings = $fields['field_vactory_paragraphs']['settings'];
     if (in_array('vactory_component', $settings['handler_settings']['target_bundles'] ?? [])) {
-      unset($fields['field_vactory_paragraphs']);
+      //unset($fields['field_vactory_paragraphs']);
       return TRUE;
     }
 
