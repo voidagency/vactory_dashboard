@@ -233,7 +233,7 @@
 											</template>
 										</div>
 									</template>
-
+                                   <p class="mb-1 text-xs text-gray-500" x-text="field.description"></p> 
                             </div>
                         </template>
                     </div>
@@ -252,9 +252,11 @@
                                 <template x-if="field.type === 'field_cross_content'">
                                     {% include "@vactory_dashboard/node/content-types/_components/cross-content-field.html.twig" %}
                                 </template>
+                                 <p class="mb-1 text-xs text-gray-500" x-text="field.description"></p>
                             </div>
                         </template>
                     </div>
+
                     {% if has_paragraphs_field %}
                         <div x-show="activeTab === 'templates'">
                             <div x-show="!showBlockForm">

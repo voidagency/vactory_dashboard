@@ -450,6 +450,7 @@ class NodeService {
       $cardinality = $field_definition->getFieldStorageDefinition()->getCardinality();
       $field_required = $field_definition->isRequired();
       $field_label = $field_definition->getLabel();
+      $field_description = $field_definition->getDescription();
 
       $field_info = [
         'name' => $field_name,
@@ -457,6 +458,7 @@ class NodeService {
         'label' => $field_label,
         'required' => $field_required,
         'settings' => $field_settings,
+        'description' => $field_description,
       ];
 
       // Continue with your custom logic...
