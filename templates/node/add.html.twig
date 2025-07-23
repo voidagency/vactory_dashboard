@@ -104,10 +104,15 @@
               return;
             }
 
+      
+
+            console.log('fileds', this.formData.fields);
+
             if (this.isSaving) {
               return;
             }
             this.isSaving = true;
+
             try {
               const response = await fetch(`/api/vactory-dashboard/${this.bundle}/node/save`, {
                 method: 'POST',
@@ -131,7 +136,7 @@
               }
 
               this.showNotification('success', '{{ 'Node created successfully'|t }}');
-
+              
               window.location.href = data?.list;
             } catch (error) {
               console.error('Error saving node:', error);
@@ -769,6 +774,14 @@
                 this.formData.fields[fieldKey] = '';
                 return;
             }
+
+            if (field.type === 'daterange') {
+                   this.formData.fields[fieldKey] = {
+                   value: field.value?.value || '',
+                   end_value: field.value?.end_value || ''
+                    };
+                return;
+               }
 
               if (field.type === 'faqfield') {
                 this.formData.fields[fieldKey] = Array.isArray(field.value) && field.value.length

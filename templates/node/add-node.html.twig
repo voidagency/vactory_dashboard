@@ -80,6 +80,7 @@
 
 
                             <template x-if="field.type === 'text_with_summary'">
+                
                                 <div x-html="field.textFormatField"></div>
                             </template>
 
@@ -147,9 +148,15 @@
 
                             {# datetime #}
                             <template x-if="field.type === 'datetime'">
+                             <div>
                                 <input type="date" :required="field.required" x-model="formData.fields[field.name]"
                                        class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+                             </div>
                             </template>
+
+                            {# daterange #} 
+                            {% include "@vactory_dashboard/_components/fields/date-range-field.html.twig" %}
+                             
                             {# Entity Reference #}
                             <template x-if="field.type === 'select'">
                                 <div>
@@ -176,6 +183,7 @@
                                                 <input type="checkbox" :value="key" x-model="formData.fields[field.name]"/>
                                                 <span x-text="label"></span>
                                             </label>
+                                            
                                         </template>
                                     </div>
                                 </template>
@@ -190,7 +198,7 @@
                                         </template>
                                     </div>
                                 </template>
-
+                             <p class="mb-1 text-xs text-gray-500" x-text="field.description"></p>
                         </div>
                     </template>
                 </div>
@@ -205,9 +213,11 @@
                             <template x-if="field.type == 'field_cross_content'">
                                 {% include "@vactory_dashboard/node/content-types/_components/cross-content-field.html.twig" %}
                             </template>
+                             <p class="mb-1 text-xs text-gray-500" x-text="field.description"></p>
                         </div>
                     </template>
                 </div>
+
                 {% if has_paragraphs_field %}
                     <div x-show="activeTab === 'templates'">
                         <div x-show="!showBlockForm">
