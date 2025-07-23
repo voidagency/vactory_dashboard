@@ -16,7 +16,7 @@
             </div>
         </div>
         {# Node Edit View #}
-        <div x-show="!showBlockForm">
+        <div x-show="!showBlockForm && !showParagraphBlockForm">
             {# Content Tab #}
             <div x-show="activeTab === 'content'">
                 <div class="w-full">
@@ -51,6 +51,10 @@
                 node_default_lang: node_default_lang,
                 language: language,
             } %}
+        </div>
+        {# Paragraph Block Form View #}
+        <div x-show="showParagraphBlockForm" class="h-full">
+            {% include "@vactory_dashboard/_components/paragraph/paragraph-block-form.html.twig" %}
         </div>
         {# Include the blocks modal #}
         {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}

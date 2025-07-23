@@ -52,7 +52,19 @@
           showBlocksModal: false,
           showBlockForm: false,
           showTemplatesList: false,
+          showParagraphBlockForm: false,
           selectedTemplate: null,
+          paragraphBlockForm: {
+            blockType: '',
+            content: '',
+            config: {
+              title: '',
+              show_title: false,
+              width: 'full_width',
+              spacing: '_none',
+              css_classes: '',
+            },
+          },
           blockForm: {
             extra_fields: {},
             fields: {},
@@ -653,9 +665,60 @@
             this.blockForm.items.splice(index, 1);
           },
           handleAddBlock() {
-            // For now, do nothing as requested
-            // This function can be implemented later for adding blocks
-            console.log('Add Block clicked - functionality to be implemented');
+            // Show the paragraph block form
+            this.showBlocksModal = false;
+            this.showParagraphBlockForm = true;
+            this.showTemplatesList = false;
+          },
+          saveParagraphBlock() {
+            // Validate form
+            const form = document.getElementById('paragraph-block-form');
+            const requiredInputs = form.querySelectorAll('[required]');
+            let isValid = true;
+
+            requiredInputs.forEach(input => {
+              if (!input.value) {
+                input.classList.add('border-red-500');
+                isValid = false;
+              }
+            });
+
+            if (!isValid) {
+              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              return;
+            }
+
+            // Add the paragraph block to blocks array
+            this.blocks.push({
+              id: Date.now(),
+              bundle: "paragraph_block",
+              is_new: true,
+              title: this.paragraphBlockForm.config.title,
+              show_title: this.paragraphBlockForm.config.show_title,
+              width: this.paragraphBlockForm.config.width,
+              spacing: this.paragraphBlockForm.config.spacing,
+              css_classes: this.paragraphBlockForm.config.css_classes,
+              blockType: this.paragraphBlockForm.blockType,
+              content: this.paragraphBlockForm.content,
+              preview: '/sites/default/files/block-preview.png', // Default preview image
+            });
+
+            // Reset form
+            this.paragraphBlockForm = {
+              blockType: '',
+              content: '',
+              config: {
+                title: '',
+                show_title: false,
+                width: 'full_width',
+                spacing: '_none',
+                css_classes: '',
+              },
+            };
+
+            // Close form and show success notification
+            this.showParagraphBlockForm = false;
+            this.showNotification('success', '{{ "Paragraph block added successfully"|t }}');
           },
           isSaving: false,
           notification: {
