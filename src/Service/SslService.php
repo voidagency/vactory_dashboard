@@ -3,7 +3,7 @@
 namespace Drupal\vactory_dashboard\Service;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
-use GuzzleHttp\ClientInterface; // <-- Change this line
+use GuzzleHttp\ClientInterface; 
 
 class SslService {
 
@@ -45,31 +45,55 @@ class SslService {
         return ['error' => 'Domaine non défini.'];
       }
 
-      // Pour Guzzle, utilise request() au lieu de request() de Symfony HttpClientInterface
-      // et pour le contenu, utilise getBody()->getContents() puis json_decode().
-      $response = $this->httpClient->request('GET', "https://ssl-checker.io/api/v1/check/{$domain}", [
-        'timeout' => 10,
-      ]);
+       // Exécution de la commande OpenSSL pour récupérer le certificat
+       $cmd = sprintf(
+        "echo | openssl s_client -servername %s -connect %s:443 | openssl x509 -noout -issuer -enddate -subject",
+        escapeshellarg($domain),
+        escapeshellarg($domain)
+      );
+      $output = shell_exec($cmd);
 
-      if ($response->getStatusCode() !== 200) {
-        return ['error' => 'Erreur lors de la récupération des données SSL.'];
+      if (!$output) {
+        return ['error' => "Impossible de récupérer le certificat SSL via OpenSSL."];
       }
 
-      $content = json_decode($response->getBody()->getContents(), TRUE); // <-- Change this line for Guzzle
-
-      if (!isset($content['result'])) {
-        return ['error' => 'Format de réponse inattendu.'];
+      // Extraction des infos nécessaires
+      $issuer = '';
+      $valid_till = '';
+      $subject = '';
+      foreach (explode("\n", $output) as $line) {
+        if (strpos($line, 'issuer=') === 0) {
+          $fullIssuer = trim(substr($line, 7)); // toute la chaîne
+          if (preg_match('/O=([^,]+)/', $fullIssuer, $matches)) {
+              $issuer = trim($matches[1]);
+          } else {
+              $issuer = $fullIssuer;
+          }
+      }
+        if (strpos($line, 'notAfter=') === 0) {
+          $valid_till = trim(substr($line, 9));
+        }
+        if (strpos($line, 'subject=') === 0) {
+          $subject = trim(substr($line, 8));
+        }
       }
 
-      $result = $content['result'];
+      if (empty($issuer) || empty($valid_till)) {
+        return ['error' => "Le certificat SSL n'a pas pu être extrait."];
+      }
 
+      // Conversion date et calcul des jours restants
+      $expires = \DateTime::createFromFormat('M d H:i:s Y T', $valid_till);
+      $valid_till_formatted = $expires ? $expires->format('M j Y') : $valid_till;
+      $days_left = $expires ? (int) floor(($expires->getTimestamp() - time()) / 86400) : 0;
+      
       $data = [
-        'host' => $result['host'] ?? $domain,
-        'issuer_o' => $result['issuer_o'] ?? '',
-        'valid_till' => $result['valid_till'] ?? NULL,
-        'cert_valid' => $result['cert_valid'] ?? FALSE,
-        'cert_exp' => $result['cert_exp'] ?? TRUE,
-        'days_left' => $result['days_left'] ?? 0,
+        'host' => $domain,
+        'issuer_o' => $issuer,
+        'valid_till' => $valid_till_formatted,
+        'cert_valid' => ($days_left > 0),
+        'cert_exp' => ($days_left <= 0),
+        'days_left' => $days_left,
       ];
 
       $config->set('ssl_info', $data)
