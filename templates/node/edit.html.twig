@@ -51,6 +51,7 @@
           inputLabels: {},
           showBlocksModal: false,
           showBlockForm: false,
+          showTemplatesList: false,
           selectedTemplate: null,
           blockForm: {
             extra_fields: {},
@@ -548,6 +549,7 @@
             }
             this.showBlocksModal = false;
             this.showBlockForm = true;
+            this.showTemplatesList = false;
           },
           blockSearch: '',
           blockCategory: 'all',
@@ -649,6 +651,11 @@
           },
           removeItem(index) {
             this.blockForm.items.splice(index, 1);
+          },
+          handleAddBlock() {
+            // For now, do nothing as requested
+            // This function can be implemented later for adding blocks
+            console.log('Add Block clicked - functionality to be implemented');
           },
           isSaving: false,
           notification: {

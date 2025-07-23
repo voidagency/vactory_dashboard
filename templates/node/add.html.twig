@@ -32,6 +32,7 @@
           seo: {},
           showBlocksModal: false,
           showBlockForm: false,
+          showTemplatesList: false,
           selectedTemplate: null,
           blockForm: {
             extra_fields: {},
@@ -499,6 +500,7 @@
               // Add new block
               this.blocks.push({
                 id: Date.now(),
+                bundle: "vactory_component",
                 is_new: true,
                 title: this.blockForm.config.title,
                 show_title: this.blockForm.config.show_title,
@@ -620,6 +622,12 @@
             }
             this.showBlocksModal = false;
             this.showBlockForm = true;
+            this.showTemplatesList = false;
+          },
+          handleAddBlock() {
+            // For now, do nothing as requested
+            // This function can be implemented later for adding blocks
+            console.log('Add Block clicked - functionality to be implemented');
           },
           blockSearch: '',
           blockCategory: 'all',
