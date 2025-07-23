@@ -258,6 +258,14 @@ class DashboardVactoryPageController extends ControllerBase {
     ]);
   }
 
+  public function getParagraphBlocks(Request $request) {
+    $paragraph_blocks = $this->nodeService->getParagraphBlocksList();
+    return new JsonResponse([
+      'data' => $paragraph_blocks,
+      'message' => 'Paragraph blocks retrieved successfully',
+    ]);
+  }
+
   /**
    * Saves or updates a node.
    *

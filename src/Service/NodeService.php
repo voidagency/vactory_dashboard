@@ -16,6 +16,7 @@ use Drupal\paragraphs\ParagraphInterface;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
 use Drupal\Core\TypedData\TranslatableInterface;
+use Drupal\block\Entity\Block;
 
 /**
  * Service for node utilities.
@@ -790,6 +791,21 @@ class NodeService {
     else {
       $node->set('field_vactory_paragraphs', []);
     }
+  }
+
+  public function getParagraphBlocksList() {
+    $field_vactory_block = $this->entityFieldManager->getFieldDefinitions('paragraph', 'vactory_paragraph_block');
+    $field_vactory_block = $field_vactory_block['field_vactory_block'] ?? [];
+
+    $blocks = $field_vactory_block->getSettings()['selection_settings']['plugin_ids'] ?? [];
+    $paragraph_blocks = [];
+    foreach ($blocks as $block) {
+      $paragraph_blocks[] = [
+        'id' => $block,
+        'label' => $block,
+      ];
+    }
+    return $paragraph_blocks;
   }
 
 }
