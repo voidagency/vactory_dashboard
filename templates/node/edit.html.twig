@@ -678,6 +678,7 @@
             this.paragraphBlockForm = {
               blockType: block.blockType || '',
               content: block.content || '',
+              block_settings: block.block_settings || {},
               config: {
                 title: block.title || '',
                 show_title: block.show_title || false,
@@ -757,6 +758,7 @@
             // Close form and reset current block index
             this.showParagraphBlockForm = false;
             this.currentBlockIndex = null;
+            this.saveChanges();
           },
           isSaving: false,
           notification: {
@@ -880,6 +882,9 @@
                 widget_id: paragraph?.widget_id ?? null,
                 widget_config: paragraph?.widget_config ?? null,
                 widget_data: paragraph?.widget_data ?? null,
+                blockType: paragraph?.block_id ?? null,
+                content: paragraph?.body ?? null,
+                block_settings: paragraph?.block_settings ?? null,
               }));
             }
             this.settings.title = node?.title || '';

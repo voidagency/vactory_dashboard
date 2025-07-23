@@ -10,7 +10,7 @@
             {# Notification #}
             {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
 
-            <div x-show="!showBlockForm">
+            <div x-show="!showBlockForm && !showParagraphBlockForm">
                 {# Tabs #}
                 {% include "@vactory_dashboard/node/_components/tabs.html.twig" %}
             </div>

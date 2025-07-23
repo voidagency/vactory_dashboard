@@ -89,7 +89,7 @@
                         </button>
                     </template>
                     {%if has_translation %}
-                        <template x-if="block.bundle !== 'vactory_component'">
+                        <template x-if="block.bundle !== 'vactory_component' && block.bundle !== 'vactory_paragraph_block'">
                             <button
                                     type="button"
                                         @click="window.location.href = '/{{ language }}/node/{{ nid }}/edit?destination=' + encodeURIComponent(window.location.href)"
