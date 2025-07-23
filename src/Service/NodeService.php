@@ -117,7 +117,7 @@ class NodeService {
       if ($field['type'] === 'daterange') {
         $values = $node->get($field['name'])->getValue();
         if (!empty($values)) {
-          // Cardinalité simple
+          // Cardinalité simple.
           $node_data[$field['name']] = [
             'value' => $values[0]['value'] ?? '',
             'end_value'   => $values[0]['end_value'] ?? '',

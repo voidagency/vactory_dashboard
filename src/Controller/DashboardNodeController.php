@@ -748,7 +748,7 @@ class DashboardNodeController extends ControllerBase {
           if ($field_value['end_value'] < $field_value['value']) {
             throw new \Exception('End date cannot be before start date');
           }
-          $node->set($field_name, $field_value);
+          $node->getTranslation($language)->set($field_name, $field_value);
           continue;
         }
 
