@@ -258,6 +258,14 @@ class DashboardVactoryPageController extends ControllerBase {
     ]);
   }
 
+  public function getParagraphBlocks(Request $request) {
+    $paragraph_blocks = $this->nodeService->getParagraphBlocksList();
+    return new JsonResponse([
+      'data' => $paragraph_blocks,
+      'message' => 'Paragraph blocks retrieved successfully',
+    ]);
+  }
+
   /**
    * Saves or updates a node.
    *
@@ -452,36 +460,8 @@ class DashboardVactoryPageController extends ControllerBase {
       }
 
       // Update blocks/paragraphs if they exist.
-      $ordered_paragraphs = [];
-      if (!empty($blocks)) {
-        foreach ($blocks as $block) {
-          $paragraph_entity = NULL;
-          $paragraph = [
-            "type" => "vactory_component",
-            "field_vactory_title" => $block['title'],
-            "field_vactory_flag" => $block['show_title'],
-            "paragraph_container" => $block['width'],
-            "container_spacing" => $block['spacing'],
-            "paragraph_css_class" => $block['css_classes'],
-
-            "field_vactory_component" => [
-              "widget_id" => $block['widget_id'],
-              "widget_data" => json_encode($block['widget_data']),
-            ],
-          ];
-          $paragraph['langcode'] = $language;
-          $paragraph_entity = Paragraph::create($paragraph);
-          $paragraph_entity->save();
-          $ordered_paragraphs[] = [
-            'target_id' => $paragraph_entity->id(),
-            'target_revision_id' => \Drupal::entityTypeManager()
-              ->getStorage('paragraph')
-              ->getLatestRevisionId($paragraph_entity->id()),
-          ];
-        }
-      }
-      if (!empty($ordered_paragraphs)) {
-        $node->set('field_vactory_paragraphs', $ordered_paragraphs);
+      if ($node->hasField('field_vactory_paragraphs')) {
+        $this->nodeService->saveParagraphsInNode($node, $blocks, $language);
       }
 
       // Save the node.
