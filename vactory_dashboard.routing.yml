@@ -399,14 +399,6 @@ vactory_dashboard.webform.submission.edit:
     _permission: "edit any webform submission"
   methods: [POST]
 
-vactory_dashboard.webform.submission.export:
-  path: "/api/vactory-dashboard/forms/{id}/export"
-  defaults:
-    _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::exportSubmissions'
-    _title: "Exporter toutes les submission"
-  requirements:
-    _permission: "administer dashboard configuration"
-
 vactory_dashboard.content_types:
   path: "/admin/dashboard/content-types/{bundle}"
   defaults:
@@ -818,3 +810,27 @@ vactory_dashboard.autocomplete:
   requirements:
     _permission: 'access dashboard'
 
+vactory_dashboard.batch_export_start:
+  path: '/batch-export/start/{webform_id}'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::startBatchExport'
+    _title: 'Démarrer export batch'
+  methods: [POST]
+  requirements:
+    _permission: 'administer dashboard configuration'
+
+vactory_dashboard.batch_export_process:
+  path: '/batch-export/process/{webform_id}'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::processBatchExport'
+  methods: [GET]
+  requirements:
+    _permission: 'administer dashboard configuration'
+
+vactory_dashboard.batch_export_download:
+  path: '/batch-export/download/{webform_id}'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::downloadBatchExport'
+  methods: [GET]
+  requirements:
+    _permission: 'administer dashboard configuration'
