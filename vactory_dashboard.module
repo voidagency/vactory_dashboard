@@ -237,6 +237,9 @@ function vactory_dashboard_preprocess(&$variables) {
   $variables['languages'] = $links;
   $variables['default_language'] = $defaultlang;
   $variables['current_language'] = $currentlang;
+
+  $config = \Drupal::config('vactory_dashboard.global.settings');
+  $variables['pagespeed'] = $config->get('pagespeed_btn');
 }
 
 /**
