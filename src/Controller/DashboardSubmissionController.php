@@ -17,6 +17,7 @@ use Drupal\webform\WebformInterface;
 use Drupal\webform\WebformSubmissionExporterInterface;
 use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\file\Entity\File;
+use Drupal\Core\Cache\CacheBackendInterface;
 
 /**
  * Controller for the webform dashboard.
@@ -43,16 +44,22 @@ class DashboardSubmissionController extends ControllerBase
   protected $fileUrlGenerator;
 
   /**
+   * @var \Drupal\Core\Cache\CacheBackendInterface
+   */
+  protected $cache;
+
+  /**
    * Constructs a new DashboardSubmissionController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, WebformSubmissionExporterInterface $submissionExporter, FileUrlGeneratorInterface $fileUrlGenerator)
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, WebformSubmissionExporterInterface $submissionExporter, FileUrlGeneratorInterface $fileUrlGenerator,CacheBackendInterface $cache)
   {
     $this->entityTypeManager = $entity_type_manager;
     $this->submissionExporter = $submissionExporter;
     $this->fileUrlGenerator = $fileUrlGenerator;
+    $this->cache = $cache;
   }
 
   /**
@@ -64,6 +71,7 @@ class DashboardSubmissionController extends ControllerBase
       $container->get('entity_type.manager'),
       $container->get('webform_submission.exporter'),
       $container->get('file_url_generator'),
+      $container->get('cache.default'),
     );
   }
 
@@ -244,50 +252,170 @@ class DashboardSubmissionController extends ControllerBase
   }
 
   /**
-   * Exports Webform submissions as a CSV file.
-   *
-   * @param string $id
-   *   The Webform ID.
-   *
-   * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
-   *   The CSV file response.
-   *
-   * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
-   *   Thrown when the Webform is not found.
+   * Démarre le batch export.
    */
-  public function exportSubmissions($id)
-  {
-    $webform = $this->entityTypeManager->getStorage('webform')->load($id);
-
-    if (!$webform instanceof WebformInterface) {
-      throw new NotFoundHttpException();
+  public function startBatchExport($webform_id) {
+    $webform = Webform::load($webform_id);
+    if (!$webform) {
+      return new JsonResponse(['error' => 'Webform introuvable'], 404);
     }
 
-    try {
-      $submission_exporter = \Drupal::service('webform_submission.exporter');
-      $submission_exporter->setWebform($webform);
+    $cache_id = "export_progress_{$webform_id}";
 
-      $export_options = $submission_exporter->getDefaultExportOptions();
-      $export_options['filename'] = $id;
-      $export_options['format'] = 'csv';
+    // Initialiser état export
+    $data = [
+      'progress' => 0,
+      'total' => 0,
+      'done' => 0,
+      'status' => 'starting',
+      'filepath' => '',
+      'message' => 'Export démarré',
+    ];
+    $this->cache->set($cache_id, $data);
 
-      $submission_exporter->setExporter($export_options);
-      $submission_exporter->generate();
+    // Récupérer toutes les soumissions à exporter (id uniquement)
+    $storage = \Drupal::entityTypeManager()->getStorage('webform_submission');
+    $query = $storage->getQuery()
+     ->condition('webform_id', $webform_id)
+     ->accessCheck(FALSE)
+     ->sort('sid', 'ASC');
 
-      $file_path = $submission_exporter->getExportFilePath();
+    $submission_ids = $query->execute();
 
-      $response = new BinaryFileResponse($file_path);
-      $response->setContentDisposition(
-        ResponseHeaderBag::DISPOSITION_ATTACHMENT,
-        "$id.csv"
-      );
+    $data['total'] = count($submission_ids);
 
-      return $response;
-    } catch (\Throwable $th) {
-      return new JsonResponse([
-        'status' => 'error',
-        'message' => 'An error occurred during export.',
-      ], 500);
+    // Fichier CSV temporaire
+    $tmp_dir = sys_get_temp_dir();
+    $file_path = $tmp_dir . "/export_{$webform_id}_" . uniqid() . ".csv";
+
+    // Enregistrer dans cache l’état export initial
+    $data['filepath'] = $file_path;
+    $this->cache->set($cache_id, $data);
+
+    // Stocker la liste des ids à traiter 
+    $this->cache->set("export_ids_{$webform_id}", $submission_ids);
+
+    return new JsonResponse(['message' => 'Export démarré', 'total' => $data['total']]);
+  }
+
+  /**
+   * Effectue un "pas" d’export.
+   */
+  public function processBatchExport($webform_id) {
+    $cache_id = "export_progress_{$webform_id}";
+    $data = $this->cache->get($cache_id);
+
+    if (!$data) {
+      return new JsonResponse(['error' => 'Aucun export en cours'], 400);
     }
+
+    if ($data->data['status'] === 'finished') {
+      return new JsonResponse(['message' => 'Export terminé']);
+    }
+
+    // Charge ids
+    $cache_ids = $this->cache->get("export_ids_{$webform_id}");
+    if (!$cache_ids) {
+      return new JsonResponse(['error' => 'Liste de soumissions introuvable'], 400);
+    }
+    $submission_ids = $cache_ids->data;
+
+    // Ouvrir fichier CSV en append 
+    $filepath = $data->data['filepath'];
+    $handle = fopen($filepath, $data->data['done'] === 0 ? 'w' : 'a');
+    if (!$handle) {
+      return new JsonResponse(['error' => 'Impossible d\'ouvrir le fichier CSV'], 500);
+    }
+
+    // Nombre à traiter par pas (batch size)
+    $batch_size = 100;
+
+    // Extraire le prochain lot d’IDs à traiter
+    $chunk = array_splice($submission_ids, 0, $batch_size);
+
+    if ($data->data['done'] === 0 && count($chunk) > 0) {
+      $first_sub = WebformSubmission::load($chunk[0]);
+      if ($first_sub) {
+        $first_data = $first_sub->getData();
+        fputcsv($handle, array_keys($first_data));
+      }
+    }
+
+    // Charger les entités de soumission
+    $submissions = WebformSubmission::loadMultiple($chunk);
+
+    foreach ($submissions as $sub) {
+      $row = [];
+      $data_row = $sub->getData();
+
+      $excludedFields = [
+        'id',
+        'ip',
+        'csrfToken',
+        'completed',
+        'csrf_token',
+        'g-recaptcha-response',
+        'in_draft',
+        'created',
+        'webform_id',
+        'uid',
+        'remote_addr',
+      ];
+      
+      foreach ($data_row as $value) {
+        if (is_array($value)) {
+          $row[] = implode(', ', $value);
+        }
+        else {
+          $row[] = $value;
+        }
+      }
+      fputcsv($handle, $row);
+    }
+    fclose($handle);
+
+    // Mise à jour data cache : soumissions restantes, progression
+    $data->data['done'] += count($chunk);
+    $data->data['progress'] = ($data->data['done'] / $data->data['total']) * 100;
+
+    $data->data['status'] = count($submission_ids) > 0 ? 'processing' : 'finished';
+
+    // Sauvegarder reste des IDs à traiter
+    $this->cache->set("export_ids_{$webform_id}", $submission_ids);
+    $this->cache->set($cache_id, $data->data);
+
+    return new JsonResponse([
+      'progress' => round($data->data['progress']),
+      'done' => $data->data['done'],
+      'total' => $data->data['total'],
+      'status' => $data->data['status'],
+      'filepath' => $filepath,
+    ]);
+  }
+
+  /**
+   * Téléchargement du fichier CSV à l’issue de l’export.
+   */
+  public function downloadBatchExport($webform_id) {
+    $cache_id = "export_progress_{$webform_id}";
+    $data = $this->cache->get($cache_id);
+
+    if (!$data || $data->data['status'] !== 'finished') {
+      return new JsonResponse(['error' => 'Export non terminé ou fichier manquant'], 404);
+    }
+
+    $file_path = $data->data['filepath'];
+
+    if (!file_exists($file_path)) {
+      return new JsonResponse(['error' => 'Fichier export introuvable'], 404);
+    }
+
+    $response = new BinaryFileResponse($file_path);
+    $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, basename($file_path));
+    return $response;
   }
 }
+
+
+
+
