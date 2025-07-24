@@ -801,6 +801,14 @@
                 };
               }
 
+              this.formData.fields = {
+                ...this.formData.fields,
+                [this.selectedDynamicField]: {
+                  widget_id: this.selectedTemplate.uuid,
+                  widget_data: JSON.stringify(blockData),
+                }
+              }
+
             } else {
               if (this.currentBlockIndex !== null) {
                 // Modify existing block

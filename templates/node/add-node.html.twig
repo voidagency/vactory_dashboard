@@ -154,6 +154,13 @@
                              </div>
                             </template>
 
+                            {# Dynamic Field #}
+                            <template x-if="field.type === 'field_wysiwyg_dynamic'">
+                                <div>
+                                    {% include "@vactory_dashboard/_components/fields/wysiwyg-dynamic-field.html.twig" %}
+                                </div>
+                            </template>
+
                             {# daterange #} 
                             {% include "@vactory_dashboard/_components/fields/date-range-field.html.twig" %}
                              
