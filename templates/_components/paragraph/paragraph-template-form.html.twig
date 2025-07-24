@@ -41,36 +41,38 @@
                     <div class="flex items-start flex-col md:flex-row gap-6">
                         <div
                                 class="w-full md:w-2/3">
-                            {# Extra Fields Section (if any) #}
+                            {# Start Handling Extra Fields #}
                             <template x-if="selectedTemplate?.extra_fields">
                                 <div class="mb-8 border-b border-slate-200 p-6 rounded-xl bg-slate-50">
                                     <h3 class="text-base font-semibold text-slate-900 mb-4">{{ 'General Settings'|t }}</h3>
                                     <div class="space-y-4">
-                                        <template x-for="([fieldName, field], index) in Object.entries(selectedTemplate.extra_fields)"
-                                                  :key="fieldName">
+                                        <template
+                                                x-for="([fieldName, field], index) in Object.entries(selectedTemplate.extra_fields)"
+                                                :key="fieldName">
                                             <div>
 
                                                 {# extra fields - non group #}
                                                 <template x-if="!fieldName.startsWith('group_')">
                                                     <div>
                                                         <label :class="{'required': field.options?.['#required']}"
-                                                            class="block text-sm font-medium text-slate-700 mb-1">
+                                                               class="block text-sm font-medium text-slate-700 mb-1">
                                                             <span x-text="field.label"></span>
                                                             <span x-show="field.options?.['#required']"
-                                                                class="text-red-500">*</span>
+                                                                  class="text-red-500">*</span>
                                                         </label>
                                                         {# Text Input #}
                                                         <template x-if="field.type === 'text'">
-                                                            <input type="text" :required="field.options?.['#required'] ?? false"
-                                                                x-model="blockForm.extra_fields[fieldName]"
-                                                                class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                            <input type="text"
+                                                                   :required="field.options?.['#required'] ?? false"
+                                                                   x-model="blockForm.extra_fields[fieldName]"
+                                                                   class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                                         </template>
 
                                                         {# Checkbox #}
                                                         <template x-if="field.type === 'checkbox'">
                                                             <input type="checkbox"
-                                                                :required="field.options?.['#required'] ?? false"
-                                                                x-model="blockForm.extra_fields[fieldName]">
+                                                                   :required="field.options?.['#required'] ?? false"
+                                                                   x-model="blockForm.extra_fields[fieldName]">
                                                         </template>
 
                                                         {# Select Input #}
@@ -80,7 +82,7 @@
                                                                     class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                                                 <option value="">{{ 'Select...'|t }}</option>
                                                                 <template x-for="option in field.options['#options']"
-                                                                        :key="Object.keys(option)[0]">
+                                                                          :key="Object.keys(option)[0]">
                                                                     <option :value="Object.keys(option)[0]"
                                                                             x-text="Object.values(option)[0]"></option>
                                                                 </template>
@@ -90,20 +92,23 @@
                                                         {# Textarea #}
                                                         <template x-if="field.type === 'textarea'">
                                                             <textarea :required="field.options?.['#required'] ?? false"
-                                                                    x-model="blockForm.extra_fields[fieldName]" rows="4"
-                                                                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"></textarea>
+                                                                      x-model="blockForm.extra_fields[fieldName]"
+                                                                      rows="4"
+                                                                      class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"></textarea>
                                                         </template>
 
                                                         {# Text Format #}
                                                         <template x-if="loaderCK">
                                                             <div>
                                                                 <div class="col-span-full flex justify-center items-center py-12">
-                                                                    <svg class="animate-spin h-8 w-8 text-primary-500" xmlns="http://www.w3.org/2000/svg"
-                                                                        fill="none" viewBox="0 0 24 24">
-                                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                                                    <svg class="animate-spin h-8 w-8 text-primary-500"
+                                                                         xmlns="http://www.w3.org/2000/svg"
+                                                                         fill="none" viewBox="0 0 24 24">
+                                                                        <circle class="opacity-25" cx="12" cy="12"
+                                                                                r="10" stroke="currentColor"
                                                                                 stroke-width="4"></circle>
                                                                         <path class="opacity-75" fill="currentColor"
-                                                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                                     </svg>
                                                                     <span class="ms-3 text-sm text-slate-600">{{ "Loading CKeditor..."|t }}</span>
                                                                 </div>
@@ -179,51 +184,58 @@
                                                 <template x-if="fieldName.startsWith('group_')">
                                                     <div>
                                                         {# Group accordion #}
-                                                        <div x-data="{ openGroup: false }" class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
-                                                            <div class="flex justify-between items-center cursor-pointer select-none" @click="openGroup = !openGroup">
-                                                                <h3 x-text="field.g_title" class="text-lg font-semibold text-slate-900"></h3>
+                                                        <div x-data="{ openGroup: false }"
+                                                             class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
+                                                            <div class="flex justify-between items-center cursor-pointer select-none"
+                                                                 @click="openGroup = !openGroup">
+                                                                <h3 x-text="field.g_title"
+                                                                    class="text-lg font-semibold text-slate-900"></h3>
                                                                 <svg :class="{'rotate-180': openGroup}"
-                                                                    class="w-5 h-5 transform transition-transform duration-300 text-slate-400" fill="none"
-                                                                    stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                                                     class="w-5 h-5 transform transition-transform duration-300 text-slate-400"
+                                                                     fill="none"
+                                                                     stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                                          stroke-width="2" d="M19 9l-7 7-7-7"/>
                                                                 </svg>
                                                             </div>
 
                                                             {# Group fields #}
                                                             <div x-show="openGroup" x-transition class="space-y-4">
-                                                                <template x-for="([itemName, item], index) in Object.entries(field)" :key="index">
+                                                                <template
+                                                                        x-for="([itemName, item], index) in Object.entries(field)"
+                                                                        :key="index">
                                                                     <template x-if="itemName != 'g_title'">
                                                                         <div>
                                                                             <label :class="{'required': field.options?.['#required']}"
-                                                                                class="block text-sm font-medium text-slate-700 mb-1">
+                                                                                   class="block text-sm font-medium text-slate-700 mb-1">
                                                                                 <span x-text="item.label"></span>
                                                                                 <span x-show="item.options?.['#required']"
-                                                                                    class="text-red-500">*</span>
+                                                                                      class="text-red-500">*</span>
                                                                             </label>
 
 
                                                                             {# Text Input #}
                                                                             <template x-if="item.type === 'text'">
                                                                                 <input type="text"
-                                                                                    :required="item.options?.['#required'] ?? false"
-                                                                                    x-model="blockForm.extra_fields[fieldName][itemName]"
-                                                                                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                                                       :required="item.options?.['#required'] ?? false"
+                                                                                       x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                       class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                                                             </template>
 
                                                                             {# Text Number #}
                                                                             <template x-if="item.type === 'number'">
                                                                                 <input type="number"
-                                                                                    :required="item.options?.['#required'] ?? false"
-                                                                                    x-model="blockForm.extra_fields[fieldName][itemName]"
-                                                                                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                                                       :required="item.options?.['#required'] ?? false"
+                                                                                       x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                       class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                                                             </template>
 
                                                                             {# Checkbox #}
                                                                             <template x-if="item.type === 'checkbox'">
                                                                                 <input type="checkbox"
-                                                                                    :required="item.options?.['#required'] ?? false"
-                                                                                    x-model="blockForm.extra_fields[fieldName][itemName]"
-                                                                                    >
+                                                                                       :required="item.options?.['#required'] ?? false"
+                                                                                       x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                >
                                                                             </template>
 
                                                                             {# Select Input #}
@@ -232,7 +244,8 @@
                                                                                         x-model="blockForm.extra_fields[fieldName][itemName]"
                                                                                         class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                                                                     <option value="">{{ 'Select...'|t }}</option>
-                                                                                    <template x-for="option in item.options['#options']"
+                                                                                    <template
+                                                                                            x-for="option in item.options['#options']"
                                                                                             :key="Object.keys(option)[0]">
                                                                                         <option :value="Object.keys(option)[0]"
                                                                                                 x-text="Object.values(option)[0]"></option>
@@ -242,8 +255,10 @@
 
                                                                             {# Textarea #}
                                                                             <template x-if="item.type === 'textarea'">
-                                                                                <textarea :required="item.options?.['#required'] ?? false"
-                                                                                        x-model="blockForm.extra_fields[fieldName][itemName]" rows="4"
+                                                                                <textarea
+                                                                                        :required="item.options?.['#required'] ?? false"
+                                                                                        x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                        rows="4"
                                                                                         class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"></textarea>
                                                                             </template>
 
@@ -251,22 +266,29 @@
                                                                             <template x-if="loaderCK">
                                                                                 <div>
                                                                                     <div class="col-span-full flex justify-center items-center py-12">
-                                                                                        <svg class="animate-spin h-8 w-8 text-primary-500" xmlns="http://www.w3.org/2000/svg"
-                                                                                            fill="none" viewBox="0 0 24 24">
-                                                                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                                                                        <svg class="animate-spin h-8 w-8 text-primary-500"
+                                                                                             xmlns="http://www.w3.org/2000/svg"
+                                                                                             fill="none"
+                                                                                             viewBox="0 0 24 24">
+                                                                                            <circle class="opacity-25"
+                                                                                                    cx="12" cy="12"
+                                                                                                    r="10"
+                                                                                                    stroke="currentColor"
                                                                                                     stroke-width="4"></circle>
-                                                                                            <path class="opacity-75" fill="currentColor"
-                                                                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                                            <path class="opacity-75"
+                                                                                                  fill="currentColor"
+                                                                                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                                                         </svg>
                                                                                         <span class="ms-3 text-sm text-slate-600">{{ "Loading CKeditor..."|t }}</span>
                                                                                     </div>
                                                                                 </div>
                                                                             </template>
-                                                                            <template x-if="item.type === 'text_format'">
+                                                                            <template
+                                                                                    x-if="item.type === 'text_format'">
                                                                                 <div x-show="!loaderCK">
-                                                                                <span x-text=></span>
+                                                                                    <span x-text=></span>
                                                                                     <div :id="`wysi-groupextra-${index}-${itemName}`"
-                                                                                        x-init="
+                                                                                         x-init="
                                                                                         (() => {
                                                                                             $nextTick(() => {
                                                                                                 new MutationObserver((records, observer) => {
@@ -299,14 +321,15 @@
                                                                             </template>
 
                                                                             {# URL Extended Input #}
-                                                                            <template x-if="item.type === 'url_extended'">
-                                                                                {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { xmodel: 'blockForm.extra_fields[fieldName][itemName]' }   %}
+                                                                            <template
+                                                                                    x-if="item.type === 'url_extended'">
+                                                                                {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { xmodel: 'blockForm.extra_fields[fieldName][itemName]' } %}
                                                                             </template>
 
                                                                             {# Image Input #}
                                                                             <template x-if="item.type === 'image'">
                                                                                 <div>
-                                                                                {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'url': 'blockForm.extra_fields[fieldName][itemName].url', 'path': 'blockForm.extra_fields[fieldName][itemName].path', 'key': 'blockForm.extra_fields[fieldName][itemName].key', 'type': 'image'} %}
+                                                                                    {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'url': 'blockForm.extra_fields[fieldName][itemName].url', 'path': 'blockForm.extra_fields[fieldName][itemName].path', 'key': 'blockForm.extra_fields[fieldName][itemName].key', 'type': 'image'} %}
                                                                                 </div>
                                                                             </template>
 
@@ -316,17 +339,20 @@
                                                                             </template>
 
                                                                             {# File Input #}
-                                                                            <template x-if="item.type === 'remote_video'">
+                                                                            <template
+                                                                                    x-if="item.type === 'remote_video'">
                                                                                 {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.extra_fields[fieldName][itemName].name', 'url': 'blockForm.extra_fields[fieldName][itemName].url', 'path': 'blockForm.extra_fields[fieldName][itemName].path', 'key': 'blockForm.extra_fields[fieldName][itemName].key', 'type': 'remote_video'} %}
                                                                             </template>
 
                                                                             {# JSON API Collection #}
-                                                                            <template x-if="item.type === 'json_api_collection'">
+                                                                            <template
+                                                                                    x-if="item.type === 'json_api_collection'">
                                                                                 <span>[JSON API COLLECTION] You are not allowed to modify or add new items to this field</span>
                                                                             </template>
 
                                                                             {# Webform Decoupled #}
-                                                                            <template x-if="item.type === 'webform_decoupled'">
+                                                                            <template
+                                                                                    x-if="item.type === 'webform_decoupled'">
                                                                                 <span>[WEBFORM DECOUPLED] You are not allowed to modify this field</span>
                                                                             </template>
                                                                         </div>
@@ -341,234 +367,82 @@
                                     </div>
                                 </div>
                             </template>
+                            {# End Handling Extra Fields #}
                             {# Main Fields Section #}
                             <div>
                                 <div x-show="selectedTemplate?.fields">
-                                    {# Single Item - group #}
-                                    <template x-if="!selectedTemplate?.multiple && (Object.keys(selectedTemplate?.fields)[0].includes('group_'))">
-                                        <div class="flex flex-col gap-6 bg-slate-50 p-4 rounded-xl">
-                                            <template x-for="([fieldName, field], index) in Object.entries(selectedTemplate.fields)" :key="fieldName">
-                                                <div>
-                                                    {# Group accordion #}
-                                                    <div x-data="{ openGroup: false }" class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
-                                                        <div class="flex justify-between items-center cursor-pointer select-none" @click="openGroup = !openGroup">
-                                                            <h3 x-text="field.g_title" class="text-lg font-semibold text-slate-900"></h3>
-                                                            <svg :class="{'rotate-180': openGroup}"
-                                                                class="w-5 h-5 transform transition-transform duration-300 text-slate-400" fill="none"
-                                                                stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                                            </svg>
-                                                        </div>
-
-                                                        {# Group fields #}
-                                                        <div x-show="openGroup" x-transition class="space-y-4">
-                                                            <template x-for="([itemName, item], index) in Object.entries(field)" :key="index">
-                                                                <template x-if="itemName != 'g_title'">
-                                                                    <div>
-                                                                        <label :class="{'required': field.options?.['#required']}"
-                                                                            class="block text-sm font-medium text-slate-700 mb-1">
-                                                                            <span x-text="item.label"></span>
-                                                                            <span x-show="item.options?.['#required']"
-                                                                                class="text-red-500">*</span>
-                                                                        </label>
-
-
-                                                                        {# Text Input #}
-                                                                        <template x-if="item.type === 'text'">
-                                                                            <input type="text"
-                                                                                :required="item.options?.['#required'] ?? false"
-                                                                                x-model="blockForm.fields[fieldName][itemName]"
-                                                                                class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
-                                                                        </template>
-
-                                                                        {# Checkbox #}
-                                                                        <template x-if="item.type === 'checkbox'">
-                                                                            <input type="checkbox"
-                                                                                :required="item.options?.['#required'] ?? false"
-                                                                                x-model="blockForm.fields[fieldName][itemName]"
-                                                                                >
-                                                                        </template>
-
-                                                                        {# Select Input #}
-                                                                        <template x-if="item.type === 'select'">
-                                                                            <select :required="item.options?.['#required'] ?? false"
-                                                                                    x-model="blockForm.fields[fieldName][itemName]"
-                                                                                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
-                                                                                <option value="">{{ 'Select...'|t }}</option>
-                                                                                <template x-for="option in item.options['#options']"
-                                                                                        :key="Object.keys(option)[0]">
-                                                                                    <option :value="Object.keys(option)[0]"
-                                                                                            x-text="Object.values(option)[0]"></option>
-                                                                                </template>
-                                                                            </select>
-                                                                        </template>
-
-                                                                        {# Textarea #}
-                                                                        <template x-if="item.type === 'textarea'">
-                                                                            <textarea :required="item.options?.['#required'] ?? false"
-                                                                                    x-model="blockForm.fields[fieldName][itemName]" rows="4"
-                                                                                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"></textarea>
-                                                                        </template>
-
-                                                                        {# Text Format #}
-                                                                        <template x-if="loaderCK">
-                                                                            <div>
-                                                                                <div class="col-span-full flex justify-center items-center py-12">
-                                                                                    <svg class="animate-spin h-8 w-8 text-primary-500" xmlns="http://www.w3.org/2000/svg"
-                                                                                        fill="none" viewBox="0 0 24 24">
-                                                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                                                                                stroke-width="4"></circle>
-                                                                                        <path class="opacity-75" fill="currentColor"
-                                                                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                                                    </svg>
-                                                                                    <span class="ms-3 text-sm text-slate-600">{{ "Loading CKeditor..."|t }}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </template>
-                                                                        <template x-if="item.type === 'text_format'">
-                                                                            <div x-show="!loaderCK">
-                                                                                <div :id="`wysi-group-${index}-${item.label.toLowerCase()}`"
-                                                                                    x-init="
-                                                                                    (() => {
-                                                                                        $nextTick(() => {
-                                                                                            new MutationObserver((records, observer) => {
-
-                                                                                                setTimeout(() => {
-
-                                                                                                    const textarea = $el.querySelector('textarea');
-                                                                                                    const instanceID = textarea.getAttribute('data-ckeditor5-id');
-                                                                                                    let ckeditor = null;
-
-                                                                                                    Drupal.CKEditor5Instances.forEach(function(instance, id) {
-                                                                                                        if (instanceID == id) {
-                                                                                                            ckeditor = instance;
-                                                                                                        }
-                                                                                                    });
-
-                                                                                                    if (ckeditor) {
-                                                                                                        ckeditor.model.document.on('change:data', () => {
-                                                                                                            blockForm.fields[fieldName][itemName] = ckeditor.getData();
-                                                                                                        });
-                                                                                                    }
-                                                                                                }, 1000);
-
-                                                                                            }).observe($el, { childList: true, subtree: true });
-                                                                                        });
-                                                                                    })()"
-                                                                                >
-                                                                                </div>
-                                                                            </div>
-                                                                        </template>
-
-                                                                        {# URL Extended Input #}
-                                                                        <template x-if="item.type === 'url_extended'">
-                                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { xmodel: 'blockForm.fields[fieldName][itemName]' }   %}
-                                                                        </template>
-
-                                                                        {# Image Input #}
-                                                                        <template x-if="item.type === 'image'">
-                                                                            <div>
-                                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'image'} %}
-                                                                            </div>
-                                                                        </template>
-
-                                                                        {# File Input #}
-                                                                        <template x-if="item.type === 'file'">
-                                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.fields[fieldName][itemName].name', 'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'file'} %}
-                                                                        </template>
-
-                                                                        {# File Input #}
-                                                                        <template x-if="item.type === 'remote_video'">
-                                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.fields[fieldName][itemName].name', 'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'remote_video'} %}
-                                                                        </template>
-
-                                                                        {# JSON API Collection #}
-                                                                        <template x-if="item.type === 'json_api_collection'">
-                                                                            <span>[JSON API COLLECTION] You are not allowed to modify or add new items to this field</span>
-                                                                        </template>
-
-                                                                        {# Webform Decoupled #}
-                                                                        <template x-if="item.type === 'webform_decoupled'">
-                                                                            <span>[WEBFORM DECOUPLED] You are not allowed to modify this field</span>
-                                                                        </template>
-                                                                    </div>
-                                                                </template>
-                                                            </template>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </template>
-                                        </div>
-                                    </template>
-
-                                    {# Single Item Fields #}
+                                    {# Start handling single Item Fields #}
                                     <template x-if="!selectedTemplate?.multiple">
                                         <div class="flex flex-col gap-6 bg-slate-50 p-4 rounded-xl">
-                                            <template x-for="([fieldName, field], index) in Object.entries(selectedTemplate.fields)"
-                                                      :key="fieldName">
-                                                <div>
-                                                    <label :class="{'required': field.options?.['#required']}"
-                                                           class="block text-sm font-medium text-slate-700 mb-1">
-                                                        <span x-text="field.label"></span>
-                                                        <span x-show="field.options?.['#required']"
-                                                              class="text-red-500">*</span>
-                                                    </label>
+                                            <template
+                                                    x-for="([fieldName, field], index) in Object.entries(selectedTemplate.fields)"
+                                                    :key="fieldName">
+                                                <template x-if="!fieldName.startsWith('group_')">
+                                                    <div>
+                                                        <label :class="{'required': field.options?.['#required']}"
+                                                               class="block text-sm font-medium text-slate-700 mb-1">
+                                                            <span x-text="field.label"></span>
+                                                            <span x-show="field.options?.['#required']"
+                                                                  class="text-red-500">*</span>
+                                                        </label>
 
-                                                    {# Text Input #}
-                                                    <template x-if="field.type === 'text'">
-                                                        <input type="text"
-                                                               :required="field.options?.['#required'] ?? false"
-                                                               x-model="blockForm.fields[fieldName]"
-                                                               class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
-                                                    </template>
+                                                        {# Text Input #}
+                                                        <template x-if="field.type === 'text'">
+                                                            <input type="text"
+                                                                   :required="field.options?.['#required'] ?? false"
+                                                                   x-model="blockForm.fields[fieldName]"
+                                                                   class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                        </template>
 
-                                                    {# Checkbox #}
-                                                    <template x-if="field.type === 'checkbox'">
-                                                        <input type="checkbox"
-                                                               :required="field.options?.['#required'] ?? false"
-                                                               x-model="blockForm.fields[fieldName]">
-                                                    </template>
+                                                        {# Checkbox #}
+                                                        <template x-if="field.type === 'checkbox'">
+                                                            <input type="checkbox"
+                                                                   :required="field.options?.['#required'] ?? false"
+                                                                   x-model="blockForm.fields[fieldName]">
+                                                        </template>
 
-                                                    {# Select Input #}
-                                                    <template x-if="field.type === 'select'">
-                                                        <select :required="field.options?.['#required'] ?? false"
-                                                                x-model="blockForm.fields[fieldName]"
-                                                                class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
-                                                            <option value="">{{ 'Select...'|t }}</option>
-                                                            <template x-for="option in field.options['#options']"
-                                                                      :key="Object.keys(option)[0]">
-                                                                <option :value="Object.keys(option)[0]"
-                                                                        x-text="Object.values(option)[0]"></option>
-                                                            </template>
-                                                        </select>
-                                                    </template>
+                                                        {# Select Input #}
+                                                        <template x-if="field.type === 'select'">
+                                                            <select :required="field.options?.['#required'] ?? false"
+                                                                    x-model="blockForm.fields[fieldName]"
+                                                                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                                <option value="">{{ 'Select...'|t }}</option>
+                                                                <template x-for="option in field.options['#options']"
+                                                                          :key="Object.keys(option)[0]">
+                                                                    <option :value="Object.keys(option)[0]"
+                                                                            x-text="Object.values(option)[0]"></option>
+                                                                </template>
+                                                            </select>
+                                                        </template>
 
-                                                    {# Textarea #}
-                                                    <template x-if="field.type === 'textarea'">
+                                                        {# Textarea #}
+                                                        <template x-if="field.type === 'textarea'">
                                                         <textarea :required="field.options?.['#required'] ?? false"
                                                                   x-model="blockForm.fields[fieldName]" rows="4"
                                                                   class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"></textarea>
-                                                    </template>
+                                                        </template>
 
-                                                    {# Text Format #}
-                                                    <template x-if="loaderCK">
-                                                        <div>
-                                                            <div class="col-span-full flex justify-center items-center py-12">
-                                                                <svg class="animate-spin h-8 w-8 text-primary-500" xmlns="http://www.w3.org/2000/svg"
-                                                                    fill="none" viewBox="0 0 24 24">
-                                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                                                            stroke-width="4"></circle>
-                                                                    <path class="opacity-75" fill="currentColor"
-                                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                                </svg>
-                                                                <span class="ms-3 text-sm text-slate-600">{{ "Loading CKeditor..."|t }}</span>
+                                                        {# Text Format #}
+                                                        <template x-if="loaderCK">
+                                                            <div>
+                                                                <div class="col-span-full flex justify-center items-center py-12">
+                                                                    <svg class="animate-spin h-8 w-8 text-primary-500"
+                                                                         xmlns="http://www.w3.org/2000/svg"
+                                                                         fill="none" viewBox="0 0 24 24">
+                                                                        <circle class="opacity-25" cx="12" cy="12"
+                                                                                r="10" stroke="currentColor"
+                                                                                stroke-width="4"></circle>
+                                                                        <path class="opacity-75" fill="currentColor"
+                                                                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                    </svg>
+                                                                    <span class="ms-3 text-sm text-slate-600">{{ "Loading CKeditor..."|t }}</span>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    </template>
-                                                    <template x-if="field.type === 'text_format'">
-                                                        <div x-show="!loaderCK">
-                                                            <div :id="`wysi-single-${index}`"
-                                                                x-init="
+                                                        </template>
+                                                        <template x-if="field.type === 'text_format'">
+                                                            <div x-show="!loaderCK">
+                                                                <div :id="`wysi-single-${index}`"
+                                                                     x-init="
                                                                 (() => {
                                                                     $nextTick(() => {
                                                                         new MutationObserver((records, observer) => {
@@ -595,46 +469,226 @@
                                                                         }).observe($el, { childList: true, subtree: true });
                                                                     });
                                                                 })()"
-                                                            >
+                                                                >
+                                                                </div>
+                                                            </div>
+                                                        </template>
+
+                                                        {# URL Extended Input #}
+                                                        <template x-if="field.type === 'url_extended'">
+                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { xmodel: 'blockForm.fields' } %}
+                                                        </template>
+
+                                                        {# Image Input #}
+                                                        <template x-if="field.type === 'image'">
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'image'} %}
+                                                        </template>
+
+                                                        {# File Input #}
+                                                        <template x-if="field.type === 'file'">
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'file'} %}
+                                                        </template>
+
+                                                        {# File Input #}
+                                                        <template x-if="field.type === 'remote_video'">
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'remote_video'} %}
+                                                        </template>
+
+                                                        {# JSON API Collection #}
+                                                        <template x-if="field.type === 'json_api_collection'">
+                                                            <span>[JSON API COLLECTION] You are not allowed to modify or add new items to this field</span>
+                                                        </template>
+
+                                                        {# Webform Decoupled #}
+                                                        <template x-if="field.type === 'webform_decoupled'">
+                                                            <span>[WEBFORM DECOUPLED] You are not allowed to modify this field</span>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </template>
+                                            {# Start handle group fields #}
+                                            <template
+                                                    x-for="([fieldName, field], index) in Object.entries(selectedTemplate.fields)"
+                                                    :key="fieldName">
+                                                <template x-if="fieldName.startsWith('group_')">
+                                                    <div>
+                                                        {# Group accordion #}
+                                                        <div x-data="{ openGroup: false }"
+                                                             class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
+                                                            <div class="flex justify-between items-center cursor-pointer select-none"
+                                                                 @click="openGroup = !openGroup">
+                                                                <h3 x-text="field.g_title"
+                                                                    class="text-lg font-semibold text-slate-900"></h3>
+                                                                <svg :class="{'rotate-180': openGroup}"
+                                                                     class="w-5 h-5 transform transition-transform duration-300 text-slate-400"
+                                                                     fill="none"
+                                                                     stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                                          stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                                                </svg>
+                                                            </div>
+
+                                                            {# Group fields #}
+                                                            <div x-show="openGroup" x-transition class="space-y-4">
+                                                                <template
+                                                                        x-for="([itemName, item], index) in Object.entries(field)"
+                                                                        :key="index">
+                                                                    <template x-if="itemName != 'g_title'">
+                                                                        <div>
+                                                                            <label :class="{'required': field.options?.['#required']}"
+                                                                                   class="block text-sm font-medium text-slate-700 mb-1">
+                                                                                <span x-text="item.label"></span>
+                                                                                <span x-show="item.options?.['#required']"
+                                                                                      class="text-red-500">*</span>
+                                                                            </label>
+
+
+                                                                            {# Text Input #}
+                                                                            <template x-if="item.type === 'text'">
+                                                                                <input type="text"
+                                                                                       :required="item.options?.['#required'] ?? false"
+                                                                                       x-model="blockForm.fields[fieldName][itemName]"
+                                                                                       class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                                            </template>
+
+                                                                            {# Checkbox #}
+                                                                            <template x-if="item.type === 'checkbox'">
+                                                                                <input type="checkbox"
+                                                                                       :required="item.options?.['#required'] ?? false"
+                                                                                       x-model="blockForm.fields[fieldName][itemName]"
+                                                                                >
+                                                                            </template>
+
+                                                                            {# Select Input #}
+                                                                            <template x-if="item.type === 'select'">
+                                                                                <select :required="item.options?.['#required'] ?? false"
+                                                                                        x-model="blockForm.fields[fieldName][itemName]"
+                                                                                        class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                                                    <option value="">{{ 'Select...'|t }}</option>
+                                                                                    <template
+                                                                                            x-for="option in item.options['#options']"
+                                                                                            :key="Object.keys(option)[0]">
+                                                                                        <option :value="Object.keys(option)[0]"
+                                                                                                x-text="Object.values(option)[0]"></option>
+                                                                                    </template>
+                                                                                </select>
+                                                                            </template>
+
+                                                                            {# Textarea #}
+                                                                            <template x-if="item.type === 'textarea'">
+                                                                            <textarea
+                                                                                    :required="item.options?.['#required'] ?? false"
+                                                                                    x-model="blockForm.fields[fieldName][itemName]"
+                                                                                    rows="4"
+                                                                                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"></textarea>
+                                                                            </template>
+
+                                                                            {# Text Format #}
+                                                                            <template x-if="loaderCK">
+                                                                                <div>
+                                                                                    <div class="col-span-full flex justify-center items-center py-12">
+                                                                                        <svg class="animate-spin h-8 w-8 text-primary-500"
+                                                                                             xmlns="http://www.w3.org/2000/svg"
+                                                                                             fill="none"
+                                                                                             viewBox="0 0 24 24">
+                                                                                            <circle class="opacity-25"
+                                                                                                    cx="12" cy="12"
+                                                                                                    r="10"
+                                                                                                    stroke="currentColor"
+                                                                                                    stroke-width="4"></circle>
+                                                                                            <path class="opacity-75"
+                                                                                                  fill="currentColor"
+                                                                                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                                        </svg>
+                                                                                        <span class="ms-3 text-sm text-slate-600">{{ "Loading CKeditor..."|t }}</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </template>
+                                                                            <template
+                                                                                    x-if="item.type === 'text_format'">
+                                                                                <div x-show="!loaderCK">
+                                                                                    <div :id="`wysi-group-${index}-${item.label.toLowerCase()}`"
+                                                                                         x-init="
+                                                                                    (() => {
+                                                                                        $nextTick(() => {
+                                                                                            new MutationObserver((records, observer) => {
+
+                                                                                                setTimeout(() => {
+
+                                                                                                    const textarea = $el.querySelector('textarea');
+                                                                                                    const instanceID = textarea.getAttribute('data-ckeditor5-id');
+                                                                                                    let ckeditor = null;
+
+                                                                                                    Drupal.CKEditor5Instances.forEach(function(instance, id) {
+                                                                                                        if (instanceID == id) {
+                                                                                                            ckeditor = instance;
+                                                                                                        }
+                                                                                                    });
+
+                                                                                                    if (ckeditor) {
+                                                                                                        ckeditor.model.document.on('change:data', () => {
+                                                                                                            blockForm.fields[fieldName][itemName] = ckeditor.getData();
+                                                                                                        });
+                                                                                                    }
+                                                                                                }, 1000);
+
+                                                                                            }).observe($el, { childList: true, subtree: true });
+                                                                                        });
+                                                                                    })()"
+                                                                                    >
+                                                                                    </div>
+                                                                                </div>
+                                                                            </template>
+
+                                                                            {# URL Extended Input #}
+                                                                            <template
+                                                                                    x-if="item.type === 'url_extended'">
+                                                                                {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { xmodel: 'blockForm.fields[fieldName][itemName]' } %}
+                                                                            </template>
+
+                                                                            {# Image Input #}
+                                                                            <template x-if="item.type === 'image'">
+                                                                                <div>
+                                                                                    {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'image'} %}
+                                                                                </div>
+                                                                            </template>
+
+                                                                            {# File Input #}
+                                                                            <template x-if="item.type === 'file'">
+                                                                                {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.fields[fieldName][itemName].name', 'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'file'} %}
+                                                                            </template>
+
+                                                                            {# File Input #}
+                                                                            <template
+                                                                                    x-if="item.type === 'remote_video'">
+                                                                                {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.fields[fieldName][itemName].name', 'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'remote_video'} %}
+                                                                            </template>
+
+                                                                            {# JSON API Collection #}
+                                                                            <template
+                                                                                    x-if="item.type === 'json_api_collection'">
+                                                                                <span>[JSON API COLLECTION] You are not allowed to modify or add new items to this field</span>
+                                                                            </template>
+
+                                                                            {# Webform Decoupled #}
+                                                                            <template
+                                                                                    x-if="item.type === 'webform_decoupled'">
+                                                                                <span>[WEBFORM DECOUPLED] You are not allowed to modify this field</span>
+                                                                            </template>
+                                                                        </div>
+                                                                    </template>
+                                                                </template>
                                                             </div>
                                                         </div>
-                                                    </template>
-
-                                                    {# URL Extended Input #}
-                                                    <template x-if="field.type === 'url_extended'">
-                                                        {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { xmodel: 'blockForm.fields' }   %}
-                                                    </template>
-
-                                                    {# Image Input #}
-                                                    <template x-if="field.type === 'image'">
-                                                        {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'image'} %}
-                                                    </template>
-
-                                                    {# File Input #}
-                                                    <template x-if="field.type === 'file'">
-                                                        {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'file'} %}
-                                                    </template>
-
-                                                    {# File Input #}
-                                                    <template x-if="field.type === 'remote_video'">
-                                                        {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'remote_video'} %}
-                                                    </template>
-
-                                                    {# JSON API Collection #}
-                                                    <template x-if="field.type === 'json_api_collection'">
-                                                        <span>[JSON API COLLECTION] You are not allowed to modify or add new items to this field</span>
-                                                    </template>
-
-                                                    {# Webform Decoupled #}
-                                                    <template x-if="field.type === 'webform_decoupled'">
-                                                        <span>[WEBFORM DECOUPLED] You are not allowed to modify this field</span>
-                                                    </template>
-                                                </div>
+                                                    </div>
+                                                </template>
                                             </template>
+                                            {# End handle group fields #}
                                         </div>
                                     </template>
+                                    {# End handling single Item Fields #}
 
-                                    {# Multiple Items Fields #}
+                                    {# Start multiple Items Fields #}
                                     <template x-if="selectedTemplate?.multiple">
                                         <div>
                                             <template x-if="selectedTemplate?.multiple">
@@ -643,9 +697,12 @@
                                                         View Mode
                                                         <span class="ml-1 flex justify-end text-xs font-medium text-primary-400">
                                                             (
-                                                                <span class="inline-block mr-1" x-text="blockForm.items.length"></span>
-                                                                <span x-show="blockForm.items.length == 1" class="inline-block">élément disponible</span> 
-                                                                <span x-show="blockForm.items.length > 1" class="inline-block">éléments disponibles</span> 
+                                                                <span class="inline-block mr-1"
+                                                                      x-text="blockForm.items.length"></span>
+                                                                <span x-show="blockForm.items.length == 1"
+                                                                      class="inline-block">élément disponible</span>
+                                                                <span x-show="blockForm.items.length > 1"
+                                                                      class="inline-block">éléments disponibles</span>
                                                             )
                                                         </span>
                                                     </span>
@@ -661,8 +718,11 @@
                                             </template>
                                             <div x-show="!collapsedView" class="space-y-4">
                                                 <template x-for="(item, index) in blockForm.items" :key="index">
-                                                    <div :class="item._isNewItem ? 'bg-slate-200' : 'bg-slate-50'" class="p-4 rounded-xl relative transition-colors duration-300" draggable="true"
-                                                         :data-index="index" :data-item-index="index" @dragstart="dragStartItem($event)"
+                                                    <div :class="item._isNewItem ? 'bg-slate-200' : 'bg-slate-50'"
+                                                         class="p-4 rounded-xl relative transition-colors duration-300"
+                                                         draggable="true"
+                                                         :data-index="index" :data-item-index="index"
+                                                         @dragstart="dragStartItem($event)"
                                                          @dragover.prevent="$event.target.closest('[draggable]').classList.add('bg-slate-100')"
                                                          @dragleave.prevent="$event.target.closest('[draggable]').classList.remove('bg-slate-100')"
                                                          @drop.prevent="dragEndItem($event)"
@@ -728,12 +788,16 @@
                                                                     <template x-if="loaderCK">
                                                                         <div>
                                                                             <div class="col-span-full flex justify-center items-center py-12">
-                                                                                <svg class="animate-spin h-8 w-8 text-primary-500" xmlns="http://www.w3.org/2000/svg"
-                                                                                    fill="none" viewBox="0 0 24 24">
-                                                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                                                                <svg class="animate-spin h-8 w-8 text-primary-500"
+                                                                                     xmlns="http://www.w3.org/2000/svg"
+                                                                                     fill="none" viewBox="0 0 24 24">
+                                                                                    <circle class="opacity-25" cx="12"
+                                                                                            cy="12" r="10"
+                                                                                            stroke="currentColor"
                                                                                             stroke-width="4"></circle>
-                                                                                    <path class="opacity-75" fill="currentColor"
-                                                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                                    <path class="opacity-75"
+                                                                                          fill="currentColor"
+                                                                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                                                 </svg>
                                                                                 <span class="ms-3 text-sm text-slate-600">{{ "Loading CKeditor..."|t }}</span>
                                                                             </div>
@@ -786,9 +850,9 @@
                                                                     </template>
 
                                                                     {# URL Extended Input #}
-                                                                  <template x-if="field.type === 'url_extended'">
-                                                                           {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { xmodel: 'item' } %}
-                                                                   </template>
+                                                                    <template x-if="field.type === 'url_extended'">
+                                                                        {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { xmodel: 'item' } %}
+                                                                    </template>
 
 
                                                                     {# Image Input #}
@@ -826,8 +890,11 @@
                                             </div>
                                             <div x-show="collapsedView" class="space-y-4">
                                                 <template x-for="(item, index) in blockForm.items" :key="index">
-                                                    <div :class="item._isNewItem ? 'bg-slate-200' : 'bg-slate-50'" class="p-4 rounded-xl relative transition-colors duration-300" draggable="true"
-                                                         :data-index="index" :data-item-index="index" @dragstart="dragStartItem($event)"
+                                                    <div :class="item._isNewItem ? 'bg-slate-200' : 'bg-slate-50'"
+                                                         class="p-4 rounded-xl relative transition-colors duration-300"
+                                                         draggable="true"
+                                                         :data-index="index" :data-item-index="index"
+                                                         @dragstart="dragStartItem($event)"
                                                          @dragover.prevent="$event.target.closest('[draggable]').classList.add('bg-slate-100')"
                                                          @dragleave.prevent="$event.target.closest('[draggable]').classList.remove('bg-slate-100')"
                                                          @drop.prevent="dragEndItem($event)"
@@ -869,6 +936,7 @@
                                             </div>
                                         </div>
                                     </template>
+                                    {# End multiple Items Fields #}
                                 </div>
                                 <template x-if="selectedTemplate?.multiple">
                                     <div class="flex justify-end items-center mt-6">
@@ -884,98 +952,7 @@
                                 </template>
                             </div>
                         </div>
-                        {# Block Configuration Section #}
-                        <div class="w-full sticky top-0 md:w-1/3 border-b border-slate-200 p-6 rounded-xl bg-slate-50">
-                            <h3 class="text-base font-semibold text-slate-900 mb-4">{{ 'Block Configuration'|t }}</h3>
-                            <div
-                                    class="space-y-4">
-                                {# Block Title #}
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1 required">
-                                        {{ 'Block Title'|t }}
-                                        <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="text" x-model="blockForm.config.title"
-                                           @invalid="$el.classList.add('border-red-500')"
-                                           @input="$el.classList.remove('border-red-500')"
-                                           class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
-                                </div>
-
-                                {# Show Title Checkbox #}
-                                <div class="flex items-center">
-                                    <input type="checkbox" x-model="blockForm.config.show_title"
-                                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
-                                    <label class="ms-2 block text-sm text-slate-700">
-                                        {{ 'Show title'|t }}
-                                    </label>
-                                </div>
-
-                                {# Section Appearance #}
-                                <div x-data="{ isOpen: false }"
-                                     class="border border-slate-200 rounded-xl shadow bg-white">
-                                    <button @click="isOpen = !isOpen" type="button"
-                                            class="flex items-center justify-between w-full text-left text-sm font-medium text-slate-700 hover:text-slate-900 bg-slate-100 p-2 px-3 rounded-lg">
-                                        <span>{{ 'Section Appearance'|t }}</span>
-                                        <svg class="h-5 w-5 transform transition-transform duration-200"
-                                             :class="{'rotate-180': isOpen}" xmlns="http://www.w3.org/2000/svg"
-                                             viewbox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd"
-                                                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                  clip-rule="evenodd"/>
-                                        </svg>
-                                    </button>
-
-                                    <div x-show="isOpen" x-transition:enter="transition ease-out duration-100"
-                                         x-transition:enter-start="transform opacity-0 scale-95"
-                                         x-transition:enter-end="transform opacity-100 scale-100"
-                                         x-transition:leave="transition ease-in duration-75"
-                                         x-transition:leave-start="transform opacity-100 scale-100"
-                                         x-transition:leave-end="transform opacity-0 scale-95" class="space-y-4 p-3">
-
-                                        <div
-                                                class="flex flex-col gap-3">
-                                            {# Width #}
-                                            <div class="flex-1">
-                                                <label class="block text-sm font-medium text-slate-700 mb-1">
-                                                    {{ 'Width'|t }}
-                                                </label>
-                                                <select x-model="blockForm.config.width"
-                                                        class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
-                                                    <option value="full_width">{{ 'Full width'|t }}</option>
-                                                    <option value="narrow_width">{{ 'Narrow width'|t }}</option>
-                                                    <option value="no_container">{{ 'No container'|t }}</option>
-                                                </select>
-                                            </div>
-
-                                            {# Spacing #}
-                                            <div class="flex-1">
-                                                <label class="block text-sm font-medium text-slate-700 mb-1">
-                                                    {{ 'Spacing'|t }}
-                                                </label>
-                                                <select x-model="blockForm.config.spacing"
-                                                        class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
-                                                    <option value="_none">{{ 'None'|t }}</option>
-                                                    <option value="small_space">{{ 'Small space'|t }}</option>
-                                                    <option value="big_space">{{ 'Big space'|t }}</option>
-                                                    <option value="no_space">{{ 'No space'|t }}</option>
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        {# CSS Classes #}
-                                        <div>
-                                            <label class="block text-sm font-medium text-slate-700 mb-1">
-                                                {{ 'CSS class(es)'|t }}
-                                            </label>
-                                            <input type="text" x-model="blockForm.config.css_classes"
-                                                   class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
-                                                   placeholder="{{ 'Add custom CSS classes'|t }}">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
+                        {% include "@vactory_dashboard/_components/paragraph/configuration-section.html.twig" %}
                     </div>
                 </form>
             </div>
@@ -1018,57 +995,55 @@
         }));
       });
 
-       function autocompleteLinks(models, fieldName) {
-       return {
-        models,
-        fieldName,
-        results: [],
-        showList: false,
-        searchTimeout: null,
+      function autocompleteLinks(models, fieldName) {
+        return {
+          models,
+          fieldName,
+          results: [],
+          showList: false,
+          searchTimeout: null,
 
-         async search(query) {
-        clearTimeout(this.searchTimeout);
+          async search(query) {
+            clearTimeout(this.searchTimeout);
 
-          if (!query) {
-           this.results = [];
-           this.showList = false;
-           return;
-         }
+            if (!query) {
+              this.results = [];
+              this.showList = false;
+              return;
+            }
 
-       this.searchTimeout = setTimeout(async () => {
-        try {
-          const res = await fetch('/api/nodes/links?q=' + encodeURIComponent(query));
-          const data = await res.json();
-          this.results = data;
-          this.showList = this.results.length > 0;
-        } catch (e) {
-          console.error('Erreur fetch links:', e);
-          this.results = [];
-          this.showList = false;
-        }
-      }, 1000);
-    },
+            this.searchTimeout = setTimeout(async () => {
+              try {
+                const res = await fetch('/api/nodes/links?q=' + encodeURIComponent(query));
+                const data = await res.json();
+                this.results = data;
+                this.showList = this.results.length > 0;
+              } catch (e) {
+                console.error('Erreur fetch links:', e);
+                this.results = [];
+                this.showList = false;
+              }
+            }, 1000);
+          },
 
-    select(item) {
-      if (!item || !item.url) {
-        console.warn('item ou item.url est vide ou indéfini', item);
-        return;
+          select(item) {
+            if (!item || !item.url) {
+              console.warn('item ou item.url est vide ou indéfini', item);
+              return;
+            }
+
+            const input = this.$refs.urlInput;
+            if (input) {
+              input.value = item.url;
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              input.focus();
+            }
+
+            this.results = [];
+            this.showList = false;
+          },
+        };
       }
-
-     
-
-      const input = this.$refs.urlInput;
-      if (input) {
-        input.value = item.url;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.focus();
-      }
-
-      this.results = [];
-      this.showList = false;
-    }
-  };
-}
 
     </script>
 {% endblock %}

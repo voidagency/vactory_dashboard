@@ -47,16 +47,27 @@ final class CkeditorFieldForm extends FormBase {
       $x_model = "blockForm.extra_fields[fieldName]";
       $x_init = "if (\$el) { \$el.setAttribute('name', `blockForm.extra_fields[\${fieldName}]`);}";
     } 
-    else if ($isGroup == "true") {
+
+    if ($isGroup == "true" && $isMultiple == "true") {
+      $x_model = "item[fieldName][itemName]";
+      $x_init = "if (\$el) { \$el.setAttribute('name', `item[\${fieldName}][\${itemName}]`);}";
+    }
+
+    if ($isGroup == "true" && $isSingle == "true") {
       $x_model = "blockForm.fields[fieldName][itemName]";
       $x_init = "if (\$el) { \$el.setAttribute('name', `blockForm.fields[\${fieldName}][\${itemName}]`);}";
+    }
+
+    if ($isGroup == "true" && $isExtra == "true") {
+      $x_model = "blockForm.extra_fields[fieldName][itemName]";
+      $x_init = "if (\$el) { \$el.setAttribute('name', `blockForm.extra_fields[\${fieldName}][\${itemName}]`);}";
     }
 
     // Dynamic field
     $form[$my_param] = [
       '#type' => 'text_format',
       '#format' => 'full_html',
-      '#default_value' => $defaultValue,
+      '#default_value' => is_array($defaultValue) ? $defaultValue['value'] ?? '' : $defaultValue,
       '#attributes' => [
         'x-model' => $x_model,
         'x-init' => $x_init,

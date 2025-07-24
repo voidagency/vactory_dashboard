@@ -93,7 +93,7 @@
             }
             return result;
           },
-          getForm(id, index = -1, isMultiple = false, isSingle = false, isExtra = false, isGroup = false, defaultValue = "") {
+          getForm(id, index = -1, isMultiple = false, isSingle = false, isExtra = false, isGroup = false, defaultValue = '') {
             this.loaderCK = true;
             fetch('/api/dashboard/wysiwyg', {
               method: 'POST',
@@ -108,25 +108,25 @@
                 defaultValue,
               }),
             })
-            .then(res => res.json())
-            .then(data => {
-              if (index >= 0) {
-                let draggable = document.querySelector(`[data-item-index="${index}"]`);
-                let element = draggable.querySelector(`.wysiwyg-container`);
-                element.innerHTML = data.html;
-                Drupal.attachBehaviors(element);
-              } else {
-                const container = document.getElementById(id);
-                container.innerHTML = data.html;
-                Drupal.attachBehaviors(container);
-              }
-            })
-            .catch(e => {
-              console.log("error: ", e);
-            })
-            .finally(() => {
-              this.loaderCK = false;
-            });
+              .then(res => res.json())
+              .then(data => {
+                if (index >= 0) {
+                  let draggable = document.querySelector(`[data-item-index="${index}"]`);
+                  let element = draggable.querySelector(`.wysiwyg-container`);
+                  element.innerHTML = data.html;
+                  Drupal.attachBehaviors(element);
+                } else {
+                  const container = document.getElementById(id);
+                  container.innerHTML = data.html;
+                  Drupal.attachBehaviors(container);
+                }
+              })
+              .catch(e => {
+                console.log('error: ', e);
+              })
+              .finally(() => {
+                this.loaderCK = false;
+              });
           },
           dragStart(event) {
             this.dragStartIndex = parseInt(event.target.dataset.index);
@@ -250,17 +250,16 @@
                     if (fieldName.startsWith('group_')) {
                       Object.keys(template.fields[fieldName]).forEach((itemName, index) => {
 
-                        if (!this.blockForm.fields[fieldName])
-                          this.blockForm.fields[fieldName] = {}
-
+                        if (!this.blockForm.fields[fieldName]) {
+                          this.blockForm.fields[fieldName] = {};
+                        }
                         if (template.fields[fieldName][itemName].type === 'text_format') {
-                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName]?.[itemName]?.value || block.widget_data[0][fieldName]?.[itemName] ||  '';
-                          this.getForm(`wysi-group-${index}-${itemName}`, -1, false, false, false, true, this.blockForm.fields[fieldName][itemName]);
+                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName]?.[itemName]?.value || '';
+                          this.getForm(`wysi-group-${index}-${itemName}`, -1, false, true, false, true, block.widget_data[0][fieldName]?.[itemName]?.value);
                         } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName][itemName].type)) {
                           const imageKey = Object.keys(block?.widget_data?.[0]?.[fieldName]?.[itemName] ?? {})?.[0] ?? null;
                           const imageData = block?.widget_data?.[0]?.[fieldName]?.[itemName]?.[imageKey] ?? {};
                           const imageId = imageData?.selection ? imageData?.selection?.[0]?.target_id : null;
-                          console.log("image id", imageId, fieldName, itemName);
                           if (imageId) {
                             this.blockForm.fields[fieldName][itemName] = {
                               id: imageId ?? null,
@@ -278,8 +277,6 @@
                               key: imageKey ?? Math.random().toString(36).slice(2),
                             };
                           }
-                          console.log("this.blockForm", this.blockForm)
-
                         } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
                           this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName];
                         } else {
@@ -333,14 +330,14 @@
                   if (fieldName.startsWith('group_')) {
                     Object.keys(template.extra_fields[fieldName] || {}).forEach((itemName, index) => {
                       if (block.widget_data.extra_field[fieldName][itemName]) {
-                        
+
                         if (!this.blockForm.extra_fields[fieldName]) {
                           this.blockForm.extra_fields[fieldName] = {};
                         }
 
                         if (template.extra_fields[fieldName][itemName].type === 'text_format') {
-                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName]?.[itemName]?.value || block.widget_data.extra_field[fieldName]?.[itemName] || '';
-                          this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, false, this.blockForm.extra_fields[fieldName][itemName]);
+                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName]?.[itemName]?.value || '';
+                          this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, true, block.widget_data.extra_field[fieldName]?.[itemName]?.value || '');
                         } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName][itemName].type)) {
                           const imageKey = Object.keys(block?.widget_data?.extra_field?.[fieldName][itemName] ?? {})?.[0] ?? null;
                           const imageData = block?.widget_data?.extra_field?.[fieldName]?.[itemName]?.[imageKey] ?? {};
@@ -368,7 +365,7 @@
                           this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName];
                         }
                       }
-                    })
+                    });
                   } else {
                     // extra field - non group
                     if (template.extra_fields[fieldName].type === 'text_format') {
@@ -408,7 +405,6 @@
           },
           saveBlock() {
             let blockData;
-
             if (this.selectedTemplate.multiple) {
               // For multiple items, convert array to object with numeric keys
               blockData = {};
@@ -451,13 +447,12 @@
                 if (fieldName.startsWith('group_')) {
                   Object.keys(this.selectedTemplate.fields[fieldName]).forEach(itemName => {
                     if (!blockData[0][fieldName]) {
-                      blockData[0][fieldName] = {}
+                      blockData[0][fieldName] = {};
                     }
 
                     if (this.selectedTemplate.fields[fieldName][itemName].type === 'text_format') {
-                      console.log("saveblock - textformat: ", this.blockForm.fields?.[fieldName]?.[itemName]?.value, this.blockForm.fields?.[fieldName]?.[itemName]);
                       blockData[0][fieldName][itemName] = {
-                        value: this.blockForm.fields?.[fieldName]?.[itemName]?.value || this.blockForm.fields?.[fieldName]?.[itemName] || "",
+                        value: this.blockForm.fields?.[fieldName]?.[itemName] || '',
                         format: 'full_html',
                       };
                     } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName][itemName].type)) {
@@ -522,15 +517,14 @@
             if (Object.keys(this.blockForm.extra_fields).length > 0) {
               blockData.extra_field = {};
               Object.keys(this.blockForm.extra_fields).forEach(fieldName => {
-                if (fieldName.startsWith("group_")) {
+                if (fieldName.startsWith('group_')) {
                   Object.keys(this.blockForm.extra_fields[fieldName]).forEach(itemName => {
                     if (!blockData.extra_field[fieldName]) {
-                      blockData.extra_field[fieldName] = {}
+                      blockData.extra_field[fieldName] = {};
                     }
                     if (this.selectedTemplate.extra_fields[fieldName][itemName].type === 'text_format') {
-                      console.log("saveblock - extra textformat: ", this.blockForm.extra_fields?.[fieldName]?.[itemName]?.value, this.blockForm.extra_fields?.[fieldName]?.[itemName]);
                       blockData.extra_field[fieldName][itemName] = {
-                        value: this.blockForm.extra_fields?.[fieldName]?.[itemName]?.value || this.blockForm.extra_fields?.[fieldName]?.[itemName] || '',
+                        value: this.blockForm.extra_fields?.[fieldName]?.[itemName] || '',
                         format: 'full_html',
                       };
                     } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.extra_fields[fieldName][itemName].type)) {
@@ -553,7 +547,7 @@
                     } else {
                       blockData.extra_field[fieldName][itemName] = this.blockForm.extra_fields[fieldName]?.[itemName];
                     }
-                  })
+                  });
                 } else {
 
                   // extra fields - non group
@@ -638,7 +632,6 @@
           selectTemplate(template) {
             this.selectedTemplate = template;
             this.currentBlockIndex = null; // Reset current block index for new blocks
-
             // Initialize the form data structure
             this.blockForm = {
               extra_fields: {},
@@ -655,7 +648,6 @@
             // Initialize extra_fields if they exist
             if (template.extra_fields) {
               Object.keys(template.extra_fields).forEach((fieldName, index) => {
-
                 if (fieldName.startsWith('group_')) {
                   Object.keys(template.extra_fields[fieldName]).forEach((itemName, index) => {
                     if (!this.blockForm.extra_fields[fieldName]) {
@@ -685,11 +677,11 @@
                       // Nothing to change here
                       this.blockForm.extra_fields[fieldName][itemName] = template.extra_fields[fieldName][itemName]['options']['#default_value'];
                     } else if (template.extra_fields[fieldName][itemName].type === 'text_format') {
-                      this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, false);
+                      this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, true);
                     } else {
                       this.blockForm.extra_fields[fieldName][itemName] = '';
                     }
-                  })
+                  });
                 } else {
                   // Initialize url_extended fields with both title and url
                   if (template.extra_fields[fieldName].type === 'url_extended') {
@@ -716,7 +708,6 @@
                     // Nothing to change here
                     this.blockForm.extra_fields[fieldName] = template.extra_fields[fieldName]['options']['#default_value'];
                   } else if (template.extra_fields[fieldName].type === 'text_format') {
-                    console.log("wysi id select template", `wysi-extra-${index}`)
                     this.getForm(`wysi-extra-${index}`, -1, false, false, true, false);
                   } else {
                     this.blockForm.extra_fields[fieldName] = '';
@@ -731,11 +722,11 @@
             } else {
               Object.keys(template.fields).forEach((fieldName, index) => {
                 if (fieldName.startsWith('group_')) {
-                  Object.keys(template.fields[fieldName]).forEach((itemName, index) => {                    
+                  Object.keys(template.fields[fieldName]).forEach((itemName, index) => {
                     if (!this.blockForm.fields[fieldName]) {
                       this.blockForm.fields[fieldName] = {};
                     }
-                    
+
                     if (template.fields[fieldName][itemName].type === 'url_extended') {
                       this.blockForm.fields[fieldName][itemName] = {
                         title: '',
@@ -759,11 +750,11 @@
                     } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
                       this.blockForm.fields[fieldName][itemName] = template.fields[fieldName][itemName]['options']['#default_value'];
                     } else if (template.fields[fieldName][itemName].type === 'text_format') {
-                      this.getForm(`wysi-group-${index}-${itemName}`, -1, false, true, false, false);
+                      this.getForm(`wysi-group-${index}-${itemName}`, -1, false, true, false, true);
                     } else {
                       this.blockForm.fields[fieldName][itemName] = '';
                     }
-                  })
+                  });
                 } else {
                   // Initialize url_extended fields with both title and url
                   if (template.fields[fieldName].type === 'url_extended') {
@@ -889,7 +880,7 @@
 
               if (newItemElement) {
                 newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                this.getForm("", newItemIndex, true, false, false, false);
+                this.getForm('', newItemIndex, true, false, false, false);
 
                 // Remove highlight after 3 seconds
                 setTimeout(() => {
@@ -910,7 +901,7 @@
           modifyParagraphBlock(index) {
             const block = this.blocks[index];
             this.currentBlockIndex = index;
-            
+
             // Initialize the paragraph block form with existing data
             this.paragraphBlockForm = {
               blockType: block.blockType || '',
@@ -965,7 +956,7 @@
               // Add new paragraph block to blocks array
               this.blocks.push({
                 id: Date.now(),
-                bundle: "vactory_paragraph_block",
+                bundle: 'vactory_paragraph_block',
                 is_new: true,
                 title: this.paragraphBlockForm.config.title,
                 show_title: this.paragraphBlockForm.config.show_title,
@@ -1005,24 +996,26 @@
             timeout: null,
           },
           async fetchSuggestions(fieldName, query) {
-              if (!query || query.length < 1) {
+            if (!query || query.length < 1) {
               this.suggestions[fieldName] = [];
               return;
             }
             try {
               const response = await fetch(`{{ path('vactory_dashboard.autocomplete') }}?field=${fieldName}&q=${encodeURIComponent(query)}&bundle=${this.bundle}`);
-              if (!response.ok) throw new Error('Failed to fetch suggestions');
+              if (!response.ok) {
+                throw new Error('Failed to fetch suggestions');
+              }
               const data = await response.json();
               this.suggestions[fieldName] = data.results;
             } catch (e) {
               console.error(e);
               this.suggestions[fieldName] = [];
-           }
-         },
+            }
+          },
           selectSuggestion(fieldName, item) {
-             this.formData.fields[fieldName] = item.id;       
-             this.inputLabels[fieldName] = item.label;      
-             this.suggestions[fieldName] = [];
+            this.formData.fields[fieldName] = item.id;
+            this.inputLabels[fieldName] = item.label;
+            this.suggestions[fieldName] = [];
           },
           init() {
             const node = JSON.parse(this.node);
@@ -1032,41 +1025,39 @@
               // Initialize form data based on fields
               Object.keys(this.fields).forEach((fieldKey) => {
                 const field = this.fields[fieldKey];
-                 const value = node[fieldKey];
-             // autocomplete multiple
-             if (field.type === 'autocomplete' && field.multiple) {
-             if (Array.isArray(value) && value.length && typeof value[0] === "object") {
-                 this.formData.fields[fieldKey] = value.map(item => item.id);
-                 this.inputLabelsList[fieldKey] = value.map(item => item.label);
-              } else {
-                   this.formData.fields[fieldKey] = [];
-                   this.inputLabelsList[fieldKey] = [];
-              }
-                return;
-            }
+                const value = node[fieldKey];
+                // autocomplete multiple
+                if (field.type === 'autocomplete' && field.multiple) {
+                  if (Array.isArray(value) && value.length && typeof value[0] === 'object') {
+                    this.formData.fields[fieldKey] = value.map(item => item.id);
+                    this.inputLabelsList[fieldKey] = value.map(item => item.label);
+                  } else {
+                    this.formData.fields[fieldKey] = [];
+                    this.inputLabelsList[fieldKey] = [];
+                  }
+                  return;
+                }
 
-            if (field.type === 'autocomplete' && !field.multiple) {
-              if (typeof value === "object" && value !== null) {
-                this.formData.fields[fieldKey] = value.id;
-                this.inputLabels[fieldKey] = value.label;
-              } else {
-                 this.formData.fields[fieldKey] = '';
-                 this.inputLabels[fieldKey] = '';
-              }
-              return;
-            }
+                if (field.type === 'autocomplete' && !field.multiple) {
+                  if (typeof value === 'object' && value !== null) {
+                    this.formData.fields[fieldKey] = value.id;
+                    this.inputLabels[fieldKey] = value.label;
+                  } else {
+                    this.formData.fields[fieldKey] = '';
+                    this.inputLabels[fieldKey] = '';
+                  }
+                  return;
+                }
 
-              if (field.type === 'checkboxes') {
-                    this.formData.fields[fieldKey] = Array.isArray(value) ? value.map(v => String(v)) : [];
-                   return;
-              }
+                if (field.type === 'checkboxes') {
+                  this.formData.fields[fieldKey] = Array.isArray(value) ? value.map(v => String(v)) : [];
+                  return;
+                }
 
-
-              if (field.type === 'radios') {
+                if (field.type === 'radios') {
                   this.formData.fields[fieldKey] = value ? String(value) : '';
                   return;
-              }
-              console.log('node',node)
+                }
 
                 if (field.type === 'faqfield') {
                   if (Array.isArray(field.value) && field.value.length) {
@@ -1077,7 +1068,6 @@
                     this.formData.fields[fieldKey] = [{ question: '', answer: '' }];
                   }
 
-                  console.log(`FAQ data for field "${fieldKey}":`, this.formData.fields[fieldKey]);
                   return;
                 }
 
@@ -1200,7 +1190,6 @@
             this.fetchTemplates();
 
             // Setup intersection observer for first add block button
-            console.log('blocks', this.blocks);
             this.setupFirstAddBlockObserver();
           },
           setupFirstAddBlockObserver() {
@@ -1312,10 +1301,10 @@
           },
           async saveNode() {
             /*if (!this.validateForm()) {
-              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+                  this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
               return;
             }*/
-            
+
             if (this.isSaving) {
               return;
             }
@@ -1444,7 +1433,6 @@
           },
           selectMedia(media) {
             this.selectedMedia = media;
-            console.log('path', this.blockForm, this.currentFieldPath);
             if (!this.selectedMedia || !this.currentField) {
               return;
             }
@@ -1514,27 +1502,27 @@
             return url;
           },
           selectAutocompleteItem(fieldName, item) {
-           const alreadyExists = this.formData.fields[fieldName].some(existing => {
-           const existingId = typeof existing === 'object' ? existing.id : existing;
+            const alreadyExists = this.formData.fields[fieldName].some(existing => {
+              const existingId = typeof existing === 'object' ? existing.id : existing;
               return String(existingId) === String(item.id);
             });
 
             if (!alreadyExists) {
-                this.formData.fields[fieldName].push(item.id);
-                this.inputLabelsList[fieldName].push(item.label);
-             }
+              this.formData.fields[fieldName].push(item.id);
+              this.inputLabelsList[fieldName].push(item.label);
+            }
 
-             this.inputLabels[fieldName] = '';
-             this.suggestions[fieldName] = [];
-            },
+            this.inputLabels[fieldName] = '';
+            this.suggestions[fieldName] = [];
+          },
 
-            removeAutocompleteItem(fieldName, idx) {
-               if (!Array.isArray(this.formData.fields[fieldName]) || !Array.isArray(this.inputLabelsList[fieldName])) {
-               return;
-              }
-               this.inputLabelsList[fieldName] = this.inputLabelsList[fieldName].filter((_, i) => i !== idx);
-               this.formData.fields[fieldName] = this.formData.fields[fieldName].filter((_, i) => i !== idx);
-            },
+          removeAutocompleteItem(fieldName, idx) {
+            if (!Array.isArray(this.formData.fields[fieldName]) || !Array.isArray(this.inputLabelsList[fieldName])) {
+              return;
+            }
+            this.inputLabelsList[fieldName] = this.inputLabelsList[fieldName].filter((_, i) => i !== idx);
+            this.formData.fields[fieldName] = this.formData.fields[fieldName].filter((_, i) => i !== idx);
+          },
         }));
         document.addEventListener('alpine:init', () => {
           Alpine.data('alpineMuliSelect', (obj) => ({

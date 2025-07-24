@@ -340,7 +340,11 @@ class NodeService {
     }
     $node_data['paragraphs'] = $paragraphs;
   }
-  private function findImageFields(array $fields): array {
+
+  /**
+   * Find image fields inside a given dynamic field.
+   */
+  private function findImageFieldsInDynamicField(array $fields): array {
     $imageFields = [];
 
     foreach ($fields as $key => $field) {
@@ -348,7 +352,7 @@ class NodeService {
             $imageFields[$key] = $field;
         } elseif (is_array($field)) {
             // Recurse into nested fields
-            $nested = $this->findImageFields($field);
+            $nested = $this->findImageFieldsInDynamicField($field);
             if (!empty($nested)) {
                 $imageFields = array_merge($imageFields, $nested);
             }
@@ -368,7 +372,7 @@ class NodeService {
    */
   private function processWidgetData(&$widgetData, $widgetConfig) {
     // Get fields with type image.
-    $imageFields = $this->findImageFields($widgetConfig);
+    $imageFields = $this->findImageFieldsInDynamicField($widgetConfig);
 
     $extraFieldsImageFields = array_filter($widgetConfig['extra_fields'] ?? [], function($field) {
       return ($field['type'] ?? "") === 'image';
