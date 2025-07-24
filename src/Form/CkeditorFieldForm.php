@@ -20,7 +20,7 @@ final class CkeditorFieldForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $my_param = NULL, $isDF=FALSE, $isMultiple=FALSE, $isSingle=FALSE, $isExtra=FALSE, $defaultValue='', $x_model = 'formData.fields[field.name]', $required = 'field.required'): array {
+  public function buildForm(array $form, FormStateInterface $form_state, $my_param = NULL, $isDF=FALSE, $isMultiple=FALSE, $isSingle=FALSE, $isExtra=FALSE, $isGroup=FALSE, $defaultValue='', $x_model = 'formData.fields[field.name]', $required = 'field.required'): array {
     // content type - add, edit page
     if (!$isDF) {
       $form[$my_param] = [
@@ -47,6 +47,10 @@ final class CkeditorFieldForm extends FormBase {
       $x_model = "blockForm.extra_fields[fieldName]";
       $x_init = "if (\$el) { \$el.setAttribute('name', `blockForm.extra_fields[\${fieldName}]`);}";
     } 
+    else if ($isGroup == "true") {
+      $x_model = "blockForm.fields[fieldName][itemName]";
+      $x_init = "if (\$el) { \$el.setAttribute('name', `blockForm.fields[\${fieldName}][\${itemName}]`);}";
+    }
 
     // Dynamic field
     $form[$my_param] = [

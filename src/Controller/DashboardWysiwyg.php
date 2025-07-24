@@ -32,11 +32,12 @@ class DashboardWysiwyg extends ControllerBase {
         $isMultiple = $data['isMultiple'] ?? false;
         $isSingle = $data['isSingle'] ?? false;
         $isExtra = $data['isExtra'] ?? false;
+        $isGroup = $data['isGroup'] ?? false;
         $defaultValue = $data['defaultValue'] ?? '';
 
         // Step 1: Build the form.
         $id = uniqid('ck_', true);
-        $form = $this->formBuilder->getForm(\Drupal\vactory_dashboard\Form\CkeditorFieldForm::class, $id, true, $isMultiple, $isSingle, $isExtra, $defaultValue);
+        $form = $this->formBuilder->getForm(\Drupal\vactory_dashboard\Form\CkeditorFieldForm::class, $id, true, $isMultiple, $isSingle, $isExtra, $isGroup, $defaultValue);
 
         // Step 2: Render the form to HTML.
         $form_html = $this->renderer->renderRoot($form);
