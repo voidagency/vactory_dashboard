@@ -47,6 +47,38 @@
             <h1 class="text-2xl font-semibold text-slate-900">{{ "Gestion des formulaires" | t }}</h1>
         </div>
 
+        {# Export Progress Bar - Moved to top #}
+        <div x-show="exportLoading" 
+             class="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 transform -translate-y-2"
+             x-transition:enter-end="opacity-100 transform translate-y-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 transform translate-y-0"
+             x-transition:leave-end="opacity-0 transform -translate-y-2">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0">
+                        <svg class="animate-spin h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-slate-900">{{ 'Export en cours...'|t }}</h3>
+                        <p class="text-sm text-slate-500" x-text="exportMessage"></p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-lg font-semibold text-primary-600" x-text="`${Math.round(exportProgressPercent)}%`"></span>
+                </div>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                <div class="bg-gradient-to-r from-primary-500 to-primary-600 h-3 rounded-full transition-all duration-500 ease-out shadow-sm"
+                     :style="`width: ${exportProgressPercent > 100 ? 100 : exportProgressPercent}%`"></div>
+            </div>
+        </div>
+
         <div class="bg-white p-4 lg:p-6 rounded-xl shadow-sm border border-gray-100 flex justify-center gap-3 lg:gap-4">
             {# Filters #}
             <div class="flex-1">
@@ -286,6 +318,11 @@
           webforms: [],
           loading: true,
           exportLoading: false,
+          exportTotalPages: 0,
+          exportCurrentPage: 0,
+          exportProgressPercent: 0,
+          exportInterval: null,
+          exportMessage: '',
           currentPage: 1,
           totalPages: 1,
           formID: 'contact',
@@ -417,18 +454,66 @@
           normalizeColumn(column) {
             return column.replace(/[_-]/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
           },
-          async download() {
-            this.exportLoading = true;
-            try {
-              const exportBasePath = "{{ path('vactory_dashboard.webform.submission.export', {'id': 'REPLACE_ID'}) }}";
-              const exportUrl = exportBasePath.replace('REPLACE_ID', this.formID);
-              window.location.href = exportUrl;
-            } catch (error) {
-              console.error('Export failed:', error);
-            } finally {
+          download() {
+               if (this.exportLoading) return;
+               this.exportLoading = true;
+               this.exportProgressPercent = 0;
+               this.exportMessage = 'Démarrage de l\'export...';
+
+               // Démarrer export batch côté backend
+              fetch(`/batch-export/start/${this.formID}`, { method: 'POST' })
+              .then(res => res.json())
+              .then(data => {
+               this.exportMessage = data.message || 'Export démarré';
+
+               // Lancer polling de progression
+              this.exportInterval = setInterval(() => {
+              fetch(`/batch-export/process/${this.formID}`)
+              .then(res => res.json())
+              .then(progressData => {
+               if (progressData.error) {
+              this.exportMessage = progressData.error;
               this.exportLoading = false;
+              clearInterval(this.exportInterval);
+              return;
             }
-          },
+                 this.exportProgressPercent = progressData.progress || 0;
+                 this.exportMessage = `Progression : ${this.exportProgressPercent}% (${progressData.done}/${progressData.total})`;
+
+                  if (progressData.status === 'finished') {
+                  this.exportMessage = 'Export terminé. Téléchargement en cours...';
+                  clearInterval(this.exportInterval);
+                  this.downloadFile();
+                  // Réinitialiser la barre de progression après le téléchargement
+                   setTimeout(() => {
+                   this.exportLoading = false;
+                   this.exportProgressPercent = 0;
+              }, 2000); // Attendre 2 secondes avant de réinitialiser
+            }
+          })
+          .catch(err => {
+            console.error('Erreur polling export:', err);
+            this.exportMessage = 'Erreur communication serveur.';
+            this.exportLoading = false;
+            clearInterval(this.exportInterval);
+           });
+        }, 1000); // Vérifier la progression toutes les secondes
+      })
+         .catch(err => {
+             console.error('Erreur démarrage export:', err);
+             this.exportMessage = 'Erreur démarrage export.';
+             this.exportLoading = false;
+            });
+   },
+
+         downloadFile() {
+         const a = document.createElement('a');
+         a.href = `/batch-export/download/${this.formID}`;
+         a.download = `${this.formID}.csv`;
+         document.body.appendChild(a);
+         a.click();
+         a.remove();
+        },
           async searchWebformValues(arg = 1) {
             this.loading = true;
             page = typeof arg === 'number' ? arg : 1;
