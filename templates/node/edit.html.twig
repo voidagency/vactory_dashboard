@@ -236,6 +236,8 @@
                         }
                       } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
                         mappedItem[fieldName][itemName] = item[fieldName][itemName];
+                      } else if (template.fields[fieldName][itemName].type === 'checkbox') {
+                        mappedItem[fieldName][itemName] = item[fieldName][itemName] == 1;
                       } else {
                         mappedItem[fieldName][itemName] = item[fieldName][itemName];
                       }
@@ -271,7 +273,10 @@
                       }
                     } else if (template.fields[fieldName].type === 'json_api_collection') {
                       mappedItem[fieldName] = item[fieldName];
-                    } else {
+                    } else if (template.fields[fieldName].type === 'checkbox') {
+                      mappedItem[fieldName] = item[fieldName] == 1;
+                    }
+                    else {
                       mappedItem[fieldName] = item[fieldName];
                     }
                   }
@@ -325,6 +330,8 @@
                           }
                         } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
                           this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName];
+                        } else if (template.fields[fieldName][itemName].type === 'checkbox') {
+                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName] == 1;
                         } else {
                           this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName];
                         }
@@ -359,6 +366,8 @@
 
                       } else if (template.fields[fieldName].type === 'json_api_collection') {
                         this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
+                      } else if (template.fields[fieldName].type === 'checkbox') {
+                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName] == 1;
                       } else {
                         this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
                       }
@@ -407,6 +416,8 @@
                           }
                         } else if (template.extra_fields[fieldName][itemName].type === 'json_api_collection') {
                           this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName];
+                        } else if (template.extra_fields[fieldName][itemName].type === 'checkbox') {
+                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName] == 1;
                         } else {
                           this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName];
                         }
@@ -440,6 +451,8 @@
                       }
                     } else if (template.extra_fields[fieldName].type === 'json_api_collection') {
                       this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
+                    } else if (template.extra_fields[fieldName].type === 'checkbox') {
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName] == 1;
                     } else {
                       this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
                     }

@@ -24,6 +24,9 @@
           language: config.language,
           activeTab: 'content',
           blocks: [],
+          selectedDynamicField: null,
+          showDynamicFieldModal: false,
+          dynamicFields: {},
           settings: {
             title: '',
             alias: '',
@@ -77,33 +80,34 @@
             );
           },
           async fetchSuggestions(fieldName, query) {
-              if (!query || query.length < 1) {
-               this.suggestions[fieldName] = [];
-               return;
-              }
-              try {
+            if (!query || query.length < 1) {
+              this.suggestions[fieldName] = [];
+              return;
+            }
+            try {
               const response = await fetch(`{{ path('vactory_dashboard.autocomplete') }}?field=${fieldName}&q=${encodeURIComponent(query)}&bundle=${this.bundle}`);
-              if (!response.ok) throw new Error('Failed to fetch suggestions');
+              if (!response.ok) {
+                throw new Error('Failed to fetch suggestions');
+              }
               const data = await response.json();
               this.suggestions[fieldName] = data.results;
-              } catch (e) {
+            } catch (e) {
               console.error(e);
               this.suggestions[fieldName] = [];
-             }
-            },
+            }
+          },
 
           selectSuggestion(fieldName, item) {
-            this.formData.fields[fieldName] = item.id;       
-            this.inputLabels[fieldName] = item.label;        
+            this.formData.fields[fieldName] = item.id;
+            this.inputLabels[fieldName] = item.label;
             this.suggestions[fieldName] = [];
-            },
+          },
           validateForm() {
             const form = document.getElementById('node-form');
             const requiredInputs = form.querySelectorAll('[required]');
             let isValid = true;
             requiredInputs.forEach(input => {
               if (!input.value) {
-                console.log({input})
                 input.classList.add('border-red-500');
                 isValid = false;
               }
@@ -113,13 +117,9 @@
           },
           async saveNode() {
             /*if (!this.validateForm()) {
-              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+                  this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
               return;
             }*/
-
-      
-
-            console.log('fileds', this.formData.fields);
 
             if (this.isSaving) {
               return;
@@ -149,7 +149,7 @@
               }
 
               this.showNotification('success', '{{ 'Node created successfully'|t }}');
-              
+
               window.location.href = data?.list;
             } catch (error) {
               console.error('Error saving node:', error);
@@ -247,8 +247,14 @@
               this.showNotification('success', '{{ 'Item order updated'|t }}');
             }
           },
-          async modifyBlock(index) {
-            const block = this.blocks[index];
+          async modifyBlock(index, fieldName = '') {
+            let block = null;
+            if (fieldName) {
+              block = this.dynamicFields[fieldName][index];
+              this.selectedDynamicField = fieldName;
+            } else {
+              block = this.blocks[index];
+            }
             this.currentBlockIndex = index;
             // Find the template that matches this block
             const template = block.widget_config;
@@ -365,7 +371,7 @@
               if (block.widget_data && block.widget_data[0]) {
                 Object.keys(template.fields).forEach((fieldName, index) => {
                   if (block.widget_data[0][fieldName]) {
-                    
+
                     // START - single field group
                     if (fieldName.startsWith('group_')) {
                       Object.keys(template.fields[fieldName]).forEach((itemName, index) => {
@@ -404,9 +410,9 @@
                           this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName];
                         }
                       });
-                    } 
-                    // END - single field group
-                    
+                    }
+                      // END - single field group
+
                     // START - single field
                     else {
                       if (template.fields[fieldName].type === 'text_format') {
@@ -440,7 +446,7 @@
                       }
                     }
                     // END - single field
-                    
+
                   }
                 });
               }
@@ -489,8 +495,8 @@
                         this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName];
                       }
                     });
-                  } 
-                  // END - extra field group
+                  }
+                    // END - extra field group
 
                   // START - extra field
                   else {
@@ -531,7 +537,12 @@
               });
             }
 
-            this.showBlockForm = true;
+            if (fieldName) {
+              this.showDynamicFieldModal = true;
+            } else {
+              this.showBlockForm = true;
+            }
+
           },
           saveBlock() {
             let blockData;
@@ -546,7 +557,7 @@
                   // START - multiple field group
                   if (fieldName.startsWith('group_')) {
                     blockData[index][fieldName] = {};
-                    Object.keys(this.selectedTemplate.fields[fieldName]).forEach((itemName) => {                      
+                    Object.keys(this.selectedTemplate.fields[fieldName]).forEach((itemName) => {
 
                       if (this.selectedTemplate.fields[fieldName][itemName].type === 'text_format') {
                         blockData[index][fieldName][itemName] = {
@@ -650,9 +661,9 @@
                       blockData[0][fieldName][itemName] = this.blockForm.fields[fieldName][itemName] ?? '';
                     }
                   });
-                } 
-                // END - single field group
-                
+                }
+                  // END - single field group
+
                 // START - single field
                 else {
                   if (this.selectedTemplate.fields[fieldName].type === 'text_format') {
@@ -686,7 +697,6 @@
 
                 }
                 // END - single field
-
 
               });
             }
@@ -730,8 +740,8 @@
                       blockData.extra_field[fieldName][itemName] = this.blockForm.extra_fields[fieldName][itemName] ?? '';
                     }
                   });
-                } 
-                // END - extra field group
+                }
+                  // END - extra field group
 
                 // START - extra field
                 else {
@@ -766,35 +776,63 @@
               });
             }
 
-            if (this.currentBlockIndex !== null) {
-              // Modify existing block
-              this.blocks[this.currentBlockIndex] = {
-                ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
-                widget_data: blockData,
-                title: this.blockForm.config.title,
-                show_title: this.blockForm.config.show_title,
-                width: this.blockForm.config.width,
-                spacing: this.blockForm.config.spacing,
-                css_classes: this.blockForm.config.css_classes,
-              };
-              this.showNotification('success', '{{ 'Block updated successfully'|t }}');
+            if (this.selectedDynamicField) {
+              if (this.currentBlockIndex !== null) {
+                this.dynamicFields[this.selectedDynamicField][this.currentBlockIndex] = {
+                  ...this.dynamicFields[this.selectedDynamicField][this.currentBlockIndex],
+                  widget_data: blockData,
+                };
+              } else {
+                this.dynamicFields = {
+                  ...this.dynamicFields,
+                  [this.selectedDynamicField]: [
+                    ...(this.dynamicFields[this.selectedDynamicField] || []),
+                    {
+                      id: Date.now(),
+                      title: this.selectedTemplate.name,
+                      bundle: 'vactory_component',
+                      widget_data: blockData,
+                      widget_config: this.selectedTemplate,
+                      preview: this.selectedTemplate.screenshot,
+                      widget_id: this.selectedTemplate.uuid,
+                      widget_id: this.selectedTemplate.uuid,
+                    },
+                  ],
+                };
+              }
+
             } else {
-              // Add new block
-              this.blocks.push({
-                id: Date.now(),
-                bundle: "vactory_component",
-                is_new: true,
-                title: this.blockForm.config.title,
-                show_title: this.blockForm.config.show_title,
-                width: this.blockForm.config.width,
-                spacing: this.blockForm.config.spacing,
-                css_classes: this.blockForm.config.css_classes,
-                preview: this.selectedTemplate.screenshot,
-                widget_id: this.selectedTemplate.uuid,
-                widget_config: this.selectedTemplate,
-                widget_data: blockData,
-              });
-              this.showNotification('success', '{{ 'Block added successfully'|t }}');
+              if (this.currentBlockIndex !== null) {
+                // Modify existing block
+                this.blocks[this.currentBlockIndex] = {
+                  ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
+                  widget_data: blockData,
+                  bundle: 'vactory_component',
+                  title: this.blockForm.config.title,
+                  show_title: this.blockForm.config.show_title,
+                  width: this.blockForm.config.width,
+                  spacing: this.blockForm.config.spacing,
+                  css_classes: this.blockForm.config.css_classes,
+                };
+                this.showNotification('success', '{{ 'Block updated successfully'|t }}');
+              } else {
+                // Add new block
+                this.blocks.push({
+                  id: Date.now(),
+                  bundle: 'vactory_component',
+                  is_new: true,
+                  title: this.blockForm.config.title,
+                  show_title: this.blockForm.config.show_title,
+                  width: this.blockForm.config.width,
+                  spacing: this.blockForm.config.spacing,
+                  css_classes: this.blockForm.config.css_classes,
+                  preview: this.selectedTemplate.screenshot,
+                  widget_id: this.selectedTemplate.uuid,
+                  widget_config: this.selectedTemplate,
+                  widget_data: blockData,
+                });
+                this.showNotification('success', '{{ 'Block added successfully'|t }}');
+              }
             }
 
             // Reset form and close
@@ -812,8 +850,15 @@
             };
             this.currentBlockIndex = null;
             this.showBlockForm = false;
+            this.selectedDynamicField = null;
+            this.showDynamicFieldModal = false;
           },
           selectTemplate(template) {
+
+            if (this.selectedDynamicField) {
+              this.showDynamicFieldModal = true;
+            }
+
             this.selectedTemplate = template;
             this.currentBlockIndex = null; // Reset current block index for new blocks
 
@@ -838,7 +883,7 @@
                   Object.keys(template.extra_fields[fieldName]).forEach((itemName, index) => {
 
                     if (!this.blockForm.extra_fields[fieldName]) {
-                      this.blockForm.extra_fields[fieldName] = {}
+                      this.blockForm.extra_fields[fieldName] = {};
                     }
 
                     if (template.extra_fields[fieldName][itemName].type === 'url_extended') {
@@ -858,7 +903,7 @@
                         id: null,
                         url: null,
                         name: null,
-                        path: 'extra_fields.' + fieldName + '.' + 'itemName',
+                        path: 'extra_fields.' + fieldName + '.' + itemName,
                         key: new Date().getTime(),
                       };
                     } else if (template.extra_fields[fieldName][itemName].type === 'json_api_collection') {
@@ -869,12 +914,11 @@
                     } else {
                       this.blockForm.extra_fields[fieldName][itemName] = '';
                     }
-                    
+
                   });
                 }
-                // END - extra group
+                  // END - extra group
 
-                
                 // START - extra
                 else {
                   // Initialize url_extended fields with both title and url
@@ -916,7 +960,6 @@
               this.addItem(); // Add first item
             } else {
               Object.keys(template.fields).forEach((fieldName, index) => {
-                console.log('template.fields[fieldName]', template.fields[fieldName]);
                 // Initialize url_extended fields with both title and url
 
                 // START - single group
@@ -954,8 +997,8 @@
                       this.blockForm.fields[fieldName][itemName] = '';
                     }
                   });
-                } 
-                // END - single group
+                }
+                  // END - single group
 
                 // START - single
                 else {
@@ -1036,7 +1079,7 @@
               // Add new paragraph block to blocks array
               this.blocks.push({
                 id: Date.now(),
-                bundle: "vactory_paragraph_block",
+                bundle: 'vactory_paragraph_block',
                 is_new: true,
                 title: this.paragraphBlockForm.config.title,
                 show_title: this.paragraphBlockForm.config.show_title,
@@ -1070,7 +1113,7 @@
           modifyParagraphBlock(index) {
             const block = this.blocks[index];
             this.currentBlockIndex = index;
-            
+
             // Initialize the paragraph block form with existing data
             this.paragraphBlockForm = {
               blockType: block.blockType || '',
@@ -1220,9 +1263,9 @@
               const newItemElement = document.querySelector(`[data-item-index="${newItemIndex}"]`);
               if (newItemElement) {
                 newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
+
                 const hasGroupField = Object.keys(this.selectedTemplate.fields).some(fieldName =>
-                  fieldName.startsWith('group_')
+                  fieldName.startsWith('group_'),
                 );
 
                 this.getForm('', newItemIndex, true, false, false, hasGroupField);
@@ -1265,39 +1308,39 @@
               }
 
               // Autocomplete multiple
-            if (field.type === 'autocomplete' && field.multiple) {
-               this.formData.fields[fieldKey] = [];
-               this.inputLabels[fieldKey] = '';
-               this.inputLabelsList[fieldKey] = []; 
-               return;
-            }
+              if (field.type === 'autocomplete' && field.multiple) {
+                this.formData.fields[fieldKey] = [];
+                this.inputLabels[fieldKey] = '';
+                this.inputLabelsList[fieldKey] = [];
+                return;
+              }
 
-            // Autocomplete simple
-            if (field.type === 'autocomplete' && !field.multiple) {
-               this.formData.fields[fieldKey] = '';
-               this.inputLabels[fieldKey] = '';
-               return;
-            }
+              // Autocomplete simple
+              if (field.type === 'autocomplete' && !field.multiple) {
+                this.formData.fields[fieldKey] = '';
+                this.inputLabels[fieldKey] = '';
+                return;
+              }
 
-            // Checkboxes
-            if (field.type === 'checkboxes') {
+              // Checkboxes
+              if (field.type === 'checkboxes') {
                 this.formData.fields[fieldKey] = [];
                 return;
-            }
+              }
 
-            // Radios
-            if (field.type === 'radios') {
+              // Radios
+              if (field.type === 'radios') {
                 this.formData.fields[fieldKey] = '';
                 return;
-            }
+              }
 
-            if (field.type === 'daterange') {
-                   this.formData.fields[fieldKey] = {
-                   value: field.value?.value || '',
-                   end_value: field.value?.end_value || ''
-                    };
+              if (field.type === 'daterange') {
+                this.formData.fields[fieldKey] = {
+                  value: field.value?.value || '',
+                  end_value: field.value?.end_value || '',
+                };
                 return;
-               }
+              }
 
               if (field.type === 'faqfield') {
                 this.formData.fields[fieldKey] = Array.isArray(field.value) && field.value.length
@@ -1373,11 +1416,21 @@
               this.isSaving = false;
             }
           },
-          removeBlock(index) {
-            // Remove the block at the specified index
-            this.blocks.splice(index, 1);
+          removeBlock(index, fieldName = '') {
+            if (fieldName) {
+              this.dynamicFields[fieldName].splice(index, 1);
+            } else {
+              // Remove the block at the specified index
+              this.blocks.splice(index, 1);
+            }
+
             // Show success notification
             this.showNotification('success', '{{ 'Block removed successfully'|t }}');
+          },
+          showParagraphTemplateForm(fieldName) {
+            this.selectedDynamicField = fieldName;
+            this.showBlocksModal = true;
+            this.showTemplatesList = true;
           },
           // Media Library States
           showMediaLibrary: false,
@@ -1540,13 +1593,13 @@
           selectAutocompleteItem(fieldName, item) {
             if (!this.formData.fields[fieldName].includes(item.id)) {
               this.formData.fields[fieldName].push(item.id); // Stocke uniquement l'id
-            if (!this.inputLabelsList[fieldName]) {
-              this.inputLabelsList[fieldName] = [];
+              if (!this.inputLabelsList[fieldName]) {
+                this.inputLabelsList[fieldName] = [];
+              }
+              this.inputLabelsList[fieldName].push(item.label); // Stocke le label pour affichage
             }
-            this.inputLabelsList[fieldName].push(item.label); // Stocke le label pour affichage
-           }
-           this.inputLabels[fieldName] = '';
-           this.suggestions[fieldName] = [];
+            this.inputLabels[fieldName] = '';
+            this.suggestions[fieldName] = [];
           },
 
           removeAutocompleteItem(fieldName, idx) {
