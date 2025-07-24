@@ -110,9 +110,11 @@
             })
               .then(res => res.json())
               .then(data => {
+                const targetClass = (isMultiple && isGroup) ? '.wysiwyg-group-container' : '.wysiwyg-container';
+
                 if (index >= 0) {
                   let draggable = document.querySelector(`[data-item-index="${index}"]`);
-                  let element = draggable.querySelector(`.wysiwyg-container`);
+                  let element = draggable.querySelector(targetClass);
                   element.innerHTML = data.html;
                   Drupal.attachBehaviors(element);
                 } else {
@@ -199,37 +201,81 @@
                 const item = block.widget_data[i];
                 const mappedItem = {};
                 // Map each field in the item
-                Object.keys(template.fields).forEach((fieldName) => {
-                  if (template.fields[fieldName].type === 'text_format') {
-                    mappedItem[fieldName] = item[fieldName].value || '';
-                    this.getForm(`wysi-${this.generateRandomString(4)}`, i, true, false, false, false, item[fieldName].value);
-                  } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
-                    const imageKey = Object.keys(item?.[fieldName] ?? {})?.[0] ?? null;
-                    const imageData = item?.[fieldName]?.[imageKey] ?? {};
-                    const imageId = imageData?.selection?.[0]?.target_id ?? null;
-                    if (imageId) {
-                      mappedItem[fieldName] = {
-                        id: imageId,
-                        url: imageData.selection[0].url,
-                        name: imageData.name,
-                        path: 'items.' + i + '.' + fieldName,
-                        key: imageKey,
-                      };
-                    } else {
-                      mappedItem[fieldName] = {
-                        id: null,
-                        url: null,
-                        name: null,
-                        path: 'items.' + i + '.' + fieldName,
-                        key: imageKey ?? new Date().getTime(),
-                      };
-                    }
-                  } else if (template.fields[fieldName].type === 'json_api_collection') {
-                    mappedItem[fieldName] = item[fieldName];
-                  } else {
-                    mappedItem[fieldName] = item[fieldName];
-                  }
+                Object.keys(template.fields).forEach((fieldName, index) => {
+                  // START - multiple field - group
+                  if (fieldName.startsWith('group_')) {
+                    Object.keys(template.fields[fieldName]).forEach((itemName, index) => {
 
+                      if (!mappedItem[fieldName]) {
+                        mappedItem[fieldName] = {};
+                      }
+
+                      if (template.fields[fieldName][itemName].type === 'text_format') {
+                        mappedItem[fieldName][itemName] = item[fieldName]?.[itemName]?.value || '';
+                        this.getForm(`wysi-${this.generateRandomString(4)}`, i, true, false, false, true, item[fieldName]?.[itemName]?.value || '');
+                      } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName][itemName].type)) {
+                        const imageKey = Object.keys(item?.[fieldName][itemName] ?? {})?.[0] ?? null;
+                        const imageData = item?.[fieldName]?.[itemName]?.[imageKey] ?? {};
+                        const imageId = imageData?.selection?.[0]?.target_id ?? null;
+                        if (imageId) {
+                          mappedItem[fieldName][itemName] = {
+                            id: imageId,
+                            url: imageData.selection[0].url,
+                            name: imageData.name,
+                            path: 'items.' + i + '.' + fieldName + '.' + itemName,
+                            key: imageKey,
+                          };
+                        } else {
+                          mappedItem[fieldName][itemName] = {
+                            id: null,
+                            url: null,
+                            name: null,
+                            path: 'items.' + i + '.' + fieldName + '.' + itemName,
+                            key: imageKey ?? new Date().getTime(),
+                          };
+                        }
+                      } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
+                        mappedItem[fieldName][itemName] = item[fieldName][itemName];
+                      } else {
+                        mappedItem[fieldName][itemName] = item[fieldName][itemName];
+                      }
+                    });
+                  } 
+                  // END - multiple field - group
+                  
+                  // START - multiple field
+                  else {
+                    if (template.fields[fieldName].type === 'text_format') {
+                      mappedItem[fieldName] = item[fieldName].value || '';
+                      this.getForm(`wysi-nonmultiple-${this.generateRandomString(4)}`, i, true, false, false, false, item[fieldName].value);
+                    } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
+                      const imageKey = Object.keys(item?.[fieldName] ?? {})?.[0] ?? null;
+                      const imageData = item?.[fieldName]?.[imageKey] ?? {};
+                      const imageId = imageData?.selection?.[0]?.target_id ?? null;
+                      if (imageId) {
+                        mappedItem[fieldName] = {
+                          id: imageId,
+                          url: imageData.selection[0].url,
+                          name: imageData.name,
+                          path: 'items.' + i + '.' + fieldName,
+                          key: imageKey,
+                        };
+                      } else {
+                        mappedItem[fieldName] = {
+                          id: null,
+                          url: null,
+                          name: null,
+                          path: 'items.' + i + '.' + fieldName,
+                          key: imageKey ?? new Date().getTime(),
+                        };
+                      }
+                    } else if (template.fields[fieldName].type === 'json_api_collection') {
+                      mappedItem[fieldName] = item[fieldName];
+                    } else {
+                      mappedItem[fieldName] = item[fieldName];
+                    }
+                  }
+                  // END - multiple field
                 });
                 items.push(mappedItem);
                 i++;
@@ -410,31 +456,68 @@
               blockData = {};
               this.blockForm.items.forEach((item, index) => {
                 blockData[index] = {};
-                Object.keys(this.selectedTemplate.fields).forEach(fieldName => {
-                  if (this.selectedTemplate.fields[fieldName].type === 'text_format') {
-                    blockData[index][fieldName] = {
-                      value: item[fieldName] || '',
-                      format: 'full_html',
-                    };
-                  } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
-                    blockData[index][fieldName] = {
-                      [item[fieldName].key]: {
-                        media_library_selection: '',
-                        media_library_update_widget: 'Update widget',
-                        open_button: 'Add media',
-                        name: item?.[fieldName]?.id ?? '',
-                        selection: [
-                          {
-                            remove_button: 'Remove',
-                            target_id: item[fieldName].id,
-                            url: item[fieldName].url,
-                            weight: 0,
+                Object.keys(this.selectedTemplate.fields).forEach((fieldName) => {
+
+                  // START - multiple field group
+                  if (fieldName.startsWith('group_')) {
+                    blockData[index][fieldName] = {};
+                    Object.keys(this.selectedTemplate.fields[fieldName]).forEach((itemName) => {                      
+
+                      if (this.selectedTemplate.fields[fieldName][itemName].type === 'text_format') {
+                        blockData[index][fieldName][itemName] = {
+                          value: item[fieldName][itemName] || '',
+                          format: 'full_html',
+                        };
+                      } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName][itemName].type)) {
+                        blockData[index][fieldName][itemName] = {
+                          [item[fieldName][itemName].key]: {
+                            media_library_selection: '',
+                            media_library_update_widget: 'Update widget',
+                            open_button: 'Add media',
+                            name: item?.[fieldName]?.[itemName]?.id ?? '',
+                            selection: [
+                              {
+                                remove_button: 'Remove',
+                                target_id: item[fieldName][itemName].id,
+                                url: item[fieldName][itemName].url,
+                                weight: 0,
+                              },
+                            ],
                           },
-                        ],
-                      },
-                    };
-                  } else {
-                    blockData[index][fieldName] = item[fieldName];
+                        };
+                      } else {
+                        blockData[index][fieldName][itemName] = item[fieldName][itemName];
+                      }
+                    });
+                  } 
+                  // END - multiple field group
+
+                  else {
+                    if (this.selectedTemplate.fields[fieldName].type === 'text_format') {
+                      blockData[index][fieldName] = {
+                        value: item[fieldName] || '',
+                        format: 'full_html',
+                      };
+                    } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
+                      blockData[index][fieldName] = {
+                        [item[fieldName].key]: {
+                          media_library_selection: '',
+                          media_library_update_widget: 'Update widget',
+                          open_button: 'Add media',
+                          name: item?.[fieldName]?.id ?? '',
+                          selection: [
+                            {
+                              remove_button: 'Remove',
+                              target_id: item[fieldName].id,
+                              url: item[fieldName].url,
+                              weight: 0,
+                            },
+                          ],
+                        },
+                      };
+                    } else {
+                      blockData[index][fieldName] = item[fieldName];
+                    }
                   }
                 });
               });
@@ -840,33 +923,75 @@
             const newItem = {};
             // Initialize all fields with empty values
             Object.keys(this.selectedTemplate.fields).forEach((fieldName, index) => {
-              // Initialize url_extended fields with both title and url
-              if (this.selectedTemplate.fields[fieldName].type === 'url_extended') {
-                newItem[fieldName] = {
-                  title: '',
-                  url: '',
-                  attributes: {
-                    label: '',
-                    class: '',
-                    id: 'link-' + Math.random().toString(36).slice(2),
-                    target: '',
-                    rel: '',
-                  },
-                };
-              } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
-                newItem[fieldName] = {
-                  id: null,
-                  url: null,
-                  name: null,
-                  path: 'items.' + this.blockForm.items.length + '.' + fieldName,
-                  key: new Date().getTime(),
-                };
-              } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
-                // Nothing to change here
-                newItem[fieldName] = this.selectedTemplate.fields[fieldName]['options']['#default_value'];
-              } else {
-                newItem[fieldName] = '';
+
+              // START - multiple group
+              if (fieldName.startsWith('group_')) {
+                Object.keys(this.selectedTemplate.fields[fieldName]).forEach((itemName, index) => {
+
+                  if (!newItem[fieldName]) {
+                    newItem[fieldName] = {};
+                  }
+
+                  if (this.selectedTemplate.fields[fieldName][itemName].type === 'url_extended') {
+                    newItem[fieldName][itemName] = {
+                      title: '',
+                      url: '',
+                      attributes: {
+                        label: '',
+                        class: '',
+                        id: 'link-' + Math.random().toString(36).slice(2),
+                        target: '',
+                        rel: '',
+                      },
+                    };
+                  } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName][itemName].type)) {
+                    newItem[fieldName][itemName] = {
+                      id: null,
+                      url: null,
+                      name: null,
+                      path: 'items.' + this.blockForm.items.length + '.' + fieldName + '.' + itemName,
+                      key: new Date().getTime(),
+                    };
+                  } else if (this.selectedTemplate.fields[fieldName][itemName].type === 'json_api_collection') {
+                    // Nothing to change here
+                    newItem[fieldName][itemName] = this.selectedTemplate.fields[fieldName][itemName]['options']['#default_value'];
+                  } else {
+                    newItem[fieldName][itemName] = '';
+                  }
+                });
               }
+              // END - multiple group
+
+              // START - multiple
+              else {
+                if (this.selectedTemplate.fields[fieldName].type === 'url_extended') {
+                  newItem[fieldName] = {
+                    title: '',
+                    url: '',
+                    attributes: {
+                      label: '',
+                      class: '',
+                      id: 'link-' + Math.random().toString(36).slice(2),
+                      target: '',
+                      rel: '',
+                    },
+                  };
+                } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
+                  newItem[fieldName] = {
+                    id: null,
+                    url: null,
+                    name: null,
+                    path: 'items.' + this.blockForm.items.length + '.' + fieldName,
+                    key: new Date().getTime(),
+                  };
+                } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
+                  // Nothing to change here
+                  newItem[fieldName] = this.selectedTemplate.fields[fieldName]['options']['#default_value'];
+                } else {
+                  newItem[fieldName] = '';
+                }
+              }
+              // END - multiple
             });
 
             // Add the new item with highlighted state
@@ -880,7 +1005,13 @@
 
               if (newItemElement) {
                 newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                this.getForm('', newItemIndex, true, false, false, false);
+    
+                // Check if group_ field exists
+                const hasGroupField = Object.keys(this.selectedTemplate.fields).some(fieldName =>
+                  fieldName.startsWith('group_')
+                );
+
+                this.getForm('', newItemIndex, true, false, false, hasGroupField);
 
                 // Remove highlight after 3 seconds
                 setTimeout(() => {

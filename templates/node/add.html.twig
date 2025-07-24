@@ -170,7 +170,7 @@
             }
             return result;
           },
-          getForm(id, index = -1, isMultiple = false, isSingle = false, isExtra = false, defaultValue = "") {
+          getForm(id, index = -1, isMultiple = false, isSingle = false, isExtra = false, isGroup = false, defaultValue = '') {
             this.loaderCK = true;
             fetch('/api/dashboard/wysiwyg', {
               method: 'POST',
@@ -181,28 +181,31 @@
                 isMultiple,
                 isSingle,
                 isExtra,
+                isGroup,
                 defaultValue,
               }),
             })
-            .then(res => res.json())
-            .then(data => {
-              if (index >= 0) {
-                let draggable = document.querySelector(`[data-item-index="${index}"]`);
-                let element = draggable.querySelector(`.wysiwyg-container`);
-                element.innerHTML = data.html;
-                Drupal.attachBehaviors(element);
-              } else {
-                const container = document.getElementById(id);
-                container.innerHTML = data.html;
-                Drupal.attachBehaviors(container);
-              }
-            })
-            .catch(error => {
-              console.error('Error loading WYSIWYG:', error);
-            })
-            .finally(() => {
-              this.loaderCK = false;
-            });
+              .then(res => res.json())
+              .then(data => {
+                const targetClass = (isMultiple && isGroup) ? '.wysiwyg-group-container' : '.wysiwyg-container';
+
+                if (index >= 0) {
+                  let draggable = document.querySelector(`[data-item-index="${index}"]`);
+                  let element = draggable.querySelector(targetClass);
+                  element.innerHTML = data.html;
+                  Drupal.attachBehaviors(element);
+                } else {
+                  const container = document.getElementById(id);
+                  container.innerHTML = data.html;
+                  Drupal.attachBehaviors(container);
+                }
+              })
+              .catch(e => {
+                console.log('error: ', e);
+              })
+              .finally(() => {
+                this.loaderCK = false;
+              });
           },
           dragStart(event) {
             this.dragStartIndex = parseInt(event.target.dataset.index);
@@ -273,34 +276,78 @@
                 const mappedItem = {};
                 // Map each field in the item
                 Object.keys(template.fields).forEach(fieldName => {
-                  if (template.fields[fieldName].type === 'text_format') {
-                    mappedItem[fieldName] = item[fieldName].value || '';
-                    this.getForm(`wysi-${this.generateRandomString(4)}`, i, true, false, false, item[fieldName].value);
-                  } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
-                    const imageKey = Object.keys(item[fieldName])[0];
-                    const imageData = item[fieldName][imageKey];
-                    const imageId = imageData.selection[0].target_id;
-                    if (imageId) {
-                      mappedItem[fieldName] = {
-                        id: imageId,
-                        url: imageData.selection[0].url,
-                        name: imageData.name,
-                        path: 'items.' + i + '.' + fieldName,
-                        key: imageKey,
-                      };
+
+                  // START - multiple field - group
+                  if (fieldName.startsWith('group_')) {
+                    Object.keys(template.fields[fieldName]).forEach((itemName, index) => {
+
+                      if (!mappedItem[fieldName]) {
+                        mappedItem[fieldName] = {};
+                      }
+
+                      if (template.fields[fieldName][itemName].type === 'text_format') {
+                        mappedItem[fieldName][itemName] = item[fieldName]?.[itemName]?.value || '';
+                        this.getForm(`wysi-${this.generateRandomString(4)}`, i, true, false, false, true, item[fieldName]?.[itemName]?.value || '');
+                      } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName][itemName].type)) {
+                        const imageKey = Object.keys(item?.[fieldName][itemName] ?? {})?.[0] ?? null;
+                        const imageData = item?.[fieldName]?.[itemName]?.[imageKey] ?? {};
+                        const imageId = imageData?.selection?.[0]?.target_id ?? null;
+                        if (imageId) {
+                          mappedItem[fieldName][itemName] = {
+                            id: imageId,
+                            url: imageData.selection[0].url,
+                            name: imageData.name,
+                            path: 'items.' + i + '.' + fieldName + '.' + itemName,
+                            key: imageKey,
+                          };
+                        } else {
+                          mappedItem[fieldName][itemName] = {
+                            id: null,
+                            url: null,
+                            name: null,
+                            path: 'items.' + i + '.' + fieldName + '.' + itemName,
+                            key: imageKey ?? new Date().getTime(),
+                          };
+                        }
+                      } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
+                        mappedItem[fieldName][itemName] = item[fieldName][itemName];
+                      } else {
+                        mappedItem[fieldName][itemName] = item[fieldName][itemName];
+                      }
+                    });
+                  }
+                  // END - multiple field - group
+
+                  else {
+                    if (template.fields[fieldName].type === 'text_format') {
+                      mappedItem[fieldName] = item[fieldName].value || '';
+                      this.getForm(`wysi-${this.generateRandomString(4)}`, i, true, false, false, false, item[fieldName].value);
+                    } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
+                      const imageKey = Object.keys(item[fieldName])[0];
+                      const imageData = item[fieldName][imageKey];
+                      const imageId = imageData.selection[0].target_id;
+                      if (imageId) {
+                        mappedItem[fieldName] = {
+                          id: imageId,
+                          url: imageData.selection[0].url,
+                          name: imageData.name,
+                          path: 'items.' + i + '.' + fieldName,
+                          key: imageKey,
+                        };
+                      } else {
+                        mappedItem[fieldName] = {
+                          id: null,
+                          url: null,
+                          name: null,
+                          path: 'items.' + i + '.' + fieldName,
+                          key: imageKey ?? new Date().getTime(),
+                        };
+                      }
+                    } else if (template.fields[fieldName].type === 'json_api_collection') {
+                      mappedItem[fieldName] = item[fieldName];
                     } else {
-                      mappedItem[fieldName] = {
-                        id: null,
-                        url: null,
-                        name: null,
-                        path: 'items.' + i + '.' + fieldName,
-                        key: imageKey ?? new Date().getTime(),
-                      };
+                      mappedItem[fieldName] = item[fieldName] ?? '';
                     }
-                  } else if (template.fields[fieldName].type === 'json_api_collection') {
-                    mappedItem[fieldName] = item[fieldName];
-                  } else {
-                    mappedItem[fieldName] = item[fieldName] ?? '';
                   }
                 });
                 items.push(mappedItem);
@@ -318,35 +365,82 @@
               if (block.widget_data && block.widget_data[0]) {
                 Object.keys(template.fields).forEach((fieldName, index) => {
                   if (block.widget_data[0][fieldName]) {
-                    if (template.fields[fieldName].type === 'text_format') {
-                      this.blockForm.fields[fieldName] = block.widget_data[0][fieldName].value || '';
-                      this.getForm(`wysi-single-${index}`, -1, false, true, false, block.widget_data[0][fieldName].value);
-                    } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
-                      const imageKey = Object.keys(block.widget_data[0][fieldName])[0];
-                      const imageData = block.widget_data[0][fieldName][imageKey];
-                      const imageId = imageData?.selection ? imageData?.selection[0]?.target_id : null;
-                      if (imageId) {
-                        this.blockForm.fields[fieldName] = {
-                          id: imageId ?? null,
-                          url: imageData?.selection[0]?.url ?? null,
-                          name: imageData?.name ?? null,
-                          path: 'fields.' + fieldName,
-                          key: imageKey,
-                        };
+                    
+                    // START - single field group
+                    if (fieldName.startsWith('group_')) {
+                      Object.keys(template.fields[fieldName]).forEach((itemName, index) => {
+
+                        if (!this.blockForm.fields[fieldName]) {
+                          this.blockForm.fields[fieldName] = {};
+                        }
+
+                        if (template.fields[fieldName][itemName].type === 'text_format') {
+                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName].value || '';
+                          this.getForm(`wysi-group-${index}-${itemName}`, -1, false, true, false, true, block.widget_data[0][fieldName][itemName].value);
+                        } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName][itemName].type)) {
+                          const imageKey = Object.keys(block.widget_data[0][fieldName][itemName])[0];
+                          const imageData = block.widget_data[0][fieldName][itemName][imageKey];
+                          const imageId = imageData?.selection ? imageData?.selection[0]?.target_id : null;
+                          if (imageId) {
+                            this.blockForm.fields[fieldName][itemName] = {
+                              id: imageId ?? null,
+                              url: imageData?.selection[0]?.url ?? null,
+                              name: imageData?.name ?? null,
+                              path: 'fields.' + fieldName + '.' + itemName,
+                              key: imageKey,
+                            };
+                          } else {
+                            this.blockForm.fields[fieldName][itemName] = {
+                              id: null,
+                              url: null,
+                              name: null,
+                              path: 'fields.' + fieldName + '.' + itemName,
+                              key: imageKey ?? new Date().getTime(),
+                            };
+                          }
+                        } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
+                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName];
+                        } else {
+                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName];
+                        }
+                      });
+                    } 
+                    // END - single field group
+                    
+                    // START - single field
+                    else {
+                      if (template.fields[fieldName].type === 'text_format') {
+                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName].value || '';
+                        this.getForm(`wysi-single-${index}`, -1, false, true, false, false, block.widget_data[0][fieldName].value);
+                      } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
+                        const imageKey = Object.keys(block.widget_data[0][fieldName])[0];
+                        const imageData = block.widget_data[0][fieldName][imageKey];
+                        const imageId = imageData?.selection ? imageData?.selection[0]?.target_id : null;
+                        if (imageId) {
+                          this.blockForm.fields[fieldName] = {
+                            id: imageId ?? null,
+                            url: imageData?.selection[0]?.url ?? null,
+                            name: imageData?.name ?? null,
+                            path: 'fields.' + fieldName,
+                            key: imageKey,
+                          };
+                        } else {
+                          this.blockForm.fields[fieldName] = {
+                            id: null,
+                            url: null,
+                            name: null,
+                            path: 'fields.' + fieldName,
+                            key: imageKey ?? new Date().getTime(),
+                          };
+                        }
+                      } else if (template.fields[fieldName].type === 'json_api_collection') {
+                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
                       } else {
-                        this.blockForm.fields[fieldName] = {
-                          id: null,
-                          url: null,
-                          name: null,
-                          path: 'fields.' + fieldName,
-                          key: imageKey ?? new Date().getTime(),
-                        };
+                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
                       }
-                    } else if (template.fields[fieldName].type === 'json_api_collection') {
-                      this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
-                    } else {
-                      this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
                     }
+                    // END - single field
+                    
                   }
                 });
               }
@@ -356,35 +450,83 @@
             if (block.widget_data.extra_field) {
               Object.keys(template.extra_fields || {}).forEach((fieldName, index) => {
                 if (block.widget_data.extra_field[fieldName]) {
-                  if (template.extra_fields[fieldName].type === 'text_format') {
-                    this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName].value || '';
-                    this.getForm(`wysi-extra-${index}`, -1, false, false, true, block.widget_data.extra_field[fieldName].value || '');
-                  } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
-                    const imageKey = Object.keys(block.widget_data.extra_field[fieldName])[0];
-                    const imageData = block.widget_data.extra_field[fieldName][imageKey];
-                    const imageId = imageData.selection[0].target_id;
-                    if (imageId) {
-                      this.blockForm.extra_fields[fieldName] = {
-                        id: imageId,
-                        url: imageData.selection[0].url,
-                        name: imageData.name,
-                        path: 'extra_fields.' + fieldName,
-                        key: imageKey,
-                      };
+
+                  // START - extra field group
+                  if (fieldName.startsWith('group_')) {
+                    Object.keys(template.extra_fields[fieldName] || {}).forEach((itemName, index) => {
+
+                      if (!this.blockForm.extra_fields[fieldName]) {
+                        this.blockForm.extra_fields[fieldName] = {};
+                      }
+
+                      if (template.extra_fields[fieldName][itemName].type === 'text_format') {
+                        this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName].value || '';
+                        this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, true, block.widget_data.extra_field[fieldName][itemName].value || '');
+                      } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName][itemName].type)) {
+                        const imageKey = Object.keys(block.widget_data.extra_field[fieldName][itemName])[0];
+                        const imageData = block.widget_data.extra_field[fieldName][itemName][imageKey];
+                        const imageId = imageData.selection[0].target_id;
+                        if (imageId) {
+                          this.blockForm.extra_fields[fieldName][itemName] = {
+                            id: imageId,
+                            url: imageData.selection[0].url,
+                            name: imageData.name,
+                            path: 'extra_fields.' + fieldName + '.' + itemName,
+                            key: imageKey,
+                          };
+                        } else {
+                          this.blockForm.extra_fields[fieldName][itemName] = {
+                            id: null,
+                            url: null,
+                            name: null,
+                            path: 'extra_fields.' + fieldName + '.' + itemName,
+                            key: imageKey ?? new Date().getTime(),
+                          };
+                        }
+                      } else if (template.extra_fields[fieldName][itemName].type === 'json_api_collection') {
+                        this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName];
+                      } else {
+                        this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName];
+                      }
+                    });
+                  } 
+                  // END - extra field group
+
+                  // START - extra field
+                  else {
+                    if (template.extra_fields[fieldName].type === 'text_format') {
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName].value || '';
+                      this.getForm(`wysi-extra-${index}`, -1, false, false, true, false, block.widget_data.extra_field[fieldName].value || '');
+                    } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
+                      const imageKey = Object.keys(block.widget_data.extra_field[fieldName])[0];
+                      const imageData = block.widget_data.extra_field[fieldName][imageKey];
+                      const imageId = imageData.selection[0].target_id;
+                      if (imageId) {
+                        this.blockForm.extra_fields[fieldName] = {
+                          id: imageId,
+                          url: imageData.selection[0].url,
+                          name: imageData.name,
+                          path: 'extra_fields.' + fieldName,
+                          key: imageKey,
+                        };
+                      } else {
+                        this.blockForm.extra_fields[fieldName] = {
+                          id: null,
+                          url: null,
+                          name: null,
+                          path: 'extra_fields.' + fieldName,
+                          key: imageKey ?? new Date().getTime(),
+                        };
+                      }
+                    } else if (template.extra_fields[fieldName].type === 'json_api_collection') {
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
                     } else {
-                      this.blockForm.extra_fields[fieldName] = {
-                        id: null,
-                        url: null,
-                        name: null,
-                        path: 'extra_fields.' + fieldName,
-                        key: imageKey ?? new Date().getTime(),
-                      };
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
                     }
-                  } else if (template.extra_fields[fieldName].type === 'json_api_collection') {
-                    this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
-                  } else {
-                    this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
+
                   }
+                  // END - extra field
+
                 }
               });
             }
@@ -400,30 +542,67 @@
               this.blockForm.items.forEach((item, index) => {
                 blockData[index] = {};
                 Object.keys(this.selectedTemplate.fields).forEach(fieldName => {
-                  if (this.selectedTemplate.fields[fieldName].type === 'text_format') {
-                    blockData[index][fieldName] = {
-                      value: item[fieldName] || '',
-                      format: 'full_html',
-                    };
-                  } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
-                    blockData[index][fieldName] = {
-                      [item[fieldName].key]: {
-                        media_library_selection: '',
-                        media_library_update_widget: 'Update widget',
-                        open_button: 'Add media',
-                        name: item[fieldName]?.name ?? '',
-                        selection: [
-                          {
-                            remove_button: 'Remove',
-                            target_id: item[fieldName].id,
-                            url: item[fieldName].url,
-                            weight: 0,
+
+                  // START - multiple field group
+                  if (fieldName.startsWith('group_')) {
+                    blockData[index][fieldName] = {};
+                    Object.keys(this.selectedTemplate.fields[fieldName]).forEach((itemName) => {                      
+
+                      if (this.selectedTemplate.fields[fieldName][itemName].type === 'text_format') {
+                        blockData[index][fieldName][itemName] = {
+                          value: item[fieldName][itemName] || '',
+                          format: 'full_html',
+                        };
+                      } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName][itemName].type)) {
+                        blockData[index][fieldName][itemName] = {
+                          [item[fieldName][itemName].key]: {
+                            media_library_selection: '',
+                            media_library_update_widget: 'Update widget',
+                            open_button: 'Add media',
+                            name: item?.[fieldName]?.[itemName]?.id ?? '',
+                            selection: [
+                              {
+                                remove_button: 'Remove',
+                                target_id: item[fieldName][itemName].id,
+                                url: item[fieldName][itemName].url,
+                                weight: 0,
+                              },
+                            ],
                           },
-                        ],
-                      },
-                    };
-                  } else {
-                    blockData[index][fieldName] = item[fieldName] ?? '';
+                        };
+                      } else {
+                        blockData[index][fieldName][itemName] = item[fieldName][itemName];
+                      }
+                    });
+                  }
+                  // END - multiple field group
+
+                  else {
+                    if (this.selectedTemplate.fields[fieldName].type === 'text_format') {
+                      blockData[index][fieldName] = {
+                        value: item[fieldName] || '',
+                        format: 'full_html',
+                      };
+                    } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
+                      blockData[index][fieldName] = {
+                        [item[fieldName].key]: {
+                          media_library_selection: '',
+                          media_library_update_widget: 'Update widget',
+                          open_button: 'Add media',
+                          name: item[fieldName]?.name ?? '',
+                          selection: [
+                            {
+                              remove_button: 'Remove',
+                              target_id: item[fieldName].id,
+                              url: item[fieldName].url,
+                              weight: 0,
+                            },
+                          ],
+                        },
+                      };
+                    } else {
+                      blockData[index][fieldName] = item[fieldName] ?? '';
+                    }
                   }
                 });
               });
@@ -433,34 +612,82 @@
                 0: {},
               };
               Object.keys(this.selectedTemplate.fields).forEach(fieldName => {
-                if (this.selectedTemplate.fields[fieldName].type === 'text_format') {
-                  blockData[0][fieldName] = {
-                    value: this.blockForm.fields[fieldName] || '',
-                    format: 'full_html',
-                  };
-                } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
-                  blockData[0][fieldName] = {
-                    [this.blockForm.fields[fieldName].key]: {
-                      media_library_selection: '',
-                      media_library_update_widget: 'Update widget',
-                      open_button: 'Add media',
-                      name: this?.blockForm?.fields?.[fieldName]?.name ?? '',
-                      selection: [
-                        {
-                          remove_button: 'Remove',
-                          target_id: this.blockForm.fields[fieldName].id,
-                          url: this.blockForm.fields[fieldName].url,
-                          weight: 0,
+
+                // START - single field group
+                if (fieldName.startsWith('group_')) {
+                  Object.keys(this.selectedTemplate.fields[fieldName]).forEach(itemName => {
+
+                    if (!blockData[0][fieldName]) {
+                      blockData[0][fieldName] = {};
+                    }
+
+                    if (this.selectedTemplate.fields[fieldName][itemName].type === 'text_format') {
+                      blockData[0][fieldName][itemName] = {
+                        value: this.blockForm.fields[fieldName][itemName] || '',
+                        format: 'full_html',
+                      };
+                    } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName][itemName].type)) {
+                      blockData[0][fieldName][itemName] = {
+                        [this.blockForm.fields[fieldName][itemName].key]: {
+                          media_library_selection: '',
+                          media_library_update_widget: 'Update widget',
+                          open_button: 'Add media',
+                          name: this?.blockForm?.fields?.[fieldName]?.[itemName]?.name ?? '',
+                          selection: [
+                            {
+                              remove_button: 'Remove',
+                              target_id: this.blockForm.fields[fieldName][itemName].id,
+                              url: this.blockForm.fields[fieldName][itemName].url,
+                              weight: 0,
+                            },
+                          ],
                         },
-                      ],
-                    },
-                  };
-                } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
-                  // Nothing to change here
-                  blockData[0][fieldName] = this.blockForm.fields[fieldName];
-                } else {
-                  blockData[0][fieldName] = this.blockForm.fields[fieldName] ?? '';
+                      };
+                    } else if (this.selectedTemplate.fields[fieldName][itemName].type === 'json_api_collection') {
+                      // Nothing to change here
+                      blockData[0][fieldName][itemName] = this.blockForm.fields[fieldName][itemName];
+                    } else {
+                      blockData[0][fieldName][itemName] = this.blockForm.fields[fieldName][itemName] ?? '';
+                    }
+                  });
+                } 
+                // END - single field group
+                
+                // START - single field
+                else {
+                  if (this.selectedTemplate.fields[fieldName].type === 'text_format') {
+                    blockData[0][fieldName] = {
+                      value: this.blockForm.fields[fieldName] || '',
+                      format: 'full_html',
+                    };
+                  } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
+                    blockData[0][fieldName] = {
+                      [this.blockForm.fields[fieldName].key]: {
+                        media_library_selection: '',
+                        media_library_update_widget: 'Update widget',
+                        open_button: 'Add media',
+                        name: this?.blockForm?.fields?.[fieldName]?.name ?? '',
+                        selection: [
+                          {
+                            remove_button: 'Remove',
+                            target_id: this.blockForm.fields[fieldName].id,
+                            url: this.blockForm.fields[fieldName].url,
+                            weight: 0,
+                          },
+                        ],
+                      },
+                    };
+                  } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
+                    // Nothing to change here
+                    blockData[0][fieldName] = this.blockForm.fields[fieldName];
+                  } else {
+                    blockData[0][fieldName] = this.blockForm.fields[fieldName] ?? '';
+                  }
+
                 }
+                // END - single field
+
+
               });
             }
 
@@ -468,31 +695,74 @@
             if (Object.keys(this.blockForm.extra_fields).length > 0) {
               blockData.extra_field = {};
               Object.keys(this.blockForm.extra_fields).forEach(fieldName => {
-                if (this.selectedTemplate.extra_fields[fieldName].type === 'text_format') {
-                  blockData.extra_field[fieldName] = {
-                    value: this.blockForm.extra_fields[fieldName] || '',
-                    format: 'full_html',
-                  };
-                } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.extra_fields[fieldName].type)) {
-                  blockData.extra_field[fieldName] = {
-                    [this.blockForm.extra_fields[fieldName].key]: {
-                      media_library_selection: '',
-                      media_library_update_widget: 'Update widget',
-                      open_button: 'Add media',
-                      name: this?.blockForm?.extra_fields?.[fieldName]?.name ?? '',
-                      selection: [
-                        {
-                          remove_button: 'Remove',
-                          target_id: this.blockForm.extra_fields[fieldName].id,
-                          url: this.blockForm.extra_fields[fieldName].url,
-                          weight: 0,
+
+                // START - extra field group
+                if (fieldName.startsWith('group_')) {
+
+                  if (!blockData.extra_field[fieldName]) {
+                    blockData.extra_field[fieldName] = {};
+                  }
+
+                  Object.keys(this.blockForm.extra_fields[fieldName]).forEach(itemName => {
+                    if (this.selectedTemplate.extra_fields[fieldName][itemName].type === 'text_format') {
+                      blockData.extra_field[fieldName][itemName] = {
+                        value: this.blockForm.extra_fields[fieldName][itemName] || '',
+                        format: 'full_html',
+                      };
+                    } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.extra_fields[fieldName][itemName].type)) {
+                      blockData.extra_field[fieldName][itemName] = {
+                        [this.blockForm.extra_fields[fieldName][itemName].key]: {
+                          media_library_selection: '',
+                          media_library_update_widget: 'Update widget',
+                          open_button: 'Add media',
+                          name: this?.blockForm?.extra_fields?.[fieldName]?.[itemName]?.name ?? '',
+                          selection: [
+                            {
+                              remove_button: 'Remove',
+                              target_id: this.blockForm.extra_fields[fieldName][itemName].id,
+                              url: this.blockForm.extra_fields[fieldName][itemName].url,
+                              weight: 0,
+                            },
+                          ],
                         },
-                      ],
-                    },
-                  };
-                } else {
-                  blockData.extra_field[fieldName] = this.blockForm.extra_fields[fieldName] ?? '';
+                      };
+                    } else {
+                      blockData.extra_field[fieldName][itemName] = this.blockForm.extra_fields[fieldName][itemName] ?? '';
+                    }
+                  });
+                } 
+                // END - extra field group
+
+                // START - extra field
+                else {
+                  if (this.selectedTemplate.extra_fields[fieldName].type === 'text_format') {
+                    blockData.extra_field[fieldName] = {
+                      value: this.blockForm.extra_fields[fieldName] || '',
+                      format: 'full_html',
+                    };
+                  } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.extra_fields[fieldName].type)) {
+                    blockData.extra_field[fieldName] = {
+                      [this.blockForm.extra_fields[fieldName].key]: {
+                        media_library_selection: '',
+                        media_library_update_widget: 'Update widget',
+                        open_button: 'Add media',
+                        name: this?.blockForm?.extra_fields?.[fieldName]?.name ?? '',
+                        selection: [
+                          {
+                            remove_button: 'Remove',
+                            target_id: this.blockForm.extra_fields[fieldName].id,
+                            url: this.blockForm.extra_fields[fieldName].url,
+                            weight: 0,
+                          },
+                        ],
+                      },
+                    };
+                  } else {
+                    blockData.extra_field[fieldName] = this.blockForm.extra_fields[fieldName] ?? '';
+                  }
                 }
+                // END - extra field
+
               });
             }
 
@@ -563,35 +833,81 @@
             // Initialize extra_fields if they exist
             if (template.extra_fields) {
               Object.keys(template.extra_fields).forEach((fieldName, index) => {
-                // Initialize url_extended fields with both title and url
-                if (template.extra_fields[fieldName].type === 'url_extended') {
-                  this.blockForm.extra_fields[fieldName] = {
-                    title: '',
-                    url: '',
-                    attributes: {
-                      label: '',
-                      class: '',
-                      id: 'link-' + Math.random().toString(36).slice(2),
-                      target: '',
-                      rel: '',
-                    },
-                  };
-                } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
-                  this.blockForm.extra_fields[fieldName] = {
-                    id: null,
-                    url: null,
-                    name: null,
-                    path: 'extra_fields.' + fieldName,
-                    key: new Date().getTime(),
-                  };
-                } else if (template.extra_fields[fieldName].type === 'json_api_collection') {
-                  // Nothing to change here
-                  this.blockForm.extra_fields[fieldName] = template.extra_fields[fieldName]['options']['#default_value'];
-                } else if (template.extra_fields[fieldName].type === 'text_format') {
-                  this.getForm(`wysi-extra-${index}`, -1, false, false, true);
-                } else {
-                  this.blockForm.extra_fields[fieldName] = '';
+                // START - extra group
+                if (fieldName.startsWith('group_')) {
+                  Object.keys(template.extra_fields[fieldName]).forEach((itemName, index) => {
+
+                    if (!this.blockForm.extra_fields[fieldName]) {
+                      this.blockForm.extra_fields[fieldName] = {}
+                    }
+
+                    if (template.extra_fields[fieldName][itemName].type === 'url_extended') {
+                      this.blockForm.extra_fields[fieldName][itemName] = {
+                        title: '',
+                        url: '',
+                        attributes: {
+                          label: '',
+                          class: '',
+                          id: 'link-' + Math.random().toString(36).slice(2),
+                          target: '',
+                          rel: '',
+                        },
+                      };
+                    } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName][itemName].type)) {
+                      this.blockForm.extra_fields[fieldName][itemName] = {
+                        id: null,
+                        url: null,
+                        name: null,
+                        path: 'extra_fields.' + fieldName + '.' + 'itemName',
+                        key: new Date().getTime(),
+                      };
+                    } else if (template.extra_fields[fieldName][itemName].type === 'json_api_collection') {
+                      // Nothing to change here
+                      this.blockForm.extra_fields[fieldName][itemName] = template.extra_fields[fieldName][itemName]['options']['#default_value'];
+                    } else if (template.extra_fields[fieldName][itemName].type === 'text_format') {
+                      this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, true);
+                    } else {
+                      this.blockForm.extra_fields[fieldName][itemName] = '';
+                    }
+                    
+                  });
                 }
+                // END - extra group
+
+                
+                // START - extra
+                else {
+                  // Initialize url_extended fields with both title and url
+                  if (template.extra_fields[fieldName].type === 'url_extended') {
+                    this.blockForm.extra_fields[fieldName] = {
+                      title: '',
+                      url: '',
+                      attributes: {
+                        label: '',
+                        class: '',
+                        id: 'link-' + Math.random().toString(36).slice(2),
+                        target: '',
+                        rel: '',
+                      },
+                    };
+                  } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
+                    this.blockForm.extra_fields[fieldName] = {
+                      id: null,
+                      url: null,
+                      name: null,
+                      path: 'extra_fields.' + fieldName,
+                      key: new Date().getTime(),
+                    };
+                  } else if (template.extra_fields[fieldName].type === 'json_api_collection') {
+                    // Nothing to change here
+                    this.blockForm.extra_fields[fieldName] = template.extra_fields[fieldName]['options']['#default_value'];
+                  } else if (template.extra_fields[fieldName].type === 'text_format') {
+                    this.getForm(`wysi-extra-${index}`, -1, false, false, true, false);
+                  } else {
+                    this.blockForm.extra_fields[fieldName] = '';
+                  }
+                }
+                // END - extra
               });
             }
 
@@ -602,34 +918,78 @@
               Object.keys(template.fields).forEach((fieldName, index) => {
                 console.log('template.fields[fieldName]', template.fields[fieldName]);
                 // Initialize url_extended fields with both title and url
-                if (template.fields[fieldName].type === 'url_extended') {
-                  this.blockForm.fields[fieldName] = {
-                    title: '',
-                    url: '',
-                    attributes: {
-                      label: '',
-                      class: '',
-                      id: 'link-' + Math.random().toString(36).slice(2),
-                      target: '',
-                      rel: '',
-                    },
 
-                  };
-                } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
-                  this.blockForm.fields[fieldName] = {
-                    id: null,
-                    url: null,
-                    name: null,
-                    path: 'fields.' + fieldName,
-                    key: new Date().getTime(),
-                  };
-                } else if (template.fields[fieldName].type === 'json_api_collection') {
-                  this.blockForm.fields[fieldName] = template.fields[fieldName]['options']['#default_value'];
-                } else if (template.fields[fieldName].type === 'text_format') {
-                  this.getForm(`wysi-single-${index}`, -1, false, true, false);
-                } else {
-                  this.blockForm.fields[fieldName] = '';
+                // START - single group
+                if (fieldName.startsWith('group_')) {
+                  Object.keys(template.fields[fieldName]).forEach((itemName, index) => {
+                    if (!this.blockForm.fields[fieldName]) {
+                      this.blockForm.fields[fieldName] = {};
+                    }
+
+                    if (template.fields[fieldName][itemName].type === 'url_extended') {
+                      this.blockForm.fields[fieldName][itemName] = {
+                        title: '',
+                        url: '',
+                        attributes: {
+                          label: '',
+                          class: '',
+                          id: 'link-' + Math.random().toString(36).slice(2),
+                          target: '',
+                          rel: '',
+                        },
+                      };
+                    } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName][itemName].type)) {
+                      this.blockForm.fields[fieldName][itemName] = {
+                        id: null,
+                        url: null,
+                        name: null,
+                        path: 'fields.' + fieldName + '.' + itemName,
+                        key: Math.random().toString(36).slice(2),
+                      };
+                    } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
+                      this.blockForm.fields[fieldName][itemName] = template.fields[fieldName][itemName]['options']['#default_value'];
+                    } else if (template.fields[fieldName][itemName].type === 'text_format') {
+                      this.getForm(`wysi-group-${index}-${itemName}`, -1, false, true, false, true);
+                    } else {
+                      this.blockForm.fields[fieldName][itemName] = '';
+                    }
+                  });
+                } 
+                // END - single group
+
+                // START - single
+                else {
+                  // Initialize url_extended fields with both title and url
+                  if (template.fields[fieldName].type === 'url_extended') {
+                    this.blockForm.fields[fieldName] = {
+                      title: '',
+                      url: '',
+                      attributes: {
+                        label: '',
+                        class: '',
+                        id: 'link-' + Math.random().toString(36).slice(2),
+                        target: '',
+                        rel: '',
+                      },
+                    };
+                  } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
+                    this.blockForm.fields[fieldName] = {
+                      id: null,
+                      url: null,
+                      name: null,
+                      path: 'fields.' + fieldName,
+                      key: new Date().getTime(),
+                    };
+                  } else if (template.fields[fieldName].type === 'json_api_collection') {
+                    this.blockForm.fields[fieldName] = template.fields[fieldName]['options']['#default_value'];
+                  } else if (template.fields[fieldName].type === 'text_format') {
+                    this.getForm(`wysi-single-${index}`, -1, false, true, false, false);
+                  } else {
+                    this.blockForm.fields[fieldName] = '';
+                  }
                 }
+                // END - single
+
               });
             }
             this.showBlocksModal = false;
@@ -779,33 +1139,75 @@
             const newItem = {};
             // Initialize all fields with empty values
             Object.keys(this.selectedTemplate.fields).forEach((fieldName, index) => {
-              // Initialize url_extended fields with both title and url
-              if (this.selectedTemplate.fields[fieldName].type === 'url_extended') {
-                newItem[fieldName] = {
-                  title: '',
-                  url: '',
-                  attributes: {
-                    label: '',
-                    class: '',
-                    id: 'link-' + Math.random().toString(36).slice(2),
-                    target: '',
-                    rel: '',
-                  },
-                };
-              } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
-                newItem[fieldName] = {
-                  id: null,
-                  url: null,
-                  name: null,
-                  path: 'items.' + this.blockForm.items.length + '.' + fieldName,
-                  key: new Date().getTime(),
-                };
-              } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
-                // Nothing to change here
-                newItem[fieldName] = this.selectedTemplate.fields[fieldName]['options']['#default_value'];
-              } else {
-                newItem[fieldName] = '';
+
+              // START - multiple group
+              if (fieldName.startsWith('group_')) {
+                Object.keys(this.selectedTemplate.fields[fieldName]).forEach((itemName, index) => {
+
+                  if (!newItem[fieldName]) {
+                    newItem[fieldName] = {};
+                  }
+
+                  if (this.selectedTemplate.fields[fieldName][itemName].type === 'url_extended') {
+                    newItem[fieldName][itemName] = {
+                      title: '',
+                      url: '',
+                      attributes: {
+                        label: '',
+                        class: '',
+                        id: 'link-' + Math.random().toString(36).slice(2),
+                        target: '',
+                        rel: '',
+                      },
+                    };
+                  } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName][itemName].type)) {
+                    newItem[fieldName][itemName] = {
+                      id: null,
+                      url: null,
+                      name: null,
+                      path: 'items.' + this.blockForm.items.length + '.' + fieldName + '.' + itemName,
+                      key: new Date().getTime(),
+                    };
+                  } else if (this.selectedTemplate.fields[fieldName][itemName].type === 'json_api_collection') {
+                    // Nothing to change here
+                    newItem[fieldName][itemName] = this.selectedTemplate.fields[fieldName][itemName]['options']['#default_value'];
+                  } else {
+                    newItem[fieldName][itemName] = '';
+                  }
+                });
               }
+              // END - multiple group
+
+              else {
+                // Initialize url_extended fields with both title and url
+                if (this.selectedTemplate.fields[fieldName].type === 'url_extended') {
+                  newItem[fieldName] = {
+                    title: '',
+                    url: '',
+                    attributes: {
+                      label: '',
+                      class: '',
+                      id: 'link-' + Math.random().toString(36).slice(2),
+                      target: '',
+                      rel: '',
+                    },
+                  };
+                } else if (['image', 'file', 'remote_video'].includes(this.selectedTemplate.fields[fieldName].type)) {
+                  newItem[fieldName] = {
+                    id: null,
+                    url: null,
+                    name: null,
+                    path: 'items.' + this.blockForm.items.length + '.' + fieldName,
+                    key: new Date().getTime(),
+                  };
+                } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
+                  // Nothing to change here
+                  newItem[fieldName] = this.selectedTemplate.fields[fieldName]['options']['#default_value'];
+                } else {
+                  newItem[fieldName] = '';
+                }
+              }
+
             });
 
             // Add the new item with highlighted state
@@ -818,7 +1220,12 @@
               const newItemElement = document.querySelector(`[data-item-index="${newItemIndex}"]`);
               if (newItemElement) {
                 newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                this.getForm("", newItemIndex, true, false, false);
+                
+                const hasGroupField = Object.keys(this.selectedTemplate.fields).some(fieldName =>
+                  fieldName.startsWith('group_')
+                );
+
+                this.getForm('', newItemIndex, true, false, false, hasGroupField);
 
                 // Remove highlight after 3 seconds
                 setTimeout(() => {
