@@ -50,6 +50,18 @@ class VactoryDashboardSettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('dashboard') ?? true,
     ];
 
+    $form['pagespeed'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Page speed button'),
+      '#open' => TRUE,
+    ];
+
+    $form['pagespeed']['pagespeed_btn'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Show/hide page speed button'),
+      '#default_value' => $config->get('pagespeed_btn') ?? true,
+    ];
+
     $form['image'] = [
       '#type' => 'managed_file',
       '#title' => $this->t('Logo'),
@@ -203,6 +215,10 @@ class VactoryDashboardSettingsForm extends ConfigFormBase {
 
     $this->configFactory()->getEditable('vactory_dashboard.global.settings')
       ->set('dashboard', $form_state->getValue('dashboard') ?? "")
+      ->save();
+
+    $this->configFactory()->getEditable('vactory_dashboard.global.settings')
+      ->set('pagespeed_btn', $form_state->getValue('pagespeed_btn') ?? false)
       ->save();
 
     \Drupal::cache()->delete('vactory_dashboard.vocabularies');
