@@ -589,43 +589,21 @@ class DashboardNodeController extends ControllerBase {
           continue;
         }
 
+        if (is_array($field_value) && isset($field_value['value'], $field_value['end_value'])) {
+          if ($field_value['end_value'] < $field_value['value']) {
+            throw new \Exception('End date cannot be before start date');
+          }
+          $node->set($field_name, $field_value);
+          continue;
+        }
+        
         if ($field_value) {
           $node->set($field_name, $field_value);
-        }
+        }   
       }
 
       if ($node->hasField('field_vactory_paragraphs')) {
-        $ordered_paragraphs = [];
-        if (!empty($blocks)) {
-          foreach ($blocks as $block) {
-            $paragraph_entity = NULL;
-            $paragraph = [
-              "type" => "vactory_component",
-              "field_vactory_title" => $block['title'],
-              "field_vactory_flag" => $block['show_title'],
-              "paragraph_container" => $block['width'],
-              "container_spacing" => $block['spacing'],
-              "paragraph_css_class" => $block['css_classes'],
-
-              "field_vactory_component" => [
-                "widget_id" => $block['widget_id'],
-                "widget_data" => json_encode($block['widget_data']),
-              ],
-            ];
-            $paragraph['langcode'] = $language;
-            $paragraph_entity = Paragraph::create($paragraph);
-            $paragraph_entity->save();
-            $ordered_paragraphs[] = [
-              'target_id' => $paragraph_entity->id(),
-              'target_revision_id' => \Drupal::entityTypeManager()
-                ->getStorage('paragraph')
-                ->getLatestRevisionId($paragraph_entity->id()),
-            ];
-          }
-        }
-        if (!empty($ordered_paragraphs)) {
-          $node->set('field_vactory_paragraphs', $ordered_paragraphs);
-        }
+        $this->nodeService->saveParagraphsInNode($node, $blocks, $language);
       }
 
       // Save SEO fields if they exist.
@@ -640,6 +618,7 @@ class DashboardNodeController extends ControllerBase {
         $node->set('field_vactory_meta_tags', serialize($meta_tags));
       }
 
+      $node->isNew();
       $node->save();
 
       return new JsonResponse([
@@ -736,9 +715,18 @@ class DashboardNodeController extends ControllerBase {
           continue;
         }
 
+        if (is_array($field_value) && isset($field_value['value'], $field_value['end_value'])) {
+          if ($field_value['end_value'] < $field_value['value']) {
+            throw new \Exception('End date cannot be before start date');
+          }
+          $node->getTranslation($language)->set($field_name, $field_value);
+          continue;
+        }
+
         if ($field_value || is_array($field_value)) {
           $node->getTranslation($language)->set($field_name, $field_value);
         }
+        
       }
 
       // Update SEO fields if they exist

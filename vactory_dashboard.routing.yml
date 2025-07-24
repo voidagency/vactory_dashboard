@@ -530,9 +530,19 @@ vactory_dashboard.templates:
     _title: "Get Templates"
   methods: [GET]
   requirements:
-    _permission: "access content"
+    _permission: "access dashboard"
   options:
     no_cache: TRUE
+
+vactory_dashboard.paragraph_blocks:
+  path: "/admin/dashboard/paragraph-blocks"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardVactoryPageController::getParagraphBlocks'
+    _title: "Paragraph Blocks"
+  methods: [GET]
+  requirements:
+    _permission: "access dashboard"
+
 vactory_dashboard.node.add:
   path: "/admin/dashboard/{bundle}/add"
   defaults:

@@ -32,7 +32,20 @@
           seo: {},
           showBlocksModal: false,
           showBlockForm: false,
+          showTemplatesList: false,
+          showParagraphBlockForm: false,
           selectedTemplate: null,
+          paragraphBlockForm: {
+            blockType: '',
+            content: '',
+            config: {
+              title: '',
+              show_title: false,
+              width: 'full_width',
+              spacing: '_none',
+              css_classes: '',
+            },
+          },
           blockForm: {
             extra_fields: {},
             fields: {},
@@ -99,15 +112,20 @@
             return isValid;
           },
           async saveNode() {
-            if (!this.validateForm()) {
+            /*if (!this.validateForm()) {
               this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
               return;
-            }
+            }*/
+
+      
+
+            console.log('fileds', this.formData.fields);
 
             if (this.isSaving) {
               return;
             }
             this.isSaving = true;
+
             try {
               const response = await fetch(`/api/vactory-dashboard/${this.bundle}/node/save`, {
                 method: 'POST',
@@ -131,7 +149,7 @@
               }
 
               this.showNotification('success', '{{ 'Node created successfully'|t }}');
-
+              
               window.location.href = data?.list;
             } catch (error) {
               console.error('Error saving node:', error);
@@ -494,6 +512,7 @@
               // Add new block
               this.blocks.push({
                 id: Date.now(),
+                bundle: "vactory_component",
                 is_new: true,
                 title: this.blockForm.config.title,
                 show_title: this.blockForm.config.show_title,
@@ -615,6 +634,101 @@
             }
             this.showBlocksModal = false;
             this.showBlockForm = true;
+            this.showTemplatesList = false;
+          },
+          handleAddBlock() {
+            // Show the paragraph block form
+            this.showBlocksModal = false;
+            this.showParagraphBlockForm = true;
+            this.showTemplatesList = false;
+          },
+          saveParagraphBlock() {
+            // Validate form
+            const form = document.getElementById('paragraph-block-form');
+            const requiredInputs = form.querySelectorAll('[required]');
+            let isValid = true;
+
+            requiredInputs.forEach(input => {
+              if (!input.value) {
+                input.classList.add('border-red-500');
+                isValid = false;
+              }
+            });
+
+            if (!isValid) {
+              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              return;
+            }
+            if (this.currentBlockIndex !== null) {
+              // Modify existing block
+              this.blocks[this.currentBlockIndex] = {
+                ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
+                title: this.paragraphBlockForm.config.title,
+                show_title: this.paragraphBlockForm.config.show_title,
+                width: this.paragraphBlockForm.config.width,
+                spacing: this.paragraphBlockForm.config.spacing,
+                css_classes: this.paragraphBlockForm.config.css_classes,
+                blockType: this.paragraphBlockForm.blockType,
+                content: this.paragraphBlockForm.content,
+              };
+              this.showNotification('success', '{{ "Paragraph block updated successfully"|t }}');
+            } else {
+              // Add new paragraph block to blocks array
+              this.blocks.push({
+                id: Date.now(),
+                bundle: "vactory_paragraph_block",
+                is_new: true,
+                title: this.paragraphBlockForm.config.title,
+                show_title: this.paragraphBlockForm.config.show_title,
+                width: this.paragraphBlockForm.config.width,
+                spacing: this.paragraphBlockForm.config.spacing,
+                css_classes: this.paragraphBlockForm.config.css_classes,
+                blockType: this.paragraphBlockForm.blockType,
+                content: this.paragraphBlockForm.content,
+                preview: '/modules/custom/vactory_dashboard/assets/images/default-screenshot.png', // Default preview image
+              });
+              this.showNotification('success', '{{ "Paragraph block added successfully"|t }}');
+            }
+
+            // Reset form
+            this.paragraphBlockForm = {
+              blockType: '',
+              content: '',
+              config: {
+                title: '',
+                show_title: false,
+                width: 'full_width',
+                spacing: '_none',
+                css_classes: '',
+              },
+            };
+
+            // Close form and reset current block index
+            this.showParagraphBlockForm = false;
+            this.currentBlockIndex = null;
+          },
+          modifyParagraphBlock(index) {
+            const block = this.blocks[index];
+            this.currentBlockIndex = index;
+            
+            // Initialize the paragraph block form with existing data
+            this.paragraphBlockForm = {
+              blockType: block.blockType || '',
+              content: block.content || '',
+              config: {
+                title: block.title || '',
+                show_title: block.show_title || false,
+                width: block.width || 'full_width',
+                spacing: block.spacing || '_none',
+                css_classes: block.css_classes || '',
+              },
+            };
+
+            // Show the paragraph block form
+            this.showParagraphBlockForm = true;
+            this.showBlockForm = false;
+            this.showBlocksModal = false;
+            this.showTemplatesList = false;
           },
           blockSearch: '',
           blockCategory: 'all',
@@ -769,6 +883,14 @@
                 this.formData.fields[fieldKey] = '';
                 return;
             }
+
+            if (field.type === 'daterange') {
+                   this.formData.fields[fieldKey] = {
+                   value: field.value?.value || '',
+                   end_value: field.value?.end_value || ''
+                    };
+                return;
+               }
 
               if (field.type === 'faqfield') {
                 this.formData.fields[fieldKey] = Array.isArray(field.value) && field.value.length
