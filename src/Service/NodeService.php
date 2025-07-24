@@ -303,6 +303,23 @@ class NodeService {
     }
     $node_data['paragraphs'] = $paragraphs;
   }
+  private function findImageFields(array $fields): array {
+    $imageFields = [];
+
+    foreach ($fields as $key => $field) {
+        if (is_array($field) && isset($field['type']) && $field['type'] === 'image') {
+            $imageFields[$key] = $field;
+        } elseif (is_array($field)) {
+            // Recurse into nested fields
+            $nested = $this->findImageFields($field);
+            if (!empty($nested)) {
+                $imageFields = array_merge($imageFields, $nested);
+            }
+        }
+    }
+
+    return $imageFields;
+  }
 
   /**
    * Process widget data to add media URLs.
@@ -314,9 +331,7 @@ class NodeService {
    */
   private function processWidgetData(&$widgetData, $widgetConfig) {
     // Get fields with type image.
-    $imageFields = array_filter($widgetConfig['fields'], function($field) {
-      return ($field['type'] ?? "") === 'image';
-    });
+    $imageFields = $this->findImageFields($widgetConfig);
 
     $extraFieldsImageFields = array_filter($widgetConfig['extra_fields'] ?? [], function($field) {
       return ($field['type'] ?? "") === 'image';
@@ -366,32 +381,45 @@ class NodeService {
       }
 
       // Process each image field in the item.
-      foreach ($imageFields as $fieldName) {
-        if (isset($item[$fieldName]) && is_array($item[$fieldName])) {
-          // Get the random key (e.g., f998c32812bd2cc9395e57409a3f6986)
-          $randomKey = array_key_first($item[$fieldName]);
+      foreach ($item as $skey => $subitem) {
+        foreach ($imageFields as $fieldName) {
 
-          if ($randomKey && isset($item[$fieldName][$randomKey]['selection'][0]['target_id'])) {
-            $mediaId = $item[$fieldName][$randomKey]['selection'][0]['target_id'];
-            // Load the media entity.
-            /** @var \Drupal\media\Entity\Media $media */
-            $media = $this->entityTypeManager->getStorage('media')
-              ->load($mediaId);
-            if ($media instanceof MediaInterface) {
-              // Get the file URL.
-              $url = '';
-              if ($media->hasField('field_media_image') && !$media->get('field_media_image')
-                  ->isEmpty()) {
-                /** @var \Drupal\file\Entity\File $file */
-                $file = $media->get('field_media_image')->entity;
-                if ($file instanceof FileInterface) {
-                  $url = $file->createFileUrl();
+          $container = str_starts_with($skey, 'group_') ? $item[$skey] : $item;
+          $parentKey = str_starts_with($skey, 'group_') ? $skey : null;
+
+          // Check if image field exists in the current container
+          if (isset($container[$fieldName]) && is_array($container[$fieldName])) {
+
+            $randomKey = array_key_first($container[$fieldName]);
+
+            if ($randomKey && isset($container[$fieldName][$randomKey]['selection'][0]['target_id'])) {
+              $mediaId = $container[$fieldName][$randomKey]['selection'][0]['target_id'];
+
+              // Load the media entity.
+              /** @var \Drupal\media\Entity\Media $media */
+              $media = $this->entityTypeManager->getStorage('media')->load($mediaId);
+              if ($media instanceof MediaInterface) {
+                $url = '';
+                if (
+                  $media->hasField('field_media_image') &&
+                  !$media->get('field_media_image')->isEmpty()
+                ) {
+                  /** @var \Drupal\file\Entity\File $file */
+                  $file = $media->get('field_media_image')->entity;
+                  if ($file instanceof FileInterface) {
+                    $url = $file->createFileUrl();
+                  }
+                }
+
+                // Apply URL update depending on whether it's grouped or not
+                if ($parentKey) {
+                  $item[$parentKey][$fieldName][$randomKey]['selection'][0]['url'] = $url;
+                  $widgetData[$key][$parentKey][$fieldName][$randomKey]['selection'][0]['url'] = $url;
+                } else {
+                  $item[$fieldName][$randomKey]['selection'][0]['url'] = $url;
+                  $widgetData[$key][$fieldName][$randomKey]['selection'][0]['url'] = $url;
                 }
               }
-
-              // Add the URL to the image data.
-              $item[$fieldName][$randomKey]['selection'][0]['url'] = $url;
-              $widgetData[$key][$fieldName][$randomKey]['selection'][0]['url'] = $url;
             }
           }
         }
