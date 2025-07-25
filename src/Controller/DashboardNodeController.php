@@ -596,10 +596,10 @@ class DashboardNodeController extends ControllerBase {
           $node->set($field_name, $field_value);
           continue;
         }
-        
+
         if ($field_value) {
           $node->set($field_name, $field_value);
-        }   
+        }
       }
 
       if ($node->hasField('field_vactory_paragraphs')) {
@@ -726,7 +726,6 @@ class DashboardNodeController extends ControllerBase {
         if ($field_value || is_array($field_value)) {
           $node->getTranslation($language)->set($field_name, $field_value);
         }
-        
       }
 
       // Update SEO fields if they exist
@@ -742,7 +741,9 @@ class DashboardNodeController extends ControllerBase {
       }
 
       // Update blocks/paragraphs if they exist.
-      $this->nodeService->updateParagraphsInNode($node, $blocks, $language, $node_default_lang);
+      if ($node->hasField('field_vactory_paragraphs')) {
+        $this->nodeService->updateParagraphsInNode($node, $blocks, $language, $node_default_lang);
+      }
 
       // Save the node
       $node->save();
