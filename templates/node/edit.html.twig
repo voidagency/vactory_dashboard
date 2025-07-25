@@ -32,6 +32,9 @@
             );
           },
           // End other bundle specific vars.
+          selectedDynamicField: null,
+          showDynamicFieldModal: false,
+          dynamicFields: {},
           nid: config.nid,
           errorMessage: '',
           language: config.language,
@@ -173,8 +176,14 @@
               this.showNotification('success', '{{ 'Item order updated'|t }}');
             }
           },
-          async modifyBlock(index) {
-            const block = this.blocks[index];
+          async modifyBlock(index, fieldName = '') {
+            let block = null;
+            if (fieldName) {
+              block = this.dynamicFields[fieldName][index];
+              this.selectedDynamicField = fieldName;
+            } else {
+              block = this.blocks[index];
+            }
             this.currentBlockIndex = index;
             // Find the template that matches this block
             const template = block.widget_config;
@@ -242,9 +251,9 @@
                         mappedItem[fieldName][itemName] = item[fieldName][itemName];
                       }
                     });
-                  } 
-                  // END - multiple field - group
-                  
+                  }
+                    // END - multiple field - group
+
                   // START - multiple field
                   else {
                     if (template.fields[fieldName].type === 'text_format') {
@@ -275,8 +284,7 @@
                       mappedItem[fieldName] = item[fieldName];
                     } else if (template.fields[fieldName].type === 'checkbox') {
                       mappedItem[fieldName] = item[fieldName] == 1;
-                    }
-                    else {
+                    } else {
                       mappedItem[fieldName] = item[fieldName];
                     }
                   }
@@ -460,7 +468,11 @@
                 }
               });
             }
-            this.showBlockForm = true;
+            if (fieldName) {
+              this.showDynamicFieldModal = true;
+            } else {
+              this.showBlockForm = true;
+            }
           },
           saveBlock() {
             let blockData;
@@ -474,7 +486,7 @@
                   // START - multiple field group
                   if (fieldName.startsWith('group_')) {
                     blockData[index][fieldName] = {};
-                    Object.keys(this.selectedTemplate.fields[fieldName]).forEach((itemName) => {                      
+                    Object.keys(this.selectedTemplate.fields[fieldName]).forEach((itemName) => {
 
                       if (this.selectedTemplate.fields[fieldName][itemName].type === 'text_format') {
                         blockData[index][fieldName][itemName] = {
@@ -502,7 +514,7 @@
                         blockData[index][fieldName][itemName] = item[fieldName][itemName];
                       }
                     });
-                  } 
+                  }
                   // END - multiple field group
 
                   else {
@@ -676,34 +688,68 @@
               });
             }
 
-            if (this.currentBlockIndex !== null) {
-              // Modify existing block
-              this.blocks[this.currentBlockIndex] = {
-                ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
-                widget_data: blockData,
-                title: this.blockForm.config.title,
-                show_title: this.blockForm.config.show_title,
-                width: this.blockForm.config.width,
-                spacing: this.blockForm.config.spacing,
-                css_classes: this.blockForm.config.css_classes,
+            if (this.selectedDynamicField) {
+              if (this.currentBlockIndex !== null) {
+                this.dynamicFields[this.selectedDynamicField][this.currentBlockIndex] = {
+                  ...this.dynamicFields[this.selectedDynamicField][this.currentBlockIndex],
+                  widget_data: blockData,
+                };
+              } else {
+                this.dynamicFields = {
+                  ...this.dynamicFields,
+                  [this.selectedDynamicField]: [
+                    ...(this.dynamicFields[this.selectedDynamicField] || []),
+                    {
+                      id: Date.now(),
+                      title: this.selectedTemplate.name,
+                      bundle: 'vactory_component',
+                      widget_data: blockData,
+                      widget_config: this.selectedTemplate,
+                      preview: this.selectedTemplate.screenshot,
+                      widget_id: this.selectedTemplate.uuid,
+                    },
+                  ],
+                };
+              }
+
+              this.formData.fields = {
+                ...this.formData.fields,
+                [this.selectedDynamicField]: {
+                  widget_id: this.selectedTemplate.uuid,
+                  widget_data: JSON.stringify(blockData),
+                },
               };
-              this.showNotification('success', '{{ 'Block updated successfully'|t }}');
+
             } else {
-              // Add new block
-              this.blocks.push({
-                id: Date.now(),
-                is_new: true,
-                title: this.blockForm.config.title,
-                show_title: this.blockForm.config.show_title,
-                width: this.blockForm.config.width,
-                spacing: this.blockForm.config.spacing,
-                css_classes: this.blockForm.config.css_classes,
-                preview: this.selectedTemplate.screenshot,
-                widget_id: this.selectedTemplate.uuid,
-                widget_config: this.selectedTemplate,
-                widget_data: blockData,
-              });
-              this.showNotification('success', '{{ 'Block added successfully'|t }}');
+              if (this.currentBlockIndex !== null) {
+                // Modify existing block
+                this.blocks[this.currentBlockIndex] = {
+                  ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
+                  widget_data: blockData,
+                  title: this.blockForm.config.title,
+                  show_title: this.blockForm.config.show_title,
+                  width: this.blockForm.config.width,
+                  spacing: this.blockForm.config.spacing,
+                  css_classes: this.blockForm.config.css_classes,
+                };
+                this.showNotification('success', '{{ 'Block updated successfully'|t }}');
+              } else {
+                // Add new block
+                this.blocks.push({
+                  id: Date.now(),
+                  is_new: true,
+                  title: this.blockForm.config.title,
+                  show_title: this.blockForm.config.show_title,
+                  width: this.blockForm.config.width,
+                  spacing: this.blockForm.config.spacing,
+                  css_classes: this.blockForm.config.css_classes,
+                  preview: this.selectedTemplate.screenshot,
+                  widget_id: this.selectedTemplate.uuid,
+                  widget_config: this.selectedTemplate,
+                  widget_data: blockData,
+                });
+                this.showNotification('success', '{{ 'Block added successfully'|t }}');
+              }
             }
 
             // Reset form and close
@@ -721,11 +767,17 @@
             };
             this.currentBlockIndex = null;
             this.showBlockForm = false;
+            this.selectedDynamicField = null;
+            this.showDynamicFieldModal = false;
             if (!this.bundle) {
               this.saveChanges();
             }
           },
           selectTemplate(template) {
+            if (this.selectedDynamicField) {
+              this.showDynamicFieldModal = true;
+            }
+
             this.selectedTemplate = template;
             this.currentBlockIndex = null; // Reset current block index for new blocks
             // Initialize the form data structure
@@ -892,6 +944,11 @@
           templates: [],
           categories: [],
           isLoadingTemplates: false,
+          showParagraphTemplateForm(fieldName) {
+            this.selectedDynamicField = fieldName;
+            this.showBlocksModal = true;
+            this.showTemplatesList = true;
+          },
           async fetchTemplates() {
             this.isLoadingTemplates = true;
             try {
@@ -973,7 +1030,7 @@
                   }
                 });
               }
-              // END - multiple group
+                // END - multiple group
 
               // START - multiple
               else {
@@ -1018,10 +1075,10 @@
 
               if (newItemElement) {
                 newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    
+
                 // Check if group_ field exists
                 const hasGroupField = Object.keys(this.selectedTemplate.fields).some(fieldName =>
-                  fieldName.startsWith('group_')
+                  fieldName.startsWith('group_'),
                 );
 
                 this.getForm('', newItemIndex, true, false, false, hasGroupField);
@@ -1232,9 +1289,38 @@
                     path: fieldKey,
                     key: new Date().getTime(),
                   };
-                } else {
-                  this.formData.fields[fieldKey] = node[fieldKey] ?? '';
+                  return;
                 }
+
+                if (field.type === 'field_wysiwyg_dynamic') {
+                  // Add the df value to dynamicFields and formData state.
+                  this.dynamicFields = {
+                    ...this.dynamicFields,
+                    [fieldKey]: [
+                      ...(this.dynamicFields[fieldKey] || []),
+                      {
+                        id: Date.now(),
+                        title: node[fieldKey]?.[0]?.widget_config?.name ?? '',
+                        bundle: 'vactory_component',
+                        widget_data: node[fieldKey]?.[0]?.widget_data,
+                        widget_config: node[fieldKey]?.[0]?.widget_config,
+                        preview: node[fieldKey]?.[0]?.widget_config?.screenshot,
+                        widget_id: node[fieldKey]?.[0]?.widget_config?.uuid,
+                      },
+                    ],
+                  };
+                  this.formData.fields = {
+                    ...this.formData.fields,
+                    [fieldKey]: {
+                      widget_id: node[fieldKey]?.[0]?.widget_config?.uuid,
+                      widget_data: JSON.stringify(node[fieldKey]?.[0]?.widget_data),
+                    },
+                  };
+                  return;
+                }
+
+                this.formData.fields[fieldKey] = node[fieldKey] ?? '';
+
               });
             }
 
@@ -1419,9 +1505,14 @@
               this.isSaving = false;
             }
           },
-          removeBlock(index) {
+          removeBlock(index, fieldName = '') {
             // Remove the block at the specified index
-            this.blocks.splice(index, 1);
+            if (fieldName) {
+              this.dynamicFields[fieldName].splice(index, 1);
+            } else {
+              // Remove the block at the specified index
+              this.blocks.splice(index, 1);
+            }
             // Show success notification
             this.showNotification('success', '{{ 'Block removed successfully'|t }}');
             if (!this.bundle) {

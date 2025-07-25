@@ -114,6 +114,10 @@ class NodeService {
         }
         continue;
       }
+      if ($field['type'] === 'field_wysiwyg_dynamic') {
+        $this->prepareWysiwygDynamic($node, $node_data, $field['name']);
+        continue;
+      }
 
       if ($field['type'] === 'daterange') {
         $values = $node->get($field['name'])->getValue();
@@ -339,6 +343,28 @@ class NodeService {
       }
     }
     $node_data['paragraphs'] = $paragraphs;
+  }
+
+  /**
+   * Prepare vactory paragraphs data.
+   */
+  private function prepareWysiwygDynamic($node, &$node_data, $fieldName) {
+    $paragraphs = [];
+    $default_value = $node->get($fieldName)->getValue() ?? [];
+    foreach ($default_value as $component) {
+      $widgetId = $component['widget_id'];
+      $widgetData = Json::decode($component['widget_data']);
+      $widgetConfig = \Drupal::service('vactory_dynamic_field.vactory_provider_manager')
+        ->loadSettings($widgetId);
+      $this->processWidgetData($widgetData, $widgetConfig);
+      $paragraphs[] = [
+        'bundle' => 'vactory_component',
+        'widget_id' => $widgetId,
+        'widget_data' => $widgetData,
+        'widget_config' => $widgetConfig,
+      ];
+    }
+    $node_data[$fieldName] = $paragraphs;
   }
 
   /**

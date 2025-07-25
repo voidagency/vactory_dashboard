@@ -45,7 +45,8 @@
                 <form id="block-form" @submit.prevent="saveBlock()" class="bg-white rounded-xl shadow-sm p-2 lg:p-8">
                     <div class="flex items-start flex-col md:flex-row gap-6">
                         <div
-                                class="w-full md:w-2/3">
+                                class="{% if not hideBlockConfig %}w-full md:w-2/3{% else %}w-full{% endif %}"
+                        >
                             {# Start Handling Extra Fields #}
                             <template x-if="selectedTemplate?.extra_fields">
                                 <div class="mb-8 border-b border-slate-200 p-6 rounded-xl bg-slate-50">
