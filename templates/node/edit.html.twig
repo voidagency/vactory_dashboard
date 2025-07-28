@@ -474,7 +474,11 @@
               this.showBlockForm = true;
             }
           },
-          saveBlock() {
+          saveBlock(id="node-form") {
+            if (!this.validateForm(id)) {
+              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              return;
+            }
             let blockData;
             if (this.selectedTemplate.multiple) {
               // For multiple items, convert array to object with numeric keys
@@ -1520,25 +1524,78 @@
             }
           },
           // Node Specific logique for saving node
-          validateForm() {
-            const form = document.getElementById('node-form');
+          validateForm(id) {
+            const form = document.getElementById(id);
             const requiredInputs = form.querySelectorAll('[required]');
             let isValid = true;
 
+            console.log("requiredInputs: ", requiredInputs);
+
             requiredInputs.forEach(input => {
-              if (!input.value && !input.disabled) {
-                input.classList.add('border-red-500');
-                isValid = false;
+              const borderClass = '!border-red-500';
+
+              if (input.tagName === 'BUTTON') {
+                const parent = input.parentNode;
+                const type = parent.querySelector('input[type="hidden"]')?.value || '';
+
+                let validMedia = false;
+                switch (type) {
+                  case "image": {
+                    const imgEl = parent.querySelector('.image');
+                    validMedia = !!(imgEl?.src);
+                    break;
+                  }
+                  case "file":
+                  case "private_file": {
+                    const fileEl = parent.querySelector('.file-name');
+                    validMedia = !!(fileEl?.innerText.trim());
+                    break;
+                  }
+                  case "remote_video": {
+                    const videoEl = parent.querySelector('.video-title');
+                    validMedia = !!(videoEl?.innerText.trim());
+                    break;
+                  }
+                  default:
+                    console.warn(`Unhandled media type: ${type}`);
+                }
+
+                // Remove or add red border on button accordingly
+                if (validMedia) {
+                  input.classList.remove(borderClass);
+                } else {
+                  input.classList.add(borderClass);
+                  isValid = false;  // Mark form invalid if no valid media
+                }
+
+              } else {
+                // For normal inputs and textareas
+                const hasValue = input.value && input.value.trim() !== '';
+
+                if (input.tagName === 'TEXTAREA') {
+                  input.parentNode.classList.remove('border', borderClass);
+                } else {
+                  input.classList.remove(borderClass);
+                }
+
+                if (!hasValue && !input.disabled) {
+                  if (input.tagName === 'TEXTAREA' || input.type === 'checkboxe') {
+                    input.parentNode.classList.add('border', borderClass);
+                  } else {
+                    input.classList.add('border', borderClass);
+                  }
+                  isValid = false;
+                }
               }
             });
 
             return isValid;
           },
-          async saveNode() {
-            /*if (!this.validateForm()) {
+          async saveNode(id="node-form") {
+            if (!this.validateForm(id)) {
                   this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
               return;
-            }*/
+            }
 
             if (this.isSaving) {
               return;
