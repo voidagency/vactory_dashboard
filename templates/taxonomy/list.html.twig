@@ -10,20 +10,19 @@
                     </div>
                     <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
                         {% if user.hasPermission("create terms in " ~ taxonomy_vid) %}
-                            {% include "@vactory_admin/components/button/button.twig" with {
-                                text: 'Ajouter term',
-                                variant: 'primary',
-                                size: 'md',
-                                alpine_attrs: '@click="editingTerm = false; showModal = true"',
-                                icon_left: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>'
-                            } %}
+                            <a href="{{ path('vactory_dashboard.taxonomy.add', {'vid': taxonomy_vid}) }}"
+                               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg>
+                                {{ 'Add Term'|t }}
+                            </a>
                         {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- Add term taxonomy -->
-            {% include "@vactory_dashboard/taxonomy/add.html.twig" %}
+
 
             <!-- Confirmation Modal -->
             {% include "@vactory_dashboard/_components/modals/delete-confirmation-modal.html.twig" with {
@@ -151,15 +150,16 @@
                                                 <td class="relative py-4 pl-3 pr-4 text-sm font-medium text-right whitespace-nowrap sm:pr-6">
                                                     <div class="flex justify-end space-x-3">
                                                         {% if user.hasPermission("edit terms in " ~ taxonomy_vid) %}
-                                                            <button @click="editTerm(term)"
-                                                                    class="text-gray-400 hover:text-green-500">
+                                                            <a 
+                                                               :href="`{{ path('vactory_dashboard.taxonomy.edit', {'vid': taxonomy_vid, 'tid': 'TID_PLACEHOLDER'}) }}`.replace('TID_PLACEHOLDER', term.id)"
+                                                               class="text-gray-400 hover:text-green-500">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                                                                      viewbox="0 0 24 24" stroke="currentColor">
                                                                     <path stroke-linecap="round" stroke-linejoin="round"
                                                                           stroke-width="2"
                                                                           d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                                                 </svg>
-                                                            </button>
+                                                            </a>
                                                         {% endif %}
                                                         {% if user.hasPermission("delete terms in " ~ taxonomy_vid) %}
                                                             <button @click="confirmDeleteTerm(term.id)"
@@ -215,15 +215,10 @@
           selectAll: false,
           loading: false,
           currentPage: 1,
-          showModal: false,
           showConfirmModal: false,
           confirmModalTitle: '',
           confirmModalMessage: '',
           confirmAction: null,
-          editingTerm: null,
-          termName: '',
-          termDescription: '',
-          termLang: '',
           limit: Alpine.store('limit'),
           total: 0,
           totalPages: 1,
@@ -368,52 +363,6 @@
               status: '',
               search: '',
             };
-          },
-          editTerm(term) {
-            this.editingTerm = term;
-            this.termName = term.name;
-            this.termDescription = term.description || '';
-            this.showModal = true;
-          },
-          closeModal() {
-            this.editingTerm = true;
-            this.showModal = false;
-            this.editingTerm = null;
-            this.termName = '';
-            this.termLang = '';
-            this.termDescription = '';
-          },
-          async saveTerm() {
-            if (!this.termName.trim()) {
-              return;
-            }
-
-            const url = this.editingTerm ? `{{ path('vactory_dashboard.settings.taxonomies.edit', { vid: taxonomy_vid }) }}` : `{{ path('vactory_dashboard.settings.taxonomies.add', { vid: taxonomy_vid }) }}`;
-            const method = this.editingTerm ? 'PUT' : 'POST';
-
-            try {
-              const response = await fetch(url, {
-                method: method,
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(
-                  {
-                    id: this.editingTerm?.id,
-                    name: this.termName,
-                    description: this.termDescription,
-                    lang: this.termLang,
-                  },
-                ),
-              });
-
-              if (response.ok) {
-                this.closeModal();
-                await this.loadTaxonomyData(this.currentPage);
-              }
-            } catch (error) {
-              console.error('Error saving term:', error);
-            }
           },
           uncheck() {
             document.getElementById("term-check-toggle").checked = false;

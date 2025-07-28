@@ -1,0 +1,224 @@
+{# Reusable Form Field Builder Component #}
+{# 
+  Usage: 
+  {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
+    field: field,
+    formData: 'formData',
+    isEdit: true|false,
+    language: language,
+    node_default_lang: node_default_lang
+  } %}
+#}
+
+<div>
+    <label :class="{'required': field.required}"
+           class="block text-sm font-medium text-slate-700 mb-1">
+        <span x-text="field.label"></span>
+        <span x-show="field.required" class="text-red-500">*</span>
+        {% if isEdit and language != node_default_lang %}
+            <span x-show="!field.is_translatable"
+                  class="text-slate-500">{{ '(All languages)'|t }}</span>
+        {% endif %}
+    </label>
+
+    {# Text Input #}
+    <template x-if="field.type === 'string'">
+        <input type="text" 
+               :required="field.required" 
+               x-model="formData.fields[field.name]"
+               @invalid="$el.classList.add('border-red-500')"
+               @input="$el.classList.remove('border-red-500')"
+               class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+               {% if isEdit and language != node_default_lang %}
+                   :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+               {% endif %}>
+    </template>
+
+    {# Text with Summary #}
+    <template x-if="field.type === 'text_with_summary'">
+        <div x-html="field.textFormatField"></div>
+    </template>
+
+    {# Textarea #}
+    <template x-if="field.type === 'text_long' || field.type === 'string_long'">
+        <textarea :required="field.required" 
+                  x-model="formData.fields[field.name]" 
+                  rows="4"
+                  class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+                  {% if isEdit and language != node_default_lang %}
+                      :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                  {% endif %}></textarea>
+    </template>
+
+    {# Entity Reference Revisions (Templates) #}
+    <template x-if="field.type === 'entity_reference_revisions'">
+        <div class="flex items-center">
+            <button @click.prevent="activeTab = 'templates'" 
+                    type="button" 
+                    class="group relative flex items-center justify-center rounded-md font-bold border border-primary-500 text-primary-500 w-full px-3.5 py-4 shadow-sm transition duration-150 hover:bg-primary-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500">
+                <span x-text="blocks.length === 0 ? `Ajouter une template` : `${blocks.length} Template${blocks.length > 1 ? 's' : ''} disponible${blocks.length > 1 ? 's' : ''}`"></span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="absolute size-6 group-hover:text-white text-primary-500 right-1 top-1">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+            </button>
+        </div>
+    </template>
+
+    {# Image Upload #}
+    <template x-if="field.type === 'image'">
+        <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
+            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
+                'url': 'formData.fields[field.name].url', 
+                'path': 'formData.fields[field.name].path', 
+                'key': 'formData.fields[field.name].key', 
+                'type': 'image'
+            } %}
+        </div>
+    </template>
+
+    {# Field FAQ #}
+    <template x-if="field.type === 'faqfield'">
+        {% include "@vactory_dashboard/_components/fields/faq.html.twig" %}
+    </template>
+
+    {# Remote video #}
+    <template x-if="field.type === 'remote_video'">
+        <div>
+            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
+                'name': 'formData.fields[field.name].name', 
+                'url': 'formData.fields[field.name].url', 
+                'path': 'formData.fields[field.name].path', 
+                'key': 'formData.fields[field.name].key', 
+                'type': 'remote_video'
+            } %}
+        </div>
+    </template>
+
+    {# File Upload #}
+    <template x-if="field.type === 'file'">
+        <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
+            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
+                'name': 'formData.fields[field.name].name', 
+                'url': 'formData.fields[field.name].url', 
+                'path': 'formData.fields[field.name].path', 
+                'key': 'formData.fields[field.name].key', 
+                'type': 'file'
+            } %}
+        </div>
+    </template>
+
+    {# Private File Upload #}
+    <template x-if="field.type === 'private_file'">
+        <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
+            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
+                'name': 'formData.fields[field.name].name', 
+                'url': 'formData.fields[field.name].url', 
+                'path': 'formData.fields[field.name].path', 
+                'key': 'formData.fields[field.name].key', 
+                'type': 'private_file'
+            } %}
+        </div>
+    </template>
+
+    {# Link Field #}
+    <template x-if="field.type === 'link'">
+        <input type="text" 
+               :required="field.required" 
+               x-model="formData.fields[field.name]"
+               class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+               {% if isEdit and language != node_default_lang %}
+                   :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+               {% endif %}>
+    </template>
+
+    {# Email Input #}
+    <template x-if="field.type === 'email'">
+        <input type="email" 
+               :required="field.required" 
+               x-model="formData.fields[field.name]"
+               class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+               {% if isEdit and language != node_default_lang %}
+                   :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+               {% endif %}>
+    </template>
+
+    {# Datetime #}
+    <template x-if="field.type === 'datetime'">
+        <input type="date" 
+               :required="field.required" 
+               x-model="formData.fields[field.name]"
+               class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+               {% if isEdit and language != node_default_lang %}
+                   :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+               {% endif %}>
+    </template>
+
+    {# Dynamic Field #}
+    <template x-if="field.type === 'field_wysiwyg_dynamic'">
+        <div>
+            {% include "@vactory_dashboard/_components/fields/wysiwyg-dynamic-field.html.twig" %}
+        </div>
+    </template>
+
+    {# Date Range Field #}
+    {% include "@vactory_dashboard/_components/fields/date-range-field.html.twig" %}
+
+    {# Entity Reference (Select) #}
+    <template x-if="field.type === 'select'">
+        <div>
+            <select :key="field.name + JSON.stringify(formData.fields[field.name])"
+                    :required="field.required" 
+                    :multiple="field.multiple"
+                    x-model="formData.fields[field.name]"
+                    class="w-full py-1.5 px-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+                    {% if isEdit and language != node_default_lang %}
+                        :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                    {% endif %}>
+                <template x-if="!field.multiple">
+                    <option value="">{{ 'Select...'|t }}</option>
+                </template>
+                <template x-for="key in Object.keys(field.options)" :key="key">
+                    <option :value="key"
+                            :selected="(field.multiple ? formData.fields[field.name].includes(String(key)) : formData.fields[field.name] === String(key))"
+                            x-text="field.options[key]"
+                            class="py-1 px-2 rounded-md mb-[1px]"></option>
+                </template>
+            </select>
+        </div>
+    </template>
+
+    {# Autocomplete Field #}
+    {% include "@vactory_dashboard/_components/fields/autocomplete-field.html.twig" %}
+
+    {# Checkboxes #}
+    <template x-if="field.type === 'checkboxes'">
+        <div class="space-y-1 flex flex-col">
+            <template x-for="(label, key) in field.options" :key="key">
+                <label class="items-center space-x-2">
+                    <input type="checkbox" 
+                           :value="key" 
+                           x-model="formData.fields[field.name]"/>
+                    <span x-text="label"></span>
+                </label>
+            </template>
+        </div>
+    </template>
+
+    {# Radios #}
+    <template x-if="field.type === 'radios'">
+        <div class="space-y-1 flex flex-col">
+            <template x-for="(label, key) in field.options" :key="key">
+                <label class="items-center space-x-2">
+                    <input type="radio" 
+                           :value="key" 
+                           x-model="formData.fields[field.name]"/>
+                    <span x-text="label"></span>
+                </label>
+            </template>
+        </div>
+    </template>
+
+    {# Field Description #}
+    <p class="mb-1 text-xs text-gray-500" x-text="field.description"></p>
+</div> 

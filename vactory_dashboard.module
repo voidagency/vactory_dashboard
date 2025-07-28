@@ -198,6 +198,33 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'bundle_label' => NULL,
       ],
     ],
+    'vactory_dashboard_taxonomy_add' => [
+      'template' => 'taxonomy/add-taxonomy',
+      'variables' => [
+        'vid' => NULL,
+        'vocabulary_label' => NULL,
+        'language' => NULL,
+        'vocabulary_default_lang' => NULL,
+        'available_languages' => NULL,
+        'fields' => NULL,
+      ],
+    ],
+    'vactory_dashboard_taxonomy_edit' => [
+      'template' => 'taxonomy/edit-taxonomy',
+      'variables' => [
+        'vid' => NULL,
+        'vocabulary_label' => NULL,
+        'language' => NULL,
+        'vocabulary_default_lang' => NULL,
+        'available_languages' => NULL,
+        'fields' => NULL,
+        'term' => NULL,
+        'tid' => NULL,
+        'changed' => NULL,
+        'status' => NULL,
+        'has_translation' => NULL,
+      ],
+    ],
   ];
 }
 

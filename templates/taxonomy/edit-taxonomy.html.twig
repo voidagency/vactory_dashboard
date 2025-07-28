@@ -1,0 +1,346 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% block content %}
+    <div x-data="{ isRTL: document.dir === 'rtl' }" :dir="isRTL ? 'rtl' : 'ltr'">
+    <div class="h-full flex flex-col"
+         x-data="taxonomyEditor({
+           vid: '{{ vid }}',
+           vocabulary_label: '{{ vocabulary_label }}',
+           language: '{{ language }}',
+           fields: '{{ fields|json_encode|e('js') }}',
+           tid: '{{ tid }}',
+           term: '{{ term|json_encode|e('js') }}',
+           has_translation: '{{ has_translation }}',
+           changed: '{{ changed }}',
+           status: '{{ status }}'
+         })">
+        <div class="sticky top-0 z-10 bg-white">
+            {# Header with back button, title and actions #}
+            <div class="bg-white py-4 px-3 border-b border-slate-200 flex justify-between items-center gap-x-4 md:[dir='rtl']:flex-row-reverse">
+                <div class="flex items-center gap-x-3 md:[dir='rtl']:flex-row-reverse">
+                    <a href="{{ path('vactory_dashboard.taxonomies', {'vid': vid}) }}"
+                       class="me-3 text-slate-500 hover:text-primary-500 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                             stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-4 w-4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
+                        </svg>
+                    </a>
+                    <h1 class="text-lg font-medium">{{ "Edit"|t }} {{ vocabulary_label }}</h1>
+                </div>
+                <div class="flex max-lg:w-full max-lg:flex-wrap max-lg:gap-3 max-lg:[&>*]:w-full max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:px-3 max-lg:py-4 lg:items-center lg:space-x-4">
+                    {# Publish checkbox #}
+                    <div class="flex items-center">
+                        <input
+                                type="checkbox"
+                                id="publish-status"
+                                x-model="formData.status"
+                                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
+                        <label for="publish-status" class="ms-2 block text-sm text-slate-700">
+                            {{ 'Publish'|t }}
+                        </label>
+                    </div>
+                    {% include "@vactory_dashboard/node/_components/langs.html.twig" with {
+                        node_default_lang: vocabulary_default_lang
+                    } %}
+
+                    <button
+                            @click="saveTerm()"
+                            :disabled="isSaving"
+                            :class="{
+                    'opacity-50 cursor-not-allowed': isSaving,
+                    'bg-primary-500 hover:bg-primary-600': !isSaving,
+                    'bg-primary-400': isSaving
+                }"
+                            class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                    >
+                        <!-- Loading spinner (shown when saving) -->
+                        <svg x-show="isSaving" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                             fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <!-- Button text (changes based on loading state) -->
+                        <span x-text="isSaving ? '{{ 'Saving...'|t }}' : '{{ 'Save'|t }}'"></span>
+                    </button>
+                </div>
+            </div>
+            {# Notification #}
+            {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
+        </div>
+        {# Form Fields #}
+        <div class="flex-1 overflow-y-auto">
+            <div class="mx-auto">
+                <form id="taxonomy-form" @submit.prevent="saveTerm()"
+                      class="bg-white rounded-lg shadow-sm p-2 space-y-6">
+                    <div class="flex gap-y-6 flex-col">
+                        <template x-for="(field, fieldName) in fields" :key="field.name">
+                            {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
+                                field: 'field',
+                                formData: 'formData',
+                                isEdit: true,
+                                language: language,
+                                node_default_lang: vocabulary_default_lang
+                            } %}
+                        </template>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
+    </div>
+</div> 
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+      document.addEventListener('alpine:init', () => {
+        Alpine.data('taxonomyEditor', (config) => ({
+          vid: config.vid,
+          vocabulary_label: config.vocabulary_label,
+          language: config.language,
+          fields: config.fields ? JSON.parse(config.fields) : {},
+          tid: config.tid,
+          term: config.term ? JSON.parse(config.term) : {},
+          has_translation: config.has_translation,
+          dynamicFields: {},
+          changed: config.changed,
+          status: config.status,
+          formData: {
+            fields: {},
+            status: config.status === '1',
+          },
+          isSaving: false,
+          notification: {
+            show: false,
+            type: 'success',
+            message: '',
+            timeout: null,
+          },
+          // Media Library States
+          showMediaLibrary: false,
+          mediaLoading: false,
+          mediaError: null,
+          mediaItems: [],
+          currentMediaPage: 1,
+          totalMediaPages: 1,
+          totalMedia: 0,
+          mediaFilters: {
+            search: '',
+            type: 'image',
+            limit: Alpine.store('limit'),
+          },
+          selectedType: 'image',
+          selectedMedia: null,
+          currentField: null,
+          currentFieldPath: null,
+          currentFieldKey: null,
+
+          init() {
+            // Initialize form data based on fields and existing term data
+            Object.keys(this.fields).forEach((fieldKey) => {
+              const field = this.fields[fieldKey];
+              const existingValue = this.term.fields && this.term.fields[fieldKey];
+
+              if (field?.textFormatField) {
+                setTimeout(() => {
+                  Drupal.editors.ckeditor5.onChange(document.getElementById(`edit-${field.name.replaceAll('_', '-')}-value`), () => {
+                    const ckInstance = Drupal.CKEditor5Instances.values().next().value;
+                    this.formData.fields[field.name] = ckInstance.getData();
+                  });
+                }, '3000');
+              }
+
+              // Checkboxes
+              if (field.type === 'checkboxes') {
+                this.formData.fields[fieldKey] = existingValue || [];
+                return;
+              }
+
+              // Radios
+              if (field.type === 'radios') {
+                this.formData.fields[fieldKey] = existingValue || '';
+                return;
+              }
+
+              // Image, file, remote_video, private_file
+              if (field.type === 'image' || field.type === 'file' || field.type === 'remote_video' || field.type === 'private_file') {
+                this.formData.fields[fieldKey] = existingValue || {
+                  id: null,
+                  url: null,
+                  name: null,
+                  path: fieldKey,
+                  key: new Date().getTime(),
+                };
+              } else {
+                this.formData.fields[fieldKey] = existingValue || '';
+              }
+            });
+          },
+
+          validateForm() {
+            const form = document.getElementById('taxonomy-form');
+            const requiredInputs = form.querySelectorAll('[required]');
+            let isValid = true;
+            requiredInputs.forEach(input => {
+              if (!input.value) {
+                input.classList.add('border-red-500');
+                isValid = false;
+              }
+            });
+            return isValid;
+          },
+
+          async saveTerm() {
+            if (this.isSaving) {
+              return;
+            }
+            this.isSaving = true;
+
+            try {
+              const response = await fetch(`/api/vactory-dashboard/taxonomies/${this.vid}/edit/${this.tid}/save`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  vid: this.vid,
+                  tid: this.tid,
+                  language: this.language,
+                  fields: this.formData.fields,
+                  status: this.formData.status,
+                  has_translation: this.has_translation,
+                  changed: this.changed,
+                }),
+              });
+
+              const data = await response.json();
+
+              if (!response.ok) {
+                throw new Error(data.message || '{{ 'Failed to save term'|t }}');
+              }
+
+              this.showNotification('success', '{{ 'Term updated successfully'|t }}');
+
+              // Redirect to taxonomy list
+              window.location.href = `/${this.language}/admin/dashboard/taxonomy/${this.vid}`;
+            } catch (error) {
+              console.error('Error saving term:', error);
+              this.showNotification('error', error.message);
+            } finally {
+              this.isSaving = false;
+            }
+          },
+
+          showNotification(type, message) {
+            // Clear any existing timeout
+            if (this.notification.timeout) {
+              clearTimeout(this.notification.timeout);
+            }
+
+            // Show new notification
+            this.notification.type = type;
+            this.notification.message = message;
+            this.notification.show = true;
+
+            // Auto hide after 5 seconds
+            this.notification.timeout = setTimeout(() => {
+              this.notification.show = false;
+            }, 5000);
+          },
+
+          // Media Library Methods
+          async loadMedia(page = 1) {
+            this.mediaLoading = true;
+            this.mediaError = null;
+            this.currentMediaPage = page;
+
+            try {
+              const params = new URLSearchParams({
+                page: this.currentMediaPage.toString(),
+                limit: this.mediaFilters.limit.toString(),
+                search: this.mediaFilters.search,
+                type: this.selectedType,
+              });
+
+              const response = await fetch(`{{ path('vactory_dashboard.media.data') }}?${params.toString()}`);
+
+              if (!response.ok) {
+                throw new Error('{{ "Une erreur est survenue lors du chargement des médias"|t }}');
+              }
+
+              const data = await response.json();
+
+              this.mediaItems = data.data.map(item => ({
+                id: item.id,
+                url: item.url,
+                name: item.name,
+                type: item.type,
+              }));
+              this.totalMedia = data.total;
+              this.totalMediaPages = data.pages;
+            } catch (error) {
+              console.error('Error loading media:', error);
+              this.mediaError = error.message;
+              this.mediaItems = [];
+            } finally {
+              this.mediaLoading = false;
+            }
+          },
+          openMediaLibrary(fieldName, path, key = null, type = 'image') {
+            this.selectedType = type;
+            this.currentField = fieldName;
+            this.currentFieldPath = path;
+            this.currentFieldKey = key;
+            this.showMediaLibrary = true;
+            this.loadMedia(1);
+          },
+          closeMediaLibrary() {
+            this.showMediaLibrary = false;
+            this.selectedMedia = null;
+            this.currentField = null;
+            this.mediaItems = [];
+            this.currentMediaPage = 1;
+            this.mediaFilters.search = '';
+          },
+          setValueByPath(obj, path, newValue) {
+            const keys = path.split('.');
+            const lastKey = keys.pop();
+            const target = keys.reduce((o, key) => o[key], obj);
+            target[lastKey] = newValue;
+          },
+          selectMedia(media) {
+            this.selectedMedia = media;
+            if (!this.selectedMedia || !this.currentField) {
+              return;
+            }
+
+            // Create the media data structure
+            const mediaData = {
+              id: media.id,
+              url: media.url,
+              name: media.name,
+              path: this.currentFieldPath,
+              key: this.currentFieldKey,
+            };
+
+            this.formData.fields[this.currentFieldPath] = mediaData;
+
+            this.closeMediaLibrary();
+            this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
+          },
+          clearImage(fieldName, path, key) {
+            this.formData.fields[fieldName] = {
+              id: null,
+              url: null,
+              name: null,
+              path: fieldName,
+              key: new Date().getTime(),
+            };
+          },
+        }));
+      });
+    </script>
+{% endblock %} 

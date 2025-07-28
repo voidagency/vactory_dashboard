@@ -145,11 +145,55 @@ vactory_dashboard.settings.taxonomies.add:
 vactory_dashboard.settings.taxonomies.edit:
   path: "/admin/dashboard/settings/taxonomies/{vid}/edit"
   defaults:
-    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTaxonomiesController::edit'
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTaxonomiesController::editApi'
     _title: "Edit taxonomy term"
   requirements:
     _custom_access: '\Drupal\vactory_dashboard\Access\TaxonomyAccessCheck::checkAccess'
   methods: [PUT]
+
+vactory_dashboard.taxonomy.add:
+  path: "/admin/dashboard/taxonomies/{vid}/add"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTaxonomiesController::add'
+    _title: "Add Taxonomy Term"
+  requirements:
+    _permission: "access dashboard"
+
+vactory_dashboard.taxonomy.edit:
+  path: "/admin/dashboard/taxonomies/{vid}/edit/{tid}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTaxonomiesController::edit'
+    _title: "Edit Taxonomy Term"
+  requirements:
+    _permission: "access dashboard"
+
+vactory_dashboard.taxonomy.translate:
+  path: "/admin/dashboard/taxonomies/{vid}/edit/{tid}/add/translation"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTaxonomiesController::translate'
+    _title: "Add Translation"
+  requirements:
+    _permission: "access dashboard"
+
+vactory_dashboard.taxonomy.save:
+  path: "/api/vactory-dashboard/taxonomies/{vid}/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTaxonomiesController::save'
+  methods: [POST]
+  requirements:
+    _permission: "access dashboard"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.taxonomy.save.edit:
+  path: "/api/vactory-dashboard/taxonomies/{vid}/edit/{tid}/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardTaxonomiesController::saveEdit'
+  methods: [POST]
+  requirements:
+    _permission: "access dashboard"
+  options:
+    no_cache: TRUE
 
 vactory_dashboard.media:
   path: "/admin/dashboard/media"

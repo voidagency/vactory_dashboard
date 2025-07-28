@@ -1,0 +1,30 @@
+alpine-users-list:
+  js:
+    assets/js/users-list.js: {}
+  dependencies:
+    - vactory_admin/alpinejs
+alpine-users-edit:
+  js:
+    assets/js/users-edit.js: {}
+  dependencies:
+    - vactory_admin/alpinejs
+alpine-webform:
+  js:
+    assets/js/webform.js: {}
+  dependencies:
+    - vactory_admin/alpinejs
+alpine-webform-submission-detail:
+  js:
+    assets/js/webform-submission-detail.js: {}
+  dependencies:
+    - vactory_admin/alpinejs
+alpine-webform-submission-edit:
+  js:
+    assets/js/webform-submission-edit.js: {}
+  dependencies:
+    - vactory_admin/alpinejs
+alpine-translation:
+  js:
+    assets/js/translation.js: {}
+  dependencies:
+    - vactory_admin/alpinejs
