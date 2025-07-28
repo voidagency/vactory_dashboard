@@ -23,3 +23,8 @@ alpine-webform-submission-edit:
     assets/js/webform-submission-edit.js: {}
   dependencies:
     - vactory_admin/alpinejs
+alpine-translation:
+  js:
+    assets/js/translation.js: {}
+  dependencies:
+    - vactory_admin/alpinejs

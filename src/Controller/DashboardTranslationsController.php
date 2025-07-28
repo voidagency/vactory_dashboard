@@ -4,6 +4,7 @@ namespace Drupal\vactory_dashboard\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -73,6 +74,19 @@ class DashboardTranslationsController extends ControllerBase {
   public function content() {
     return [
       '#theme' => 'vactory_dashboard_translations',
+      '#attached' => [
+        'library' => ['vactory_dashboard/translation'],
+        'drupalSettings' => [
+          'vactoryDashboard' => [
+            'dataPath' => Url::fromRoute('vactory_dashboard.translations.data')->toString(),
+            'langsPath' => Url::fromRoute('vactory_dashboard.translations.languages')->toString(),
+            'deletePath' => Url::fromRoute('vactory_dashboard.translations.delete')->toString(),
+            'bulkDeletePath' => Url::fromRoute('vactory_dashboard.translations.bulk_delete')->toString(),
+            'importPath' => Url::fromRoute('vactory_dashboard.translations.import_front')->toString(),
+            'editPath' => Url::fromRoute('vactory_dashboard.translations.edit')->toString(),
+          ],
+        ],
+      ],
     ];
   }
 
