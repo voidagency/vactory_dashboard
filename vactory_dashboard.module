@@ -225,18 +225,6 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'has_translation' => NULL,
       ],
     ],
-    'vactory_dashboard_taxonomy_translate' => [
-      'template' => 'taxonomy/add-taxonomy',
-      'variables' => [
-        'vid' => NULL,
-        'vocabulary_label' => NULL,
-        'language' => NULL,
-        'vocabulary_default_lang' => NULL,
-        'available_languages' => NULL,
-        'fields' => NULL,
-        'tid' => NULL,
-      ],
-    ],
   ];
 }
 

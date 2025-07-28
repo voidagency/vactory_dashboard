@@ -398,13 +398,27 @@ class DashboardTaxonomiesController extends ControllerBase {
       ->getCurrentLanguage()
       ->getId();
 
+    // Check if the term already has a translation in the current language
+    try {
+      if ($term->hasTranslation($current_language)) {
+        return $this->redirect('vactory_dashboard.taxonomy.edit', [
+          'vid' => $vid,
+          'tid' => $term->id(),
+        ]);
+      }
+    }
+    catch (\Exception $e) {
+      // If there's an error checking translation, continue to translate form
+    }
+
     // Get vocabulary available languages
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
+    $available_languages = $term->getTranslationLanguages();
     foreach ($languages as $language) {
       $available_languages_list[] = [
         'id' => $language->getId(),
-        'url' => \Drupal\Core\Url::fromRoute('vactory_dashboard.taxonomy.translate', ['vid' => $vid, 'tid' => $tid], ['language' => $language]),
+        'url' => in_array($language->getId(), array_keys($available_languages)) ? '/' . $language->getId() . '/admin/dashboard/taxonomies/' . $vid . '/edit/' . $tid : '/' . $language->getId() . '/admin/dashboard/taxonomies/' . $vid . '/edit/' . $tid . '/add/translation',
       ];
     }
 
@@ -416,8 +430,9 @@ class DashboardTaxonomiesController extends ControllerBase {
     $vocabulary_label = $vocabulary->label();
 
     return [
-      '#theme' => 'vactory_dashboard_taxonomy_translate',
+      '#theme' => 'vactory_dashboard_taxonomy_edit',
       '#type' => 'not_page',
+      '#term' => $this->processTerm($term, $fields),
       '#language' => $current_language,
       '#vocabulary_default_lang' => $term->language()->getId(),
       '#available_languages' => $available_languages_list,
@@ -425,6 +440,8 @@ class DashboardTaxonomiesController extends ControllerBase {
       '#tid' => $tid,
       '#vocabulary_label' => $vocabulary_label,
       '#fields' => $fields,
+      '#has_translation' => FALSE,
+      '#status' => $term->get('status')->value,
     ];
   }
 
@@ -512,40 +529,72 @@ class DashboardTaxonomiesController extends ControllerBase {
       return new JsonResponse(['message' => 'Access denied'], Response::HTTP_FORBIDDEN);
     }
 
-    $content = json_decode($request->getContent(), TRUE);
-    $fields = $content['fields'] ?? [];
-    $status = $content['status'] ?? 1;
-
-    // Load the term
-    $term = $this->entityTypeManager->getStorage('taxonomy_term')->load($tid);
-    if (!$term) {
-      return new JsonResponse(['message' => 'Term not found'], Response::HTTP_NOT_FOUND);
-    }
-
-    // Verify the term belongs to the specified vocabulary
-    if ($term->bundle() !== $vid) {
-      return new JsonResponse(['message' => 'Term does not belong to the specified vocabulary'], Response::HTTP_BAD_REQUEST);
-    }
-
     try {
+      // Get the request content
+      $content = json_decode($request->getContent(), TRUE);
+      if (empty($content)) {
+        throw new \Exception('Invalid request data');
+      }
+
+      // Extract data from request.
+      $language = $content['language'] ?? \Drupal::languageManager()
+        ->getCurrentLanguage()
+        ->getId();
+
+      $has_translation = $content['has_translation'] ?? TRUE;
+      $has_translation = $has_translation !== "" ? $has_translation : FALSE;
+
+      $status = $content['status'] ?? TRUE;
+      $fields = $content['fields'] ?? [];
+      $client_changed = $content['changed'] ?? NULL;
+
+      // Load the term
+      $term = $this->entityTypeManager->getStorage('taxonomy_term')->load($tid);
+      if (!$term) {
+        return new JsonResponse(['message' => 'Term not found'], Response::HTTP_NOT_FOUND);
+      }
+
+      // Verify the term belongs to the specified vocabulary
+      if ($term->bundle() !== $vid) {
+        return new JsonResponse(['message' => 'Term does not belong to the specified vocabulary'], Response::HTTP_BAD_REQUEST);
+      }
+
+      // Add translation if it doesn't exist
+      if (!$has_translation) {
+        $term->addTranslation($language);
+      }
+
+      // Get the current translation
+      $term_translation = $term->getTranslation($language);
+
+      // Check for concurrent modifications
+      $current_changed = $term_translation->get('changed')->value;
+      if ($client_changed && $client_changed != $current_changed) {
+        return new JsonResponse([
+          'message' => $this->t('The term has been modified by another user. Please reload before saving.'),
+          'code' => 409,
+        ], 409);
+      }
+
       // Get the name field
       $name = $fields['name'] ?? '';
       if (empty($name)) {
         return new JsonResponse(['message' => 'Name is required'], Response::HTTP_BAD_REQUEST);
       }
 
-      $term->setName($name);
-      $term->set('status', $status);
+      // Set basic fields on the translation
+      $term_translation->setName($name);
+      $term_translation->set('status', $status);
 
       // Set description if provided
       if (isset($fields['description'])) {
-        $term->setDescription($fields['description']);
+        $term_translation->setDescription($fields['description']);
       }
 
       // Set custom fields
       foreach ($fields as $field_name => $field_value) {
         if ($term->hasField($field_name) && !in_array($field_name, ['name', 'description'])) {
-          $term->set($field_name, $field_value);
+          $term_translation->set($field_name, $field_value);
         }
       }
 
@@ -555,7 +604,7 @@ class DashboardTaxonomiesController extends ControllerBase {
         'message' => 'Term updated successfully',
         'term' => [
           'id' => $term->id(),
-          'name' => $term->getName(),
+          'name' => $term_translation->getName(),
         ],
       ]);
     }

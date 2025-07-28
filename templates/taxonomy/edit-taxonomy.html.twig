@@ -40,7 +40,9 @@
                             {{ 'Publish'|t }}
                         </label>
                     </div>
-                    {% include "@vactory_dashboard/node/_components/langs.html.twig" %}
+                    {% include "@vactory_dashboard/node/_components/langs.html.twig" with {
+                        node_default_lang: vocabulary_default_lang
+                    } %}
 
                     <button
                             @click="saveTerm()"
@@ -190,6 +192,8 @@
                   language: this.language,
                   fields: this.formData.fields,
                   status: this.formData.status,
+                  has_translation: this.has_translation,
+                  changed: this.changed,
                 }),
               });
 
@@ -202,7 +206,7 @@
               this.showNotification('success', '{{ 'Term updated successfully'|t }}');
 
               // Redirect to taxonomy list
-              window.location.href = `/admin/dashboard/taxonomy/${this.vid}`;
+              window.location.href = `/${this.language}/admin/dashboard/taxonomy/${this.vid}`;
             } catch (error) {
               console.error('Error saving term:', error);
               this.showNotification('error', error.message);
