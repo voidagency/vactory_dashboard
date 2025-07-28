@@ -2,6 +2,7 @@
 
 namespace Drupal\vactory_dashboard\Controller;
 
+use Drupal\Core\Url;
 use Drupal\webform\Entity\Webform;
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\Request;
@@ -83,6 +84,14 @@ class DashboardSubmissionController extends ControllerBase {
       '#theme' => 'vactory_dashboard_submission',
       '#id' => $id,
       '#submission_id' => $submission_id,
+      '#attached' => [
+        'library' => ['vactory_dashboard/alpine-webform-submission-detail'],
+        'drupalSettings' => [
+          'vactoryDashboard' => [
+            'dataPath' => Url::fromRoute('vactory_dashboard.webform.submission.data', ['id' => $id, 'submission_id' => $submission_id])->toString(),
+          ],
+        ],
+      ],
     ];
   }
 
@@ -97,6 +106,15 @@ class DashboardSubmissionController extends ControllerBase {
       '#theme' => 'vactory_dashboard_submission_edit',
       '#id' => $id,
       '#submission_id' => $submission_id,
+      '#attached' => [
+        'library' => ['vactory_dashboard/alpine-webform-submission-edit'],
+        'drupalSettings' => [
+          'vactoryDashboard' => [
+            'dataPath' => Url::fromRoute('vactory_dashboard.webform.submission.data', ['id' => $id, 'submission_id' => $submission_id])->toString(),
+            'editPath' => Url::fromRoute('vactory_dashboard.webform.submission.edit', ['id' => $id, 'submission_id' => $submission_id])->toString(),
+          ],
+        ],
+      ],
     ];
   }
 

@@ -4,6 +4,7 @@ namespace Drupal\vactory_dashboard\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -73,7 +74,17 @@ class DashboardUsersController extends ControllerBase {
     return [
       '#theme' => 'vactory_dashboard_users',
       '#title' => $this->t('Users'),
-
+      '#attached' => [
+        'library' => ['vactory_dashboard/alpine-users-list'],
+        'drupalSettings' => [
+          'vactoryDashboard' => [
+            'deletePath' => Url::fromRoute('vactory_dashboard.users.delete')
+              ->toString(),
+            'dataPath' => Url::fromRoute('vactory_dashboard.users.data')
+              ->toString(),
+          ],
+        ],
+      ],
     ];
   }
 
@@ -128,7 +139,10 @@ class DashboardUsersController extends ControllerBase {
     $total = $count_query->count()->execute();
 
     // Add sorting to the main query.
-    if (!empty($sort_by) && in_array(strtolower($sort_order), ['asc', 'desc'])) {
+    if (!empty($sort_by) && in_array(strtolower($sort_order), [
+        'asc',
+        'desc',
+      ])) {
       $query->sort($sort_by, $sort_order);
     }
 
@@ -146,7 +160,7 @@ class DashboardUsersController extends ControllerBase {
     foreach ($users as $user) {
       /** @var \Drupal\user\UserInterface $user */
       $roles = $user->getRoles(TRUE);
-      $role_names = array_map(function ($role) {
+      $role_names = array_map(function($role) {
         return $this->t($role);
       }, $roles);
 
@@ -260,6 +274,16 @@ class DashboardUsersController extends ControllerBase {
       '#userId' => $userId, // Passing userId to the template
       '#user_data' => $user_data,
       '#roles' => $role_options,
+      '#attached' => [
+        'library' => ['vactory_dashboard/alpine-users-edit'],
+        'drupalSettings' => [
+          'vactoryDashboard' => [
+            'editPath' => Url::fromRoute('vactory_dashboard.settings.user.edit', ['userId' => $userId])->toString(),
+            'listPath' => Url::fromRoute('vactory_dashboard.users')
+              ->toString(),
+          ],
+        ],
+      ],
     ];
   }
 
