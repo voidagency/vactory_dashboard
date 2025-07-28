@@ -5,6 +5,7 @@ namespace Drupal\vactory_dashboard\Controller;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Url;
 use Drupal\vactory_dashboard\Service\FormSearchService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\webform\Entity\Webform;
@@ -74,6 +75,16 @@ class DashboardWebformController extends ControllerBase {
     return [
       '#theme' => 'vactory_dashboard_webform',
       '#id' => $id,
+      '#attached' => [
+        'library' => ['vactory_dashboard/alpine-webform'],
+        'drupalSettings' => [
+          'vactoryDashboard' => [
+            'deletePath' => Url::fromRoute('vactory_dashboard.webform.delete')->toString(),
+            'dataPath' => Url::fromRoute('vactory_dashboard.webform.data', ['id' => $id])->toString(),
+            'searchPath' => Url::fromRoute('vactory_dashboard.webform.search', ['id' => $id])->toString(),
+          ],
+        ],
+      ],
     ];
   }
 

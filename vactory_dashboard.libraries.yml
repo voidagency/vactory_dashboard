@@ -8,3 +8,8 @@ alpine-users-edit:
     assets/js/users-edit.js: {}
   dependencies:
     - vactory_admin/alpinejs
+alpine-webform:
+  js:
+    assets/js/webform.js: {}
+  dependencies:
+    - vactory_admin/alpinejs
