@@ -1,4 +1,5 @@
-<aside x-data="menuData({id: '{{ id }}'})" class="flex w-full lg:w-64 bg-white lg:border-r lg:border-slate-200 h-screen flex-col shadow-sm">
+<aside x-data="menuData({id: '{{ id }}'})"
+       class="flex w-full lg:w-64 bg-white lg:border-r lg:border-slate-200 h-screen flex-col shadow-sm">
     <div class="border-b border-slate-200 relative group">
         <a class="flex items-center justify-center h-24" href="{{ path('vactory_dashboard.home') }}"
            data-discover="true">
@@ -11,18 +12,19 @@
     </div>
 
     {# shadow-[#00000029_0px_3px_8px_0px] #}
-  <div class="px-3 py-2 border-b border-slate-200">
-    <div class="create-page-btn">
-      <a href="{{ path('vactory_dashboard.vactory_page.add') }}">
-        <button type="button" class="group relative w-full text-left px-4 text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between overflow-hidden h-10">
-          <span>{{ "Créer une page"|t }}</span>
-          <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
-            <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-          </svg>
-        </button>
-      </a>
+    <div class="px-3 py-2 border-b border-slate-200">
+        <div class="create-page-btn">
+            <a href="{{ path('vactory_dashboard.vactory_page.add') }}">
+                <button type="button"
+                        class="group relative w-full text-left px-4 text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between overflow-hidden h-10">
+                    <span>{{ "Créer une page"|t }}</span>
+                    <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                        <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"/>
+                    </svg>
+                </button>
+            </a>
+        </div>
     </div>
-  </div>
     <nav class="flex-1 flex flex-col py-6 px-4 text-sm overflow-y-auto">
         <div>
             <h2 class="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3">{{ "Contenu"|t }}</h2>
@@ -271,38 +273,38 @@
 						<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
 					</svg>
 				  </span>
-            </button>
-            <div class="ml-5 border-l-2 border-primary-100 overflow-hidden transition-all duration-200 bg-slate-50/30 rounded-r-lg"
-                 :class="{ 'max-h-0': !openDropdowns.contentTypes, 'pb-2': openDropdowns.contentTypes }">
-                <div class="">
-                    <template x-if="loading">
-                        <div class="w-full p-2 text-center text-sm text-gray-500">
-                            <span>{{"Chargement des node types..."|t }}</span>
-                        </div>
-                    </template>
-                    <template x-if="!loading && nodeTypes.length === 0">
-                            <div class="w-full">
-                                <div class="flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 text-sm pl-4 pr-3 py-1.5 text-gray-600">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
-                                    <span class="truncate">{{ "Aucun type de contenu"|t }}</span>
+                            </button>
+                            <div class="ml-5 border-l-2 border-primary-100 overflow-hidden transition-all duration-200 bg-slate-50/30 rounded-r-lg"
+                                 :class="{ 'max-h-0': !openDropdowns.contentTypes, 'pb-2': openDropdowns.contentTypes }">
+                                <div class="">
+                                    <template x-if="loading">
+                                        <div class="w-full p-2 text-center text-sm text-gray-500">
+                                            <span>{{ "Chargement des node types..."|t }}</span>
+                                        </div>
+                                    </template>
+                                    <template x-if="!loading && nodeTypes.length === 0">
+                                        <div class="w-full">
+                                            <div class="flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 text-sm pl-4 pr-3 py-1.5 text-gray-600">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
+                                                <span class="truncate">{{ "Aucun type de contenu"|t }}</span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template x-for="(type, index) in nodeTypes" :key="index">
+                                        <div class="w-full">
+                                            <a :href="`{{ path('vactory_dashboard.content_types', {'bundle': 'REPLACE_BUNDLE'}) | replace({'REPLACE_BUNDLE': '${type.id}'}) }}`"
+                                               :class="{ 'bg-primary-50 text-primary-600': window.location.href.includes(type.id) }"
+                                               class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
+                                                <span class="truncate" x-text="stripTags(type.label)"></span>
+                                            </a>
+                                        </div>
+                                    </template>
                                 </div>
                             </div>
-                    </template>
-                    <template x-for="(type, index) in nodeTypes" :key="index">
-                        <div class="w-full">
-                            <a :href="`{{ path('vactory_dashboard.content_types', {'bundle': 'REPLACE_BUNDLE'}) | replace({'REPLACE_BUNDLE': '${type.id}'}) }}`"
-                               :class="{ 'bg-primary-50 text-primary-600': window.location.href.includes(type.id) }"
-                               class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
-                                <span class="truncate" x-text="stripTags(type.label)"></span>
-                            </a>
                         </div>
-                    </template>
+                    {% endif %}
                 </div>
             </div>
-        </div>
-        {% endif %}
-        </div>
-        </div>
 
             <div>
                 <hr class="my-5">
@@ -384,12 +386,12 @@
                                 </template>
 
                                 <template x-if="!loading && forms.length === 0">
-                                  <div class="w-full">
-                                      <div class="flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 text-sm pl-4 pr-3 py-1.5 text-gray-600">
-                                          <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
-                                          <span class="truncate">{{ "Aucun formulaire"|t }}</span>
-                                      </div>
-                                  </div>
+                                    <div class="w-full">
+                                        <div class="flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 text-sm pl-4 pr-3 py-1.5 text-gray-600">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
+                                            <span class="truncate">{{ "Aucun formulaire"|t }}</span>
+                                        </div>
+                                    </div>
                                 </template>
 
                                 <template x-if="!loading && !error && forms.length > 0">
@@ -436,7 +438,7 @@
                          :class="{ 'max-h-0': !openDropdowns.settings, 'pb-2': openDropdowns.settings }">
                         <div class="">
                             {% if user.hasPermission('administer content translation') %}
-                                <div  class="w-full">
+                                <div class="w-full">
                                     <a href="{{ path('vactory_dashboard.translations') }}"
                                        :class="{ 'bg-primary-50 text-primary-600': isCurrentPage('{{ url('vactory_dashboard.translations', {}, {absolute: true}) }}') }"
                                        class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
@@ -470,13 +472,13 @@
                                 </div>
                             {% endif %}
                             {% if user.hasPermission('administer shield') %}
-                            <div class="w-full">
-                                <a href="{{ path('vactory_dashboard.settings.shield') }}"
-                                   :class="{ 'bg-primary-50 text-primary-600': isCurrentPage('{{ url('vactory_dashboard.settings.shield', {}, {absolute: true}) }}') }"
-                                   class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
-                                    <span class="truncate">{{ 'Shield'|t }}</span>
-                                </a>
-                            </div>
+                                <div class="w-full">
+                                    <a href="{{ path('vactory_dashboard.settings.shield') }}"
+                                       :class="{ 'bg-primary-50 text-primary-600': isCurrentPage('{{ url('vactory_dashboard.settings.shield', {}, {absolute: true}) }}') }"
+                                       class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
+                                        <span class="truncate">{{ 'Shield'|t }}</span>
+                                    </a>
+                                </div>
                             {% endif %}
                             {% if user.hasPermission('administer block content') %}
                                 <div class="w-full">
@@ -511,16 +513,17 @@
 
     <div class="border-t border-slate-200 shadow-[-1px_-3px_11px_0px_#00000029] p-4">
         <div class="clear-cache ">
-          <button @click="clearCache"
-                  class="group w-full text-left px-4 text-sm font-semibold hover:bg-red-100 rounded-lg transition-all duration-200 flex items-center justify-start border border-gray-300 hover:border-red-200 hover:shadow-sm h-10">
-              <svg xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4 mr-2 group-hover:scale-110 text-red-600 transition-transform duration-200" fill="none"
-                  viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-              </svg>
-              {{ 'Vider le cache'|t }}
-          </button>
+            <button @click="clearCache"
+                    class="group w-full text-left px-4 text-sm font-semibold hover:bg-red-100 rounded-lg transition-all duration-200 flex items-center justify-start border border-gray-300 hover:border-red-200 hover:shadow-sm h-10">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="h-4 w-4 mr-2 group-hover:scale-110 text-red-600 transition-transform duration-200"
+                     fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                {{ 'Vider le cache'|t }}
+            </button>
         </div>
 
         {# Separator #}
@@ -584,11 +587,11 @@
         this.initializeOpenDropdowns();
         this.observeAsideLinks();
           {% if user.hasPermission('administer dashboard configuration') %}
-            this.isShieldModuleInstalled();
-            this.isRecaptchaModuleInstalled();
+        this.isShieldModuleInstalled();
+        this.isRecaptchaModuleInstalled();
           {% endif %}
         this.getAdvancedDashboardData();
-        
+
         this.$watch('nodeTypes', () => {
           this.openDropdowns.contentTypes = this.nodeTypes.some(type => {
             const href = window.location.href;
