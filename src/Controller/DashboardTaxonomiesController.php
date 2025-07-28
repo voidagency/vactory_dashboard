@@ -491,7 +491,21 @@ class DashboardTaxonomiesController extends ControllerBase {
       // Set custom fields
       foreach ($fields as $field_name => $field_value) {
         if ($term->hasField($field_name) && !in_array($field_name, ['name', 'description'])) {
-          $term->set($field_name, $field_value);
+          if (is_array($field_value) && isset($field_value['url'], $field_value['id'])) {
+            $term->set($field_name, $field_value['id']);
+            continue;
+          }
+          if (is_array($field_value) && isset($field_value['value'], $field_value['end_value'])) {
+            if ($field_value['end_value'] < $field_value['value']) {
+              throw new \Exception('End date cannot be before start date');
+            }
+            $term->set($field_name, $field_value);
+            continue;
+          }
+  
+          if ($field_value) {
+            $term->set($field_name, $field_value);
+          }
         }
       }
 
@@ -594,7 +608,21 @@ class DashboardTaxonomiesController extends ControllerBase {
       // Set custom fields
       foreach ($fields as $field_name => $field_value) {
         if ($term->hasField($field_name) && !in_array($field_name, ['name', 'description'])) {
-          $term_translation->set($field_name, $field_value);
+          if (is_array($field_value) && isset($field_value['url'], $field_value['id'])) {
+            $term->getTranslation($language)->set($field_name, $field_value['id']);
+            continue;
+          }
+          if (is_array($field_value) && isset($field_value['value'], $field_value['end_value'])) {
+            if ($field_value['end_value'] < $field_value['value']) {
+              throw new \Exception('End date cannot be before start date');
+            }
+            $term->getTranslation($language)->set($field_name, $field_value);
+            continue;
+          }
+  
+          if ($field_value || is_array($field_value)) {
+            $term->getTranslation($language)->set($field_name, $field_value);
+          }
         }
       }
 

@@ -92,6 +92,7 @@
             fields: {},
             status: true,
           },
+          dynamicFields: {},
           isSaving: false,
           notification: {
             show: false,
@@ -99,6 +100,24 @@
             message: '',
             timeout: null,
           },
+          // Media Library States
+          showMediaLibrary: false,
+          mediaLoading: false,
+          mediaError: null,
+          mediaItems: [],
+          currentMediaPage: 1,
+          totalMediaPages: 1,
+          totalMedia: 0,
+          mediaFilters: {
+            search: '',
+            type: 'image',
+            limit: Alpine.store('limit'),
+          },
+          selectedType: 'image',
+          selectedMedia: null,
+          currentField: null,
+          currentFieldPath: null,
+          currentFieldKey: null,
 
           init() {
             // Initialize form data based on fields
@@ -209,6 +228,96 @@
             this.notification.timeout = setTimeout(() => {
               this.notification.show = false;
             }, 5000);
+          },
+
+          // Media Library Methods
+          async loadMedia(page = 1) {
+            this.mediaLoading = true;
+            this.mediaError = null;
+            this.currentMediaPage = page;
+
+            try {
+              const params = new URLSearchParams({
+                page: this.currentMediaPage.toString(),
+                limit: this.mediaFilters.limit.toString(),
+                search: this.mediaFilters.search,
+                type: this.selectedType,
+              });
+
+              const response = await fetch(`{{ path('vactory_dashboard.media.data') }}?${params.toString()}`);
+
+              if (!response.ok) {
+                throw new Error('{{ "Une erreur est survenue lors du chargement des médias"|t }}');
+              }
+
+              const data = await response.json();
+
+              this.mediaItems = data.data.map(item => ({
+                id: item.id,
+                url: item.url,
+                name: item.name,
+                type: item.type,
+              }));
+              this.totalMedia = data.total;
+              this.totalMediaPages = data.pages;
+            } catch (error) {
+              console.error('Error loading media:', error);
+              this.mediaError = error.message;
+              this.mediaItems = [];
+            } finally {
+              this.mediaLoading = false;
+            }
+          },
+          openMediaLibrary(fieldName, path, key = null, type = 'image') {
+            this.selectedType = type;
+            this.currentField = fieldName;
+            this.currentFieldPath = path;
+            this.currentFieldKey = key;
+            this.showMediaLibrary = true;
+            this.loadMedia(1);
+          },
+          closeMediaLibrary() {
+            this.showMediaLibrary = false;
+            this.selectedMedia = null;
+            this.currentField = null;
+            this.mediaItems = [];
+            this.currentMediaPage = 1;
+            this.mediaFilters.search = '';
+          },
+          setValueByPath(obj, path, newValue) {
+            const keys = path.split('.');
+            const lastKey = keys.pop();
+            const target = keys.reduce((o, key) => o[key], obj);
+            target[lastKey] = newValue;
+          },
+          selectMedia(media) {
+            this.selectedMedia = media;
+            if (!this.selectedMedia || !this.currentField) {
+              return;
+            }
+
+            // Create the media data structure
+            const mediaData = {
+              id: media.id,
+              url: media.url,
+              name: media.name,
+              path: this.currentFieldPath,
+              key: this.currentFieldKey,
+            };
+
+            this.formData.fields[this.currentFieldPath] = mediaData;
+
+            this.closeMediaLibrary();
+            this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
+          },
+          clearImage(fieldName, path, key) {
+            this.formData.fields[fieldName] = {
+              id: null,
+              url: null,
+              name: null,
+              path: fieldName,
+              key: new Date().getTime(),
+            };
           },
         }));
       });
