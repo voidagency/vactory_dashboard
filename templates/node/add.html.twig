@@ -795,10 +795,17 @@
                       widget_config: this.selectedTemplate,
                       preview: this.selectedTemplate.screenshot,
                       widget_id: this.selectedTemplate.uuid,
-                      widget_id: this.selectedTemplate.uuid,
                     },
                   ],
                 };
+              }
+
+              this.formData.fields = {
+                ...this.formData.fields,
+                [this.selectedDynamicField]: {
+                  widget_id: this.selectedTemplate.uuid,
+                  widget_data: JSON.stringify(blockData),
+                }
               }
 
             } else {
