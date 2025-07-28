@@ -182,15 +182,25 @@
         </div>
     </template>
     {% endif %}
-
-    {# Delete Confirmation Modal #}
-    {% include '@vactory_dashboard/_components/modals/delete-confirmation-modal.html.twig' with {
-        'show_var': 'showDeleteModal',
-        'confirm_action': 'removeBlock(blockToDelete, field.name)',
-        'title': 'Delete Content Block'|t,
-        'message': 'Are you sure you want to delete this content block? This action cannot be undone.'|t,
-        'confirm_text': 'Delete Block'|t
-    } %}
+    {% if type == 'dynamic_field' %}
+        {# Delete Confirmation Modal #}
+        {% include '@vactory_dashboard/_components/modals/delete-confirmation-modal.html.twig' with {
+            'show_var': 'showDeleteModal',
+            'confirm_action': 'removeBlock(blockToDelete, field.name)',
+            'title': 'Delete Content Block'|t,
+            'message': 'Are you sure you want to delete this content block? This action cannot be undone.'|t,
+            'confirm_text': 'Delete Block'|t
+        } %}
+    {% else %}
+        {# Delete Confirmation Modal #}
+        {% include '@vactory_dashboard/_components/modals/delete-confirmation-modal.html.twig' with {
+            'show_var': 'showDeleteModal',
+            'confirm_action': 'removeBlock(blockToDelete)',
+            'title': 'Delete Content Block'|t,
+            'message': 'Are you sure you want to delete this content block? This action cannot be undone.'|t,
+            'confirm_text': 'Delete Block'|t
+        } %}
+    {% endif %}
 
     {# Image Preview Modal #}
     <div x-show="showImageModal"
