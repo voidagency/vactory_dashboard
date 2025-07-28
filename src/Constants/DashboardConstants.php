@@ -79,6 +79,11 @@ final class DashboardConstants {
    * Skipped fields.
    */
   public final const SKIPPED_FIELDS = [
+    'translation',
+    'revision_id',
+    'revision_translation_affected',
+    'revision_default',
+    'vid',
     'publication_page_types',
     'has_access_to_publication',
     'field_content_access_users',

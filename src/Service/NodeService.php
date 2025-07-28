@@ -59,13 +59,13 @@ class NodeService {
   /**
    * Process node data.
    */
-  public function processNode(NodeInterface $node, $fields) {
+  public function processNode($entity, $fields) {
     $node_data = [];
     // Get node fields
     foreach ($fields as $field) {
       if ($field['type'] === 'autocomplete') {
         $field_name = $field['name'];
-        $entity_reference_field = $node->get($field_name);
+        $entity_reference_field = $entity->get($field_name);
 
         if ($field['multiple']) {
           $node_data[$field_name] = [];
@@ -105,22 +105,22 @@ class NodeService {
       }
 
       if ($field['type'] === 'radios') {
-        $target_id = $node->get($field['name'])->target_id ?? NULL;
+        $target_id = $entity->get($field['name'])->target_id ?? NULL;
         if ($target_id !== NULL) {
           $node_data[$field['name']] = (string) $target_id;
         }
         else {
-          $node_data[$field['name']] = $node->get($field['name'])->value ?? "";
+          $node_data[$field['name']] = $entity->get($field['name'])->value ?? "";
         }
         continue;
       }
       if ($field['type'] === 'field_wysiwyg_dynamic') {
-        $this->prepareWysiwygDynamic($node, $node_data, $field['name']);
+        $this->prepareWysiwygDynamic($entity, $node_data, $field['name']);
         continue;
       }
 
       if ($field['type'] === 'daterange') {
-        $values = $node->get($field['name'])->getValue();
+        $values = $entity->get($field['name'])->getValue();
         if (!empty($values)) {
           // Cardinalité simple.
           $node_data[$field['name']] = [
@@ -138,7 +138,7 @@ class NodeService {
 
       if ($field['type'] === 'faqfield' || $field['name'] === 'field_faq') {
         // Récupérer les valeurs FAQ
-        $faq_values = $node->get($field['name'])->getValue();
+        $faq_values = $entity->get($field['name'])->getValue();
 
         $formatted_faq = [];
         foreach ($faq_values as $item) {
@@ -155,7 +155,7 @@ class NodeService {
       }
 
       if ($field['type'] == 'image') {
-        $target_id = $node->get($field['name'])->target_id;
+        $target_id = $entity->get($field['name'])->target_id;
         $media = $this->entityTypeManager->getStorage('media')
           ->load($target_id);
         if ($media instanceof MediaInterface) {
@@ -175,7 +175,7 @@ class NodeService {
         }
       }
       elseif ($field['type'] == 'remote_video') {
-        $target_id = $node->get($field['name'])->target_id;
+        $target_id = $entity->get($field['name'])->target_id;
         $media = $this->entityTypeManager->getStorage('media')
           ->load($target_id);
         if ($media instanceof MediaInterface) {
@@ -198,7 +198,7 @@ class NodeService {
       }
       elseif ($field['type'] == 'file' || $field['type'] == 'private_file') {
         $field_name = $field['type'] === 'file' ? 'field_media_file' : 'field_media_file_1';
-        $target_id = $node->get($field['name'])->target_id;
+        $target_id = $entity->get($field['name'])->target_id;
         $media = $this->entityTypeManager->getStorage('media')
           ->load($target_id);
         if ($media instanceof MediaInterface) {
@@ -218,28 +218,28 @@ class NodeService {
         }
       }
       elseif ($field['type'] === "field_cross_content") {
-        $node_data[$field['name']] = array_values(explode(" ", $node->get($field['name'])->value) ?? []);
+        $node_data[$field['name']] = array_values(explode(" ", $entity->get($field['name'])->value) ?? []);
         $node_data[$field['name']] = array_filter($node_data[$field['name']], function($vccNode) {
           return $vccNode !== "";
         });
       }
       elseif (($field['type'] === 'checkboxes' || $field['type'] === 'select') && isset($field['target_type'])) {
         if ($field['multiple']) {
-          $ids = $node->get($field['name'])->getValue() ?? [];
+          $ids = $entity->get($field['name'])->getValue() ?? [];
           $node_data[$field['name']] = array_values(array_map(function($value) {
             return $value['target_id'];
           }, $ids));
         }
         else {
-          $node_data[$field['name']] = $node->get($field['name'])->target_id ?? NULL;
+          $node_data[$field['name']] = $entity->get($field['name'])->target_id ?? NULL;
         }
       }
       else {
-        $node_data[$field['name']] = $node->get($field['name'])->value ?? "";
+        $node_data[$field['name']] = $entity->get($field['name'])->value ?? "";
       }
     }
 
-    $this->prepareVactoryParagraphsData($node, $node_data);
+    $this->prepareVactoryParagraphsData($entity, $node_data);
 
     return $node_data;
   }
@@ -503,13 +503,13 @@ class NodeService {
    * @return array
    *   Array of field definitions with their settings.
    */
-  public function getBundleFields($bundle, $countActiveLangs = 0) {
-    $fields = $this->entityFieldManager->getFieldDefinitions('node', $bundle);
+  public function getBundleFields($bundle, $countActiveLangs = 0, $type = 'node') {
+    $fields = $this->entityFieldManager->getFieldDefinitions($type, $bundle);
     $field_definitions = [];
 
     $form_mode = 'default';
     $form_display = \Drupal::service('entity_display.repository')
-      ->getFormDisplay('node', $bundle, $form_mode);
+      ->getFormDisplay($type, $bundle, $form_mode);
 
     $components = $form_display->getComponents();
     uasort($components, function($a, $b) {
