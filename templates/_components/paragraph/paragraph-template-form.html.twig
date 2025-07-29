@@ -193,7 +193,7 @@
                                                 <template x-if="fieldName.startsWith('group_')">
                                                     <div>
                                                         {# Group accordion #}
-                                                        <div x-data="{ openGroup: false }"
+                                                        <div x-data="{ openGroup: true }"
                                                              class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
                                                             <div class="flex justify-between items-center cursor-pointer select-none"
                                                                  @click="openGroup = !openGroup">
@@ -530,7 +530,7 @@
                                                 <template x-if="fieldName.startsWith('group_')">
                                                     <div>
                                                         {# Group accordion #}
-                                                        <div x-data="{ openGroup: false }"
+                                                        <div x-data="{ openGroup: true }"
                                                              class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
                                                             <div class="flex justify-between items-center cursor-pointer select-none"
                                                                  @click="openGroup = !openGroup">
@@ -775,7 +775,7 @@
                                                                     :key="fieldName">
                                                                 <template x-if="fieldName.startsWith('group_')">
                                                                     {# Group accordion #}
-                                                                    <div x-data="{ openGroup: false }"
+                                                                    <div x-data="{ openGroup: true }"
                                                                          class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
                                                                         <div class="flex justify-between items-center cursor-pointer select-none"
                                                                              @click="openGroup = !openGroup">

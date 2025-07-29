@@ -111,9 +111,9 @@
                             </div>
 
                             {# Paragraph Block Form View #}
-                            <div x-show="showParagraphBlockForm" class="h-full">
+                            <template x-if="showParagraphBlockForm" class="h-full">
                                 {% include "@vactory_dashboard/_components/paragraph/paragraph-block-form.html.twig" %}
-                            </div>
+                            </template>
 
                             <div x-show="!showBlockForm && !showParagraphBlockForm" class="space-y-1">
                                 {% include "@vactory_dashboard/_components/paragraph/blocks.html.twig" %}

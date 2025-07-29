@@ -36,7 +36,7 @@
 
     {# Text with Summary #}
     <template x-if="field.type === 'text_with_summary'">
-        <div x-html="field.textFormatField"></div>
+        <div :required="field.required" class="summary" x-html="field.textFormatField"></div>
     </template>
 
     {# Textarea #}
@@ -69,6 +69,7 @@
     <template x-if="field.type === 'image'">
         <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
+                'required': 'field.required',
                 'url': 'formData.fields[field.name].url', 
                 'path': 'formData.fields[field.name].path', 
                 'key': 'formData.fields[field.name].key', 
@@ -86,6 +87,7 @@
     <template x-if="field.type === 'remote_video'">
         <div>
             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
+                'required': 'field.required',
                 'name': 'formData.fields[field.name].name', 
                 'url': 'formData.fields[field.name].url', 
                 'path': 'formData.fields[field.name].path', 
@@ -99,6 +101,7 @@
     <template x-if="field.type === 'file'">
         <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
+                'required': 'field.required',
                 'name': 'formData.fields[field.name].name', 
                 'url': 'formData.fields[field.name].url', 
                 'path': 'formData.fields[field.name].path', 
@@ -112,6 +115,7 @@
     <template x-if="field.type === 'private_file'">
         <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
+                'required': 'field.required',
                 'name': 'formData.fields[field.name].name', 
                 'url': 'formData.fields[field.name].url', 
                 'path': 'formData.fields[field.name].path', 
