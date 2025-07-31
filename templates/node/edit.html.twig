@@ -474,7 +474,7 @@
               this.showBlockForm = true;
             }
           },
-          saveBlock(id="node-form") {
+          saveBlock(id = 'node-form') {
             if (!this.validateForm(id)) {
               this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
               return;
@@ -1298,28 +1298,30 @@
 
                 if (field.type === 'field_wysiwyg_dynamic') {
                   // Add the df value to dynamicFields and formData state.
-                  this.dynamicFields = {
-                    ...this.dynamicFields,
-                    [fieldKey]: [
-                      ...(this.dynamicFields[fieldKey] || []),
-                      {
-                        id: Date.now(),
-                        title: node[fieldKey]?.[0]?.widget_config?.name ?? '',
-                        bundle: 'vactory_component',
-                        widget_data: node[fieldKey]?.[0]?.widget_data,
-                        widget_config: node[fieldKey]?.[0]?.widget_config,
-                        preview: node[fieldKey]?.[0]?.widget_config?.screenshot,
+                  if (node[fieldKey]?.[0]?.widget_data) {
+                    this.dynamicFields = {
+                      ...this.dynamicFields,
+                      [fieldKey]: [
+                        ...(this.dynamicFields[fieldKey] || []),
+                        {
+                          id: Date.now(),
+                          title: node[fieldKey]?.[0]?.widget_config?.name ?? '',
+                          bundle: 'vactory_component',
+                          widget_data: node[fieldKey]?.[0]?.widget_data,
+                          widget_config: node[fieldKey]?.[0]?.widget_config,
+                          preview: node[fieldKey]?.[0]?.widget_config?.screenshot,
+                          widget_id: node[fieldKey]?.[0]?.widget_config?.uuid,
+                        },
+                      ],
+                    };
+                    this.formData.fields = {
+                      ...this.formData.fields,
+                      [fieldKey]: {
                         widget_id: node[fieldKey]?.[0]?.widget_config?.uuid,
+                        widget_data: JSON.stringify(node[fieldKey]?.[0]?.widget_data),
                       },
-                    ],
-                  };
-                  this.formData.fields = {
-                    ...this.formData.fields,
-                    [fieldKey]: {
-                      widget_id: node[fieldKey]?.[0]?.widget_config?.uuid,
-                      widget_data: JSON.stringify(node[fieldKey]?.[0]?.widget_data),
-                    },
-                  };
+                    };
+                  }
                   return;
                 }
 
@@ -1540,14 +1542,14 @@
 
                 let validMedia = false;
                 switch (type) {
-                  case "image":
+                  case 'image':
                     validMedia = !!parent.querySelector('.image')?.src;
                     break;
-                  case "file":
-                  case "private_file":
+                  case 'file':
+                  case 'private_file':
                     validMedia = !!parent.querySelector('.file-name')?.innerText.trim();
                     break;
-                  case "remote_video":
+                  case 'remote_video':
                     validMedia = !!parent.querySelector('.video-title')?.innerText.trim();
                     break;
                   default:
@@ -1557,7 +1559,9 @@
                 input.classList.toggle(borderClass, !validMedia);
                 if (!validMedia) {
                   isValid = false;
-                  if (!firstInvalidElement) firstInvalidElement = input;
+                  if (!firstInvalidElement) {
+                    firstInvalidElement = input;
+                  }
                 }
                 return;
               }
@@ -1570,7 +1574,9 @@
               if (inputIsSummary) {
                 const textarea = input.querySelector('textarea');
                 hasValue = !!(textarea && textarea.value.trim());
-                if (textarea) textarea.parentNode.classList.remove('border', borderClass);
+                if (textarea) {
+                  textarea.parentNode.classList.remove('border', borderClass);
+                }
               } else if (inputIsCKEditorDF) {
                 hasValue = !!input.value.trim();
                 input.parentNode.classList.remove('border', borderClass);
@@ -1584,14 +1590,20 @@
                   const textarea = input.querySelector('textarea');
                   if (textarea) {
                     textarea.parentNode.classList.add('border', borderClass);
-                    if (!firstInvalidElement) firstInvalidElement = input;
+                    if (!firstInvalidElement) {
+                      firstInvalidElement = input;
+                    }
                   }
                 } else if (inputIsCKEditorDF) {
                   input.parentNode.classList.add('border', borderClass);
-                  if (!firstInvalidElement) firstInvalidElement = input;
+                  if (!firstInvalidElement) {
+                    firstInvalidElement = input;
+                  }
                 } else {
                   input.classList.add('border', borderClass);
-                  if (!firstInvalidElement) firstInvalidElement = input;
+                  if (!firstInvalidElement) {
+                    firstInvalidElement = input;
+                  }
                 }
                 isValid = false;
               }
@@ -1604,9 +1616,9 @@
 
             return isValid;
           },
-          async saveNode(id="node-form") {
+          async saveNode(id = 'node-form') {
             if (!this.validateForm(id)) {
-                  this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
               return;
             }
 
