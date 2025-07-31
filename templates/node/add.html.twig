@@ -933,11 +933,6 @@
             this.showDynamicFieldModal = false;
           },
           selectTemplate(template) {
-
-            if (this.selectedDynamicField) {
-              this.showDynamicFieldModal = true;
-            }
-
             this.selectedTemplate = template;
             this.currentBlockIndex = null; // Reset current block index for new blocks
 
@@ -1115,8 +1110,13 @@
               });
             }
             this.showBlocksModal = false;
-            this.showBlockForm = true;
             this.showTemplatesList = false;
+            if (this.selectedDynamicField) {
+              this.showDynamicFieldModal = true;
+            }
+            else {
+              this.showBlockForm = true;
+            }
           },
           handleAddBlock() {
             // Show the paragraph block form
