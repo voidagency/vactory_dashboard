@@ -102,24 +102,92 @@
             this.inputLabels[fieldName] = item.label;
             this.suggestions[fieldName] = [];
           },
-          validateForm() {
-            const form = document.getElementById('node-form');
+          validateForm(id) {
+            const borderClass = '!border-red-500';
+            const form = document.getElementById(id);
             const requiredInputs = form.querySelectorAll('[required]');
+
             let isValid = true;
+            let firstInvalidElement = null;
+            console.log("requiredInputs: ", requiredInputs)
+
             requiredInputs.forEach(input => {
-              if (!input.value) {
-                input.classList.add('border-red-500');
+              // MEDIA FIELDS (BUTTONs)
+              if (input.tagName === 'BUTTON') {
+                const parent = input.parentNode;
+                const type = parent.querySelector('input[type="hidden"]')?.value || '';
+
+                let validMedia = false;
+                switch (type) {
+                  case "image":
+                    validMedia = !!parent.querySelector('.image')?.src;
+                    break;
+                  case "file":
+                  case "private_file":
+                    validMedia = !!parent.querySelector('.file-name')?.innerText.trim();
+                    break;
+                  case "remote_video":
+                    validMedia = !!parent.querySelector('.video-title')?.innerText.trim();
+                    break;
+                  default:
+                    console.warn(`Unhandled media type: ${type}`);
+                }
+
+                input.classList.toggle(borderClass, !validMedia);
+                if (!validMedia) {
+                  isValid = false;
+                  if (!firstInvalidElement) firstInvalidElement = input;
+                }
+                return;
+              }
+
+              // NON-MEDIA FIELDS
+              const inputIsSummary = input.classList.contains('summary');
+              const inputIsCKEditorDF = input.tagName === 'TEXTAREA' && input.id.startsWith('edit-ck');
+              let hasValue = false;
+
+              if (inputIsSummary) {
+                const textarea = input.querySelector('textarea');
+                hasValue = !!(textarea && textarea.value.trim());
+                if (textarea) textarea.parentNode.classList.remove('border', borderClass);
+              } else if (inputIsCKEditorDF) {
+                hasValue = !!input.value.trim();
+                input.parentNode.classList.remove('border', borderClass);
+              } else {
+                hasValue = !!input.value.trim();
+                input.classList.remove(borderClass);
+              }
+
+              if (!hasValue && !input.disabled) {
+                if (inputIsSummary) {
+                  const textarea = input.querySelector('textarea');
+                  if (textarea) {
+                    textarea.parentNode.classList.add('border', borderClass);
+                    if (!firstInvalidElement) firstInvalidElement = input;
+                  }
+                } else if (inputIsCKEditorDF) {
+                  input.parentNode.classList.add('border', borderClass);
+                  if (!firstInvalidElement) firstInvalidElement = input;
+                } else {
+                  input.classList.add('border', borderClass);
+                  if (!firstInvalidElement) firstInvalidElement = input;
+                }
                 isValid = false;
               }
             });
 
+            // Scroll to first invalid field
+            if (firstInvalidElement) {
+              firstInvalidElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
             return isValid;
           },
-          async saveNode() {
-            /*if (!this.validateForm()) {
+          async saveNode(id="node-form") {
+            if (!this.validateForm(id)) {
                   this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
               return;
-            }*/
+            }
 
             if (this.isSaving) {
               return;
@@ -544,7 +612,11 @@
             }
 
           },
-          saveBlock() {
+          saveBlock(id="node-form") {
+            if (!this.validateForm(id)) {
+              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              return;
+            }
             let blockData;
 
             if (this.selectedTemplate.multiple) {
@@ -1426,6 +1498,8 @@
           removeBlock(index, fieldName = '') {
             if (fieldName) {
               this.dynamicFields[fieldName].splice(index, 1);
+              // Remove default value also on formData.
+              this.formData.fields[fieldName] = {}
             } else {
               // Remove the block at the specified index
               this.blocks.splice(index, 1);

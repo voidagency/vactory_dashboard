@@ -100,6 +100,36 @@ Permet de vérifier le statut SSL d’un domaine.
 
 ---
 
+## Override des templates
+
+Le bloc de code ci-dessous permet de surcharger les templates par défaut du module ```vactory_dashboard``` en ajoutant un chemin personnalisé dans l’espace de noms Twig. Grâce à l’implémentation du hook ```hook_theme_registry_alter()```, les templates situés dans le dossier ```elsan_dashboard/templates``` sont chargés en priorité, ce qui permet de personnaliser l’affichage sans modifier les fichiers originaux du module.
+
+```php
+<?php
+
+/**
+ * @file
+ * Custom dashboard template override module.
+ */
+
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function elsan_dashboard_theme_registry_alter(&$theme_registry) {
+  // Get Twig loader
+  $twig_loader = \Drupal::service('twig.loader.filesystem');
+  
+  // Get path to your module
+  $elsan_path = \Drupal::service('extension.list.module')->getPath('elsan_dashboard');
+  
+  // Add your templates path to vactory_dashboard namespace
+  // This makes @vactory_dashboard look in your folder FIRST
+  $twig_loader->prependPath($elsan_path . '/templates', 'vactory_dashboard');
+}
+```
+
+
 # Notes
 
 - Toutes ces configurations sont accessibles via le Back Office dans les sections dédiées.  

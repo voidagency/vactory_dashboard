@@ -35,14 +35,14 @@
                     'size': 'md',
                     'type': 'button',
                     'text': 'Enregistrer'|t,
-                    'attributes': create_attribute().setAttribute('@click', 'saveBlock(); blockForm = { extra_fields: {}, fields: {}, items: [], config: { title: \'\', show_title: false, width: \'full_width\', spacing: \'_none\', css_classes: \'\' } }; selectedTemplate = null; currentBlockIndex = null; $nextTick(() => { const form = document.getElementById(\'block-form\'); if (form) { form.reset(); const inputs = form.querySelectorAll(\'input, textarea, select\'); inputs.forEach(input => { if (input.type === \'checkbox\' || input.type === \'radio\') { input.checked = false; } else { input.value = \'\'; } }); } })')
+                    'attributes': create_attribute().setAttribute('@click', 'saveBlock("block-form");')
                 } %}
             </div>
         </div>
 
         <div class="flex-1 overflow-y-auto">
             <div x-data="{ collapsedView: false }" class="mx-auto">
-                <form id="block-form" @submit.prevent="saveBlock()" class="bg-white rounded-xl shadow-sm p-2 lg:p-8">
+                <form id="block-form" @submit.prevent="saveBlock('block-form')" class="bg-white rounded-xl shadow-sm p-2 lg:p-8">
                     <div class="flex items-start flex-col md:flex-row gap-6">
                         <div
                                 class="{% if not hideBlockConfig %}w-full md:w-2/3{% else %}w-full{% endif %}"
@@ -130,6 +130,9 @@
                                                                                 setTimeout(() => {
 
                                                                                     const textarea = $el.querySelector('textarea');
+                                                                                    if (field.options?.['#required'] !== undefined) {
+                                                                                        textarea.setAttribute('required', 'required');
+                                                                                    }
                                                                                     const instanceID = textarea.getAttribute('data-ckeditor5-id');
                                                                                     let ckeditor = null;
 
@@ -161,17 +164,17 @@
 
                                                         {# Image Input #}
                                                         <template x-if="field.type === 'image'">
-                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'image'} %}
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'required': 'field.options?.["#required"]', 'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'image'} %}
                                                         </template>
 
                                                         {# Image Input #}
                                                         <template x-if="field.type === 'file'">
-                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.extra_fields[fieldName].name', 'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'file'} %}
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'blockForm.extra_fields[fieldName].name', 'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'file'} %}
                                                         </template>
 
                                                         {# Image Input #}
                                                         <template x-if="field.type === 'remote_video'">
-                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.extra_fields[fieldName].name', 'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'remote_video'} %}
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'blockForm.extra_fields[fieldName].name', 'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'remote_video'} %}
                                                         </template>
 
                                                         {# JSON API Collection #}
@@ -190,7 +193,7 @@
                                                 <template x-if="fieldName.startsWith('group_')">
                                                     <div>
                                                         {# Group accordion #}
-                                                        <div x-data="{ openGroup: false }"
+                                                        <div x-data="{ openGroup: true }"
                                                              class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
                                                             <div class="flex justify-between items-center cursor-pointer select-none"
                                                                  @click="openGroup = !openGroup">
@@ -238,10 +241,12 @@
 
                                                                             {# Checkbox #}
                                                                             <template x-if="item.type === 'checkbox'">
-                                                                                <input type="checkbox"
-                                                                                       :required="item.options?.['#required'] ?? false"
-                                                                                       x-model="blockForm.extra_fields[fieldName][itemName]"
-                                                                                >
+                                                                                <div>
+                                                                                    <input type="checkbox"
+                                                                                        :required="item.options?.['#required'] ?? false"
+                                                                                        x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                    >
+                                                                                </div>
                                                                             </template>
 
                                                                             {# Select Input #}
@@ -302,6 +307,9 @@
                                                                                                     setTimeout(() => {
 
                                                                                                         const textarea = $el.querySelector('textarea');
+                                                                                                        if (field.options?.['#required'] !== undefined) {
+                                                                                                            textarea.setAttribute('required', 'required');
+                                                                                                        }
                                                                                                         const instanceID = textarea.getAttribute('data-ckeditor5-id');
                                                                                                         let ckeditor = null;
 
@@ -329,25 +337,25 @@
                                                                             {# URL Extended Input #}
                                                                             <template
                                                                                     x-if="item.type === 'url_extended'">
-                                                                                {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { xmodel: 'blockForm.extra_fields[fieldName][itemName]' } %}
+                                                                                {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with {'required': 'field.options?.["#required"]', xmodel: 'blockForm.extra_fields[fieldName][itemName]' } %}
                                                                             </template>
 
                                                                             {# Image Input #}
                                                                             <template x-if="item.type === 'image'">
                                                                                 <div>
-                                                                                    {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'url': 'blockForm.extra_fields[fieldName][itemName].url', 'path': 'blockForm.extra_fields[fieldName][itemName].path', 'key': 'blockForm.extra_fields[fieldName][itemName].key', 'type': 'image'} %}
+                                                                                    {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'url': 'blockForm.extra_fields[fieldName][itemName].url', 'path': 'blockForm.extra_fields[fieldName][itemName].path', 'key': 'blockForm.extra_fields[fieldName][itemName].key', 'type': 'image'} %}
                                                                                 </div>
                                                                             </template>
 
                                                                             {# File Input #}
                                                                             <template x-if="item.type === 'file'">
-                                                                                {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.extra_fields[fieldName][itemName].name', 'url': 'blockForm.extra_fields[fieldName][itemName].url', 'path': 'blockForm.extra_fields[fieldName][itemName].path', 'key': 'blockForm.extra_fields[fieldName][itemName].key', 'type': 'file'} %}
+                                                                                {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'blockForm.extra_fields[fieldName][itemName].name', 'url': 'blockForm.extra_fields[fieldName][itemName].url', 'path': 'blockForm.extra_fields[fieldName][itemName].path', 'key': 'blockForm.extra_fields[fieldName][itemName].key', 'type': 'file'} %}
                                                                             </template>
 
                                                                             {# File Input #}
                                                                             <template
                                                                                     x-if="item.type === 'remote_video'">
-                                                                                {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.extra_fields[fieldName][itemName].name', 'url': 'blockForm.extra_fields[fieldName][itemName].url', 'path': 'blockForm.extra_fields[fieldName][itemName].path', 'key': 'blockForm.extra_fields[fieldName][itemName].key', 'type': 'remote_video'} %}
+                                                                                {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'blockForm.extra_fields[fieldName][itemName].name', 'url': 'blockForm.extra_fields[fieldName][itemName].url', 'path': 'blockForm.extra_fields[fieldName][itemName].path', 'key': 'blockForm.extra_fields[fieldName][itemName].key', 'type': 'remote_video'} %}
                                                                             </template>
 
                                                                             {# JSON API Collection #}
@@ -456,6 +464,9 @@
                                                                             setTimeout(() => {
 
                                                                                 const textarea = $el.querySelector('textarea');
+                                                                                if (field.options?.['#required'] !== undefined) {
+                                                                                    textarea.setAttribute('required', 'required');
+                                                                                }
                                                                                 const instanceID = textarea.getAttribute('data-ckeditor5-id');
                                                                                 let ckeditor = null;
 
@@ -482,22 +493,22 @@
 
                                                         {# URL Extended Input #}
                                                         <template x-if="field.type === 'url_extended'">
-                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { xmodel: 'blockForm.fields' } %}
+                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { 'required': 'field.options?.["#required"]', xmodel: 'blockForm.fields' } %}
                                                         </template>
 
                                                         {# Image Input #}
                                                         <template x-if="field.type === 'image'">
-                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'image'} %}
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'image'} %}
                                                         </template>
 
                                                         {# File Input #}
                                                         <template x-if="field.type === 'file'">
-                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'file'} %}
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'file'} %}
                                                         </template>
 
                                                         {# File Input #}
                                                         <template x-if="field.type === 'remote_video'">
-                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'remote_video'} %}
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'remote_video'} %}
                                                         </template>
 
                                                         {# JSON API Collection #}
@@ -519,7 +530,7 @@
                                                 <template x-if="fieldName.startsWith('group_')">
                                                     <div>
                                                         {# Group accordion #}
-                                                        <div x-data="{ openGroup: false }"
+                                                        <div x-data="{ openGroup: true }"
                                                              class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
                                                             <div class="flex justify-between items-center cursor-pointer select-none"
                                                                  @click="openGroup = !openGroup">
@@ -622,6 +633,9 @@
                                                                                                 setTimeout(() => {
 
                                                                                                     const textarea = $el.querySelector('textarea');
+                                                                                                    if (field.options?.['#required'] !== undefined) {
+                                                                                                        textarea.setAttribute('required', 'required');
+                                                                                                    }
                                                                                                     const instanceID = textarea.getAttribute('data-ckeditor5-id');
                                                                                                     let ckeditor = null;
 
@@ -649,25 +663,25 @@
                                                                             {# URL Extended Input #}
                                                                             <template
                                                                                     x-if="item.type === 'url_extended'">
-                                                                                {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { xmodel: 'blockForm.fields[fieldName][itemName]' } %}
+                                                                                {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { 'required': 'field.options?.["#required"]', xmodel: 'blockForm.fields[fieldName][itemName]' } %}
                                                                             </template>
 
                                                                             {# Image Input #}
                                                                             <template x-if="item.type === 'image'">
                                                                                 <div>
-                                                                                    {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'image'} %}
+                                                                                    {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'image'} %}
                                                                                 </div>
                                                                             </template>
 
                                                                             {# File Input #}
                                                                             <template x-if="item.type === 'file'">
-                                                                                {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.fields[fieldName][itemName].name', 'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'file'} %}
+                                                                                {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'blockForm.fields[fieldName][itemName].name', 'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'file'} %}
                                                                             </template>
 
                                                                             {# File Input #}
                                                                             <template
                                                                                     x-if="item.type === 'remote_video'">
-                                                                                {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'blockForm.fields[fieldName][itemName].name', 'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'remote_video'} %}
+                                                                                {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'blockForm.fields[fieldName][itemName].name', 'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'remote_video'} %}
                                                                             </template>
 
                                                                             {# JSON API Collection #}
@@ -761,7 +775,7 @@
                                                                     :key="fieldName">
                                                                 <template x-if="fieldName.startsWith('group_')">
                                                                     {# Group accordion #}
-                                                                    <div x-data="{ openGroup: false }"
+                                                                    <div x-data="{ openGroup: true }"
                                                                          class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
                                                                         <div class="flex justify-between items-center cursor-pointer select-none"
                                                                              @click="openGroup = !openGroup">
@@ -854,6 +868,9 @@
                                                                                                         new MutationObserver((records, observer) => {
                                                                                                             setTimeout(() => {
                                                                                                             const textarea = $el.querySelector('textarea');
+                                                                                                            if (field.options?.['#required'] !== undefined) {
+                                                                                                                textarea.setAttribute('required', 'required');
+                                                                                                            }
                                                                                                             if (!textarea) return;
                                                                                                             const instanceID = textarea.getAttribute('data-ckeditor5-id');
                                                                                                             let ckeditor = null;
@@ -895,7 +912,7 @@
                                                                                         {# URL Extended Input #}
                                                                                         <template
                                                                                                 x-if="field.type === 'url_extended'">
-                                                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { xmodel: 'item' } %}
+                                                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with {'required': 'field.options?.["#required"]',  xmodel: 'item' } %}
                                                                                         </template>
 
 
@@ -903,20 +920,20 @@
                                                                                         <template
                                                                                                 x-if="field.type === 'image'">
                                                                                             <div>
-                                                                                                {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'url': 'item[fieldName][itemName].url', 'path': 'item[fieldName][itemName].path', 'key': 'item[fieldName][itemName].key', 'type': 'image'} %}
+                                                                                                {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'url': 'item[fieldName][itemName].url', 'path': 'item[fieldName][itemName].path', 'key': 'item[fieldName][itemName].key', 'type': 'image'} %}
                                                                                             </div>
                                                                                         </template>
 
                                                                                         {# File Input #}
                                                                                         <template
                                                                                                 x-if="field.type === 'file'">
-                                                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'item[fieldName][itemName].name', 'url': 'item[fieldName][itemName].url', 'path': 'item[fieldName][itemName].path', 'key': 'item[fieldName][itemName].key', 'type': 'file'} %}
+                                                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'item[fieldName][itemName].name', 'url': 'item[fieldName][itemName].url', 'path': 'item[fieldName][itemName].path', 'key': 'item[fieldName][itemName].key', 'type': 'file'} %}
                                                                                         </template>
 
                                                                                         {# File Input #}
                                                                                         <template
                                                                                                 x-if="field.type === 'remote_video'">
-                                                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'item[fieldName][itemName].name', 'url': 'item[fieldName][itemName].url', 'path': 'item[fieldName][itemName].path', 'key': 'item[fieldName][itemName].key', 'type': 'remote_video'} %}
+                                                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'item[fieldName][itemName].name', 'url': 'item[fieldName][itemName].url', 'path': 'item[fieldName][itemName].path', 'key': 'item[fieldName][itemName].key', 'type': 'remote_video'} %}
                                                                                         </template>
 
                                                                                         {# JSON API Collection #}
@@ -1002,6 +1019,9 @@
                                                                                     new MutationObserver((records, observer) => {
                                                                                         setTimeout(() => {
                                                                                         const textarea = $el.querySelector('textarea');
+                                                                                        if (field.options?.['#required'] !== undefined) {
+                                                                                            textarea.setAttribute('required', 'required');
+                                                                                        }
                                                                                         if (!textarea) return;
                                                                                         const instanceID = textarea.getAttribute('data-ckeditor5-id');
                                                                                         let ckeditor = null;
@@ -1041,25 +1061,25 @@
 
                                                                     {# URL Extended Input #}
                                                                     <template x-if="field.type === 'url_extended'">
-                                                                        {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { xmodel: 'item' } %}
+                                                                        {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { 'required': 'field.options?.["#required"]', xmodel: 'item' } %}
                                                                     </template>
 
 
                                                                     {# Image Input #}
                                                                     <template x-if="field.type === 'image'">
                                                                         <div>
-                                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'image'} %}
+                                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'image'} %}
                                                                         </div>
                                                                     </template>
 
                                                                     {# File Input #}
                                                                     <template x-if="field.type === 'file'">
-                                                                        {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'item[fieldName].name', 'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'file'} %}
+                                                                        {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'item[fieldName].name', 'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'file'} %}
                                                                     </template>
 
                                                                     {# File Input #}
                                                                     <template x-if="field.type === 'remote_video'">
-                                                                        {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'name': 'item[fieldName].name', 'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'remote_video'} %}
+                                                                        {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'item[fieldName].name', 'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'remote_video'} %}
                                                                     </template>
 
                                                                     {# JSON API Collection #}
