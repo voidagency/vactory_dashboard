@@ -5,6 +5,7 @@ namespace Drupal\vactory_dashboard\Service;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\file\FileInterface;
@@ -125,9 +126,10 @@ class NodeService {
           // Cardinalité simple.
           $node_data[$field['name']] = [
             'value' => $values[0]['value'] ?? '',
-            'end_value'   => $values[0]['end_value'] ?? '',
+            'end_value' => $values[0]['end_value'] ?? '',
           ];
-        } else {
+        }
+        else {
           $node_data[$field['name']] = [
             'value' => '',
             'end_value' => '',
@@ -155,9 +157,7 @@ class NodeService {
       }
 
       if ($field['type'] == 'image') {
-        $target_id = $entity->get($field['name'])->target_id;
-        $media = $this->entityTypeManager->getStorage('media')
-          ->load($target_id);
+        $media = $this->loadMediaFromEntityField($entity, $field['name']);
         if ($media instanceof MediaInterface) {
           if ($media->hasField('field_media_image') && !$media->get('field_media_image')
               ->isEmpty()) {
@@ -165,7 +165,7 @@ class NodeService {
             $file = $media->get('field_media_image')->entity;
             if ($file instanceof FileInterface) {
               $node_data[$field['name']] = [
-                'id' => $target_id,
+                'id' => $entity->get($field['name'])->target_id,
                 'url' => $file->createFileUrl(),
                 'path' => $field['name'],
                 'key' => -1,
@@ -175,16 +175,14 @@ class NodeService {
         }
       }
       elseif ($field['type'] == 'remote_video') {
-        $target_id = $entity->get($field['name'])->target_id;
-        $media = $this->entityTypeManager->getStorage('media')
-          ->load($target_id);
+        $media = $this->loadMediaFromEntityField($entity, $field['name']);
         if ($media instanceof MediaInterface) {
           if ($media->hasField('field_media_oembed_video') && !$media->get('field_media_oembed_video')
               ->isEmpty()) {
             $remote_video = $media->get('field_media_oembed_video')->value;
             if (!empty($remote_video)) {
               $node_data[$field['name']] = [
-                'id' => $target_id,
+                'id' => $entity->get($field['name'])->target_id,
                 'url' => $remote_video,
                 'path' => $field['name'],
                 'key' => -1,
@@ -198,16 +196,14 @@ class NodeService {
       }
       elseif ($field['type'] == 'file' || $field['type'] == 'private_file') {
         $field_name = $field['type'] === 'file' ? 'field_media_file' : 'field_media_file_1';
-        $target_id = $entity->get($field['name'])->target_id;
-        $media = $this->entityTypeManager->getStorage('media')
-          ->load($target_id);
+        $media = $this->loadMediaFromEntityField($entity, $field['name']);
         if ($media instanceof MediaInterface) {
           if ($media->hasField($field_name) && !$media->get($field_name)
               ->isEmpty()) {
             $file = $media->get($field_name)->entity;
             if ($file instanceof FileInterface) {
               $node_data[$field['name']] = [
-                'id' => $target_id,
+                'id' => $entity->get($field_name)->target_id,
                 'url' => $file->createFileUrl(),
                 'path' => $field['name'],
                 'key' => -1,
@@ -242,6 +238,14 @@ class NodeService {
     $this->prepareVactoryParagraphsData($entity, $node_data);
 
     return $node_data;
+  }
+
+  /**
+   * Load media from entity field.
+   */
+  private function loadMediaFromEntityField(EntityInterface $entity, string $fieldName): ?MediaInterface {
+    $target_id = $entity->get($fieldName)->target_id ?? NULL;
+    return $target_id ? $this->entityTypeManager->getStorage('media')->load($target_id) : NULL;
   }
 
   /**
@@ -374,15 +378,16 @@ class NodeService {
     $imageFields = [];
 
     foreach ($fields as $key => $field) {
-        if (is_array($field) && isset($field['type']) && $field['type'] === 'image') {
-            $imageFields[$key] = $field;
-        } elseif (is_array($field)) {
-            // Recurse into nested fields
-            $nested = $this->findImageFieldsInDynamicField($field);
-            if (!empty($nested)) {
-                $imageFields = array_merge($imageFields, $nested);
-            }
+      if (is_array($field) && isset($field['type']) && $field['type'] === 'image') {
+        $imageFields[$key] = $field;
+      }
+      elseif (is_array($field)) {
+        // Recurse into nested fields
+        $nested = $this->findImageFieldsInDynamicField($field);
+        if (!empty($nested)) {
+          $imageFields = array_merge($imageFields, $nested);
         }
+      }
     }
 
     return $imageFields;
@@ -450,13 +455,11 @@ class NodeService {
       // Process each image field in the item.
       foreach ($item as $skey => $subitem) {
         foreach ($imageFields as $fieldName) {
-
           $container = str_starts_with($skey, 'group_') ? $item[$skey] : $item;
-          $parentKey = str_starts_with($skey, 'group_') ? $skey : null;
+          $parentKey = str_starts_with($skey, 'group_') ? $skey : NULL;
 
           // Check if image field exists in the current container
           if (isset($container[$fieldName]) && is_array($container[$fieldName])) {
-
             $randomKey = array_key_first($container[$fieldName]);
 
             if ($randomKey && isset($container[$fieldName][$randomKey]['selection'][0]['target_id'])) {
@@ -464,7 +467,8 @@ class NodeService {
 
               // Load the media entity.
               /** @var \Drupal\media\Entity\Media $media */
-              $media = $this->entityTypeManager->getStorage('media')->load($mediaId);
+              $media = $this->entityTypeManager->getStorage('media')
+                ->load($mediaId);
               if ($media instanceof MediaInterface) {
                 $url = '';
                 if (
@@ -482,7 +486,8 @@ class NodeService {
                 if ($parentKey) {
                   $item[$parentKey][$fieldName][$randomKey]['selection'][0]['url'] = $url;
                   $widgetData[$key][$parentKey][$fieldName][$randomKey]['selection'][0]['url'] = $url;
-                } else {
+                }
+                else {
                   $item[$fieldName][$randomKey]['selection'][0]['url'] = $url;
                   $widgetData[$key][$fieldName][$randomKey]['selection'][0]['url'] = $url;
                 }
@@ -525,7 +530,8 @@ class NodeService {
       $field_definition = $fields[$field_name];
       $field_type = $field_definition->getType();
       $field_settings = $field_definition->getSettings();
-      $cardinality = $field_definition->getFieldStorageDefinition()->getCardinality();
+      $cardinality = $field_definition->getFieldStorageDefinition()
+        ->getCardinality();
       $field_required = $field_definition->isRequired();
       $field_label = $field_definition->getLabel();
       $field_description = $field_definition->getDescription();
@@ -749,13 +755,17 @@ class NodeService {
         $bundle = $block['bundle'] ?? "vactory_component";
         if ($bundle === 'vactory_component') {
           $this->updateParagraphTemplatesInNode($block, $language, $node_default_lang, $ordered_paragraphs);
-        } else if ($bundle === 'vactory_paragraph_block') {
-          $this->updateParagraphBlocksInNode($block, $language, $node_default_lang, $ordered_paragraphs);
-        } else {
-          $ordered_paragraphs[] = [
-            'target_id' => $block['id'],
-            'target_revision_id' => $block['revision_id'],
-          ];
+        }
+        else {
+          if ($bundle === 'vactory_paragraph_block') {
+            $this->updateParagraphBlocksInNode($block, $language, $node_default_lang, $ordered_paragraphs);
+          }
+          else {
+            $ordered_paragraphs[] = [
+              'target_id' => $block['id'],
+              'target_revision_id' => $block['revision_id'],
+            ];
+          }
         }
       }
       if (!empty($ordered_paragraphs)) {
@@ -826,7 +836,6 @@ class NodeService {
       }
 
       $paragraph_entity->save();
-
     }
     else {
       if ($is_new) {
@@ -948,7 +957,6 @@ class NodeService {
       }
 
       $paragraph_entity->save();
-
     }
     else {
       if ($is_new) {
@@ -963,7 +971,6 @@ class NodeService {
             "plugin_id" => $block['blockType'],
             "settings" => $block['blockType'] === $existing_block_id ? $block['block_settings'] ?? [] : [],
           ]);
-
 
         if (isset($block['title'])) {
           $paragraph_entity->getTranslation($language)
@@ -1025,16 +1032,18 @@ class NodeService {
             "widget_id" => $block['widget_id'],
             "widget_data" => json_encode($block['widget_data']),
           ];
-          
-        } else if ($bundle === 'vactory_paragraph_block') {
-          $paragraph['field_vactory_block'] = [
+        }
+        else {
+          if ($bundle === 'vactory_paragraph_block') {
+            $paragraph['field_vactory_block'] = [
               "plugin_id" => $block['blockType'],
               "settings" => [],
-          ];
-          $paragraph['field_vactory_body'] = [
-            'value' => $block['content'] ?? '',
-            'format' => 'full_html',
-          ];
+            ];
+            $paragraph['field_vactory_body'] = [
+              'value' => $block['content'] ?? '',
+              'format' => 'full_html',
+            ];
+          }
         }
         $paragraph['langcode'] = $language;
         $paragraph_entity = Paragraph::create($paragraph);
@@ -1051,7 +1060,6 @@ class NodeService {
       $node->set('field_vactory_paragraphs', $ordered_paragraphs);
     }
   }
-
 
   /**
    * Get paragraph blocks list.
