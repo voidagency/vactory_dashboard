@@ -85,7 +85,7 @@
 
                 {% if has_paragraphs_field %}
                     <div x-show="activeTab === 'templates'">
-                        <div x-show="!showBlockForm && !showParagraphBlockForm">
+                        <div x-show="!showBlockForm && !showParagraphBlockForm  && !showParagraphViewForm">
                             {% include "@vactory_dashboard/node/_components/add-block-action.html.twig" with {
                                 show: true
                             } %}
@@ -101,6 +101,11 @@
                         {# Paragraph Block Form View #}
                         <template x-if="showParagraphBlockForm" class="h-full">
                             {% include "@vactory_dashboard/_components/paragraph/paragraph-block-form.html.twig" %}
+                        </template>
+
+                        {# Paragraph View Form View #}
+                        <template x-if="showParagraphViewForm" class="h-full">
+                            {% include "@vactory_dashboard/_components/paragraph/paragraph-view-form.html.twig" %}
                         </template>
 
                         <div x-show="!showBlockForm && !showParagraphBlockForm" class="space-y-1">

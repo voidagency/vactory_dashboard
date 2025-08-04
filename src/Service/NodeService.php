@@ -17,6 +17,7 @@ use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
 use Drupal\Core\TypedData\TranslatableInterface;
 use Drupal\block\Entity\Block;
+use Drupal\views\Views;
 
 /**
  * Service for node utilities.
@@ -328,6 +329,7 @@ class NodeService {
         ])) {
           $paragraphs[] = [
             'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
+            'block_id' => $paragraph->hasField('field_views_reference') ? $paragraph->get('field_views_reference')->first()?->getValue()['target_id'] : "",
             'bundle' => $paragraph->bundle(),
             'show_title' => $paragraph->hasField('field_vactory_flag') ?? $paragraph->get('field_vactory_flag')->value === "1",
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
@@ -751,6 +753,8 @@ class NodeService {
           $this->updateParagraphTemplatesInNode($block, $language, $node_default_lang, $ordered_paragraphs);
         } else if ($bundle === 'vactory_paragraph_block') {
           $this->updateParagraphBlocksInNode($block, $language, $node_default_lang, $ordered_paragraphs);
+        } else if ($bundle === 'views_reference') {
+          $this->updateParagraphViewsInNode($block, $language, $node_default_lang, $ordered_paragraphs);
         } else {
           $ordered_paragraphs[] = [
             'target_id' => $block['id'],
@@ -1007,6 +1011,108 @@ class NodeService {
     }
   }
 
+  private function updateParagraphViewsInNode($block, $language, $node_default_lang, &$ordered_paragraphs) {
+    $paragraph_entity = NULL;
+    $existing_view_id = $block['block_settings']['id'] ?? NULL;
+    $paragraph = [
+      "type" => "views_reference",
+      "field_vactory_title" => $block['title'],
+      "paragraph_container" => $block['width'],
+      "container_spacing" => $block['spacing'],
+      "paragraph_css_class" => $block['css_classes'],
+      "field_views_reference" => [
+        "target_id" => $block['blockType'],
+        "settings" => $block['blockType'] === $existing_view_id ? $block['block_settings'] ?? [] : [],
+      ],
+    ];
+    $is_new = $block['is_new'] ?? FALSE;
+    // Paragraph translate.
+    if ($language != $node_default_lang) {
+      // Handle translations.
+      $paragraph_entity = Paragraph::load($block['id']);
+      // Check if translation exists, if not create it first.
+      if (!$paragraph_entity->hasTranslation($language)) {
+        $paragraph_entity->addTranslation($language, $paragraph_entity->toArray());
+      }
+
+      // Now we can safely access and modify the translation.
+      $paragraph_entity->getTranslation($language)
+        ->set('field_views_reference', [
+          "target_id" => $block['blockType'],
+          "settings" => $block['blockType'] === $existing_view_id ? $block['block_settings'] ?? [] : [],
+        ]);
+
+      if (isset($block['title'])) {
+        $paragraph_entity->getTranslation($language)
+          ->set('field_vactory_title', $block['title']);
+      }
+
+      if (isset($block['width'])) {
+        $paragraph_entity->getTranslation($language)
+          ->set('paragraph_container', $block['width']);
+      }
+
+      if (isset($block['spacing'])) {
+        $paragraph_entity->getTranslation($language)
+          ->set('container_spacing', $block['spacing']);
+      }
+
+      if (isset($block['css_classes'])) {
+        $paragraph_entity->getTranslation($language)
+          ->set('paragraph_css_class', $block['css_classes']);
+      }
+
+      $paragraph_entity->save();
+
+    }
+    else {
+      if ($is_new) {
+        $paragraph['langcode'] = $language;
+        $paragraph_entity = Paragraph::create($paragraph);
+        $paragraph_entity->save();
+      }
+      else {
+        $paragraph_entity = Paragraph::load($block['id']);
+        
+        $paragraph_entity->getTranslation($language)
+          ->set('field_views_reference', [
+            "target_id" => $block['blockType'],
+            "settings" => $block['blockType'] === $existing_view_id ? $block['block_settings'] ?? [] : [],
+          ]);
+
+        if (isset($block['title'])) {
+          $paragraph_entity->getTranslation($language)
+            ->set('field_vactory_title', $block['title']);
+        }
+
+        if (isset($block['width'])) {
+          $paragraph_entity->getTranslation($language)
+            ->set('paragraph_container', $block['width']);
+        }
+
+        if (isset($block['spacing'])) {
+          $paragraph_entity->getTranslation($language)
+            ->set('container_spacing', $block['spacing']);
+        }
+
+        if (isset($block['css_classes'])) {
+          $paragraph_entity->getTranslation($language)
+            ->set('paragraph_css_class', $block['css_classes']);
+        }
+
+        $paragraph_entity->save();
+      }
+    }
+    if ($paragraph_entity instanceof ParagraphInterface) {
+      $ordered_paragraphs[] = [
+        'target_id' => $paragraph_entity->id(),
+        'target_revision_id' => \Drupal::entityTypeManager()
+          ->getStorage('paragraph')
+          ->getLatestRevisionId($paragraph_entity->id()),
+      ];
+    }
+  }
+
   public function saveParagraphsInNode(&$node, $blocks, $language) {
     $ordered_paragraphs = [];
     if (!empty($blocks)) {
@@ -1069,6 +1175,30 @@ class NodeService {
       ];
     }
     return $paragraph_blocks;
+  }
+
+  /**
+   * Get paragraph views list.
+   */
+
+  public function getParagraphViewsList() {
+    $view_storage = \Drupal::entityTypeManager()->getStorage('view');
+    $all_views = $view_storage->loadMultiple();
+
+    $paragraph_views = [];
+
+    foreach ($all_views as $view_id => $view_config) {
+      if (!$view_config->status()) {
+        continue; // Skip disabled views
+      }
+
+      $paragraph_views[] = [
+        'id' => $view_id,
+        'label' => $view_config->label(),
+      ];
+    }
+
+    return $paragraph_views;
   }
 
 }

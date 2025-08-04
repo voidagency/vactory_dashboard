@@ -37,10 +37,22 @@
           showBlockForm: false,
           showTemplatesList: false,
           showParagraphBlockForm: false,
+          showParagraphViewForm: false,
           selectedTemplate: null,
           paragraphBlockForm: {
             blockType: '',
             content: '',
+            config: {
+              title: '',
+              show_title: false,
+              width: 'full_width',
+              spacing: '_none',
+              css_classes: '',
+            },
+          },
+          paragraphViewForm: {
+            blockType: '',
+            title: '',
             config: {
               title: '',
               show_title: false,
@@ -1211,6 +1223,108 @@
             this.showBlockForm = false;
             this.showBlocksModal = false;
             this.showTemplatesList = false;
+          },
+
+          /* View paragraph */
+          handleAddView() {
+            // Show the paragraph block form
+            this.showBlocksModal = false;
+            this.showParagraphViewForm = true;
+            this.showTemplatesList = false;
+          },
+          modifyParagraphView(index) {
+            const block = this.blocks[index];
+            this.currentBlockIndex = index;
+            console.log("block", block);
+
+            // Initialize the paragraph block form with existing data
+            this.paragraphViewForm = {
+              blockType: block.blockType || '',
+              content: block.content || '',
+              block_settings: block.block_settings || {},
+              config: {
+                title: block.title || '',
+                show_title: block.show_title || false,
+                width: block.width || 'full_width',
+                spacing: block.spacing || '_none',
+                css_classes: block.css_classes || '',
+              },
+            };
+
+            console.log("modify paragraphViewForm: ", this.paragraphViewForm);
+
+            // Show the paragraph view form
+            this.showParagraphViewForm = true;
+            this.showBlockForm = false;
+            this.showBlocksModal = false;
+            this.showTemplatesList = false;
+          },
+          saveParagraphView() {
+            // Validate form
+            const form = document.getElementById('paragraph-view-form');
+            const requiredInputs = form.querySelectorAll('[required]');
+            let isValid = true;
+
+            requiredInputs.forEach(input => {
+              if (!input.value) {
+                input.classList.add('border-red-500');
+                isValid = false;
+              }
+            });
+
+            if (!isValid) {
+              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              return;
+            }
+            if (this.currentBlockIndex !== null) {
+              // Modify existing block
+              this.blocks[this.currentBlockIndex] = {
+                ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
+                title: this.paragraphViewForm.config.title,
+                show_title: this.paragraphViewForm.config.show_title,
+                width: this.paragraphViewForm.config.width,
+                spacing: this.paragraphViewForm.config.spacing,
+                css_classes: this.paragraphViewForm.config.css_classes,
+                blockType: this.paragraphViewForm.blockType,
+                content: this.paragraphViewForm.content,
+              };
+              this.showNotification('success', '{{ "Paragraph block updated successfully"|t }}');
+            } else {
+              // Add new paragraph block to blocks array
+              this.blocks.push({
+                id: Date.now(),
+                bundle: 'views_reference',
+                is_new: true,
+                title: this.paragraphViewForm.config.title,
+                show_title: this.paragraphViewForm.config.show_title,
+                width: this.paragraphViewForm.config.width,
+                spacing: this.paragraphViewForm.config.spacing,
+                css_classes: this.paragraphViewForm.config.css_classes,
+                blockType: this.paragraphViewForm.blockType,
+                content: this.paragraphViewForm.content,
+                preview: '/modules/custom/vactory_dashboard/assets/images/default-screenshot.png', // Default preview image
+              });
+              this.showNotification('success', '{{ "Paragraph view added successfully"|t }}');
+            }
+
+            // Reset form
+            this.paragraphViewForm = {
+              blockType: '',
+              content: '',
+              config: {
+                title: '',
+                show_title: false,
+                width: 'full_width',
+                spacing: '_none',
+                css_classes: '',
+              },
+            };
+            
+            // Close form and reset current block index
+            console.log("save this.blocks[this.currentBlockIndex]: ", this.blocks[this.currentBlockIndex]);
+            this.showParagraphViewForm = false;
+            this.currentBlockIndex = null;
+            this.saveChanges();
           },
           blockSearch: '',
           blockCategory: 'all',
