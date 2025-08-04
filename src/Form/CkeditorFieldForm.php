@@ -35,6 +35,8 @@ final class CkeditorFieldForm extends FormBase {
       return $form;
     }
 
+    $x_init = "";
+
     if ($isMultiple == "true") {
       $x_model = "item[fieldName]";
       $x_init = "if (\$el) { \$el.setAttribute('name', `item[\${fieldName}]`);}";
