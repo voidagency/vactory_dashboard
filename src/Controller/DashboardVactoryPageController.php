@@ -21,6 +21,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Drupal\vactory_dashboard\Service\MetatagService;
 use Drupal\vactory_dashboard\Service\AliasValidationService;
 use Drupal\vactory_dashboard\Service\PreviewUrlService;
+use Drupal\field\Entity\FieldConfig;
 
 /**
  * Controller for the vactory_page dashboard.
@@ -118,9 +119,37 @@ class DashboardVactoryPageController extends ControllerBase {
       '#theme' => 'vactory_dashboard_node_add',
       '#type' => 'page',
       '#language' => $current_language,
+      '#isParagraphViewEnabled' => $this->isParagraphTypeEnabled('views_reference'),
+      '#isParagraphBlockEnabled' => $this->isParagraphTypeEnabled('vactory_paragraph_block'),
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
     ];
+  }
+
+  /**
+   * Checks if a given Paragraph bundle is enabled for
+   * field_vactory_paragraphs on vactory_page content type.
+   *
+   * @param string $paragraph_bundle
+   *   The machine name of the paragraph type to check.
+   *
+   * @return bool
+   *   TRUE if the paragraph type is enabled, FALSE otherwise.
+   */
+  public function isParagraphTypeEnabled(string $paragraph_bundle): bool {
+    $field_config = FieldConfig::loadByName('node', 'vactory_page', 'field_vactory_paragraphs');
+
+    if (!$field_config) {
+      return FALSE;
+    }
+
+    $settings = $field_config->getSettings();
+
+    if (!isset($settings['handler_settings']['target_bundles'])) {
+      return FALSE;
+    }
+
+    return array_key_exists($paragraph_bundle, $settings['handler_settings']['target_bundles']);
   }
 
   /**
@@ -180,6 +209,8 @@ class DashboardVactoryPageController extends ControllerBase {
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
+      '#isParagraphViewEnabled' => $this->isParagraphTypeEnabled('views_reference'),
+      '#isParagraphBlockEnabled' => $this->isParagraphTypeEnabled('vactory_paragraph_block'),
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
     ];
   }
@@ -271,6 +302,14 @@ class DashboardVactoryPageController extends ControllerBase {
     return new JsonResponse([
       'data' => $paragraph_views,
       'message' => 'Paragraph views retrieved successfully',
+    ]);
+  }
+
+  public function updateDisplays($vid) {
+    $displays = $this->nodeService->getViewDisplays($vid);
+    return new JsonResponse([
+      'data' => $displays,
+      'message' => 'Displays retrieved successfully',
     ]);
   }
 

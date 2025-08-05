@@ -38,6 +38,7 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {# Add Block Option #}
+                        {% if isParagraphBlockEnabled %}
                         <button
                                 @click="handleAddBlock()"
                                 class="group border-2 border-dashed border-slate-300 rounded-xl p-6 hover:border-primary-400 hover:bg-primary-50 transition-all duration-200 text-center">
@@ -53,8 +54,10 @@
                                 </div>
                             </div>
                         </button>
+                        {% endif %}
 
                         {# Add View Option #}
+                        {% if isParagraphViewEnabled %}
                         <button
                                 @click="handleAddView()"
                                 class="group border-2 border-dashed border-slate-300 rounded-xl p-6 hover:border-primary-400 hover:bg-primary-50 transition-all duration-200 text-center">
@@ -70,6 +73,7 @@
                                 </div>
                             </div>
                         </button>
+                        {% endif %}
 
                         {# Add Template Option #}
                         <button

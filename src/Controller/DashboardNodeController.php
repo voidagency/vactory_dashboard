@@ -23,6 +23,7 @@ use Drupal\vactory_dashboard\Service\MetatagService;
 use Drupal\token\Token;
 use Drupal\vactory_dashboard\Service\PreviewUrlService;
 use Drupal\path_alias\AliasManagerInterface;
+use Drupal\field\Entity\FieldConfig;
 
 /**
  * Controller for the node dashboard.
@@ -370,6 +371,8 @@ class DashboardNodeController extends ControllerBase {
       '#bundle' => $bundle,
       '#bundle_label' => $bundle_label,
       '#fields' => $fields,
+      '#isParagraphViewEnabled' => $this->isParagraphTypeEnabled($bundle, 'views_reference'),
+      '#isParagraphBlockEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_paragraph_block'),
     ];
   }
 
@@ -455,7 +458,25 @@ class DashboardNodeController extends ControllerBase {
       '#fields' => $fields,
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
+      '#isParagraphViewEnabled' => $this->isParagraphTypeEnabled($bundle, 'views_reference'),
+      '#isParagraphBlockEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_paragraph_block'),
     ];
+  }
+
+  public function isParagraphTypeEnabled($bundle, string $paragraph_bundle): bool {
+    $field_config = FieldConfig::loadByName('node', $bundle, 'field_vactory_paragraphs');
+
+    if (!$field_config) {
+      return FALSE;
+    }
+
+    $settings = $field_config->getSettings();
+
+    if (!isset($settings['handler_settings']['target_bundles'])) {
+      return FALSE;
+    }
+
+    return array_key_exists($paragraph_bundle, $settings['handler_settings']['target_bundles']);
   }
 
   /**

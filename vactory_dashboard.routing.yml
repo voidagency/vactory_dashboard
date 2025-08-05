@@ -588,6 +588,15 @@ vactory_dashboard.paragraph_views:
   requirements:
     _permission: "access dashboard"
 
+vactory_dashboard.update_displays:
+  path: "/api/vactory-dashboard/update-displays/{vid}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardVactoryPageController::updateDisplays'
+    _title: "Update Displays"
+  methods: [GET]
+  requirements:
+    _permission: "access dashboard"
+
 vactory_dashboard.node.add:
   path: "/admin/dashboard/{bundle}/add"
   defaults:

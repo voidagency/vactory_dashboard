@@ -1216,10 +1216,11 @@
           modifyParagraphView(index) {
             const block = this.blocks[index];
             this.currentBlockIndex = index;
-            console.log("block", block);
 
             // Initialize the paragraph block form with existing data
             this.paragraphViewForm = {
+              displayID: block.displayID || '',
+              displays: block.displays || [],
               blockType: block.blockType || '',
               content: block.content || '',
               block_settings: block.block_settings || {},
@@ -1231,8 +1232,6 @@
                 css_classes: block.css_classes || '',
               },
             };
-
-            console.log("modify paragraphViewForm: ", this.paragraphViewForm);
 
             // Show the paragraph view form
             this.showParagraphViewForm = true;
@@ -1267,6 +1266,7 @@
                 spacing: this.paragraphViewForm.config.spacing,
                 css_classes: this.paragraphViewForm.config.css_classes,
                 blockType: this.paragraphViewForm.blockType,
+                displayID: this.paragraphViewForm.displayID,
                 content: this.paragraphViewForm.content,
               };
               this.showNotification('success', '{{ "Paragraph block updated successfully"|t }}');
@@ -1282,6 +1282,7 @@
                 spacing: this.paragraphViewForm.config.spacing,
                 css_classes: this.paragraphViewForm.config.css_classes,
                 blockType: this.paragraphViewForm.blockType,
+                displayID: this.paragraphViewForm.displayID,
                 content: this.paragraphViewForm.content,
                 preview: '/modules/custom/vactory_dashboard/assets/images/default-screenshot.png', // Default preview image
               });
@@ -1302,7 +1303,6 @@
             };
             
             // Close form and reset current block index
-            console.log("save this.blocks[this.currentBlockIndex]: ", this.blocks[this.currentBlockIndex]);
             this.showParagraphViewForm = false;
             this.currentBlockIndex = null;
             this.saveChanges();
@@ -1461,6 +1461,8 @@
                 widget_data: paragraph?.widget_data ?? null,
                 blockType: paragraph?.block_id ?? null,
                 content: paragraph?.body ?? null,
+                displayID: paragraph?.display_id ?? null,
+                displays: paragraph?.displays ?? [],
                 block_settings: paragraph?.block_settings ?? null,
               }));
             }

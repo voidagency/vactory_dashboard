@@ -327,9 +327,13 @@ class NodeService {
           'vactory_paragraph_multi_template',
           'views_reference',
         ])) {
+          $blockID = $paragraph->hasField('field_views_reference') ? $paragraph->get('field_views_reference')->first()?->getValue()['target_id'] : "";
           $paragraphs[] = [
+            'id' => $node->id(),
+            'block_id' => $blockID,
             'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
-            'block_id' => $paragraph->hasField('field_views_reference') ? $paragraph->get('field_views_reference')->first()?->getValue()['target_id'] : "",
+            'display_id' => $paragraph->hasField('field_views_reference') ? $paragraph->get('field_views_reference')->first()?->getValue()['display_id'] : "",
+            'displays' => $this->getViewDisplays($blockID),
             'bundle' => $paragraph->bundle(),
             'show_title' => $paragraph->hasField('field_vactory_flag') ?? $paragraph->get('field_vactory_flag')->value === "1",
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
@@ -1022,6 +1026,7 @@ class NodeService {
       "paragraph_css_class" => $block['css_classes'],
       "field_views_reference" => [
         "target_id" => $block['blockType'],
+        "display_id" => $block['displayID'],
         "settings" => $block['blockType'] === $existing_view_id ? $block['block_settings'] ?? [] : [],
       ],
     ];
@@ -1039,6 +1044,7 @@ class NodeService {
       $paragraph_entity->getTranslation($language)
         ->set('field_views_reference', [
           "target_id" => $block['blockType'],
+          "display_id" => $block['displayID'],
           "settings" => $block['blockType'] === $existing_view_id ? $block['block_settings'] ?? [] : [],
         ]);
 
@@ -1077,6 +1083,7 @@ class NodeService {
         $paragraph_entity->getTranslation($language)
           ->set('field_views_reference', [
             "target_id" => $block['blockType'],
+            "display_id" => $block['displayID'],
             "settings" => $block['blockType'] === $existing_view_id ? $block['block_settings'] ?? [] : [],
           ]);
 
@@ -1142,6 +1149,12 @@ class NodeService {
             'format' => 'full_html',
           ];
         }
+        else if ($bundle === 'views_reference') {
+          $paragraph['field_views_reference'] = [
+              "target_id" => $block['blockType'],
+              "display_id" => $block['displayID'],
+          ];
+        }
         $paragraph['langcode'] = $language;
         $paragraph_entity = Paragraph::create($paragraph);
         $paragraph_entity->save();
@@ -1200,5 +1213,33 @@ class NodeService {
 
     return $paragraph_views;
   }
+
+  /**
+   * Get all displays of a given view.
+   *
+   * @param string $view_id
+   *   The ID of the view.
+   *
+   * @return array
+   *   An array of display IDs and their titles.
+   */
+  public function getViewDisplays($view_id) {
+  $view = Views::getView($view_id);
+
+  if (!$view) {
+    return [];
+  }
+
+  $displays = [];
+
+  foreach ($view->storage->get('display') as $display_id => $display) {
+    if ($display['display_plugin'] === 'page') {
+      $displays[$display_id] = $display['display_title'] ?? $display_id;
+    }
+  }
+
+  return $displays;
+}
+
 
 }

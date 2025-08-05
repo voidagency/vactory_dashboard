@@ -3,16 +3,17 @@
     isRTL: document.dir === 'rtl',
     paragraphViews: [],
     isLoadingViews: true,
+    isUpdatingDisplays: true,
     async init() {
         await this.loadParagraphViews();
     },
     async loadParagraphViews() {
         try {
+            console.log('paragraphViewForm', this.paragraphViewForm);
             this.isLoadingViews = true;
-            const response = await fetch('{{ path('vactory_dashboard.paragraph_views') }}');
+            const response = await fetch(`{{ path('vactory_dashboard.paragraph_views', {'nid': 'NID', 'pid': 'PID'}) }}`.replace('NID', this.paragraphViewForm.nid).replace('PID', this.paragraphViewForm.pid));
             if (response.ok) {
                 const data = await response.json();
-                console.log('Paragraph views response:', data);
                 this.paragraphViews = data.data || [];
             } else {
                 console.error('Failed to load paragraph views');
@@ -24,7 +25,27 @@
         } finally {
             this.isLoadingViews = false;
         }
-    }
+    },
+
+    async updateDisplays() {
+        try {
+            this.isUpdatingDisplays = true;
+            const response = await fetch(`{{ path('vactory_dashboard.update_displays', {'vid': 'VID'}) }}`.replace('VID', this.paragraphViewForm.blockType));
+            if (response.ok) {
+                const data = await response.json();
+                this.paragraphViewForm.displays = data.data || [];
+                console.log(this.paragraphViewForm.displays);
+            } else {
+                console.error('Failed to update paragraph displays');
+                this.paragraphViewForm.displays = [];
+            }
+        } catch (error) {
+            console.error('Error updating paragraph displays:', error);
+            this.paragraphViewForm.displays = [];
+        } finally {
+            this.isUpdatingDisplays = false;
+        }
+    },
 }" :dir="isRTL ? 'rtl' : 'ltr'">
     <div class="h-full flex flex-col bg-slate-50">
         <div class="sticky top-0 z-10 bg-white rounded-xl py-4 px-6 border-b border-slate-200 flex justify-between items-center mb-6">
@@ -74,6 +95,8 @@
                                             <span class="text-red-500">*</span>
                                         </label>
                                         <select x-model="paragraphViewForm.blockType"
+                                                required
+                                                @change="updateDisplays()"
                                                 class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                             <option value="">{{ 'Select View type...'|t }}</option>
                                             <template x-if="isLoadingViews">
@@ -84,6 +107,28 @@
                                             </template>
                                             <template x-for="view in paragraphViews" :key="view.id">
                                                 <option :selected="view.id == paragraphViewForm.blockType" :value="view.id" x-text="view.label || view.name"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+
+                                    {# Display #}
+                                    <div>
+                                        <label class="view text-sm font-medium text-slate-700 mb-1 required">
+                                            {{ 'Display'|t }}
+                                            <span class="text-red-500">*</span>
+                                        </label>
+                                        <select x-model="paragraphViewForm.displayID"
+                                                required
+                                                class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                            <option value="">{{ 'Select Display...'|t }}</option>
+                                            <template x-if="isLoadingViews">
+                                                <option disabled>{{ 'Loading view types...'|t }}</option>
+                                            </template>
+                                            <template x-if="!isLoadingViews && paragraphViewForm.displays.length === 0">
+                                                <option disabled>{{ 'No view types available'|t }}</option>
+                                            </template>
+                                            <template x-for="(label, id) in paragraphViewForm.displays" :key="id">
+                                                <option :selected="id == paragraphViewForm.displayID" :value="id" x-text="label"></option>
                                             </template>
                                         </select>
                                     </div>
