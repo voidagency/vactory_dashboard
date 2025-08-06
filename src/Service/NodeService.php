@@ -11,13 +11,13 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\file\FileInterface;
 use Drupal\media\MediaInterface;
 use Drupal\node\Entity\NodeType;
-use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\paragraphs\ParagraphInterface;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
 use Drupal\Core\TypedData\TranslatableInterface;
-use Drupal\block\Entity\Block;
+use Drupal\views\Views;
+use Drupal\field\Entity\FieldConfig;
 
 /**
  * Service for node utilities.
@@ -329,8 +329,13 @@ class NodeService {
           'vactory_paragraph_multi_template',
           'views_reference',
         ])) {
+          $blockID = $paragraph->hasField('field_views_reference') ? $paragraph->get('field_views_reference')->first()?->getValue()['target_id'] : "";
           $paragraphs[] = [
+            'id' => $node->id(),
+            'block_id' => $blockID,
             'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
+            'display_id' => $paragraph->hasField('field_views_reference') ? $paragraph->get('field_views_reference')->first()?->getValue()['display_id'] : "",
+            'displays' => $this->getViewDisplays($blockID),
             'bundle' => $paragraph->bundle(),
             'show_title' => $paragraph->hasField('field_vactory_flag') ?? $paragraph->get('field_vactory_flag')->value === "1",
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
@@ -758,7 +763,9 @@ class NodeService {
         else {
           if ($bundle === 'vactory_paragraph_block') {
             $this->updateParagraphBlocksInNode($block, $language, $node_default_lang, $ordered_paragraphs);
-          }
+          } else if ($bundle === 'views_reference') {
+          $this->updateParagraphViewsInNode($block, $language, $node_default_lang, $ordered_paragraphs);
+        }
           else {
             $ordered_paragraphs[] = [
               'target_id' => $block['id'],
@@ -1013,6 +1020,149 @@ class NodeService {
     }
   }
 
+  /**
+   * Updates or creates a "views_reference" paragraph entity for a node.
+   *
+   * This method handles both creation of new paragraphs and updates of existing
+   * ones, including multilingual translations when the current language differs
+   * from the node's default language.
+   *
+   * The method also populates a passed-in list of ordered paragraph references
+   * (used later to attach to the node).
+   *
+   * @param array $block
+   *   An associative array containing block data.
+   * @param string $language
+   *   The current language code.
+   * @param string $node_default_lang
+   *   The default language code of the node.
+   * @param array &$ordered_paragraphs
+   *   A reference to the array that collects paragraph entity references
+   *   (with target_id and target_revision_id) to later attach to the node.
+   */
+  private function updateParagraphViewsInNode($block, $language, $node_default_lang, &$ordered_paragraphs) {
+    $paragraph_entity = NULL;
+    $existing_view_id = $block['block_settings']['id'] ?? NULL;
+    $paragraph = [
+      "type" => "views_reference",
+      "field_vactory_title" => $block['title'],
+      "paragraph_container" => $block['width'],
+      "container_spacing" => $block['spacing'],
+      "paragraph_css_class" => $block['css_classes'],
+      "field_views_reference" => [
+        "target_id" => $block['blockType'],
+        "display_id" => $block['displayID'],
+        "settings" => $block['blockType'] === $existing_view_id ? $block['block_settings'] ?? [] : [],
+      ],
+    ];
+    $is_new = $block['is_new'] ?? FALSE;
+    // Paragraph translate.
+    if ($language != $node_default_lang) {
+      // Handle translations.
+      $paragraph_entity = Paragraph::load($block['id']);
+      // Check if translation exists, if not create it first.
+      if (!$paragraph_entity->hasTranslation($language)) {
+        $paragraph_entity->addTranslation($language, $paragraph_entity->toArray());
+      }
+
+      // Now we can safely access and modify the translation.
+      $paragraph_entity->getTranslation($language)
+        ->set('field_views_reference', [
+          "target_id" => $block['blockType'],
+          "display_id" => $block['displayID'],
+          "settings" => $block['blockType'] === $existing_view_id ? $block['block_settings'] ?? [] : [],
+        ]);
+
+      if (isset($block['title'])) {
+        $paragraph_entity->getTranslation($language)
+          ->set('field_vactory_title', $block['title']);
+      }
+
+      if (isset($block['width'])) {
+        $paragraph_entity->getTranslation($language)
+          ->set('paragraph_container', $block['width']);
+      }
+
+      if (isset($block['spacing'])) {
+        $paragraph_entity->getTranslation($language)
+          ->set('container_spacing', $block['spacing']);
+      }
+
+      if (isset($block['css_classes'])) {
+        $paragraph_entity->getTranslation($language)
+          ->set('paragraph_css_class', $block['css_classes']);
+      }
+
+      $paragraph_entity->save();
+
+    }
+    else {
+      if ($is_new) {
+        $paragraph['langcode'] = $language;
+        $paragraph_entity = Paragraph::create($paragraph);
+        $paragraph_entity->save();
+      }
+      else {
+        $paragraph_entity = Paragraph::load($block['id']);
+        
+        $paragraph_entity->getTranslation($language)
+          ->set('field_views_reference', [
+            "target_id" => $block['blockType'],
+            "display_id" => $block['displayID'],
+            "settings" => $block['blockType'] === $existing_view_id ? $block['block_settings'] ?? [] : [],
+          ]);
+
+        if (isset($block['title'])) {
+          $paragraph_entity->getTranslation($language)
+            ->set('field_vactory_title', $block['title']);
+        }
+
+        if (isset($block['width'])) {
+          $paragraph_entity->getTranslation($language)
+            ->set('paragraph_container', $block['width']);
+        }
+
+        if (isset($block['spacing'])) {
+          $paragraph_entity->getTranslation($language)
+            ->set('container_spacing', $block['spacing']);
+        }
+
+        if (isset($block['css_classes'])) {
+          $paragraph_entity->getTranslation($language)
+            ->set('paragraph_css_class', $block['css_classes']);
+        }
+
+        $paragraph_entity->save();
+      }
+    }
+    if ($paragraph_entity instanceof ParagraphInterface) {
+      $ordered_paragraphs[] = [
+        'target_id' => $paragraph_entity->id(),
+        'target_revision_id' => \Drupal::entityTypeManager()
+          ->getStorage('paragraph')
+          ->getLatestRevisionId($paragraph_entity->id()),
+      ];
+    }
+  }
+
+  /**
+   * Saves paragraph blocks into a node's "field_vactory_paragraphs" field.
+   *
+   * This method takes an array of structured "blocks", builds corresponding
+   * Paragraph entities based on their bundle type, and attaches them to the
+   * given node. Each block can represent a different type of paragraph,
+   * such as:
+   * - vactory_component
+   * - vactory_paragraph_block
+   * - views_reference
+   *
+   * @param \Drupal\node\Entity\Node $node
+   *   The node entity where the paragraphs will be saved (passed by reference).
+   * @param array $blocks
+   *   An array of associative arrays, each representing a paragraph block.
+   * @param string $language
+   *   The language code to assign to each created paragraph entity.
+   */
   public function saveParagraphsInNode(&$node, $blocks, $language) {
     $ordered_paragraphs = [];
     if (!empty($blocks)) {
@@ -1041,6 +1191,12 @@ class NodeService {
             $paragraph['field_vactory_body'] = [
               'value' => $block['content'] ?? '',
               'format' => 'full_html',
+            ];
+          }
+          else if ($bundle === 'views_reference') {
+            $paragraph['field_views_reference'] = [
+                "target_id" => $block['blockType'],
+                "display_id" => $block['displayID'],
             ];
           }
         }
@@ -1076,6 +1232,98 @@ class NodeService {
       ];
     }
     return $paragraph_blocks;
+  }
+
+  /**
+   * Get paragraph views list.
+   */
+
+  public function getParagraphViewsList() {
+    $view_storage = \Drupal::entityTypeManager()->getStorage('view');
+    $all_views = $view_storage->loadMultiple();
+
+    $paragraph_views = [];
+
+    foreach ($all_views as $view_id => $view_config) {
+      if (!$view_config->status()) {
+        continue; // Skip disabled views
+      }
+
+      $paragraph_views[] = [
+        'id' => $view_id,
+        'label' => $view_config->label(),
+      ];
+    }
+
+    return $paragraph_views;
+  }
+
+  /**
+   * Get all displays of a given view.
+   *
+   * @param string $view_id
+   *   The ID of the view.
+   *
+   * @return array
+   *   An array of display IDs and their titles.
+   */
+  public function getViewDisplays($view_id) {
+    $view = Views::getView($view_id);
+
+    if (!$view) {
+      return [];
+    }
+
+    $displays = [];
+
+    foreach ($view->storage->get('display') as $display_id => $display) {
+      if ($display['display_plugin'] === 'page') {
+        $displays[$display_id] = $display['display_title'] ?? $display_id;
+      }
+    }
+
+    return $displays;
+  }
+
+  /**
+   * Retrieves the enabled status of specific Paragraph types 
+   * for a given content type's "field_vactory_paragraphs" field.
+   *
+   * This method checks if the following Paragraph bundles are enabled:
+   * - views_reference
+   * - vactory_paragraph_block
+   * - vactory_component
+   * - vactory_paragraph_multi_template
+   *
+   * @param string $paragraph_bundle
+   *   (Unused) The machine name of a Paragraph type (kept for potential future use).
+   * @param string $bundle
+   *   (Optional) The machine name of the content type (node bundle).
+   *   Defaults to 'vactory_page'.
+   *
+   * @return array|bool
+   *   An associative array indicating whether each of the target paragraph types
+   *   is enabled, or FALSE if the field or configuration is not found.
+   */
+  public function isParagraphTypeEnabled($bundle="vactory_page"): array|bool {
+    $field_config = FieldConfig::loadByName('node', $bundle, 'field_vactory_paragraphs');
+
+    if (!$field_config) {
+      return FALSE;
+    }
+
+    $settings = $field_config->getSettings();
+
+    if (!isset($settings['handler_settings']['target_bundles'])) {
+      return FALSE;
+    }
+
+    return [
+      '#isParagraphViewEnabled' => array_key_exists('views_reference', $settings['handler_settings']['target_bundles']),
+      '#isParagraphBlockEnabled' => array_key_exists('vactory_paragraph_block', $settings['handler_settings']['target_bundles']),
+      '#isParagraphTemplateEnabled' => array_key_exists('vactory_component', $settings['handler_settings']['target_bundles']),
+      '#isParagraphMultipleEnabled' => array_key_exists('vactory_paragraph_multi_template', $settings['handler_settings']['target_bundles'])
+    ];
   }
 
 }

@@ -15,7 +15,7 @@
     </div>
 
     {# Node Edit View #}
-    <div x-show="!showBlockForm && !showParagraphBlockForm">
+    <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm">
         {# Content Tab #}
         <div x-show="activeTab === 'content'" class="flex-1 overflow-y-auto p-3">
             <div class="w-full">
@@ -46,6 +46,11 @@
     <div x-show="showParagraphBlockForm" class="h-full">
         {% include "@vactory_dashboard/_components/paragraph/paragraph-block-form.html.twig" %}
     </div>
+
+    {# Paragraph View Form View #}
+    <template x-if="showParagraphViewForm" class="h-full">
+        {% include "@vactory_dashboard/_components/paragraph/paragraph-view-form.html.twig" %}
+    </template>
 
     {# Include the blocks modal #}
     {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}

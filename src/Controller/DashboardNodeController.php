@@ -9,9 +9,6 @@ use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Url;
 use Drupal\entityqueue\Entity\EntityQueue;
 use Drupal\node\Entity\Node;
-use Drupal\paragraphs\Entity\Paragraph;
-use Drupal\paragraphs\ParagraphInterface;
-use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
 use Drupal\vactory_dashboard\Service\NodeService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -359,6 +356,7 @@ class DashboardNodeController extends ControllerBase {
       ->getBundleInfo('node')[$bundle];
     $bundle_label = $bundle_info['label'];
 
+    $paragraph_flags = $this->nodeService->isParagraphTypeEnabled($bundle);
     return [
       //'#theme' => 'vactory_dashboard_node_add',
       '#theme' => 'vactory_dashboard_node_add',
@@ -370,6 +368,7 @@ class DashboardNodeController extends ControllerBase {
       '#bundle' => $bundle,
       '#bundle_label' => $bundle_label,
       '#fields' => $fields,
+      ...$paragraph_flags,
     ];
   }
 
@@ -435,6 +434,8 @@ class DashboardNodeController extends ControllerBase {
     $bundle_info = \Drupal::service('entity_type.bundle.info')
       ->getBundleInfo('node')[$bundle];
     $bundle_label = $bundle_info['label'];
+
+    $paragraph_flags = $this->nodeService->isParagraphTypeEnabled($bundle);
     return [
       // '#theme' => 'vactory_dashboard_node_edit',
       '#theme' => 'vactory_dashboard_node_edit',
@@ -455,6 +456,7 @@ class DashboardNodeController extends ControllerBase {
       '#fields' => $fields,
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
+      ...$paragraph_flags,
     ];
   }
 
