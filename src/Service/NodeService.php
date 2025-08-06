@@ -162,7 +162,6 @@ class NodeService {
         if ($media instanceof MediaInterface) {
           if ($media->hasField('field_media_image') && !$media->get('field_media_image')
               ->isEmpty()) {
-            /** @var \Drupal\file\Entity\File $file */
             $file = $media->get('field_media_image')->entity;
             if ($file instanceof FileInterface) {
               $node_data[$field['name']] = [
@@ -204,7 +203,7 @@ class NodeService {
             $file = $media->get($field_name)->entity;
             if ($file instanceof FileInterface) {
               $node_data[$field['name']] = [
-                'id' => $entity->get($field_name)->target_id,
+                'id' => $entity->get($field['name'])->target_id,
                 'url' => $file->createFileUrl(),
                 'path' => $field['name'],
                 'key' => -1,
