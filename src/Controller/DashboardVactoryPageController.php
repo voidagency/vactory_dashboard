@@ -2,15 +2,10 @@
 
 namespace Drupal\vactory_dashboard\Controller;
 
-use Drupal\Component\Serialization\Json;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Url;
-use Drupal\file\FileInterface;
-use Drupal\media\MediaInterface;
 use Drupal\node\Entity\Node;
-use Drupal\paragraphs\Entity\Paragraph;
-use Drupal\paragraphs\ParagraphInterface;
 use Drupal\pathauto\PathautoState;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
 use Drupal\vactory_dashboard\Service\NodeService;
@@ -21,7 +16,6 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Drupal\vactory_dashboard\Service\MetatagService;
 use Drupal\vactory_dashboard\Service\AliasValidationService;
 use Drupal\vactory_dashboard\Service\PreviewUrlService;
-use Drupal\field\Entity\FieldConfig;
 
 /**
  * Controller for the vactory_page dashboard.
@@ -115,43 +109,18 @@ class DashboardVactoryPageController extends ControllerBase {
       ];
     }
 
+    $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
     return [
       '#theme' => 'vactory_dashboard_node_add',
       '#type' => 'page',
       '#language' => $current_language,
-      '#isParagraphViewEnabled' => $this->isParagraphTypeEnabled('views_reference'),
-      '#isParagraphBlockEnabled' => $this->isParagraphTypeEnabled('vactory_paragraph_block'),
-      '#isParagraphTemplateEnabled' => $this->isParagraphTypeEnabled('vactory_component'),
-      '#isParagraphMultipleEnabled' => $this->isParagraphTypeEnabled('vactory_paragraph_multi_template'),
+      '#isParagraphViewEnabled' => $paragraph_flags['#isParagraphViewEnabled'] ?? FALSE,
+      '#isParagraphBlockEnabled' => $paragraph_flags['#isParagraphBlockEnabled'] ?? FALSE,
+      '#isParagraphTemplateEnabled' => $paragraph_flags['#isParagraphTemplateEnabled'] ?? FALSE,
+      '#isParagraphMultipleEnabled' => $paragraph_flags['#isParagraphMultipleEnabled'] ?? FALSE,
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
     ];
-  }
-
-  /**
-   * Checks if a given Paragraph bundle is enabled for
-   * field_vactory_paragraphs on vactory_page content type.
-   *
-   * @param string $paragraph_bundle
-   *   The machine name of the paragraph type to check.
-   *
-   * @return bool
-   *   TRUE if the paragraph type is enabled, FALSE otherwise.
-   */
-  public function isParagraphTypeEnabled(string $paragraph_bundle): bool {
-    $field_config = FieldConfig::loadByName('node', 'vactory_page', 'field_vactory_paragraphs');
-
-    if (!$field_config) {
-      return FALSE;
-    }
-
-    $settings = $field_config->getSettings();
-
-    if (!isset($settings['handler_settings']['target_bundles'])) {
-      return FALSE;
-    }
-
-    return array_key_exists($paragraph_bundle, $settings['handler_settings']['target_bundles']);
   }
 
   /**
@@ -197,6 +166,7 @@ class DashboardVactoryPageController extends ControllerBase {
 
     $meta_tags = $this->metatagService->prepareMetatags($node_translation ?? $node);
 
+    $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
     return [
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'page',
@@ -211,10 +181,10 @@ class DashboardVactoryPageController extends ControllerBase {
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
-      '#isParagraphViewEnabled' => $this->isParagraphTypeEnabled('views_reference'),
-      '#isParagraphBlockEnabled' => $this->isParagraphTypeEnabled('vactory_paragraph_block'),
-      '#isParagraphTemplateEnabled' => $this->isParagraphTypeEnabled('vactory_component'),
-      '#isParagraphMultipleEnabled' => $this->isParagraphTypeEnabled('vactory_paragraph_multi_template'),
+      '#isParagraphViewEnabled' => $paragraph_flags['#isParagraphViewEnabled'] ?? FALSE,
+      '#isParagraphBlockEnabled' => $paragraph_flags['#isParagraphBlockEnabled'] ?? FALSE,
+      '#isParagraphTemplateEnabled' => $paragraph_flags['#isParagraphTemplateEnabled'] ?? FALSE,
+      '#isParagraphMultipleEnabled' => $paragraph_flags['#isParagraphMultipleEnabled'] ?? FALSE,
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
     ];
   }
@@ -293,7 +263,18 @@ class DashboardVactoryPageController extends ControllerBase {
     ]);
   }
 
-  public function getParagraphBlocks(Request $request) {
+  /**
+   * Returns a JSON response containing the list of available paragraph blocks.
+   *
+   * This method fetches a list of paragraph blocks from the NodeService
+   * and returns it in a structured JSON response, including a success message.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   A JSON response containing:
+   *   - data: An array of available paragraph blocks.
+   *   - message: A success message string.
+   */
+  public function getParagraphBlocks() {
     $paragraph_blocks = $this->nodeService->getParagraphBlocksList();
     return new JsonResponse([
       'data' => $paragraph_blocks,
@@ -301,7 +282,18 @@ class DashboardVactoryPageController extends ControllerBase {
     ]);
   }
 
-  public function getParagraphViews(Request $request) {
+  /**
+   * Returns a JSON response with a list of available paragraph views.
+   *
+   * This method fetches paragraph views from the NodeService and returns
+   * them in a JSON response along with a success message.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   A JSON response containing:
+   *   - data: An array of available paragraph views.
+   *   - message: A success message string.
+   */
+  public function getParagraphViews() {
     $paragraph_views = $this->nodeService->getParagraphViewsList();
     return new JsonResponse([
       'data' => $paragraph_views,
@@ -309,6 +301,21 @@ class DashboardVactoryPageController extends ControllerBase {
     ]);
   }
 
+  /**
+   * Returns a JSON response with the list of displays for a given view ID.
+   *
+   * This method retrieves the available displays for the given Views view
+   * machine name using the NodeService, and returns them in a structured
+   * JSON response with a success message.
+   *
+   * @param string $vid
+   *   The machine name of the view for which displays should be retrieved.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   A JSON response containing:
+   *   - data: An array of display options for the view.
+   *   - message: A success message string.
+   */
   public function updateDisplays($vid) {
     $displays = $this->nodeService->getViewDisplays($vid);
     return new JsonResponse([

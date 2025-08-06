@@ -9,9 +9,6 @@ use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Url;
 use Drupal\entityqueue\Entity\EntityQueue;
 use Drupal\node\Entity\Node;
-use Drupal\paragraphs\Entity\Paragraph;
-use Drupal\paragraphs\ParagraphInterface;
-use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
 use Drupal\vactory_dashboard\Service\NodeService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -23,7 +20,6 @@ use Drupal\vactory_dashboard\Service\MetatagService;
 use Drupal\token\Token;
 use Drupal\vactory_dashboard\Service\PreviewUrlService;
 use Drupal\path_alias\AliasManagerInterface;
-use Drupal\field\Entity\FieldConfig;
 
 /**
  * Controller for the node dashboard.
@@ -360,6 +356,7 @@ class DashboardNodeController extends ControllerBase {
       ->getBundleInfo('node')[$bundle];
     $bundle_label = $bundle_info['label'];
 
+    $paragraph_flags = $this->nodeService->isParagraphTypeEnabled($bundle);
     return [
       //'#theme' => 'vactory_dashboard_node_add',
       '#theme' => 'vactory_dashboard_node_add',
@@ -371,10 +368,10 @@ class DashboardNodeController extends ControllerBase {
       '#bundle' => $bundle,
       '#bundle_label' => $bundle_label,
       '#fields' => $fields,
-      '#isParagraphViewEnabled' => $this->isParagraphTypeEnabled($bundle, 'views_reference'),
-      '#isParagraphBlockEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_paragraph_block'),
-      '#isParagraphTemplateEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_component'),
-      '#isParagraphMultipleEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_paragraph_multi_template'),
+      '#isParagraphViewEnabled' => $paragraph_flags['#isParagraphViewEnabled'] ?? FALSE,
+      '#isParagraphBlockEnabled' => $paragraph_flags['#isParagraphBlockEnabled'] ?? FALSE,
+      '#isParagraphTemplateEnabled' => $paragraph_flags['#isParagraphTemplateEnabled'] ?? FALSE,
+      '#isParagraphMultipleEnabled' => $paragraph_flags['#isParagraphMultipleEnabled'] ?? FALSE,
     ];
   }
 
@@ -440,6 +437,8 @@ class DashboardNodeController extends ControllerBase {
     $bundle_info = \Drupal::service('entity_type.bundle.info')
       ->getBundleInfo('node')[$bundle];
     $bundle_label = $bundle_info['label'];
+
+    $paragraph_flags = $this->nodeService->isParagraphTypeEnabled($bundle);
     return [
       // '#theme' => 'vactory_dashboard_node_edit',
       '#theme' => 'vactory_dashboard_node_edit',
@@ -460,27 +459,11 @@ class DashboardNodeController extends ControllerBase {
       '#fields' => $fields,
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
-      '#isParagraphViewEnabled' => $this->isParagraphTypeEnabled($bundle, 'views_reference'),
-      '#isParagraphBlockEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_paragraph_block'),
-      '#isParagraphTemplateEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_component'),
-      '#isParagraphMultipleEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_paragraph_multi_template'),
+      '#isParagraphViewEnabled' => $paragraph_flags['#isParagraphViewEnabled'] ?? FALSE,
+      '#isParagraphBlockEnabled' => $paragraph_flags['#isParagraphBlockEnabled'] ?? FALSE,
+      '#isParagraphTemplateEnabled' => $paragraph_flags['#isParagraphTemplateEnabled'] ?? FALSE,
+      '#isParagraphMultipleEnabled' => $paragraph_flags['#isParagraphMultipleEnabled'] ?? FALSE,
     ];
-  }
-
-  public function isParagraphTypeEnabled($bundle, string $paragraph_bundle): bool {
-    $field_config = FieldConfig::loadByName('node', $bundle, 'field_vactory_paragraphs');
-
-    if (!$field_config) {
-      return FALSE;
-    }
-
-    $settings = $field_config->getSettings();
-
-    if (!isset($settings['handler_settings']['target_bundles'])) {
-      return FALSE;
-    }
-
-    return array_key_exists($paragraph_bundle, $settings['handler_settings']['target_bundles']);
   }
 
   /**
