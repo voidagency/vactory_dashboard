@@ -6,6 +6,7 @@
     isUpdatingDisplays: false,
     async init() {
         await this.loadParagraphViews();
+        await this.updateDisplays();
     },
     async loadParagraphViews() {
         try {
@@ -28,6 +29,7 @@
     },
 
     async updateDisplays() {
+        if (!this.paragraphViewForm.blockType) return;
         try {
             this.isUpdatingDisplays = true;
             const response = await fetch(`{{ path('vactory_dashboard.update_displays', {'vid': 'VID'}) }}`.replace('VID', this.paragraphViewForm.blockType));
