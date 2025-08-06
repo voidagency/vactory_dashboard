@@ -579,6 +579,24 @@ vactory_dashboard.paragraph_blocks:
   requirements:
     _permission: "access dashboard"
 
+vactory_dashboard.paragraph_views:
+  path: "/admin/dashboard/paragraph-views"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardVactoryPageController::getParagraphViews'
+    _title: "Paragraph Views"
+  methods: [GET]
+  requirements:
+    _permission: "access dashboard"
+
+vactory_dashboard.update_displays:
+  path: "/api/vactory-dashboard/update-displays/{vid}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardVactoryPageController::updateDisplays'
+    _title: "Update Displays"
+  methods: [GET]
+  requirements:
+    _permission: "access dashboard"
+
 vactory_dashboard.node.add:
   path: "/admin/dashboard/{bundle}/add"
   defaults:

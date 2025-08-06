@@ -2,15 +2,10 @@
 
 namespace Drupal\vactory_dashboard\Controller;
 
-use Drupal\Component\Serialization\Json;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Url;
-use Drupal\file\FileInterface;
-use Drupal\media\MediaInterface;
 use Drupal\node\Entity\Node;
-use Drupal\paragraphs\Entity\Paragraph;
-use Drupal\paragraphs\ParagraphInterface;
 use Drupal\pathauto\PathautoState;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
 use Drupal\vactory_dashboard\Service\NodeService;
@@ -114,10 +109,12 @@ class DashboardVactoryPageController extends ControllerBase {
       ];
     }
 
+    $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
     return [
       '#theme' => 'vactory_dashboard_node_add',
       '#type' => 'page',
       '#language' => $current_language,
+      ...$paragraph_flags,
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
     ];
@@ -166,6 +163,7 @@ class DashboardVactoryPageController extends ControllerBase {
 
     $meta_tags = $this->metatagService->prepareMetatags($node_translation ?? $node);
 
+    $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
     return [
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'page',
@@ -180,6 +178,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
+      ...$paragraph_flags,
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
     ];
   }
@@ -258,11 +257,64 @@ class DashboardVactoryPageController extends ControllerBase {
     ]);
   }
 
-  public function getParagraphBlocks(Request $request) {
+  /**
+   * Returns a JSON response containing the list of available paragraph blocks.
+   *
+   * This method fetches a list of paragraph blocks from the NodeService
+   * and returns it in a structured JSON response, including a success message.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   A JSON response containing:
+   *   - data: An array of available paragraph blocks.
+   *   - message: A success message string.
+   */
+  public function getParagraphBlocks() {
     $paragraph_blocks = $this->nodeService->getParagraphBlocksList();
     return new JsonResponse([
       'data' => $paragraph_blocks,
       'message' => 'Paragraph blocks retrieved successfully',
+    ]);
+  }
+
+  /**
+   * Returns a JSON response with a list of available paragraph views.
+   *
+   * This method fetches paragraph views from the NodeService and returns
+   * them in a JSON response along with a success message.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   A JSON response containing:
+   *   - data: An array of available paragraph views.
+   *   - message: A success message string.
+   */
+  public function getParagraphViews() {
+    $paragraph_views = $this->nodeService->getParagraphViewsList();
+    return new JsonResponse([
+      'data' => $paragraph_views,
+      'message' => 'Paragraph views retrieved successfully',
+    ]);
+  }
+
+  /**
+   * Returns a JSON response with the list of displays for a given view ID.
+   *
+   * This method retrieves the available displays for the given Views view
+   * machine name using the NodeService, and returns them in a structured
+   * JSON response with a success message.
+   *
+   * @param string $vid
+   *   The machine name of the view for which displays should be retrieved.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   A JSON response containing:
+   *   - data: An array of display options for the view.
+   *   - message: A success message string.
+   */
+  public function updateDisplays($vid) {
+    $displays = $this->nodeService->getViewDisplays($vid);
+    return new JsonResponse([
+      'data' => $displays,
+      'message' => 'Displays retrieved successfully',
     ]);
   }
 

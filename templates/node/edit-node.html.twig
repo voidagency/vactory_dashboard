@@ -23,7 +23,7 @@
                                   d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
                         </svg>
                     </a>
-                    <h1 class="text-lg font-medium">{{ "Edit"|t }} {{ bundle_label }}</h1>
+                    <h1 class="flex items-center text-lg font-medium">{{ "Edit"|t }} {{ bundle_label }}&nbsp;-&nbsp;<span class="inline-block capitalize max-w-60 truncate">{{ node.title }}</span></h1>
                 </div>
                 <div class="flex max-lg:w-full max-lg:flex-wrap max-lg:gap-3 max-lg:[&>*]:w-full max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:px-3 max-lg:py-4 lg:items-center lg:space-x-4">
                     {# Publish checkbox #}
@@ -99,7 +99,7 @@
 
                     {% if has_paragraphs_field %}
                         <div x-show="activeTab === 'templates'">
-                            <div x-show="!showBlockForm && !showParagraphBlockForm">
+                            <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm">
                                 {% include "@vactory_dashboard/node/_components/add-block-action.html.twig" with {
                                     show: node_default_lang == language
                                 } %}
@@ -117,7 +117,12 @@
                                 {% include "@vactory_dashboard/_components/paragraph/paragraph-block-form.html.twig" %}
                             </template>
 
-                            <div x-show="!showBlockForm && !showParagraphBlockForm" class="space-y-1">
+                            {# Paragraph View Form View #}
+                            <template x-if="showParagraphViewForm" class="h-full">
+                                {% include "@vactory_dashboard/_components/paragraph/paragraph-view-form.html.twig" %}
+                            </template>
+
+                            <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm" class="space-y-1">
                                 {% include "@vactory_dashboard/_components/paragraph/blocks.html.twig" %}
                             </div>
                         </div>
