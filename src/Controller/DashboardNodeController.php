@@ -373,6 +373,8 @@ class DashboardNodeController extends ControllerBase {
       '#fields' => $fields,
       '#isParagraphViewEnabled' => $this->isParagraphTypeEnabled($bundle, 'views_reference'),
       '#isParagraphBlockEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_paragraph_block'),
+      '#isParagraphTemplateEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_component'),
+      '#isParagraphMultipleEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_paragraph_multi_template'),
     ];
   }
 
@@ -460,6 +462,8 @@ class DashboardNodeController extends ControllerBase {
       '#meta_tags' => $meta_tags,
       '#isParagraphViewEnabled' => $this->isParagraphTypeEnabled($bundle, 'views_reference'),
       '#isParagraphBlockEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_paragraph_block'),
+      '#isParagraphTemplateEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_component'),
+      '#isParagraphMultipleEnabled' => $this->isParagraphTypeEnabled($bundle, 'vactory_paragraph_multi_template'),
     ];
   }
 

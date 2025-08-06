@@ -3,7 +3,7 @@
     isRTL: document.dir === 'rtl',
     paragraphViews: [],
     isLoadingViews: true,
-    isUpdatingDisplays: true,
+    isUpdatingDisplays: false,
     async init() {
         await this.loadParagraphViews();
     },
@@ -98,7 +98,7 @@
                                                 required
                                                 @change="updateDisplays()"
                                                 class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
-                                            <option value="">{{ 'Select View type...'|t }}</option>
+                                            <option value="">{{ 'Select View type'|t }}</option>
                                             <template x-if="isLoadingViews">
                                                 <option disabled>{{ 'Loading view types...'|t }}</option>
                                             </template>
@@ -120,12 +120,12 @@
                                         <select x-model="paragraphViewForm.displayID"
                                                 required
                                                 class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
-                                            <option value="">{{ 'Select Display...'|t }}</option>
-                                            <template x-if="isLoadingViews">
-                                                <option disabled>{{ 'Loading view types...'|t }}</option>
+                                            <option value="">{{ 'Select Display'|t }}</option>
+                                            <template x-if="isUpdatingDisplays">
+                                                <option disabled>{{ 'Loading displays...'|t }}</option>
                                             </template>
-                                            <template x-if="!isLoadingViews && paragraphViewForm.displays.length === 0">
-                                                <option disabled>{{ 'No view types available'|t }}</option>
+                                            <template x-if="!isUpdatingDisplays && paragraphViewForm.displays.length === 0">
+                                                <option disabled>{{ 'No displays available'|t }}</option>
                                             </template>
                                             <template x-for="(label, id) in paragraphViewForm.displays" :key="id">
                                                 <option :selected="id == paragraphViewForm.displayID" :value="id" x-text="label"></option>

@@ -197,7 +197,8 @@
           },
           async saveNode(id="node-form") {
             if (!this.validateForm(id)) {
-                  this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              this.activeTab = 'content';
               return;
             }
 
@@ -627,6 +628,7 @@
           saveBlock(id="node-form") {
             if (!this.validateForm(id)) {
               this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              this.activeTab = 'content';
               return;
             }
             let blockData;
@@ -1144,7 +1146,7 @@
 
             requiredInputs.forEach(input => {
               if (!input.value) {
-                input.classList.add('border-red-500');
+                input.classList.add('!border-red-500');
                 isValid = false;
               }
             });
@@ -1266,7 +1268,7 @@
 
             requiredInputs.forEach(input => {
               if (!input.value) {
-                input.classList.add('border-red-500');
+                input.classList.add('!border-red-500');
                 isValid = false;
               }
             });
