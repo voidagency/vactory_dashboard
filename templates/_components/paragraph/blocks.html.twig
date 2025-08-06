@@ -7,182 +7,193 @@
      @open-image-modal.window="modalImage = $event.detail; showImageModal = true"
      class="flex flex-col gap-2">
     {# Empty state message #}
-    <div
-            x-show="blocks.length === 0 && type !== 'dynamic_field'"
-            class="bg-gray-50 rounded-lg p-6 text-center">
-        <div class="text-gray-500">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                 stroke="currentColor" class="w-12 h-12 mx-auto mb-3">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
-            </svg>
-            <h3 class="text-sm font-medium mb-1">{{ 'No content blocks added yet'|t }}</h3>
-            <p class="text-sm text-gray-400">{{ 'Click the "Add block" button to start adding content blocks to your page.'|t }}</p>
-        </div>
-    </div>
-    {% if type == 'dynamic_field' %}
-        <template x-for="(block, index) in dynamicFields?.[field.name]" :key="block.id">
-                        {% if node_default_lang == language %}
+    {% if field_type != 'wysiwyg_field' %}
         <div
-                class="bg-white rounded-lg shadow-sm"
-                draggable="true"
-                :data-index="index"
-                @dragstart="dragStart($event)"
-                @dragover.prevent="$event.target.closest('[draggable]').classList.add('bg-gray-50')"
-                @dragleave.prevent="$event.target.closest('[draggable]').classList.remove('bg-gray-50')"
-                @drop.prevent="dragEnd($event)"
-                @dragend="$event.target.closest('[draggable]').classList.remove('bg-gray-50')">
-        {% else %}
-        <div class="bg-white rounded-lg shadow-sm">
-            {% endif %}
-            <div class="p-3 flex items-center justify-between">
-                <div class="flex items-center gap-3 w-full">
-                    <div class="cursor-pointer relative overflow-hidden rounded border border-gray-200 shrink-0"
-                         @click="$dispatch('open-image-modal', { src: block.preview, alt: 'Preview of ' + block.title })">
-                        <img :alt="'Preview of ' + block.title" class="!w-16 h-16 object-cover"
-                             :src="block.preview">
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-base font-medium" x-text="block.title"></span>
-                        {# Type Badge #}
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                              :class="block.bundle === 'vactory_component' ? 'bg-primary-100 text-primary-800' : 'bg-red-100 text-red-800'"
-                              x-text="{
-                                'vactory_component': 'Component',
-                                'vactory_paragraph_block': 'Block',
-                                'vactory_paragraph_multi_template': 'Multi Components',
-                                'views_reference': 'View'
-                              }[block.bundle ?? 'vactory_component'] || block.bundle">
-                        </span>
-                    </div>
-                    <button
-                            type="button"
-                            @click="modifyBlock(index, field.name)"
-                            class="text-gray-400 hover:text-green-500 ml-auto">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <button
-                            type="button"
-                            @click="blockToDelete = index; showDeleteModal = true"
-                            class="text-gray-400 hover:text-red-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                        </svg>
-                    </button>
-                </div>
+                x-show="blocks.length === 0"
+                class="bg-gray-50 rounded-lg p-6 text-center">
+            <div class="text-gray-500">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                     stroke="currentColor" class="w-12 h-12 mx-auto mb-3">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                </svg>
+                <h3 class="text-sm font-medium mb-1">{{ 'No content blocks added yet'|t }}</h3>
+                <p class="text-sm text-gray-400">{{ 'Click the "Add block" button to start adding content blocks to your page.'|t }}</p>
             </div>
         </div>
-    </template>
-    {% else %}
-        <template x-for="(block, index) in blocks" :key="block.id">
-                {% if node_default_lang == language %}
-        <div
-                class="bg-white rounded-lg shadow-sm"
-                draggable="true"
-                :data-index="index"
-                @dragstart="dragStart($event)"
-                @dragover.prevent="$event.target.closest('[draggable]').classList.add('bg-gray-50')"
-                @dragleave.prevent="$event.target.closest('[draggable]').classList.remove('bg-gray-50')"
-                @drop.prevent="dragEnd($event)"
-                @dragend="$event.target.closest('[draggable]').classList.remove('bg-gray-50')">
-        {% else %}
-        <div class="bg-white rounded-lg shadow-sm">
-            {% endif %}
-            <div class="p-3 flex items-center justify-between">
-                <div class="flex items-center gap-3 w-full">
-                    {% if node_default_lang == language %}
-                        <button class="cursor-move text-gray-400 hover:text-primary-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                                 stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M4 8h16M4 16h16"></path>
-                            </svg>
-                        </button>
+    {% endif %}
+
+    {% if field_type == 'wysiwyg_field' %}
+        <template x-for="(block, index) in dynamicFields?.[field.name]" :key="block.id">
+            {% if node_default_lang == language %}
+            <div
+                    class="bg-white rounded-lg shadow-sm"
+                    draggable="true"
+                    :data-index="index"
+                    @dragstart="dragStart($event)"
+                    @dragover.prevent="$event.target.closest('[draggable]').classList.add('bg-gray-50')"
+                    @dragleave.prevent="$event.target.closest('[draggable]').classList.remove('bg-gray-50')"
+                    @drop.prevent="dragEnd($event)"
+                    @dragend="$event.target.closest('[draggable]').classList.remove('bg-gray-50')">
+                {% else %}
+                <div class="bg-white rounded-lg shadow-sm">
                     {% endif %}
-                    <div class="cursor-pointer relative overflow-hidden rounded border border-gray-200 shrink-0"
-                         @click="$dispatch('open-image-modal', { src: block.preview, alt: 'Preview of ' + block.title })">
-                        <img :alt="'Preview of ' + block.title" class="!w-16 h-16 object-cover"
-                             :src="block.preview">
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <span class="text-base font-medium" x-text="block.title"></span>
-                        {# Type Badge #}
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                              :class="block.bundle === 'vactory_component' ? 'bg-primary-100 text-primary-800' : 'bg-red-100 text-red-800'"
-                              x-text="{
+                    <div class="p-3 flex items-center justify-between">
+                        <div class="flex items-center gap-3 w-full">
+                            <div class="cursor-pointer relative overflow-hidden rounded border border-gray-200 shrink-0"
+                                 @click="$dispatch('open-image-modal', { src: block.preview, alt: 'Preview of ' + block.title })">
+                                <img :alt="'Preview of ' + block.title" class="!w-16 h-16 object-cover"
+                                     :src="block.preview">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-base font-medium" x-text="block.title"></span>
+                                {# Type Badge #}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                                      :class="block.bundle === 'vactory_component' ? 'bg-primary-100 text-primary-800' : 'bg-red-100 text-red-800'"
+                                      x-text="{
                                 'vactory_component': 'Component',
                                 'vactory_paragraph_block': 'Block',
                                 'vactory_paragraph_multi_template': 'Multi Components',
                                 'views_reference': 'View'
                               }[block.bundle ?? 'vactory_component'] || block.bundle">
                         </span>
-                    </div>
-                    <template x-if="block.bundle === 'vactory_component'">
-                        <button
-                                type="button"
-                                @click="modifyBlock(index)"
-                                class="text-gray-400 hover:text-green-500 ml-auto">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                            </svg>
-                        </button>
-                    </template>
-                    <template x-if="block.bundle === 'vactory_paragraph_block'">
-                        <button
-                                type="button"
-                                @click="modifyParagraphBlock(index)"
-                                class="text-gray-400 hover:text-green-500 ml-auto">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                            </svg>
-                        </button>
-                    </template>
-                    {%if has_translation %}
-                        <template x-if="block.bundle !== 'vactory_component' && block.bundle !== 'vactory_paragraph_block'">
+                            </div>
                             <button
                                     type="button"
-                                    @click="modifyParagraphView(index)"
+                                    @click="modifyBlock(index, field.name)"
                                     class="text-gray-400 hover:text-green-500 ml-auto">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
+                                     stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                 </svg>
                             </button>
-                        </template>
-                    {% endif %}
-                </div>
-                <div class="flex items-center space-x-2">
-                    {% if node_default_lang == language %}
-                        <button
-                                type="button"
-                                @click="blockToDelete = index; showDeleteModal = true"
-                                class="text-gray-400 hover:text-red-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                 stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg>
-                        </button>
-                    {% endif %}
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button
+                                    type="button"
+                                    @click="blockToDelete = index; showDeleteModal = true"
+                                    class="text-gray-400 hover:text-red-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                     stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </template>
+        </template>
+    {% else %}
+        <template x-for="(block, index) in blocks" :key="block.id">
+            {% if node_default_lang == language %}
+            <div
+                    class="bg-white rounded-lg shadow-sm"
+                    draggable="true"
+                    :data-index="index"
+                    @dragstart="dragStart($event)"
+                    @dragover.prevent="$event.target.closest('[draggable]').classList.add('bg-gray-50')"
+                    @dragleave.prevent="$event.target.closest('[draggable]').classList.remove('bg-gray-50')"
+                    @drop.prevent="dragEnd($event)"
+                    @dragend="$event.target.closest('[draggable]').classList.remove('bg-gray-50')">
+                {% else %}
+                <div class="bg-white rounded-lg shadow-sm">
+                    {% endif %}
+                    <div class="p-3 flex items-center justify-between">
+                        <div class="flex items-center gap-3 w-full">
+                            {% if node_default_lang == language %}
+                                <button class="cursor-move text-gray-400 hover:text-primary-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M4 8h16M4 16h16"></path>
+                                    </svg>
+                                </button>
+                            {% endif %}
+                            <div class="cursor-pointer relative overflow-hidden rounded border border-gray-200 shrink-0"
+                                 @click="$dispatch('open-image-modal', { src: block.preview, alt: 'Preview of ' + block.title })">
+                                <img :alt="'Preview of ' + block.title" class="!w-16 h-16 object-cover"
+                                     :src="block.preview">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-base font-medium" x-text="block.title"></span>
+                                {# Type Badge #}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                                      :class="block.bundle === 'vactory_component' ? 'bg-primary-100 text-primary-800' : 'bg-red-100 text-red-800'"
+                                      x-text="{
+                                'vactory_component': 'Component',
+                                'vactory_paragraph_block': 'Block',
+                                'vactory_paragraph_multi_template': 'Multi Components',
+                                'views_reference': 'View'
+                              }[block.bundle ?? 'vactory_component'] || block.bundle">
+                        </span>
+                            </div>
+                            <template x-if="block.bundle === 'vactory_component'">
+                                <button
+                                        type="button"
+                                        @click="modifyBlock(index)"
+                                        class="text-gray-400 hover:text-green-500 ml-auto">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                            </template>
+                            <template x-if="block.bundle === 'vactory_paragraph_block'">
+                                <button
+                                        type="button"
+                                        @click="modifyParagraphBlock(index)"
+                                        class="text-gray-400 hover:text-green-500 ml-auto">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                            </template>
+                            {% if has_translation %}
+                                <template
+                                        x-if="block.bundle !== 'vactory_component' && block.bundle !== 'vactory_paragraph_block'">
+                                    <button
+                                            type="button"
+                                            @click="window.location.href = '/{{ language }}/node/{{ nid }}/edit?destination=' + encodeURIComponent(window.location.href)"
+                                            class="text-gray-400 hover:text-green-500 ml-auto">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                             viewBox="0 0 24 24"
+                                             stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </button>
+                                </template>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            {% if node_default_lang == language %}
+                                <button
+                                        type="button"
+                                        @click="blockToDelete = index; showDeleteModal = true"
+                                        class="text-gray-400 hover:text-red-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
     {% endif %}
-    {% if type == 'dynamic_field' %}
+    {% if field_type == 'wysiwyg_field' %}
         {# Delete Confirmation Modal #}
         {% include '@vactory_dashboard/_components/modals/delete-confirmation-modal.html.twig' with {
             'show_var': 'showDeleteModal',

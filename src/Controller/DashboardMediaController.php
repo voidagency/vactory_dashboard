@@ -7,6 +7,7 @@ use Drupal\Component\Utility\Environment;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\file\FileInterface;
+use Drupal\media\MediaInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -147,7 +148,6 @@ class DashboardMediaController extends ControllerBase {
     // Load media entities.
     $medias = $this->entityTypeManager->getStorage('media')
       ->loadMultiple($mids);
-
     $data = [];
     foreach ($medias as $media) {
       /** @var \Drupal\media\Entity\Media $media */
@@ -159,6 +159,9 @@ class DashboardMediaController extends ControllerBase {
         'changed' => $media->getChangedTime(),
         'url' => $this->getMediaUrl($media),
       ];
+      if ($type === 'remote_video') {
+        $item['preview'] = $this->getRemoteVideoThumbnail($media);
+      }
       $data[] = $item;
     }
 
@@ -169,6 +172,15 @@ class DashboardMediaController extends ControllerBase {
       'limit' => $limit,
       'pages' => ceil($total / $limit),
     ]);
+  }
+
+  /**
+   * @param \Drupal\media\MediaInterface $media
+   *
+   * @return void
+   */
+  protected function getRemoteVideoThumbnail(MediaInterface $media) {
+    return \Drupal::service('file_url_generator')->generateAbsoluteString($media->thumbnail->entity->getFileUri());
   }
 
   /**
