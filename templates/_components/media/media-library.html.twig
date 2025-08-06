@@ -184,7 +184,13 @@
                                         :alt="media.name"
                                         class="w-full h-32 object-cover rounded">
                             </template>
-                            <template x-if="media.type !== 'image'">
+                            <template x-if="media.type === 'remote_video'">
+                                <img
+                                        :src="media.preview"
+                                        :alt="media.name"
+                                        class="w-full h-32 object-cover rounded">
+                            </template>
+                            <template x-if="media.type !== 'image' && media.type !== 'remote_video'">
                                 <div class="w-full h-32 bg-gray-100 rounded flex items-center justify-center">
                                     <svg class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24"
                                         stroke="currentColor">
