@@ -114,10 +114,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#theme' => 'vactory_dashboard_node_add',
       '#type' => 'page',
       '#language' => $current_language,
-      '#isParagraphViewEnabled' => $paragraph_flags['#isParagraphViewEnabled'] ?? FALSE,
-      '#isParagraphBlockEnabled' => $paragraph_flags['#isParagraphBlockEnabled'] ?? FALSE,
-      '#isParagraphTemplateEnabled' => $paragraph_flags['#isParagraphTemplateEnabled'] ?? FALSE,
-      '#isParagraphMultipleEnabled' => $paragraph_flags['#isParagraphMultipleEnabled'] ?? FALSE,
+      ...$paragraph_flags,
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
     ];
@@ -181,10 +178,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
-      '#isParagraphViewEnabled' => $paragraph_flags['#isParagraphViewEnabled'] ?? FALSE,
-      '#isParagraphBlockEnabled' => $paragraph_flags['#isParagraphBlockEnabled'] ?? FALSE,
-      '#isParagraphTemplateEnabled' => $paragraph_flags['#isParagraphTemplateEnabled'] ?? FALSE,
-      '#isParagraphMultipleEnabled' => $paragraph_flags['#isParagraphMultipleEnabled'] ?? FALSE,
+      ...$paragraph_flags,
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
     ];
   }

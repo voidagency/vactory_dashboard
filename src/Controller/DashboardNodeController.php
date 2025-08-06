@@ -368,10 +368,7 @@ class DashboardNodeController extends ControllerBase {
       '#bundle' => $bundle,
       '#bundle_label' => $bundle_label,
       '#fields' => $fields,
-      '#isParagraphViewEnabled' => $paragraph_flags['#isParagraphViewEnabled'] ?? FALSE,
-      '#isParagraphBlockEnabled' => $paragraph_flags['#isParagraphBlockEnabled'] ?? FALSE,
-      '#isParagraphTemplateEnabled' => $paragraph_flags['#isParagraphTemplateEnabled'] ?? FALSE,
-      '#isParagraphMultipleEnabled' => $paragraph_flags['#isParagraphMultipleEnabled'] ?? FALSE,
+      ...$paragraph_flags,
     ];
   }
 
@@ -459,10 +456,7 @@ class DashboardNodeController extends ControllerBase {
       '#fields' => $fields,
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
-      '#isParagraphViewEnabled' => $paragraph_flags['#isParagraphViewEnabled'] ?? FALSE,
-      '#isParagraphBlockEnabled' => $paragraph_flags['#isParagraphBlockEnabled'] ?? FALSE,
-      '#isParagraphTemplateEnabled' => $paragraph_flags['#isParagraphTemplateEnabled'] ?? FALSE,
-      '#isParagraphMultipleEnabled' => $paragraph_flags['#isParagraphMultipleEnabled'] ?? FALSE,
+      ...$paragraph_flags,
     ];
   }
 
