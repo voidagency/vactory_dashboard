@@ -121,6 +121,8 @@ class DashboardVactoryPageController extends ControllerBase {
       '#language' => $current_language,
       '#isParagraphViewEnabled' => $this->isParagraphTypeEnabled('views_reference'),
       '#isParagraphBlockEnabled' => $this->isParagraphTypeEnabled('vactory_paragraph_block'),
+      '#isParagraphTemplateEnabled' => $this->isParagraphTypeEnabled('vactory_component'),
+      '#isParagraphMultipleEnabled' => $this->isParagraphTypeEnabled('vactory_paragraph_multi_template'),
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
     ];
@@ -211,6 +213,8 @@ class DashboardVactoryPageController extends ControllerBase {
       '#meta_tags' => $meta_tags,
       '#isParagraphViewEnabled' => $this->isParagraphTypeEnabled('views_reference'),
       '#isParagraphBlockEnabled' => $this->isParagraphTypeEnabled('vactory_paragraph_block'),
+      '#isParagraphTemplateEnabled' => $this->isParagraphTypeEnabled('vactory_component'),
+      '#isParagraphMultipleEnabled' => $this->isParagraphTypeEnabled('vactory_paragraph_multi_template'),
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
     ];
   }
