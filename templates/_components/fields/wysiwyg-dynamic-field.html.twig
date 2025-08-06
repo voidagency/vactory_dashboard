@@ -15,6 +15,6 @@
 
 <template x-if="Object.keys(dynamicFields?.[field.name] || {}).length > 0">
     {% include "@vactory_dashboard/_components/paragraph/blocks.html.twig" with {
-        type: 'dynamic_field',
+        field_type: 'wysiwyg_field',
     } %}
 </template>
