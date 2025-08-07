@@ -1,6 +1,6 @@
 <div class="h-full flex flex-col"
      x-data="pageEditor({language: '{{ language }}'})">
-    <div x-show="!showBlockForm && !showParagraphBlockForm">
+    <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm">
         {# Header with back button, title and actions #}
         {% include "@vactory_dashboard/node/_components/actions.html.twig" with {
             label: 'Create Page'|t
@@ -9,7 +9,7 @@
     {# Notification #}
     {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
 
-    <div x-show="!showBlockForm && !showParagraphBlockForm">
+    <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm">
         {# Tabs #}
         {% include "@vactory_dashboard/node/_components/tabs.html.twig" %}
     </div>
