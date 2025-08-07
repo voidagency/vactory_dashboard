@@ -66,6 +66,24 @@
       </div>
 
       <!-- Answer -->
+      <template x-if="loaderCK">
+          <div>
+              <div class="col-span-full flex justify-center items-center py-12">
+                  <svg class="animate-spin h-8 w-8 text-primary-500"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12"
+                              cy="12" r="10"
+                              stroke="currentColor"
+                              stroke-width="4"></circle>
+                      <path class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span class="ms-3 text-sm text-slate-600">{{ "Loading CKeditor..."|t }}</span>
+              </div>
+          </div>
+      </template>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Answer</label>
         <div :id="`faq-${index}`" x-init="getForm(`faq-${index}`, -1, false, false, false, false, formData.fields[field.name][index].answer, 'formData.fields[field.name][index].answer', true);
