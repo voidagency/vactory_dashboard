@@ -66,7 +66,9 @@
                     </button>
                 </div>
             </div>
-            {% include "@vactory_dashboard/node/content-types/_components/tabs.html.twig" %}
+            <template x-if="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm">
+                {% include "@vactory_dashboard/node/content-types/_components/tabs.html.twig" %}
+            </template>
             {# Notification #}
             {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
         </div>
