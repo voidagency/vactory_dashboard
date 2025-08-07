@@ -420,7 +420,7 @@
                                     <div class="flex flex-col">
                                         <span class="font-semibold text-slate-900 capitalize"
                                               x-text="profile.name"></span>
-                                        <span class="text-sm text-slate-600 mt-1" x-text="profile.email"></span>
+                                        <span class="text-sm text-slate-600 mt-1 max-w-[240px] truncate" x-text="profile.email"></span>
                                         <template x-if="profile && profile.roles">
                                             <div class="flex items-center flex-wrap capitalize mt-2">
                                                 <template x-for="(role, index) in profile.roles" :key="index">

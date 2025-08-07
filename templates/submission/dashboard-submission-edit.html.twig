@@ -2,101 +2,137 @@
 
 {% block content %}
     <div class="submission-layout" x-data="submission()">
-        <h1 class="text-2xl font-semibold text-slate-900">Soumission</h1>
+        <div class="h-full flex flex-col bg-slate-50">
+            <div class="sticky top-0 z-10 bg-white rounded-xl py-4 px-6 border-b border-slate-200 flex justify-between items-center mb-6">
+                <div class="flex items-center gap-x-3">
+                    <button @click="window.history.back()"
+                            type="button"
+                            class="me-3 text-slate-400 hover:text-primary-500 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="h-4 w-4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
+                        </svg>
+                    </button>
+                    <h1 class="text-lg font-semibold text-slate-900">{{ 'Soumission'|t }}</h1>
+                </div>
+                <div class="max-lg:fixed max-lg:w-full max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:p-3 max-lg:[&>*]:w-full max-lg:z-[1] flex items-center gap-x-2">
+                    {% if edit %}
+                        {% include '@vactory_admin/components/button/button.twig' with {
+                            'variant': 'primary',
+                            'size': 'md',
+                            'type': 'button',
+                            'text': 'Enregistrer'|t,
+                            'attributes': create_attribute().setAttribute('@click', 'editSubmission')
+                        } %}
+                    {% endif %}
+                </div>
+            </div>
 
-        <div>
-            <template x-if="loading">
-                <p>Loading...</p>
-            </template>
+            <div class="flex-1 overflow-y-auto">
+                <div class="mx-auto">
+                    <template x-if="loading">
+                        <div class="bg-white rounded-xl shadow-sm p-8">
+                            <div class="flex justify-center items-center py-12">
+                                <svg class="animate-spin h-8 w-8 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span class="ms-3 text-sm text-slate-600">{{ "Loading..."|t }}</span>
+                            </div>
+                        </div>
+                    </template>
 
-            <template x-if="!loading">
-                <form>
-                    <template x-for="[key, field] in Object.entries(fields)" :key="key">
-                        <template x-if="!excludedFields.includes(key) && field.type">
-                            <div class="mb-4">
-                                <label class="w-fit block font-semibold capitalize mb-1" data-key="key" :for="key"
-                                       x-text="key.replace(/_/g, ' ')"></label>
-
-                                <!-- Input: textfield, email, tel -->
-                                <template x-if="['textfield', 'email', 'tel'].includes(field.type)">
-                                    <input :id="key"
-                                           :type="field.type === 'textfield' ? 'text' : field.type"
-                                           class="inline-block w-1/2 border rounded p-2"
-                                           x-model="field.value"
-                                           placeholder="Aucune valeur"
-                                    />
-                                </template>
-
-                                <!-- Textarea -->
-                                <template x-if="field.type === 'textarea'">
-                                    <textarea x-model="field.value" data-key="key" :id="key" placeholder="Aucune valeur"
-                                              class="w-1/2 border rounded p-2" x-text="field.value"></textarea>
-                                </template>
-
-                                <!-- Checkbox (single boolean) -->
-                                <template x-if="field.type === 'checkbox'">
-                                    <label data-key="key" class="inline-flex w-fit items-center">
-                                        <input type="checkbox"
-                                               :id="key"
-                                               x-model="field.value"
-                                               class="mr-2 inline-block w-fit"
-                                               :checked="field.value === '1' || field.value === true || field.value === 'true'"
-                                        />
-                                        <span>Yes</span>
-                                    </label>
-                                </template>
-
-                                <!-- Checkboxes (multiple) -->
-                                <template x-if="field.value && field.type === 'checkboxes'">
-                                    <div>
-                                        <template
-                                                x-for="(option, index) in field.value.split(',').map(item => item.trim())"
-                                                :key="index">
-                                            <label data-key="key" class="block w-fit">
-                                                <input type="checkbox" class="mr-2 inline-block w-fit" x-model="option"
-                                                       checked/>
-                                                <span x-text="option"></span>
+                    <template x-if="!loading">
+                        <form class="bg-white rounded-xl shadow-sm p-2 lg:p-8">
+                            <div class="flex flex-col gap-6 bg-slate-50 p-4 rounded-xl">
+                                <template x-for="[key, field] in Object.entries(fields)" :key="key">
+                                    <template x-if="!excludedFields.includes(key) && field.type">
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1" :for="key">
+                                                <span x-text="key.replace(/_/g, ' ')" class="capitalize"></span>
+                                                <span x-show="field.required" class="text-red-500">*</span>
                                             </label>
-                                        </template>
-                                    </div>
-                                </template>
 
-                                <template x-if="field.type === 'select'">
-                                    <div class="mt-2 grid grid-cols-1 w-fit">
-                                        <select data-key="key" x-model="field.value"
-                                                class="col-start-1 row-start-1 w-fit appearance-none rounded-md bg-white py-1.5 pl-3 pr-8 text-base text-gray-900 outline -outline-offset-1 outline-gray-300 focus:outline focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6">
-                                            <option x-model="field.value" x-text="field.value"></option>
-                                        </select>
-                                        <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"
-                                             viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"
-                                             data-slot="icon">
-                                            <path fill-rule="evenodd"
-                                                  d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z"
-                                                  clip-rule="evenodd"/>
-                                        </svg>
-                                    </div>
-                                </template>
+                                            <!-- Input: textfield, email, tel -->
+                                            <template x-if="['textfield', 'email', 'tel'].includes(field.type)">
+                                                <input :id="key"
+                                                       :type="field.type === 'textfield' ? 'text' : field.type"
+                                                       class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                                                       x-model="field.value"
+                                                       :placeholder="field.value || 'Aucune valeur'"
+                                                       :required="field.required"
+                                                />
+                                            </template>
 
-                                <!-- Fallback (unknown types) -->
-                                <template
-                                        x-if="!['textfield', 'email', 'tel', 'textarea', 'checkbox', 'checkboxes', 'select'].includes(field.type)">
-                                    <input data-key="key" :id="key"
-                                           type="text"
-                                           class="w-1/2 border rounded p-2 bg-white"
-                                           x-model="JSON.stringify(field.value)"
-                                    />
+                                            <!-- Textarea -->
+                                            <template x-if="field.type === 'textarea'">
+                                                <textarea :id="key"
+                                                          x-model="field.value"
+                                                          rows="4"
+                                                          class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                                                          :placeholder="field.value || 'Aucune valeur'"
+                                                          :required="field.required"></textarea>
+                                            </template>
+
+                                            <!-- Checkbox (single boolean) -->
+                                            <template x-if="field.type === 'checkbox'">
+                                                <div class="flex flex-row-reverse justify-end items-center gap-2">
+                                                    <label class="block text-sm font-medium text-slate-700" :for="key">
+                                                        <span>{{ 'Yes'|t }}</span>
+                                                    </label>
+                                                    <input type="checkbox"
+                                                           :id="key"
+                                                           x-model="field.value"
+                                                           :checked="field.value === '1' || field.value === true || field.value === 'true'"
+                                                           :required="field.required"
+                                                    />
+                                                </div>
+                                            </template>
+
+                                            <!-- Checkboxes (multiple) -->
+                                            <template x-if="field.value && field.type === 'checkboxes'">
+                                                <div class="space-y-2">
+                                                    <template x-for="(option, index) in field.value.split(',').map(item => item.trim())" :key="index">
+                                                        <label class="flex items-center gap-2">
+                                                            <input type="checkbox" 
+                                                                   class="rounded border-slate-300 text-primary-500 focus:ring-primary-300" 
+                                                                   x-model="option"
+                                                                   checked
+                                                                   disabled/>
+                                                            <span x-text="option" class="text-sm text-slate-700"></span>
+                                                        </label>
+                                                    </template>
+                                                </div>
+                                            </template>
+
+                                            <!-- Select -->
+                                            <template x-if="field.type === 'select'">
+                                                <select x-model="field.value"
+                                                        :id="key"
+                                                        class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                                                        :required="field.required">
+                                                    <option x-text="field.value || 'Aucune valeur'" :value="field.value"></option>
+                                                </select>
+                                            </template>
+
+                                            <!-- Fallback (unknown types) -->
+                                            <template x-if="!['textfield', 'email', 'tel', 'textarea', 'checkbox', 'checkboxes', 'select'].includes(field.type)">
+                                                <input :id="key"
+                                                       type="text"
+                                                       class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150 bg-slate-50"
+                                                       x-model="JSON.stringify(field.value)"
+                                                       readonly
+                                                />
+                                            </template>
+                                        </div>
+                                    </template>
                                 </template>
                             </div>
-                        </template>
+                        </form>
                     </template>
-                    {% if edit %}
-                    <button @click.prevent="editSubmission"
-                            class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 flex items-center">
-                        Editer
-                    </button>
-                    {% endif %}
-                </form>
-            </template>
+                </div>
+            </div>
         </div>
 
         <!-- Global notification live region, render this permanently at the end of the document -->
