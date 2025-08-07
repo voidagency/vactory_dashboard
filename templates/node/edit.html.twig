@@ -244,7 +244,7 @@
                           mappedItem[fieldName][itemName] = {
                             id: imageId,
                             url: imageData.selection[0].url,
-                            name: imageData.name,
+                            name: imageData?.selection?.[0]?.name ?? imageData?.name,
                             path: 'items.' + i + '.' + fieldName + '.' + itemName,
                             key: imageKey,
                           };
@@ -281,7 +281,7 @@
                         mappedItem[fieldName] = {
                           id: imageId,
                           url: imageData.selection[0].url,
-                          name: imageData.name,
+                          name: imageData?.selection?.[0]?.name ?? imageData.name ?? imageData.selection[0].name,
                           path: 'items.' + i + '.' + fieldName,
                           key: imageKey,
                         };
@@ -423,7 +423,7 @@
                             this.blockForm.extra_fields[fieldName][itemName] = {
                               id: imageId,
                               url: imageData.selection[0].url,
-                              name: imageData.name,
+                              name: imageData?.selection?.[0]?.name ?? imageData?.name,
                               path: 'extra_fields.' + fieldName + '.' + itemName,
                               key: imageKey,
                             };
@@ -458,7 +458,7 @@
                         this.blockForm.extra_fields[fieldName] = {
                           id: imageId,
                           url: imageData.selection[0].url,
-                          name: imageData.name,
+                          name: imageData?.selection?.[0]?.name ?? imageData?.name,
                           path: 'extra_fields.' + fieldName,
                           key: imageKey,
                         };

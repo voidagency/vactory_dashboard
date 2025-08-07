@@ -378,23 +378,23 @@ class NodeService {
   /**
    * Find image fields inside a given dynamic field.
    */
-  private function findImageFieldsInDynamicField(array $fields): array {
-    $imageFields = [];
+  private function findMediaFieldsInDynamicField(array $fields, $type = 'image'): array {
+    $mediaFields = [];
 
     foreach ($fields as $key => $field) {
-      if (is_array($field) && isset($field['type']) && $field['type'] === 'image') {
-        $imageFields[$key] = $field;
+      if (is_array($field) && isset($field['type']) && $field['type'] === $type) {
+        $mediaFields[$key] = $field;
       }
       elseif (is_array($field)) {
         // Recurse into nested fields
-        $nested = $this->findImageFieldsInDynamicField($field);
+        $nested = $this->findMediaFieldsInDynamicField($field, $type);
         if (!empty($nested)) {
-          $imageFields = array_merge($imageFields, $nested);
+          $mediaFields = array_merge($mediaFields, $nested);
         }
       }
     }
 
-    return $imageFields;
+    return $mediaFields;
   }
 
   /**
@@ -407,17 +407,34 @@ class NodeService {
    */
   private function processWidgetData(&$widgetData, $widgetConfig) {
     // Get fields with type image.
-    $imageFields = $this->findImageFieldsInDynamicField($widgetConfig);
-
+    $imageFields = $this->findMediaFieldsInDynamicField($widgetConfig);
     $extraFieldsImageFields = array_filter($widgetConfig['extra_fields'] ?? [], function($field) {
       return ($field['type'] ?? "") === 'image';
     });
-
     $imageFields = array_keys($imageFields);
-
     $extraFieldsImageFields = array_keys($extraFieldsImageFields);
 
+    // Get fields with type remote_video.
+    $remoteVideoFields = $this->findMediaFieldsInDynamicField($widgetConfig, 'remote_video');
+    $extraFieldsRemoteVideoFields = array_filter($widgetConfig['extra_fields'] ?? [], function($field) {
+      return ($field['type'] ?? "") === 'remote_video';
+    });
+    $remoteVideoFields = array_keys($remoteVideoFields);
+    $extraFieldsRemoteVideoFields = array_keys($extraFieldsRemoteVideoFields);
+
     // Process extra fields image fields.
+    $this->handleExtraFieldsImageType($widgetData, $extraFieldsImageFields);
+    $this->handleExtraFieldsRemoteVideoType($widgetData, $extraFieldsRemoteVideoFields);
+
+    // Process each numeric key (0, 1, etc.) in widgetData.
+    $this->handleNonExtraFieldsImageType($widgetData, $imageFields);
+    $this->handleNonExtraFieldsRemoteVideoType($widgetData, $remoteVideoFields);
+  }
+
+  /**
+   * Hanlde extra fields for image type.
+   */
+  private function handleExtraFieldsImageType(&$widgetData, $extraFieldsImageFields) {
     foreach ($widgetData['extra_field'] ?? [] as $key => &$item) {
       foreach ($extraFieldsImageFields as $fieldName) {
         if ($key === $fieldName) {
@@ -448,8 +465,12 @@ class NodeService {
         }
       }
     }
+  }
 
-    // Process each numeric key (0, 1, etc.) in widgetData.
+  /**
+   * Handle non extra fields for image type.
+   */
+  private function handleNonExtraFieldsImageType(&$widgetData, $imageFields) {
     foreach ($widgetData ?? [] as $key => &$item) {
       // Skip non-numeric keys like 'extra_field' and 'pending_content'.
       if (!is_numeric($key)) {
@@ -468,7 +489,6 @@ class NodeService {
 
             if ($randomKey && isset($container[$fieldName][$randomKey]['selection'][0]['target_id'])) {
               $mediaId = $container[$fieldName][$randomKey]['selection'][0]['target_id'];
-
               // Load the media entity.
               /** @var \Drupal\media\Entity\Media $media */
               $media = $this->entityTypeManager->getStorage('media')
@@ -494,6 +514,96 @@ class NodeService {
                 else {
                   $item[$fieldName][$randomKey]['selection'][0]['url'] = $url;
                   $widgetData[$key][$fieldName][$randomKey]['selection'][0]['url'] = $url;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle extra fields for remote video type.
+   */
+  private function handleExtraFieldsRemoteVideoType(&$widgetData, $extraFieldsRemoteVideoFields) {
+    foreach ($widgetData['extra_field'] ?? [] as $key => &$item) {
+      foreach ($extraFieldsRemoteVideoFields as $fieldName) {
+        if ($key === $fieldName) {
+          $randomKey = array_key_first($item ?? []);
+          if ($randomKey && isset($item[$randomKey]['selection'][0]['target_id'])) {
+            $mediaId = $item[$randomKey]['selection'][0]['target_id'];
+            // Load the media entity.
+            /** @var \Drupal\media\Entity\Media $media */
+            $media = $this->entityTypeManager->getStorage('media')
+              ->load($mediaId);
+            if ($media instanceof MediaInterface) {
+              // Get the file URL.
+              $url = '';
+              if ($media->hasField('field_media_oembed_video') && !$media->get('field_media_oembed_video')
+                  ->isEmpty()) {
+                $item[$randomKey]['selection'][0]['url'] = $media->get('field_media_oembed_video')->value;
+                $item[$randomKey]['selection'][0]['name'] = $media->get('field_media_oembed_video')
+                  ->getEntity()
+                  ->label();
+                $widgetData[$key][$randomKey]['selection'][0]['url'] = $url;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle non extra fields for remote video type.
+   */
+  private function handleNonExtraFieldsRemoteVideoType(&$widgetData, $remoteVideoFields) {
+    foreach ($widgetData ?? [] as $key => &$item) {
+      // Skip non-numeric keys like 'extra_field' and 'pending_content'.
+      if (!is_numeric($key)) {
+        continue;
+      }
+
+      // Process each image field in the item.
+      foreach ($item as $skey => $subitem) {
+        foreach ($remoteVideoFields as $fieldName) {
+          $container = str_starts_with($skey, 'group_') ? $item[$skey] : $item;
+          $parentKey = str_starts_with($skey, 'group_') ? $skey : NULL;
+
+          // Check if image field exists in the current container
+          if (isset($container[$fieldName]) && is_array($container[$fieldName])) {
+            $randomKey = array_key_first($container[$fieldName]);
+
+            if ($randomKey && isset($container[$fieldName][$randomKey]['selection'][0]['target_id'])) {
+              $mediaId = $container[$fieldName][$randomKey]['selection'][0]['target_id'];
+              // Load the media entity.
+              /** @var \Drupal\media\Entity\Media $media */
+              $media = $this->entityTypeManager->getStorage('media')
+                ->load($mediaId);
+              if ($media instanceof MediaInterface) {
+                $url = '';
+                if (
+                  $media->hasField('field_media_oembed_video') &&
+                  !$media->get('field_media_oembed_video')->isEmpty()
+                ) {
+                  $url = $media->get('field_media_oembed_video')->value;
+                }
+
+                // Apply URL update depending on whether it's grouped or not
+                if ($parentKey) {
+                  $item[$parentKey][$fieldName][$randomKey]['selection'][0]['url'] = $url;
+                  $widgetData[$key][$parentKey][$fieldName][$randomKey]['selection'][0]['url'] = $url;
+                  $widgetData[$key][$parentKey][$fieldName][$randomKey]['selection'][0]['name'] = $media->get('field_media_oembed_video')
+                    ->getEntity()
+                    ->label();
+                }
+                else {
+                  $item[$fieldName][$randomKey]['selection'][0]['url'] = $url;
+                  $widgetData[$key][$fieldName][$randomKey]['selection'][0]['url'] = $url;
+                  $widgetData[$key][$fieldName][$randomKey]['selection'][0]['name'] = $media->get('field_media_oembed_video')
+                    ->getEntity()
+                    ->label();
                 }
               }
             }
