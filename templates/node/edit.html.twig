@@ -108,7 +108,7 @@
             }
             return result;
           },
-          getForm(id, index = -1, isMultiple = false, isSingle = false, isExtra = false, isGroup = false, defaultValue = '') {
+          getForm(id, index = -1, isMultiple = false, isSingle = false, isExtra = false, isGroup = false, defaultValue = '', xmodel = '', required = '') {
             this.loaderCK = true;
             fetch('/api/dashboard/wysiwyg', {
               method: 'POST',
@@ -121,6 +121,8 @@
                 isExtra,
                 isGroup,
                 defaultValue,
+                xmodel,
+                required,
               }),
             })
               .then(res => res.json())

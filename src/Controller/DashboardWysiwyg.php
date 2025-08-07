@@ -35,11 +35,13 @@ class DashboardWysiwyg extends ControllerBase {
         $isSingle = $data['isSingle'] ?? false;
         $isExtra = $data['isExtra'] ?? false;
         $isGroup = $data['isGroup'] ?? false;
+        $xmodel = $data['xmodel'] ?? 'formData.fields[field.name]';
+        $required = $data['required'] ?? 'field.required';
         $defaultValue = $data['defaultValue'] ?? '';
 
         // Step 1: Build the form.
         $id = uniqid('ck_', true);
-        $form = $this->formBuilder->getForm(CkeditorFieldForm::class, $id, true, $isMultiple, $isSingle, $isExtra, $isGroup, $defaultValue);
+        $form = $this->formBuilder->getForm(CkeditorFieldForm::class, $id, true, $isMultiple, $isSingle, $isExtra, $isGroup, $defaultValue, $xmodel, $required);
 
         // Step 2: Render the form to HTML.
         $form_html = $this->renderer->renderRoot($form);
