@@ -293,7 +293,7 @@ class NodeService {
             $paragraphs[] = [
               'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
               'bundle' => $paragraph->bundle(),
-              'show_title' => $paragraph->hasField('field_vactory_flag') ?? $paragraph->get('field_vactory_flag')->value === "1",
+              'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
               'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
               'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
               'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
@@ -310,7 +310,7 @@ class NodeService {
           $paragraphs[] = [
             'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
             'bundle' => $paragraph->bundle(),
-            'show_title' => $paragraph->hasField('field_vactory_flag') ?? $paragraph->get('field_vactory_flag')->value === "1",
+            'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
             'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
             'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
@@ -337,7 +337,7 @@ class NodeService {
             'display_id' => $paragraph->hasField('field_views_reference') ? $paragraph->get('field_views_reference')->first()?->getValue()['display_id'] : "",
             'displays' => $this->getViewDisplays($blockID),
             'bundle' => $paragraph->bundle(),
-            'show_title' => $paragraph->hasField('field_vactory_flag') ?? $paragraph->get('field_vactory_flag')->value === "1",
+            'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
             'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
             'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
