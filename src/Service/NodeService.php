@@ -1301,21 +1301,21 @@ class NodeService {
    *   (Optional) The machine name of the content type (node bundle).
    *   Defaults to 'vactory_page'.
    *
-   * @return array|bool
+   * @return array
    *   An associative array indicating whether each of the target paragraph types
    *   is enabled, or FALSE if the field or configuration is not found.
    */
-  public function isParagraphTypeEnabled($bundle="vactory_page"): array|bool {
+  public function isParagraphTypeEnabled($bundle="vactory_page"): array {
     $field_config = FieldConfig::loadByName('node', $bundle, 'field_vactory_paragraphs');
 
     if (!$field_config) {
-      return FALSE;
+      return [];
     }
 
     $settings = $field_config->getSettings();
 
     if (!isset($settings['handler_settings']['target_bundles'])) {
-      return FALSE;
+      return [];
     }
 
     return [
