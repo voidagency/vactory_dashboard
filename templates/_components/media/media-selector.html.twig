@@ -49,44 +49,63 @@
     <template x-if="{{ url }}">
         <div class="relative group">
             {# Main Preview Card #}
-            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                <div class="flex items-center space-x-4">
+            <div class="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-start sm:items-center flex-col sm:flex-row gap-3 sm:gap-4">
                     
                     {# Thumbnail #}
                     <div class="flex-shrink-0">
-                        <div class="w-[100px] h-16 rounded-lg overflow-hidden border border-slate-100">
+                        <div class="w-[200px] h-[120px] rounded-lg overflow-hidden border border-slate-100 flex-shrink-0">
                             {% if type == "file" or type == "private_file" %}
                                 <div class="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                                    <svg class="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg class="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                                     </svg>
                                 </div>
                             {% elseif type == 'remote_video' %}
-                                <div class="w-full h-full bg-black relative cursor-pointer group"
+                                <div class="w-full h-full relative cursor-pointer group"
                                      @click="showVideoModal = true; videoUrl = {{ url }}")
-                                    <iframe 
-                                        :src="(() => {
-                                            const url = {{ url }};
-                                            if (!url) return '';
-                                            const youtubePatterns = [
-                                                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-                                                /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
-                                            ];
-                                            for (const pattern of youtubePatterns) {
-                                                const match = url?.match(pattern);
-                                                if (match) {
-                                                    const videoId = match[1];
-                                                    return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+                                    <!-- YouTube thumbnail image -->
+                                    <template x-if="{{ url }}">
+                                        <img 
+                                            x-bind:src="(() => {
+                                                const url = {{ url }};
+                                                console.log('Video URL:', url);
+                                                if (!url) return '';
+                                                const youtubePatterns = [
+                                                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+                                                    /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+                                                ];
+                                                for (const pattern of youtubePatterns) {
+                                                    const match = url?.match(pattern);
+                                                    if (match) {
+                                                        const videoId = match[1];
+                                                        const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                                                        console.log('Thumbnail URL:', thumbnailUrl);
+                                                        return thumbnailUrl;
+                                                    }
                                                 }
-                                            }
-                                            return url;
-                                        })()" 
-                                        class="w-full h-full pointer-events-none"
-                                        frameborder="0">
-                                    </iframe>
-                                    <div class="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-60 flex items-center justify-center transition-all duration-200">
-                                        <div class="bg-white bg-opacity-20 rounded-full p-3 group-hover:scale-110 transition-transform duration-200">
-                                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                                console.log('No YouTube pattern matched');
+                                                return '';
+                                            })()" 
+                                            class="w-full h-full object-cover"
+                                            loading="lazy"
+                                            alt="Video thumbnail"
+                                            onerror="console.log('Thumbnail failed to load:', this.src);">
+                                    </template>
+                                    
+                                    <!-- Fallback for non-YouTube videos or no URL -->
+                                    <template x-if="!{{ url }}">
+                                        <div class="w-full h-full bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center">
+                                            <svg class="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                            </svg>
+                                        </div>
+                                    </template>
+                                    
+                                    <!-- Play button overlay - only appears on hover -->
+                                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-all duration-200">
+                                        <div class="bg-white bg-opacity-0 group-hover:bg-opacity-90 rounded-full p-0 group-hover:p-3 group-hover:scale-110 transition-all duration-200">
+                                            <svg class="w-0 h-0 group-hover:w-6 group-hover:h-6 text-slate-800 transition-all duration-200" fill="currentColor" viewBox="0 0 24 24">
                                                 <path d="M8 5v14l11-7z"/>
                                             </svg>
                                         </div>
@@ -103,9 +122,11 @@
                     </div>
                     
                     {# Content #}
-                    <div class="flex-1 min-w-0">
-                        <h4 class="text-sm font-medium text-slate-900 truncate" x-text="{{ name }}"></h4>
-                        <div class="mt-1 flex items-center space-x-2">
+                    <div class="flex-1 min-w-0 w-full sm:w-auto">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-sm font-medium text-slate-900 truncate" x-text="{{ name }}"></h4>
+                                <div class="mt-1 flex items-center flex-wrap gap-2">
                             {% if type == "file" or type == "private_file" %}
                                 <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
                                     <svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -128,11 +149,11 @@
                                     {{ 'Image'|t }}
                                 </span>
                             {% endif %}
-                        </div>
-                    </div>
-                    
-                    {# Actions #}
-                    <div class="flex items-center space-x-2">
+                                </div>
+                            </div>
+                            
+                            {# Actions #}
+                            <div class="flex items-center gap-2 flex-shrink-0">
                         <button
                             @click="openMediaLibrary(fieldName, {{ path }}, {{ key }}, '{{ type }}')"
                             type="button"
@@ -150,11 +171,11 @@
                             title="{{ 'Supprimer'|t }}">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                        </button>
+                                                                        </svg>
+                                        </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
         </div>
     </template>
 
