@@ -57,7 +57,7 @@
         <div x-data="{ openSeo: false }" class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
             <!-- SEO Metadata Section -->
             <div class="flex justify-between items-center cursor-pointer select-none" @click="openSeo = !openSeo">
-                <h3 class="text-lg font-semibold text-slate-900">
+                <h3 class="text-base font-semibold text-slate-900">
                     {{ 'SEO Metadata' | t }}
                 </h3>
                 <svg :class="{'rotate-180': openSeo}"
@@ -99,7 +99,7 @@
         <div x-data="{ openSeo: false }" class="border border-slate-200 rounded-xl shadow bg-white p-4 space-y-6">
             <!-- Open Graph Section -->
             <div class="flex justify-between items-center cursor-pointer select-none" @click="openSeo = !openSeo">
-                <h3 class="text-lg font-semibold text-slate-900">
+                <h3 class="text-base font-semibold text-slate-900">
                     {{ 'Open Graph Metadata' | t }}
                 </h3>
                 <svg :class="{'rotate-180': openSeo}"
