@@ -422,20 +422,31 @@ class NodeService {
     $remoteVideoFields = array_keys($remoteVideoFields);
     $extraFieldsRemoteVideoFields = array_keys($extraFieldsRemoteVideoFields);
 
+    // Get fields with type file.
+    $fileFields = $this->findMediaFieldsInDynamicField($widgetConfig, 'file');
+    $fileRemoteVideoFields = array_filter($widgetConfig['extra_fields'] ?? [], function($field) {
+      return ($field['type'] ?? "") === 'file';
+    });
+    $fileFields = array_keys($fileFields);
+    $extraFieldsFileFields = array_keys($fileRemoteVideoFields);
+
     // Process extra fields image fields.
     $this->handleExtraFieldsImageType($widgetData, $extraFieldsImageFields);
     $this->handleExtraFieldsRemoteVideoType($widgetData, $extraFieldsRemoteVideoFields);
+    $this->handleExtraFieldsFileType($widgetData, $extraFieldsFileFields);
 
     // Process each numeric key (0, 1, etc.) in widgetData.
     $this->handleNonExtraFieldsImageType($widgetData, $imageFields);
     $this->handleNonExtraFieldsRemoteVideoType($widgetData, $remoteVideoFields);
+    $this->handleNonExtraFieldsFileType($widgetData, $fileFields);
   }
 
   /**
    * Hanlde extra fields for image type.
    */
   private function handleExtraFieldsImageType(&$widgetData, $extraFieldsImageFields) {
-    foreach ($widgetData['extra_field'] ?? [] as $key => &$item) {
+    $extra_fields = &$widgetData['extra_field'];
+    foreach ($extra_fields ?? [] as $key => &$item) {
       foreach ($extraFieldsImageFields as $fieldName) {
         if ($key === $fieldName) {
           $randomKey = array_key_first($item ?? []);
@@ -458,7 +469,7 @@ class NodeService {
               }
 
               // Add the URL to the image data.
-              $item[$randomKey]['selection'][0]['url'] = $url;
+              $extra_fields[$key][$randomKey]['selection'][0]['url'] = $url;
               $widgetData[$key][$randomKey]['selection'][0]['url'] = $url;
             }
           }
@@ -524,11 +535,12 @@ class NodeService {
   }
 
   /**
-   * Handle extra fields for remote video type.
+   * Hanlde extra fields for file type.
    */
-  private function handleExtraFieldsRemoteVideoType(&$widgetData, $extraFieldsRemoteVideoFields) {
-    foreach ($widgetData['extra_field'] ?? [] as $key => &$item) {
-      foreach ($extraFieldsRemoteVideoFields as $fieldName) {
+  private function handleExtraFieldsfileType(&$widgetData, $extraFieldsFileFields) {
+    $extra_fields = &$widgetData['extra_field'];
+    foreach ($extra_fields ?? [] as $key => &$item) {
+      foreach ($extraFieldsFileFields as $fieldName) {
         if ($key === $fieldName) {
           $randomKey = array_key_first($item ?? []);
           if ($randomKey && isset($item[$randomKey]['selection'][0]['target_id'])) {
@@ -540,13 +552,110 @@ class NodeService {
             if ($media instanceof MediaInterface) {
               // Get the file URL.
               $url = '';
+              if ($media->hasField('field_media_file') && !$media->get('field_media_file')
+                  ->isEmpty()) {
+                /** @var \Drupal\file\Entity\File $file */
+                $file = $media->get('field_media_file')->entity;
+                if ($file instanceof FileInterface) {
+                  $url = $file->createFileUrl();
+                }
+              }
+
+              // Add the URL to the image data.
+              $extra_fields[$key][$randomKey]['selection'][0]['url'] = $url;
+              $extra_fields[$key][$randomKey]['selection'][0]['name'] = $media->label();
+              $widgetData[$key][$randomKey]['selection'][0]['url'] = $url;
+              $widgetData[$key][$randomKey]['selection'][0]['name'] = $media->label();
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle non extra fields for file type.
+   */
+  private function handleNonExtraFieldsfileType(&$widgetData, $fileFields) {
+    foreach ($widgetData ?? [] as $key => &$item) {
+      // Skip non-numeric keys like 'extra_field' and 'pending_content'.
+      if (!is_numeric($key)) {
+        continue;
+      }
+
+      // Process each image field in the item.
+      foreach ($item as $skey => $subitem) {
+        foreach ($fileFields as $fieldName) {
+          $container = str_starts_with($skey, 'group_') ? $item[$skey] : $item;
+          $parentKey = str_starts_with($skey, 'group_') ? $skey : NULL;
+
+          // Check if image field exists in the current container
+          if (isset($container[$fieldName]) && is_array($container[$fieldName])) {
+            $randomKey = array_key_first($container[$fieldName]);
+
+            if ($randomKey && isset($container[$fieldName][$randomKey]['selection'][0]['target_id'])) {
+              $mediaId = $container[$fieldName][$randomKey]['selection'][0]['target_id'];
+              // Load the media entity.
+              /** @var \Drupal\media\Entity\Media $media */
+              $media = $this->entityTypeManager->getStorage('media')
+                ->load($mediaId);
+              if ($media instanceof MediaInterface) {
+                $url = '';
+                if (
+                  $media->hasField('field_media_file') &&
+                  !$media->get('field_media_file')->isEmpty()
+                ) {
+                  /** @var \Drupal\file\Entity\File $file */
+                  $file = $media->get('field_media_file')->entity;
+                  if ($file instanceof FileInterface) {
+                    $url = $file->createFileUrl();
+                  }
+                }
+
+                // Apply URL update depending on whether it's grouped or not
+                if ($parentKey) {
+                  $item[$parentKey][$fieldName][$randomKey]['selection'][0]['url'] = $url;
+                  $item[$parentKey][$fieldName][$randomKey]['selection'][0]['name'] = $media->label();
+                  $widgetData[$key][$parentKey][$fieldName][$randomKey]['selection'][0]['url'] = $url;
+                  $widgetData[$key][$parentKey][$fieldName][$randomKey]['selection'][0]['name'] = $media->label();
+                }
+                else {
+                  $item[$fieldName][$randomKey]['selection'][0]['url'] = $url;
+                  $item[$fieldName][$randomKey]['selection'][0]['name'] = $media->label();
+                  $widgetData[$key][$fieldName][$randomKey]['selection'][0]['url'] = $url;
+                  $widgetData[$key][$fieldName][$randomKey]['selection'][0]['name'] = $media->label();
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle extra fields for remote video type.
+   */
+  private function handleExtraFieldsRemoteVideoType(&$widgetData, $extraFieldsRemoteVideoFields) {
+    $extra_fields = &$widgetData['extra_field'];
+    foreach ($extra_fields ?? [] as $key => &$item) {
+      foreach ($extraFieldsRemoteVideoFields as $fieldName) {
+        if ($key === $fieldName) {
+          $randomKey = array_key_first($item ?? []);
+          if ($randomKey && isset($item[$randomKey]['selection'][0]['target_id'])) {
+            $mediaId = $item[$randomKey]['selection'][0]['target_id'];
+            // Load the media entity.
+            /** @var \Drupal\media\Entity\Media $media */
+            $media = $this->entityTypeManager->getStorage('media')
+              ->load($mediaId);
+            if ($media instanceof MediaInterface) {
+              // Get the file URL.
               if ($media->hasField('field_media_oembed_video') && !$media->get('field_media_oembed_video')
                   ->isEmpty()) {
-                $item[$randomKey]['selection'][0]['url'] = $media->get('field_media_oembed_video')->value;
-                $item[$randomKey]['selection'][0]['name'] = $media->get('field_media_oembed_video')
+                $extra_fields[$key][$randomKey]['selection'][0]['url'] = $media->get('field_media_oembed_video')->value;
+                $extra_fields[$key][$randomKey]['selection'][0]['name'] = $media->get('field_media_oembed_video')
                   ->getEntity()
                   ->label();
-                $widgetData[$key][$randomKey]['selection'][0]['url'] = $url;
               }
             }
           }
