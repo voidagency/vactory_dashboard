@@ -45,7 +45,7 @@
                                 <img :alt="'Preview of ' + block.title" class="!w-16 h-16 object-cover"
                                      :src="block.preview">
                             </div>
-                            <div class="flex flex-col gap-1">
+                            <div class="flex flex-col gap-1 items-start">
                                 <span class="text-base font-medium" x-text="block.title"></span>
                                 {# Type Badge #}
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
@@ -117,7 +117,7 @@
                                 <img :alt="'Preview of ' + block.title" class="!w-16 h-16 object-cover"
                                      :src="block.preview">
                             </div>
-                            <div class="flex flex-col gap-1">
+                            <div class="flex flex-col gap-1 items-start">
                                 <span class="text-base font-medium" x-text="block.title"></span>
                                 {# Type Badge #}
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
@@ -130,7 +130,10 @@
                               }[block.bundle ?? 'vactory_component'] || block.bundle">
                         </span>
                             </div>
-                            <template x-if="block.bundle === 'vactory_component'">
+                            
+                        </div>
+                        <div class="flex items-center space-x-2">
+                        <template x-if="block.bundle === 'vactory_component'">
                                 <button
                                         type="button"
                                         @click="modifyBlock(index)"
@@ -156,23 +159,9 @@
                                     </svg>
                                 </button>
                             </template>
-                            <template
-                                    x-if="block.bundle === 'views_reference'">
-                                <button
-                                        type="button"
-                                        @click="modifyParagraphView(index)"
-                                        class="text-gray-400 hover:text-green-500 ml-auto">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                    </svg>
-                                </button>
-                            </template>
                             {% if has_translation %}
                                 <template
-                                        x-if="block.bundle !== 'vactory_component' && block.bundle !== 'vactory_paragraph_block' && block.bundle !== 'views_reference'">
+                                        x-if="block.bundle !== 'vactory_component' && block.bundle !== 'vactory_paragraph_block'">
                                     <button
                                             type="button"
                                             @click="window.location.href = '/{{ language }}/node/{{ nid }}/edit?destination=' + encodeURIComponent(window.location.href)"
@@ -186,8 +175,6 @@
                                     </button>
                                 </template>
                             {% endif %}
-                        </div>
-                        <div class="flex items-center space-x-2">
                             {% if node_default_lang == language %}
                                 <button
                                         type="button"
