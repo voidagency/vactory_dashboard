@@ -1400,6 +1400,7 @@
                       this.formData.fields[field.name] = ckInstance.getData();
                     });
                   }, '3000');
+                  this.formData.fields[fieldKey] = node[fieldKey] ?? '';
                 }
 
                 if (field.type === 'image' || field.type === 'file' || field.type === 'remote_video' || field.type === 'private_file') {
@@ -1743,6 +1744,15 @@
               this.activeTab = 'content';
               return;
             }
+
+            Object.keys(this.fields).forEach((field) => {
+              if (this.fields[field]?.type === 'text_with_summary' && typeof this.formData.fields[field] === 'string') {
+                this.formData.fields[field] = {
+                  value: this.formData.fields[field],
+                  format: 'full_html',
+                }
+              }
+            })
 
             if (this.isSaving) {
               return;
