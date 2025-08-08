@@ -94,7 +94,7 @@
                                                 <option disabled>{{ 'No block types available'|t }}</option>
                                             </template>
                                             <template x-for="block in paragraphBlocks" :key="block.id">
-                                                <option :value="block.id" x-text="block.label || block.name"></option>
+                                                <option :selected="block.id == paragraphBlockForm.blockType" :value="block.id" x-text="block.label || block.name"></option>
                                             </template>
                                         </select>
                                     </div>

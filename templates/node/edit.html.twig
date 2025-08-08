@@ -64,8 +64,8 @@
             config: {
               title: '',
               show_title: false,
-              width: 'full_width',
-              spacing: '_none',
+              width: 'narrow_width',
+              spacing: 'small_space',
               css_classes: '',
             },
           },
@@ -75,8 +75,8 @@
             config: {
               title: '',
               show_title: false,
-              width: 'full_width',
-              spacing: '_none',
+              width: 'narrow_width',
+              spacing: 'small_space',
               css_classes: '',
             },
           },
@@ -87,8 +87,8 @@
             config: {
               title: '',
               show_title: false,
-              width: 'full_width',
-              spacing: '_none',
+              width: 'narrow_width',
+              spacing: 'small_space',
               css_classes: '',
             },
           },
@@ -210,8 +210,8 @@
               config: {
                 title: block.title || template.name || '',
                 show_title: block.show_title || false,
-                width: block.width || 'full_width',
-                spacing: block.spacing || '_none',
+                width: block.width || 'narrow_width',
+                spacing: block.spacing || 'small_space',
                 css_classes: block.css_classes || '',
               },
             };
@@ -224,7 +224,7 @@
                 const item = block.widget_data[i];
                 const mappedItem = {};
                 // Map each field in the item
-                Object.keys(template.fields).forEach((fieldName, index) => {
+                Object.keys(template?.fields ?? {}).forEach((fieldName, index) => {
                   // START - multiple field - group
                   if (fieldName.startsWith('group_')) {
                     Object.keys(template.fields[fieldName]).forEach((itemName, index) => {
@@ -317,7 +317,7 @@
               // Handle single item case
               // widget_data[0] contains the fields
               if (block.widget_data && block.widget_data[0]) {
-                Object.keys(template.fields).forEach((fieldName, index) => {
+                Object.keys(template?.fields ?? {}).forEach((fieldName, index) => {
                   if (block.widget_data[0][fieldName]) {
                     // single field - group
                     if (fieldName.startsWith('group_')) {
@@ -500,7 +500,7 @@
               blockData = {};
               this.blockForm.items.forEach((item, index) => {
                 blockData[index] = {};
-                Object.keys(this.selectedTemplate.fields).forEach((fieldName) => {
+                Object.keys(this.selectedTemplate?.fields ?? {}).forEach((fieldName) => {
 
                   // START - multiple field group
                   if (fieldName.startsWith('group_')) {
@@ -570,7 +570,7 @@
               blockData = {
                 0: {},
               };
-              Object.keys(this.selectedTemplate.fields).forEach(fieldName => {
+              Object.keys(this.selectedTemplate?.fields ?? {}).forEach(fieldName => {
                 if (fieldName.startsWith('group_')) {
                   Object.keys(this.selectedTemplate.fields[fieldName]).forEach(itemName => {
                     if (!blockData[0][fieldName]) {
@@ -779,8 +779,8 @@
               config: {
                 title: '',
                 show_title: false,
-                width: 'full_width',
-                spacing: '_none',
+                width: 'narrow_width',
+                spacing: 'small_space',
                 css_classes: '',
               },
             };
@@ -803,8 +803,8 @@
               config: {
                 title: template.name || '',
                 show_title: false,
-                width: 'full_width',
-                spacing: '_none',
+                width: 'narrow_width',
+                spacing: 'small_space',
                 css_classes: '',
               },
             };
@@ -883,7 +883,7 @@
             if (template.multiple) {
               this.addItem(); // Add first item
             } else {
-              Object.keys(template.fields).forEach((fieldName, index) => {
+              Object.keys(template?.fields ?? {}).forEach((fieldName, index) => {
                 if (fieldName.startsWith('group_')) {
                   Object.keys(template.fields[fieldName]).forEach((itemName, index) => {
                     if (!this.blockForm.fields[fieldName]) {
@@ -1011,7 +1011,7 @@
           addItem() {
             const newItem = {};
             // Initialize all fields with empty values
-            Object.keys(this.selectedTemplate.fields).forEach((fieldName, index) => {
+            Object.keys(this.selectedTemplate?.fields ?? {}).forEach((fieldName, index) => {
 
               // START - multiple group
               if (fieldName.startsWith('group_')) {
@@ -1096,7 +1096,7 @@
                 newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
                 // Check if group_ field exists
-                const hasGroupField = Object.keys(this.selectedTemplate.fields).some(fieldName =>
+                const hasGroupField = Object.keys(this.selectedTemplate?.fields ?? {}).some(fieldName =>
                   fieldName.startsWith('group_'),
                 );
 
@@ -1130,8 +1130,8 @@
               config: {
                 title: block.title || '',
                 show_title: block.show_title || false,
-                width: block.width || 'full_width',
-                spacing: block.spacing || '_none',
+                width: block.width || 'narrow_width',
+                spacing: block.spacing || 'small_space',
                 css_classes: block.css_classes || '',
               },
             };
@@ -1197,8 +1197,8 @@
               config: {
                 title: '',
                 show_title: false,
-                width: 'full_width',
-                spacing: '_none',
+                width: 'narrow_width',
+                spacing: 'small_space',
                 css_classes: '',
               },
             };
@@ -1230,8 +1230,8 @@
               config: {
                 title: block.title || '',
                 show_title: block.show_title || false,
-                width: block.width || 'full_width',
-                spacing: block.spacing || '_none',
+                width: block.width || 'narrow_width',
+                spacing: block.spacing || 'small_space',
                 css_classes: block.css_classes || '',
               },
             };
@@ -1299,8 +1299,8 @@
               config: {
                 title: '',
                 show_title: false,
-                width: 'full_width',
-                spacing: '_none',
+                width: 'narrow_width',
+                spacing: 'small_space',
                 css_classes: '',
               },
             };

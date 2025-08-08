@@ -45,8 +45,8 @@
             config: {
               title: '',
               show_title: false,
-              width: 'full_width',
-              spacing: '_none',
+              width: 'narrow_width',
+              spacing: 'small_space',
               css_classes: '',
             },
           },
@@ -56,8 +56,8 @@
             config: {
               title: '',
               show_title: false,
-              width: 'full_width',
-              spacing: '_none',
+              width: 'narrow_width',
+              spacing: 'small_space',
               css_classes: '',
             },
           },
@@ -68,8 +68,8 @@
             config: {
               title: '',
               show_title: false,
-              width: 'full_width',
-              spacing: '_none',
+              width: 'narrow_width',
+              spacing: 'small_space',
               css_classes: '',
             },
           },
@@ -348,8 +348,8 @@
               config: {
                 title: template.name || '',
                 show_title: false,
-                width: 'full_width',
-                spacing: '_none',
+                width: 'narrow_width',
+                spacing: 'small_space',
                 css_classes: '',
               },
             };
@@ -362,7 +362,7 @@
                 const item = block.widget_data[i];
                 const mappedItem = {};
                 // Map each field in the item
-                Object.keys(template.fields).forEach(fieldName => {
+                Object.keys(template?.fields ?? {}).forEach(fieldName => {
 
                   // START - multiple field - group
                   if (fieldName.startsWith('group_')) {
@@ -450,7 +450,7 @@
               // Handle single item case
               // widget_data[0] contains the fields
               if (block.widget_data && block.widget_data[0]) {
-                Object.keys(template.fields).forEach((fieldName, index) => {
+                Object.keys(template?.fields ?? {}).forEach((fieldName, index) => {
                   if (block.widget_data[0][fieldName]) {
 
                     // START - single field group
@@ -638,7 +638,7 @@
               blockData = {};
               this.blockForm.items.forEach((item, index) => {
                 blockData[index] = {};
-                Object.keys(this.selectedTemplate.fields).forEach(fieldName => {
+                Object.keys(this.selectedTemplate?.fields ?? {}).forEach(fieldName => {
 
                   // START - multiple field group
                   if (fieldName.startsWith('group_')) {
@@ -708,7 +708,7 @@
               blockData = {
                 0: {},
               };
-              Object.keys(this.selectedTemplate.fields).forEach(fieldName => {
+              Object.keys(this.selectedTemplate?.fields ?? {}).forEach(fieldName => {
 
                 // START - single field group
                 if (fieldName.startsWith('group_')) {
@@ -936,8 +936,8 @@
               config: {
                 title: '',
                 show_title: false,
-                width: 'full_width',
-                spacing: '_none',
+                width: 'narrow_width',
+                spacing: 'small_space',
                 css_classes: '',
               },
             };
@@ -958,8 +958,8 @@
               config: {
                 title: template.name || '',
                 show_title: false,
-                width: 'full_width',
-                spacing: '_none',
+                width: 'narrow_width',
+                spacing: 'small_space',
                 css_classes: '',
               },
             };
@@ -1047,7 +1047,7 @@
             if (template.multiple) {
               this.addItem(); // Add first item
             } else {
-              Object.keys(template.fields).forEach((fieldName, index) => {
+              Object.keys(template?.fields ?? {}).forEach((fieldName, index) => {
                 // Initialize url_extended fields with both title and url
 
                 // START - single group
@@ -1193,8 +1193,8 @@
               config: {
                 title: '',
                 show_title: false,
-                width: 'full_width',
-                spacing: '_none',
+                width: 'narrow_width',
+                spacing: 'small_space',
                 css_classes: '',
               },
             };
@@ -1214,8 +1214,8 @@
               config: {
                 title: block.title || '',
                 show_title: block.show_title || false,
-                width: block.width || 'full_width',
-                spacing: block.spacing || '_none',
+                width: block.width || 'narrow_width',
+                spacing: block.spacing || 'small_space',
                 css_classes: block.css_classes || '',
               },
             };
@@ -1248,8 +1248,8 @@
               config: {
                 title: block.title || '',
                 show_title: block.show_title || false,
-                width: block.width || 'full_width',
-                spacing: block.spacing || '_none',
+                width: block.width || 'narrow_width',
+                spacing: block.spacing || 'small_space',
                 css_classes: block.css_classes || '',
               },
             };
@@ -1317,8 +1317,8 @@
               config: {
                 title: '',
                 show_title: false,
-                width: 'full_width',
-                spacing: '_none',
+                width: 'narrow_width',
+                spacing: 'small_space',
                 css_classes: '',
               },
             };
@@ -1375,7 +1375,7 @@
           addItem() {
             const newItem = {};
             // Initialize all fields with empty values
-            Object.keys(this.selectedTemplate.fields).forEach((fieldName, index) => {
+            Object.keys(this.selectedTemplate?.fields ?? {}).forEach((fieldName, index) => {
 
               // START - multiple group
               if (fieldName.startsWith('group_')) {
@@ -1458,7 +1458,7 @@
               if (newItemElement) {
                 newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                const hasGroupField = Object.keys(this.selectedTemplate.fields).some(fieldName =>
+                const hasGroupField = Object.keys(this.selectedTemplate?.fields ?? {}).some(fieldName =>
                   fieldName.startsWith('group_'),
                 );
 
