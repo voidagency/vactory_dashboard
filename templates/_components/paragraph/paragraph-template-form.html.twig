@@ -159,22 +159,22 @@
 
                                                         {# URL Extended Input #}
                                                         <template x-if="field.type === 'url_extended'">
-                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { xmodel: 'blockForm.extra_fields' } %}
+                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { 'required': 'field.options?.["#required"] ?? false', xmodel: 'blockForm.extra_fields' } %} 
                                                         </template>
 
                                                         {# Image Input #}
                                                         <template x-if="field.type === 'image'">
-                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'required': 'field.options?.["#required"]', 'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'image'} %}
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'image'} %}
                                                         </template>
 
                                                         {# Image Input #}
                                                         <template x-if="field.type === 'file'">
-                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'blockForm.extra_fields[fieldName].name', 'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'file'} %}
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'blockForm.extra_fields[fieldName].name', 'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'file'} %}
                                                         </template>
 
                                                         {# Image Input #}
                                                         <template x-if="field.type === 'remote_video'">
-                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'blockForm.extra_fields[fieldName].name', 'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'remote_video'} %}
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'blockForm.extra_fields[fieldName].name', 'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'remote_video'} %}
                                                         </template>
 
                                                         {# JSON API Collection #}
@@ -493,22 +493,22 @@
 
                                                         {# URL Extended Input #}
                                                         <template x-if="field.type === 'url_extended'">
-                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { 'required': 'field.options?.["#required"]', xmodel: 'blockForm.fields' } %}
+                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { 'required': 'field.options?.["#required"] ?? false', xmodel: 'blockForm.fields' } %}
                                                         </template>
 
                                                         {# Image Input #}
                                                         <template x-if="field.type === 'image'">
-                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'image'} %}
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'image'} %}
                                                         </template>
 
                                                         {# File Input #}
                                                         <template x-if="field.type === 'file'">
-                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'file'} %}
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'file'} %}
                                                         </template>
 
                                                         {# File Input #}
                                                         <template x-if="field.type === 'remote_video'">
-                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'remote_video'} %}
+                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'remote_video'} %}
                                                         </template>
 
                                                         {# JSON API Collection #}
@@ -1061,25 +1061,25 @@
 
                                                                     {# URL Extended Input #}
                                                                     <template x-if="field.type === 'url_extended'">
-                                                                        {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { 'required': 'field.options?.["#required"]', xmodel: 'item' } %}
+                                                                        {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { 'required': 'field.options?.["#required"] ?? false', xmodel: 'item' } %}
                                                                     </template>
 
 
                                                                     {# Image Input #}
                                                                     <template x-if="field.type === 'image'">
                                                                         <div>
-                                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'image'} %}
+                                                                            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'image'} %}
                                                                         </div>
                                                                     </template>
 
                                                                     {# File Input #}
                                                                     <template x-if="field.type === 'file'">
-                                                                        {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'item[fieldName].name', 'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'file'} %}
+                                                                        {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'item[fieldName].name', 'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'file'} %}
                                                                     </template>
 
                                                                     {# File Input #}
                                                                     <template x-if="field.type === 'remote_video'">
-                                                                        {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"]', 'name': 'item[fieldName].name', 'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'remote_video'} %}
+                                                                        {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'item[fieldName].name', 'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'remote_video'} %}
                                                                     </template>
 
                                                                     {# JSON API Collection #}
