@@ -1744,6 +1744,15 @@
               return;
             }
 
+            Object.keys(this.fields).forEach((field) => {
+              if (this.fields[field]?.type === 'text_with_summary' && typeof this.formData.fields[field] === 'string') {
+                this.formData.fields[field] = {
+                  value: this.formData.fields[field],
+                  format: 'full_html',
+                }
+              }
+            })
+
             if (this.isSaving) {
               return;
             }
