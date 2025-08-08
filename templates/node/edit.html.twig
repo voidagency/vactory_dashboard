@@ -281,7 +281,7 @@
                         mappedItem[fieldName] = {
                           id: imageId,
                           url: imageData.selection[0].url,
-                          name: imageData?.selection?.[0]?.name ?? imageData.name ?? imageData.selection[0].name,
+                          name: imageData?.selection?.[0]?.name ?? imageData?.name,
                           path: 'items.' + i + '.' + fieldName,
                           key: imageKey,
                         };
@@ -337,7 +337,7 @@
                             this.blockForm.fields[fieldName][itemName] = {
                               id: imageId ?? null,
                               url: imageData?.selection[0]?.url ?? null,
-                              name: imageData?.name ?? null,
+                              name: imageData?.selection?.[0]?.name ?? imageData?.name,
                               path: 'fields.' + fieldName + '.' + itemName,
                               key: imageKey,
                             };
@@ -372,7 +372,7 @@
                           this.blockForm.fields[fieldName] = {
                             id: imageId ?? null,
                             url: imageData?.selection[0]?.url ?? null,
-                            name: imageData?.name ?? null,
+                            name: imageData?.selection?.[0]?.name ?? imageData?.name,
                             path: 'fields.' + fieldName,
                             key: imageKey,
                           };
