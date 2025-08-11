@@ -1,0 +1,364 @@
+{# Paragraph view Form #}
+<div x-data="{ 
+    isRTL: document.dir === 'rtl',
+    paragraphMultiple: [],
+    isLoadingMultiple: true,
+    isUpdatingDisplays: false,
+    async init() {
+        await this.loadParagraphViews();
+        await this.updateDisplays();
+    },
+    async loadParagraphViews() {
+        try {
+            console.log('paragraphViewForm', this.paragraphViewForm);
+            this.isLoadingMultiple = true;
+            const response = await fetch(`{{ path('vactory_dashboard.paragraph_views', {'nid': 'NID', 'pid': 'PID'}) }}`.replace('NID', this.paragraphViewForm.nid).replace('PID', this.paragraphViewForm.pid));
+            if (response.ok) {
+                const data = await response.json();
+                this.paragraphMultiple = data.data || [];
+            } else {
+                console.error('Failed to load paragraph views');
+                this.paragraphMultiple = [];
+            }
+        } catch (error) {
+            console.error('Error loading paragraph views:', error);
+            this.paragraphMultiple = [];
+        } finally {
+            this.isLoadingMultiple = false;
+        }
+    },
+
+    async updateDisplays() {
+        if (!this.paragraphViewForm.blockType) return;
+        try {
+            this.isUpdatingDisplays = true;
+            const response = await fetch(`{{ path('vactory_dashboard.update_displays', {'vid': 'VID'}) }}`.replace('VID', this.paragraphViewForm.blockType));
+            if (response.ok) {
+                const data = await response.json();
+                this.paragraphViewForm.displays = data.data || [];
+                console.log(this.paragraphViewForm.displays);
+            } else {
+                console.error('Failed to update paragraph displays');
+                this.paragraphViewForm.displays = [];
+            }
+        } catch (error) {
+            console.error('Error updating paragraph displays:', error);
+            this.paragraphViewForm.displays = [];
+        } finally {
+            this.isUpdatingDisplays = false;
+        }
+    },
+}" :dir="isRTL ? 'rtl' : 'ltr'">
+    <div class="h-full flex flex-col bg-slate-50">
+        <div class="sticky top-0 z-10 bg-white rounded-xl py-4 px-6 border-b border-slate-200 flex justify-between items-center mb-6">
+            <div class="flex items-center gap-x-3">
+                <button @click="showParagraphMultipleForm = false; paragraphViewForm = { viewType: '', content: '', config: { title: '', show_title: false, width: 'full_width', spacing: '_none', css_classes: '' } }" type="button"
+                        class="me-3 text-slate-400 hover:text-primary-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                         stroke="currentColor" class="h-4 w-4">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
+                    </svg>
+                </button>
+                <h1 class="text-lg font-semibold text-slate-900">{{ 'Add view'|t }}</h1>
+            </div>
+            <div class="max-lg:fixed max-lg:w-full max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:p-3 max-lg:[&>*]:w-full max-lg:z-[1] flex items-center gap-x-2">
+                {% include '@vactory_admin/components/button/button.twig' with {
+                    'variant': 'secondary',
+                    'size': 'md',
+                    'type': 'button',
+                    'text': 'Annuler'|t,
+                    'attributes': create_attribute().setAttribute('@click', 'showParagraphMultipleForm = false; currentBlockIndex = null; paragraphViewForm = { viewType: \'\', content: \'\', config: { title: \'\', show_title: false, width: \'full_width\', spacing: \'_none\', css_classes: \'\' } }')
+                } %}
+                {% include '@vactory_admin/components/button/button.twig' with {
+                    'variant': 'primary',
+                    'size': 'md',
+                    'type': 'button',
+                    'text': 'Enregistrer'|t,
+                    'attributes': create_attribute().setAttribute('@click', 'saveParagraphMultiple()')
+                } %}
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto">
+            <div class="mx-auto">
+                <form id="paragraph-multiple-form" @submit.prevent="saveParagraphMultiple()" class="bg-white rounded-xl shadow-sm p-2 lg:p-8">
+                    <div class="flex items-start flex-col md:flex-row gap-6">
+                        <div class="w-full md:w-2/3">
+                            {# Main Form Section #}
+                            <div class="mb-8 border-b border-slate-200 p-6 rounded-xl bg-slate-50">
+                                <h3 class="text-base font-semibold text-slate-900 mb-4">{{ 'Multiple Content'|t }}</h3>
+                                <div class="space-y-4">
+
+                                    {# Spacing - select #}
+                                    <div>
+                                        <label class="view text-sm font-medium text-slate-700 mb-1 required">
+                                            {{ 'Spacing'|t }}
+                                            <span class="text-red-500">*</span>
+                                        </label>
+                                        <select x-model="paragraphViewForm.blockType"
+                                                required
+                                                class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                            <option value="">{{ 'Select spacing'|t }}</option>
+                                            <option value="small_space">Small Space</option>
+                                            <option value="big_space">Big Space</option>
+                                            <option value="no_space">No Spacing</option>
+                                        </select>
+                                    </div>
+
+                                    {# Display - radio #}
+                                    <div>
+                                        <label class="view text-sm font-medium text-slate-700 mb-1 required">
+                                            {{ 'Display'|t }}
+                                            <span class="text-red-500">*</span>
+                                        </label>
+
+                                        <div>
+                                            <label>
+                                                <input type="radio" name="color" value="red">
+                                                None
+                                            </label>
+                                        </div>
+
+                                        <div>
+                                            <label>
+                                                <input type="radio" name="color" value="blue">
+                                                Tab display
+                                            </label>
+                                        </div>
+
+                                        <div>
+                                            <label>
+                                                <input type="radio" name="color" value="green">
+                                                Accordion display
+                                            </label>
+                                        </div>                                        
+                                    </div>
+
+                                    {# title - input #}
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1 required">
+                                            {{ 'Title'|t }}
+                                            <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" 
+                                           x-model="paragraphBlockForm.config.title"
+                                           required
+                                           @invalid="$el.classList.add('border-red-500')"
+                                           @input="$el.classList.remove('border-red-500')"
+                                           class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                    </div>
+
+                                    {# intro - textarea #}
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1 required">
+                                            {{ 'Introduction'|t }}
+                                            <span class="text-red-500">*</span>
+                                        </label>
+                                        <textarea x-model="paragraphBlockForm.content"
+                                                  required
+                                                  rows="6"
+                                                  class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                                                  placeholder="{{ 'Enter your content here...'|t }}"></textarea>
+                                    </div>
+                                </div>
+
+                                {# Onglets #}
+                                <div x-data="{ collapsedView: false }">
+                                        <div>
+                                            <div>
+                                                <div class="flex justify-between items-center mb-6">
+                                                    <span class="flex items-center text-sm font-medium text-slate-700">
+                                                        Onglets
+                                                        <span class="ml-1 flex justify-end text-xs font-medium text-primary-400">
+                                                            (
+                                                                <span class="inline-block mr-1"
+                                                                      x-text="blockForm.items.length"></span>
+                                                                <span x-show="blockForm.items.length == 1"
+                                                                      class="inline-block">élément disponible</span>
+                                                                <span x-show="blockForm.items.length > 1"
+                                                                      class="inline-block">éléments disponibles</span>
+                                                            )
+                                                        </span>
+                                                    </span>
+                                                    {% include '@vactory_admin/components/button/button.twig' with {
+                                                        'variant': 'secondary',
+                                                        'size': 'sm',
+                                                        'text': 'Toggle onglets'|t,
+                                                        'attributes': create_attribute()
+                                                            .setAttribute('@click', 'collapsedView = !collapsedView')
+                                                            .setAttribute('type', 'button')
+                                                    } %}
+                                                </div>
+                                            </div>
+                                            <div class="space-y-4">
+                                                <div>
+                                                    <div :class="item._isNewItem ? 'bg-slate-200' : 'bg-slate-50'"
+                                                         class="p-4 rounded-xl relative transition-colors duration-300"
+                                                         draggable="true"
+                                                         :data-index="index" :data-item-index="index"
+                                                         @dragstart="dragStartItem($event)"
+                                                         @dragover.prevent="$event.target.closest('[draggable]').classList.add('bg-slate-100')"
+                                                         @dragleave.prevent="$event.target.closest('[draggable]').classList.remove('bg-slate-100')"
+                                                         @drop.prevent="dragEndItem($event)"
+                                                         @dragend="$event.target.closest('[draggable]').classList.remove('bg-slate-100')">
+                                                        <div class="absolute top-2 end-2 flex items-center gap-x-2">
+                                                            <button type="button"
+                                                                    class="cursor-move text-slate-400 hover:text-primary-500">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                                                     fill="none" viewbox="0 0 24 24"
+                                                                     stroke="currentColor">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                                          stroke-width="2" d="M4 8h16M4 16h16"></path>
+                                                                </svg>
+                                                            </button>
+                                                            <button type="button" x-show="blockForm.items.length > 1"
+                                                                    @click="removeItem(index)"
+                                                                    class="text-slate-400 hover:text-red-500">
+                                                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg"
+                                                                     fill="none" viewbox="0 0 24 24"
+                                                                     stroke="currentColor">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                                          stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                        <div class="space-y-4 mt-6">
+                                                            {# START - multiple #}
+                                                                <div>
+                                                                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                                                                        Titre
+                                                                        <span class="text-red-500">*</span>
+                                                                    </label>
+
+                                                                    {# Text Input #}
+                                                                    <input type="text"
+                                                                            x-model=""
+                                                                            required
+                                                                            class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
+                                                                </div>
+
+                                                                <div>
+                                                                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                                                                        Paragraph ID
+                                                                    </label>
+
+                                                                    {# Text Input #}
+                                                                    <input type="text"
+                                                                            required
+                                                                            x-model=""
+                                                                            class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
+                                                                </div>
+                                                            {# END - multiple #}
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                            </div>
+                        </div>
+
+                        {# view Configuration Section #}
+                        <div class="w-full sticky top-0 md:w-1/3 border-b border-slate-200 p-6 rounded-xl bg-slate-50">
+                            <h3 class="text-base font-semibold text-slate-900 mb-4">{{ 'view Configuration'|t }}</h3>
+                            <div class="space-y-4">
+                                {# view Title #}
+                                <div>
+                                    <label class="view text-sm font-medium text-slate-700 mb-1 required">
+                                        {{ 'View Title'|t }}
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" 
+                                           x-model="paragraphViewForm.config.title"
+                                           required
+                                           @invalid="$el.classList.add('border-red-500')"
+                                           @input="$el.classList.remove('border-red-500')"
+                                           class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                </div>
+
+                                {# Section Appearance #}
+                                <div x-data="{ isOpen: false }"
+                                     class="border border-slate-200 rounded-xl shadow bg-white">
+                                    <button @click="isOpen = !isOpen" type="button"
+                                            class="flex items-center justify-between w-full text-left text-sm font-medium text-slate-700 hover:text-slate-900 bg-slate-100 p-2 px-3 rounded-lg">
+                                        <span>{{ 'Section Appearance'|t }}</span>
+                                        <svg class="h-5 w-5 transform transition-transform duration-200"
+                                             :class="{'rotate-180': isOpen}" xmlns="http://www.w3.org/2000/svg"
+                                             viewbox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd"
+                                                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                  clip-rule="evenodd"/>
+                                        </svg>
+                                    </button>
+
+                                    <div x-show="isOpen" x-transition:enter="transition ease-out duration-100"
+                                         x-transition:enter-start="transform opacity-0 scale-95"
+                                         x-transition:enter-end="transform opacity-100 scale-100"
+                                         x-transition:leave="transition ease-in duration-75"
+                                         x-transition:leave-start="transform opacity-100 scale-100"
+                                         x-transition:leave-end="transform opacity-0 scale-95" class="space-y-4 p-3">
+
+                                        <div class="flex flex-col gap-3">
+                                            {# Width #}
+                                            <div class="flex-1">
+                                                <label class="view text-sm font-medium text-slate-700 mb-1">
+                                                    {{ 'Width'|t }}
+                                                </label>
+                                                <select x-model="paragraphViewForm.config.width"
+                                                        class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                    <option value="full_width">{{ 'Full width'|t }}</option>
+                                                    <option value="narrow_width">{{ 'Narrow width'|t }}</option>
+                                                    <option value="no_container">{{ 'No container'|t }}</option>
+                                                </select>
+                                            </div>
+
+                                            {# Spacing #}
+                                            <div class="flex-1">
+                                                <label class="view text-sm font-medium text-slate-700 mb-1">
+                                                    {{ 'Spacing'|t }}
+                                                </label>
+                                                <select x-model="paragraphViewForm.config.spacing"
+                                                        class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                    <option value="_none">{{ 'None'|t }}</option>
+                                                    <option value="small_space">{{ 'Small space'|t }}</option>
+                                                    <option value="big_space">{{ 'Big space'|t }}</option>
+                                                    <option value="no_space">{{ 'No space'|t }}</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {# CSS Classes #}
+                                        <div>
+                                            <label class="view text-sm font-medium text-slate-700 mb-1">
+                                                {{ 'CSS class(es)'|t }}
+                                            </label>
+                                            <input type="text" 
+                                                   x-model="paragraphViewForm.config.css_classes"
+                                                   class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                                                   placeholder="{{ 'Add custom CSS classes'|t }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {# Warning Message #}
+        <div class="mt-6 p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
+            <div class="flex items-start">
+                <svg class="h-5 w-5 text-yellow-500 mt-0.5 mr-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                <div>
+                    <h4 class="text-sm font-medium text-yellow-800">{{ 'Advanced Configuration Notice'|t }}</h4>
+                    <p class="mt-1 text-sm text-yellow-700">{{ 'The advanced view configuration (fields, settings, etc.) must be configured in advanced mode. This form only handles basic content and appearance settings.'|t }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

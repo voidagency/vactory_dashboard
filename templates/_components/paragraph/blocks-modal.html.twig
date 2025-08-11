@@ -88,7 +88,24 @@
                                 </div>
                                 <div>
                                     <h3 class="font-semibold text-slate-900 group-hover:text-primary-700">{{ "Add View"|t }}</h3>
-                                    <p class="text-sm text-slate-500 mt-1">{{ "Create a new content View"|t }}</p>
+                                    <p class="text-sm text-slate-500 mt-1">{{ "Create a new View reference"|t }}</p>
+                                </div>
+                            </div>
+                        </button>
+                        {% endif %}
+                        {% if isParagraphMultipleEnabled %}
+                        <button
+                                @click="handleAddMultiple()"
+                                class="group border-2 border-dashed border-slate-300 rounded-xl p-6 hover:border-primary-400 hover:bg-primary-50 transition-all duration-200 text-center">
+                            <div class="flex flex-col items-center gap-3">
+                                <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-slate-900 group-hover:text-primary-700">{{ "Add multiple"|t }}</h3>
+                                    <p class="text-sm text-slate-500 mt-1">{{ "Create a new paragraph multiple"|t }}</p>
                                 </div>
                             </div>
                         </button>
