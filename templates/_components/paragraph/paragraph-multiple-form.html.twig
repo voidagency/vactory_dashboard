@@ -1,54 +1,18 @@
 {# Paragraph view Form #}
 <div x-data="{ 
     isRTL: document.dir === 'rtl',
-    paragraphMultiple: [],
-    isLoadingMultiple: true,
-    isUpdatingDisplays: false,
-    async init() {
-        await this.loadParagraphViews();
-        await this.updateDisplays();
-    },
-    async loadParagraphViews() {
-        try {
-            console.log('paragraphViewForm', this.paragraphViewForm);
-            this.isLoadingMultiple = true;
-            const response = await fetch(`{{ path('vactory_dashboard.paragraph_views', {'nid': 'NID', 'pid': 'PID'}) }}`.replace('NID', this.paragraphViewForm.nid).replace('PID', this.paragraphViewForm.pid));
-            if (response.ok) {
-                const data = await response.json();
-                this.paragraphMultiple = data.data || [];
-            } else {
-                console.error('Failed to load paragraph views');
-                this.paragraphMultiple = [];
-            }
-        } catch (error) {
-            console.error('Error loading paragraph views:', error);
-            this.paragraphMultiple = [];
-        } finally {
-            this.isLoadingMultiple = false;
-        }
-    },
 
-    async updateDisplays() {
-        if (!this.paragraphViewForm.blockType) return;
-        try {
-            this.isUpdatingDisplays = true;
-            const response = await fetch(`{{ path('vactory_dashboard.update_displays', {'vid': 'VID'}) }}`.replace('VID', this.paragraphViewForm.blockType));
-            if (response.ok) {
-                const data = await response.json();
-                this.paragraphViewForm.displays = data.data || [];
-                console.log(this.paragraphViewForm.displays);
-            } else {
-                console.error('Failed to update paragraph displays');
-                this.paragraphViewForm.displays = [];
-            }
-        } catch (error) {
-            console.error('Error updating paragraph displays:', error);
-            this.paragraphViewForm.displays = [];
-        } finally {
-            this.isUpdatingDisplays = false;
-        }
+    addParagraphMultipleItem() {
+        const newItem = {
+            title: '',
+            isNew: true,
+            paragraph_id: ''
+        };
+        
+        this.paragraphMultipleForm.items.push(newItem);
     },
-}" :dir="isRTL ? 'rtl' : 'ltr'">
+}" 
+:dir="isRTL ? 'rtl' : 'ltr'">
     <div class="h-full flex flex-col bg-slate-50">
         <div class="sticky top-0 z-10 bg-white rounded-xl py-4 px-6 border-b border-slate-200 flex justify-between items-center mb-6">
             <div class="flex items-center gap-x-3">
@@ -92,11 +56,11 @@
 
                                     {# Spacing - select #}
                                     <div>
-                                        <label class="view text-sm font-medium text-slate-700 mb-1 required">
+                                        <label class="multiple text-sm font-medium text-slate-700 mb-1 required">
                                             {{ 'Spacing'|t }}
                                             <span class="text-red-500">*</span>
                                         </label>
-                                        <select x-model="paragraphViewForm.blockType"
+                                        <select x-model="paragraphMultipleForm.spacing"
                                                 required
                                                 class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                             <option value="">{{ 'Select spacing'|t }}</option>
@@ -115,21 +79,21 @@
 
                                         <div>
                                             <label>
-                                                <input type="radio" name="color" value="red">
+                                                <input x-model="paragraphMultipleForm.display" type="radio" value="none">
                                                 None
                                             </label>
                                         </div>
 
                                         <div>
                                             <label>
-                                                <input type="radio" name="color" value="blue">
+                                                <input x-model="paragraphMultipleForm.display" type="radio" value="tab">
                                                 Tab display
                                             </label>
                                         </div>
 
                                         <div>
                                             <label>
-                                                <input type="radio" name="color" value="green">
+                                                <input x-model="paragraphMultipleForm.display" type="radio" value="accordion">
                                                 Accordion display
                                             </label>
                                         </div>                                        
@@ -142,7 +106,7 @@
                                             <span class="text-red-500">*</span>
                                         </label>
                                         <input type="text" 
-                                           x-model="paragraphBlockForm.config.title"
+                                           x-model="paragraphMultipleForm.title"
                                            required
                                            @invalid="$el.classList.add('border-red-500')"
                                            @input="$el.classList.remove('border-red-500')"
@@ -155,15 +119,16 @@
                                             {{ 'Introduction'|t }}
                                             <span class="text-red-500">*</span>
                                         </label>
-                                        <textarea x-model="paragraphBlockForm.content"
+                                        <textarea x-model="paragraphMultipleForm.introduction"
                                                   required
                                                   rows="6"
                                                   class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
                                                   placeholder="{{ 'Enter your content here...'|t }}"></textarea>
                                     </div>
                                 </div>
+                            </div>
 
-                                {# Onglets #}
+                            {# Onglets #}
                                 <div x-data="{ collapsedView: false }">
                                         <div>
                                             <div>
@@ -173,10 +138,10 @@
                                                         <span class="ml-1 flex justify-end text-xs font-medium text-primary-400">
                                                             (
                                                                 <span class="inline-block mr-1"
-                                                                      x-text="blockForm.items.length"></span>
-                                                                <span x-show="blockForm.items.length == 1"
+                                                                      x-text="paragraphMultipleForm.items.length"></span>
+                                                                <span x-show="paragraphMultipleForm.items.length == 1"
                                                                       class="inline-block">élément disponible</span>
-                                                                <span x-show="blockForm.items.length > 1"
+                                                                <span x-show="paragraphMultipleForm.items.length > 1"
                                                                       class="inline-block">éléments disponibles</span>
                                                             )
                                                         </span>
@@ -192,7 +157,7 @@
                                                 </div>
                                             </div>
                                             <div class="space-y-4">
-                                                <div>
+                                                <template x-for="(item, index) in paragraphMultipleForm.items" :key="index">
                                                     <div :class="item._isNewItem ? 'bg-slate-200' : 'bg-slate-50'"
                                                          class="p-4 rounded-xl relative transition-colors duration-300"
                                                          draggable="true"
@@ -212,7 +177,7 @@
                                                                           stroke-width="2" d="M4 8h16M4 16h16"></path>
                                                                 </svg>
                                                             </button>
-                                                            <button type="button" x-show="blockForm.items.length > 1"
+                                                            <button type="button" x-show="paragraphMultipleForm.items.length > 1"
                                                                     @click="removeItem(index)"
                                                                     class="text-slate-400 hover:text-red-500">
                                                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg"
@@ -233,7 +198,7 @@
 
                                                                     {# Text Input #}
                                                                     <input type="text"
-                                                                            x-model=""
+                                                                            x-model="item.title"
                                                                             required
                                                                             class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
                                                                 </div>
@@ -245,19 +210,27 @@
 
                                                                     {# Text Input #}
                                                                     <input type="text"
-                                                                            required
-                                                                            x-model=""
+                                                                            x-model="item.paragraph_id"
                                                                             class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
                                                                 </div>
                                                             {# END - multiple #}
 
                                                         </div>
                                                     </div>
-                                                </div>
+                                                </template>
+                                            </div>
+                                            <div class="flex justify-end items-center mt-6">
+                                                {% include '@vactory_admin/components/button/button.twig' with {
+                                                    'variant': 'primary',
+                                                    'type': 'button',
+                                                    'size': 'md',
+                                                    'text': 'Add Item'|t,
+                                                    'icon_left': '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>',
+                                                    'attributes': create_attribute().setAttribute('@click', 'addParagraphMultipleItem()')
+                                                } %}
                                             </div>
                                         </div>
                                     </div>
-                            </div>
                         </div>
 
                         {# view Configuration Section #}

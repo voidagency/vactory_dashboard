@@ -66,7 +66,7 @@
                     </button>
                 </div>
             </div>
-            <template x-if="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm">
+            <template x-if="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
                 {% include "@vactory_dashboard/node/content-types/_components/tabs.html.twig" %}
             </template>
             {# Notification #}
@@ -101,7 +101,7 @@
 
                     {% if has_paragraphs_field %}
                         <div x-show="activeTab === 'templates'">
-                            <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm">
+                            <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
                                 {% include "@vactory_dashboard/node/_components/add-block-action.html.twig" with {
                                     show: node_default_lang == language
                                 } %}

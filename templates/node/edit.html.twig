@@ -84,6 +84,7 @@
           paragraphMultipleForm: {
             blockType: '',
             title: '',
+            items: [],
             config: {
               title: '',
               show_title: false,
@@ -1330,18 +1331,30 @@
             this.showParagraphViewForm = false;
             this.showParagraphMultipleForm = true;
             this.showTemplatesList = false;
+            if (this.paragraphMultipleForm.items.length == 0) {
+              const newItem = {
+                title: '',
+                isNew: true,
+                paragraph_id: ''
+            };
+            
+            this.paragraphMultipleForm.items.push(newItem);
+            }
           },
           modifyParagraphMultiple(index) {
             const block = this.blocks[index];
             this.currentBlockIndex = index;
 
             // Initialize the paragraph block form with existing data
-            this.paragraphViewForm = {
-              displayID: block.displayID || '',
-              displays: block.displays || [],
+            this.paragraphMultipleForm = {
               blockType: block.blockType || '',
               content: block.content || '',
               block_settings: block.block_settings || {},
+              items: block.items,
+              spacing: block.spacing,
+              display: block.display,
+              introduction: block.introduction,
+              title: block.title,
               config: {
                 title: block.title || '',
                 show_title: block.show_title || false,
@@ -1353,14 +1366,14 @@
 
             // Show the paragraph view form
             this.showParagraphMultipleForm = true;
-            this.showBlockForm = false;
+            this.showParagraphViewForm = false;
             this.showBlockForm = false;
             this.showBlocksModal = false;
             this.showTemplatesList = false;
           },
           saveParagraphMultiple() {
             // Validate form
-            const form = document.getElementById('paragraph-view-form');
+            const form = document.getElementById('paragraph-multiple-form');
             const requiredInputs = form.querySelectorAll('[required]');
             let isValid = true;
 
@@ -1378,38 +1391,38 @@
             if (this.currentBlockIndex !== null) {
               // Modify existing block
               this.blocks[this.currentBlockIndex] = {
-                ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
-                title: this.paragraphViewForm.config.title,
-                show_title: this.paragraphViewForm.config.show_title,
-                width: this.paragraphViewForm.config.width,
-                spacing: this.paragraphViewForm.config.spacing,
-                css_classes: this.paragraphViewForm.config.css_classes,
-                blockType: this.paragraphViewForm.blockType,
-                displayID: this.paragraphViewForm.displayID,
-                content: this.paragraphViewForm.content,
+                ...this.blocks[this.currentBlockIndex],
+                title: this.paragraphMultipleForm.title,
+                display: this.paragraphMultipleForm.display,
+                introduction: this.paragraphMultipleForm.introduction,
+                items: this.paragraphMultipleForm.items,
+                spacing: this.paragraphMultipleForm.spacing,
+                show_title: this.paragraphMultipleForm.config.show_title,
+                width: this.paragraphMultipleForm.config.width,
+                css_classes: this.paragraphMultipleForm.config.css_classes,
               };
-              this.showNotification('success', '{{ "Paragraph block updated successfully"|t }}');
+              this.showNotification('success', '{{ "Paragraph multiple updated successfully"|t }}');
             } else {
               // Add new paragraph block to blocks array
               this.blocks.push({
                 id: Date.now(),
-                bundle: 'views_reference',
+                bundle: 'vactory_paragraph_multi_template',
                 is_new: true,
-                title: this.paragraphViewForm.config.title,
-                show_title: this.paragraphViewForm.config.show_title,
-                width: this.paragraphViewForm.config.width,
-                spacing: this.paragraphViewForm.config.spacing,
-                css_classes: this.paragraphViewForm.config.css_classes,
-                blockType: this.paragraphViewForm.blockType,
-                displayID: this.paragraphViewForm.displayID,
-                content: this.paragraphViewForm.content,
+                title: this.paragraphMultipleForm.title,
+                display: this.paragraphMultipleForm.display,
+                introduction: this.paragraphMultipleForm.introduction,
+                items: this.paragraphMultipleForm.items,
+                show_title: this.paragraphMultipleForm.config.show_title,
+                width: this.paragraphMultipleForm.config.width,
+                spacing: this.paragraphMultipleForm.spacing,
+                css_classes: this.paragraphMultipleForm.config.css_classes,
                 preview: '/modules/custom/vactory_dashboard/assets/images/default-screenshot.png', // Default preview image
               });
               this.showNotification('success', '{{ "Paragraph view added successfully"|t }}');
             }
 
             // Reset form
-            this.paragraphViewForm = {
+            this.paragraphMultipleForm = {
               blockType: '',
               content: '',
               config: {
@@ -1422,6 +1435,7 @@
             };
             
             // Close form and reset current block index
+            this.showParagraphMultipleForm = false;
             this.showParagraphViewForm = false;
             this.currentBlockIndex = null;
             this.saveChanges();
@@ -1583,6 +1597,10 @@
                 displayID: paragraph?.display_id ?? null,
                 displays: paragraph?.displays ?? [],
                 block_settings: paragraph?.block_settings ?? null,
+                spacing: paragraph.spacing ?? "",
+                display: paragraph.display ?? "",
+                introduction: paragraph.introduction ?? "",
+                items: paragraph.items ?? [],
               }));
             }
             this.settings.title = node?.title || '';

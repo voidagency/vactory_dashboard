@@ -2,7 +2,7 @@
     <div class="h-full flex flex-col"
          x-data="pageEditor({nid: '{{ nid }}', language: '{{ language }}', node: '{{ node|json_encode|e('js') }}', has_translation: '{{ has_translation }}', changed: '{{ changed }}', status: '{{ status }}'})">
         <div class="sticky top-0 z-10 bg-slate-50">
-            <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm">
+            <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
                 {# Header with back button, title and actions #}
                 {% include "@vactory_dashboard/node/_components/actions.html.twig" %}
             </div>
@@ -10,7 +10,7 @@
             {# Notification #}
             {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
 
-            <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm">
+            <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
                 {# Tabs #}
                 {% include "@vactory_dashboard/node/_components/tabs.html.twig" %}
             </div>

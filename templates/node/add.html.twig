@@ -38,6 +38,7 @@
           showTemplatesList: false,
           showParagraphBlockForm: false,
           showParagraphViewForm: false,
+          showParagraphMultipleForm: false,
           selectedTemplate: null,
           paragraphBlockForm: {
             blockType: '',
@@ -53,6 +54,29 @@
           paragraphViewForm: {
             blockType: '',
             title: '',
+            config: {
+              title: '',
+              show_title: false,
+              width: 'narrow_width',
+              spacing: 'small_space',
+              css_classes: '',
+            },
+          },
+          paragraphViewForm: {
+            blockType: '',
+            title: '',
+            config: {
+              title: '',
+              show_title: false,
+              width: 'narrow_width',
+              spacing: 'small_space',
+              css_classes: '',
+            },
+          },
+          paragraphMultipleForm: {
+            blockType: '',
+            title: '',
+            items: [],
             config: {
               title: '',
               show_title: false,
@@ -1336,6 +1360,124 @@
             this.showParagraphViewForm = false;
             this.currentBlockIndex = null;
           },
+
+          /* Multiple paragraph */
+          handleAddMultiple() {
+            // Show the paragraph block form
+            this.showBlocksModal = false;
+            this.showParagraphViewForm = false;
+            this.showParagraphMultipleForm = true;
+            this.showTemplatesList = false;
+            if (this.paragraphMultipleForm.items.length == 0) {
+              const newItem = {
+                title: '',
+                isNew: true,
+                paragraph_id: ''
+            };
+            
+            this.paragraphMultipleForm.items.push(newItem);
+            }
+          },
+          modifyParagraphMultiple(index) {
+            const block = this.blocks[index];
+            this.currentBlockIndex = index;
+
+            // Initialize the paragraph block form with existing data
+            this.paragraphMultipleForm = {
+              blockType: block.blockType || '',
+              content: block.content || '',
+              block_settings: block.block_settings || {},
+              items: block.items,
+              spacing: block.spacing,
+              display: block.display,
+              introduction: block.introduction,
+              title: block.title,
+              config: {
+                title: block.title || '',
+                show_title: block.show_title || false,
+                width: block.width || 'narrow_width',
+                spacing: block.spacing || 'small_space',
+                css_classes: block.css_classes || '',
+              },
+            };
+
+            // Show the paragraph view form
+            this.showParagraphMultipleForm = true;
+            this.showParagraphViewForm = false;
+            this.showBlockForm = false;
+            this.showBlocksModal = false;
+            this.showTemplatesList = false;
+          },
+          saveParagraphMultiple() {
+            // Validate form
+            const form = document.getElementById('paragraph-multiple-form');
+            const requiredInputs = form.querySelectorAll('[required]');
+            let isValid = true;
+
+            requiredInputs.forEach(input => {
+              if (!input.value) {
+                input.classList.add('!border-red-500');
+                isValid = false;
+              }
+            });
+
+            if (!isValid) {
+              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              return;
+            }
+            if (this.currentBlockIndex !== null) {
+              // Modify existing block
+              this.blocks[this.currentBlockIndex] = {
+                ...this.blocks[this.currentBlockIndex],
+                title: this.paragraphMultipleForm.title,
+                display: this.paragraphMultipleForm.display,
+                introduction: this.paragraphMultipleForm.introduction,
+                items: this.paragraphMultipleForm.items,
+                spacing: this.paragraphMultipleForm.spacing,
+                show_title: this.paragraphMultipleForm.config.show_title,
+                width: this.paragraphMultipleForm.config.width,
+                css_classes: this.paragraphMultipleForm.config.css_classes,
+              };
+              this.showNotification('success', '{{ "Paragraph multiple updated successfully"|t }}');
+            } else {
+              // Add new paragraph block to blocks array
+              this.blocks.push({
+                id: Date.now(),
+                bundle: 'vactory_paragraph_multi_template',
+                is_new: true,
+                title: this.paragraphMultipleForm.title,
+                display: this.paragraphMultipleForm.display,
+                introduction: this.paragraphMultipleForm.introduction,
+                items: this.paragraphMultipleForm.items,
+                show_title: this.paragraphMultipleForm.config.show_title,
+                width: this.paragraphMultipleForm.config.width,
+                spacing: this.paragraphMultipleForm.spacing,
+                css_classes: this.paragraphMultipleForm.config.css_classes,
+                preview: '/modules/custom/vactory_dashboard/assets/images/default-screenshot.png', // Default preview image
+              });
+              this.showNotification('success', '{{ "Paragraph view added successfully"|t }}');
+            }
+
+            // Reset form
+            this.paragraphMultipleForm = {
+              blockType: '',
+              content: '',
+              config: {
+                title: '',
+                show_title: false,
+                width: 'narrow_width',
+                spacing: 'small_space',
+                css_classes: '',
+              },
+            };
+            
+            // Close form and reset current block index
+            this.showParagraphMultipleForm = false;
+            this.showParagraphViewForm = false;
+            this.currentBlockIndex = null;
+          },
+
+
           blockSearch: '',
           blockCategory: 'all',
           templates: [],
