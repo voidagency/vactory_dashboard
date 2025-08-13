@@ -4,11 +4,14 @@
  * @file
  */
 
-use Drupal\block\Entity\Block;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\node\Entity\Node;
-use Drupal\user\Entity\Role;
+use Drupal\Core\Cache\Cache;
+use Drupal\file\Entity\File;
+use Drupal\block\Entity\Block;
+use Drupal\Core\Menu\MenuLinkInterface;
+use Drupal\Core\Menu\MenuTreeParameters;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * @file
@@ -275,6 +278,8 @@ function vactory_dashboard_preprocess(&$variables) {
 
   $config = \Drupal::config('vactory_dashboard.global.settings');
   $variables['pagespeed'] = $config->get('pagespeed_btn');
+
+  $variables['sidebar'] = getSidebarData();
 }
 
 /**
@@ -881,4 +886,338 @@ function vactory_preprocess_menu_local_task(&$variables) {
     
     $variables['link']['#url'] = $new_url;
   }  
+}
+
+/**
+ * Get sidebar data.
+ */
+function getSidebarData() {
+  return [
+    "vocabularies" => get_vocabularies(),
+    "content_types" => get_content_types_items(),
+    "forms" => get_forms(),
+    "pages" => get_principal_menu_items(),
+    "recaptchaInstalled" => is_module_installed("recaptcha"),
+    "shieldInstalled" => is_module_installed("shield"),
+    "advancedDashboard" => get_advanced_dashboard(),
+    "support" => get_advanced_dashboard_support(),
+  ];
+}
+
+/**
+ * Get vocabularies with cache.
+ */
+function get_vocabularies() {
+  // Internal static cache for this request.
+  static $cache = [];
+
+  $cid = 'vactory_dashboard.vocabularies';
+
+  if (isset($cache[$cid])) {
+    return $cache[$cid];
+  }
+
+  if ($cache_item = \Drupal::cache()->get($cid)) {
+    $cache[$cid] = $cache_item->data;
+    return $cache[$cid];
+  }
+
+  $vocabularies = vactory_dashboard_get_taxonomy_vocabularies();
+
+  \Drupal::cache()->set(
+    $cid,
+    $vocabularies,
+    Cache::PERMANENT,
+    ['taxonomy_vocabulary_list']
+  );
+
+  $cache[$cid] = $vocabularies;
+
+  return $vocabularies;
+}
+
+/**
+ * Get content types items with cache.
+ */
+function get_content_types_items() {
+  // Internal static cache for this request
+  static $cache = [];
+
+  $cid = 'vactory_dashboard.content_types_items';
+
+  if (isset($cache[$cid])) {
+    return ['items' => $cache[$cid]];
+  }
+
+  if ($cache_item = \Drupal::cache()->get($cid)) {
+    $cache[$cid] = $cache_item->data;
+    return ['items' => $cache[$cid]];
+  }
+
+  $config = \Drupal::config('vactory_dashboard.global.settings');
+  $selected_content_types = $config->get('dashboard_content_types') ?? [];
+
+  if (empty($selected_content_types)) {
+    // Cache an empty array
+    \Drupal::cache()->set($cid, [], Cache::PERMANENT);
+    $cache[$cid] = [];
+    return ['items' => []];
+  }
+
+  $types = \Drupal::entityTypeManager()->getStorage('node_type')->loadMultiple($selected_content_types);
+
+  $content_types = [];
+  foreach ($types as $type) {
+    $content_types[] = [
+      'id' => $type->id(),
+      'label' => $type->label(),
+      'path' => Url::fromRoute('vactory_dashboard.content_types', ['bundle' => $type->id()])
+        ->toString(),
+    ];
+  }
+
+  $cache_tags = [
+    'config:vactory_dashboard.global.settings',
+    'node_type_list',
+  ];
+  \Drupal::cache()->set($cid, $content_types, Cache::PERMANENT, $cache_tags);
+
+  $cache[$cid] = $content_types;
+
+  return ['items' => $content_types];
+}
+
+/**
+ * Get webforms with caching.
+ */
+function get_forms() {
+  static $cache = [];
+  $cid = 'vactory_dashboard.forms';
+
+  if (isset($cache[$cid])) {
+    return ['items' => $cache[$cid]];
+  }
+
+  if ($cache_item = \Drupal::cache()->get($cid)) {
+    $cache[$cid] = $cache_item->data;
+    return ['items' => $cache[$cid]];
+  }
+
+  $config = \Drupal::config('vactory_dashboard.global.settings');
+  $selected_webforms = $config->get('dashboard_webforms') ?? [];
+
+  if (empty($selected_webforms)) {
+    // Cache an empty array to avoid repeated queries
+    \Drupal::cache()->set($cid, [], Cache::PERMANENT);
+    $cache[$cid] = [];
+    return ['items' => []];
+  }
+
+  $webform_entities = \Drupal::entityTypeManager()->getStorage('webform')
+    ->loadMultiple($selected_webforms);
+
+  $forms = [];
+  foreach ($webform_entities as $webform) {
+    $forms[] = [
+      'id' => $webform->id(),
+      'title' => $webform->label(),
+      'path' => Url::fromRoute('vactory_dashboard.webform', ['id' => $webform->id()])
+        ->toString(),
+    ];
+  }
+
+  \Drupal::cache()->set($cid, $forms, Cache::PERMANENT);
+
+  $cache[$cid] = $forms;
+
+  return ['items' => $forms];
+}
+
+/**
+ * Get principal menu items with cache.
+ */
+function get_principal_menu_items() {
+  static $cache = [];
+  $cid = 'vactory_dashboard.principal_menu_items';
+
+  if (isset($cache[$cid])) {
+    return $cache[$cid];
+  }
+
+  if ($cache_item = \Drupal::cache()->get($cid)) {
+    $cache[$cid] = $cache_item->data;
+    return $cache[$cid];
+  }
+
+  $menu_id = \Drupal::config('vactory_dashboard.global.settings')->get('menu_id') ?? 'main';
+
+  $parameters = new MenuTreeParameters();
+  $parameters->onlyEnabledLinks()->setMaxDepth(2)->setMinDepth(1);
+  $menu_tree_service = \Drupal::menuTree();
+  $tree = $menu_tree_service->load($menu_id, $parameters);
+
+  if (empty($tree)) {
+    $response = [
+      'items' => [],
+      'total_pages' => 1, // Start with homepage
+    ];
+    $cache[$cid] = $response;
+    \Drupal::cache()->set($cid, $response, Cache::PERMANENT, ['config:vactory_dashboard.menu.settings', 'menu:' . $menu_id]);
+    return $response;
+  }
+
+  $manipulators = [
+    ['callable' => 'menu.default_tree_manipulators:generateIndexAndSort'],
+    ['callable' => 'menu.default_tree_manipulators:checkAccess'],
+  ];
+  $tree = $menu_tree_service->transform($tree, $manipulators);
+  $menu = $menu_tree_service->build($tree);
+
+  $items = [];
+  extract_menu_items($menu['#items'], $items);
+
+  // Recursive count function like your JS getTotalPagesCount
+  $countPages = function(array $items) use (&$countPages) {
+    $total = 0;
+    foreach ($items as $item) {
+      if (empty($item['below'])) {
+        $total += 1;
+      } else {
+        $total += $countPages($item['below']);
+      }
+    }
+    return $total;
+  };
+
+  $response = [
+    'items' => array_values($items),
+    'total_pages' => 1 + $countPages($items), // +1 for homepage
+  ];
+
+  \Drupal::cache()->set($cid, $response, Cache::PERMANENT, ['config:vactory_dashboard.menu.settings', 'menu:' . $menu_id]);
+
+  $cache[$cid] = $response;
+
+  return $response;
+}
+
+/**
+ * Recursive helper to extract menu items.
+ */
+function extract_menu_items(array $tree, array &$items = []) {
+  foreach ($tree as $item_value) {
+    $menu_entity = NULL;
+    if (!empty($item_value['original_link']) && method_exists($item_value['original_link'], 'getEntity')) {
+      $menu_entity = $item_value['original_link']->getEntity();
+    }
+
+    if ($menu_entity && $menu_entity->hasField('hide_menu_item') && !$menu_entity->get('hide_menu_item')->isEmpty()) {
+      $hide_menu_item = $menu_entity->get('hide_menu_item')->value ?? FALSE;
+      if ($hide_menu_item) {
+        continue;
+      }
+    }
+
+    /** @var \Drupal\Core\Menu\MenuLinkInterface $org_link */
+    $org_link = $item_value['original_link'];
+    $new_value = get_element_value($org_link);
+
+    if (!empty($item_value['below'])) {
+      $new_value['below'] = [];
+      extract_menu_items($item_value['below'], $new_value['below']);
+    }
+
+    $items[] = $new_value;
+  }
+}
+
+/**
+ * Helper to extract values from a MenuLinkInterface.
+ */
+function get_element_value(MenuLinkInterface $link) {
+  $return = [];
+  $uuid = $link->getDerivativeId() ?: $link->getBaseId();
+  $return['id'] = $uuid;
+  $return['title'] = $link->getTitle();
+
+  $url = $link->getUrlObject()->toString();
+  $current_lang = \Drupal::languageManager()->getCurrentLanguage()->getId();
+  $path = \Drupal::service('path_alias.manager')->getPathByAlias(str_replace('/' . $current_lang, '', $url));
+
+  if (str_starts_with($path, '/node/')) {
+    $node_id = (int) str_replace('/node/', '', $path);
+    $return['nid'] = $node_id;
+    $return['url'] = Url::fromRoute('vactory_dashboard.vactory_page.edit', ['id' => $node_id], ['absolute' => TRUE])->toString();
+  }
+
+  return $return;
+}
+
+/**
+ * Check if a module is installed.
+ */
+function is_module_installed($module_name) {
+  $exists = \Drupal::moduleHandler()->moduleExists($module_name);
+  return ['exists' => $exists];
+}
+
+/**
+ * Get Advanced Dashboard tutorial links.
+ */
+function get_advanced_dashboard() {
+  $config = \Drupal::config('vactory_dashboard.advanced.settings');
+
+  $video_url = $config->get('video_tutoriel');
+  $file_url = NULL;
+  $file_id = $config->get('tutorial_file');
+
+  if (!empty($file_id)) {
+    $file_id_value = is_array($file_id) ? reset($file_id) : $file_id;
+    $file = File::load($file_id_value);
+    if ($file) {
+      $file_url = \Drupal::service('file_url_generator')->generateAbsoluteString($file->getFileUri());
+    }
+  }
+
+  return [
+    'video_url' => $video_url,
+    'file_url' => $file_url,
+  ];
+}
+
+/**
+ * Get Advanced Dashboard support info.
+ */
+function get_advanced_dashboard_support() {
+  $config = \Drupal::config('vactory_dashboard.advanced.support');
+
+  $first_name = $config->get('first_name');
+  $last_name = $config->get('last_name');
+  $title = $config->get('title');
+  $email = $config->get('email');
+  $phone = $config->get('phone');
+  $image_url = '';
+
+  $image = $config->get('image');
+  $image_id = is_array($image) ? reset($image) : $image;
+
+  if (!empty($image_id) && is_numeric($image_id)) {
+    $file = File::load($image_id);
+    if ($file) {
+      $image_url = \Drupal::service('file_url_generator')->generateAbsoluteString($file->getFileUri());
+    }
+  }
+
+  $is_populated = !empty($first_name) && !empty($last_name) && !empty($title) && !empty($email) && !empty($phone);
+
+  return [
+    'first_name' => $first_name,
+    'last_name' => $last_name,
+    'full_name' => trim("$first_name $last_name"),
+    'title' => $title,
+    'email' => $email,
+    'phone' => $phone,
+    'image' => $image_url,
+    'isPopulated' => $is_populated,
+  ];
 }
