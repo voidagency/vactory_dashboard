@@ -1,4 +1,4 @@
-{% set current_path = path('<current>') %}
+{% set current_path = url('<current>')['#markup'] %}
 
 <aside x-data="menuData({id: '{{ id }}'})"
        class="flex w-full lg:w-64 bg-white lg:border-r lg:border-slate-200 h-screen flex-col shadow-sm">
@@ -72,7 +72,7 @@
                           <div class="space-y-1">
                               <div class="w-full">
                                   <a href={{ homepage.url }}
-                                      class="{% if homepage.url == current_path %} bg-primary-50 text-primary-600 {% endif %} flex text-sm items-center justify-between w-full rounded-md rounded-tl-none
+                                      class="{% if homepage.url in current_path %} bg-primary-50 text-primary-600 {% endif %} flex text-sm items-center justify-between w-full rounded-md rounded-tl-none
                                       rounded-bl-none transition-colors duration-150 text-gray-600 py-1 px-3 font-medium">
                                     <span class="truncate">{{ homepage.title|striptags|default('Home page') }}</span>
                                     <span class="text-gray-400 transition-transform">
@@ -82,7 +82,22 @@
 
                               </div>
                               {% for item in sidebar.pages.items %}
-                                  <div class="w-full" x-data="{ subOpen: false  }">
+                                  {% set subOpenDefault = false %}
+                                  {% if item.below is defined and item.below|length > 0 %}
+                                    {% for sub in item.below %}
+                                        {% if current_path == sub.url %}
+                                            {% set subOpenDefault = true %}
+                                        {% endif %}
+                                        {% if sub.below is defined and sub.below|length > 0 %}
+                                            {% for subSub in sub.below %}
+                                                {% if current_path == subSub.url %}
+                                                    {% set subOpenDefault = true %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                                  <div class="w-full" x-data="{ subOpen: {{ subOpenDefault ? 'true' : 'false' }} }">
                                         <!-- Parent item -->
                                         {% if item.below and item.below|length > 0 %}
                                           <div class="flex items-center justify-between w-full rounded-md transition-colors duration-150 px-2 py-1 ml-1 text-gray-600 hover:bg-gray-50 cursor-pointer font-medium"
@@ -103,7 +118,7 @@
 
                                       {% if item.below is not defined or item.below|length == 0 %}
                                           <a href="{{ item.url ?? '#.' }}"
-                                              class="{% if current_path in item.url %} bg-primary-50 text-primary-600 {% endif %} flex items-center justify-between w-full rounded-md transition-colors duration-150 px-2 py-1 ml-1 text-gray-600 hover:bg-gray-50 cursor-pointer font-medium">
+                                              class="{% if current_path == item.url %} bg-primary-50 text-primary-600 {% endif %} flex items-center justify-between w-full rounded-md transition-colors duration-150 px-2 py-1 ml-1 text-gray-600 hover:bg-gray-50 cursor-pointer font-medium">
                                               <span class="flex-1 truncate">{{ item.title }}</span>
                                           </a>
                                       {% endif %}
@@ -140,7 +155,7 @@
                                                         {% if subItem.nid is defined and subItem.nid %}
                                                             <a href="{{ path('vactory_dashboard.vactory_page.edit', {'id': subItem.nid}) }}"
                                                               class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50
-                                                                      {% if current_path in subItem.url %} bg-primary-50 text-primary-600{% endif %}">
+                                                                      {% if current_path == subItem.url %} bg-primary-50 text-primary-600{% endif %}">
                                                                 <span class="flex-1 truncate">{{ subItem.title }}</span>
                                                             </a>
                                                         {% endif %}
@@ -152,9 +167,9 @@
                                                           <div class="overflow-hidden transition-all duration-200" :class="{ 'max-h-0': !subSubOpen, '': subSubOpen }">
                                                               {% for subSubItem in subItem.below %}
                                                                   <a href="{{ subSubItem.url }}"
-                                                                    class="{% if current_path in subSubItem.url %} bg-primary-50 text-primary-600{% endif %}" flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 text-sm px-2 py-1.5 text-gray-600 hover:bg-gray-50"
+                                                                    class="{% if current_path == subSubItem.url %} bg-primary-50 text-primary-600{% endif %} flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 text-sm px-2 py-1.5 text-gray-600 hover:bg-gray-50"
                                                                     style="padding-left: 48px;
-                                                                            {% if subSubItem.url in current_path %} background-color: #f0f5ff; color: #2563eb;{% endif %}">
+                                                                            {% if subSubItem.url == current_path %} background-color: #f0f5ff; color: #2563eb;{% endif %}">
                                                                       <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
                                                                       <span class="truncate">{{ subSubItem.title }}</span>
                                                                   </a>
