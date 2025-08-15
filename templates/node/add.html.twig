@@ -361,6 +361,12 @@
               this.showNotification('success', '{{ 'Item order updated'|t }}');
             }
           },
+          copyBlock(index) {
+              let copy = JSON.parse(JSON.stringify(this.blocks[index]));
+              copy.is_new = true;
+              copy.id = Date.now().toString();
+              this.blocks = [...this.blocks, copy];
+          },
           async modifyBlock(index, fieldName = '') {
             let block = null;
             if (fieldName) {
