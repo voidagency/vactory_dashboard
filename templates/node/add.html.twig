@@ -39,6 +39,11 @@
           showParagraphBlockForm: false,
           showParagraphViewForm: false,
           showParagraphMultipleForm: false,
+          isParagraphMultiple: false,
+          selectedMultipleParagraphTemplate: null,
+          currentMultipleParagraphTemplateIndex: null,
+          currentParagraphMultipleItem: 0,
+          currentBlockMultipleIndex: null,
           selectedTemplate: null,
           paragraphBlockForm: {
             blockType: '',
@@ -367,6 +372,21 @@
               copy.id = Date.now().toString();
               this.blocks = [...this.blocks, copy];
           },
+          copyTemplateInParagraphMutipleItem(index, widgetIndex) {
+            let copy = JSON.parse(JSON.stringify(this.paragraphMultipleForm.items[index].widgets[widgetIndex]));
+            copy.is_new = true;
+            this.paragraphMultipleForm.items[index].widgets.push(copy);
+          },
+          async modifyParagraphMultipleBlock(index, widgetIndex) {
+            this.showBlockForm = true;
+            this.isParagraphMultiple = true;
+            this.showParagraphMultipleForm = false;
+            this.currentParagraphMultipleItem = index;
+            this.currentMultipleParagraphTemplateIndex = widgetIndex;
+            this.selectedMultipleParagraphTemplate = this.paragraphMultipleForm.items[index]["widgets"][widgetIndex];
+
+            await this.modifyBlock(null, '');
+          },
           async modifyBlock(index, fieldName = '') {
             let block = null;
             if (fieldName) {
@@ -376,6 +396,12 @@
               block = this.blocks[index];
             }
             this.currentBlockIndex = index;
+
+            if (this.isParagraphMultiple) {
+              block = this.selectedMultipleParagraphTemplate;
+              this.currentBlockIndex = this.currentBlockMultipleIndex;
+            }
+
             // Find the template that matches this block
             const template = block.widget_config;
             this.selectedTemplate = template;
@@ -667,7 +693,6 @@
           saveBlock(id="node-form") {
             if (!this.validateForm(id)) {
               this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
-              this.activeTab = 'content';
               return;
             }
             let blockData;
@@ -901,6 +926,44 @@
               });
             }
 
+            if (this.isParagraphMultiple) {
+              let widgets = this.paragraphMultipleForm.items[this.currentParagraphMultipleItem]?.widgets || [];
+
+              if (this.currentMultipleParagraphTemplateIndex !== null) {
+                // update existing
+                widgets = widgets.map((w, i) =>
+                  i === this.currentMultipleParagraphTemplateIndex
+                    ? {
+                        ...w,
+                        widget_id: this.selectedTemplate.uuid,
+                        widget_data: blockData,
+                      }
+                    : w
+                );
+                this.currentMultipleParagraphTemplateIndex = null; // reset after editing
+              } else {
+                // add new
+                widgets.push({
+                  widget_config: this.selectedTemplate,
+                  widget_id: this.selectedTemplate.uuid,
+                  widget_data: blockData,
+                });
+              }
+
+              this.paragraphMultipleForm.items[this.currentParagraphMultipleItem] = {
+                ...this.paragraphMultipleForm.items[this.currentParagraphMultipleItem],
+                widgets,
+              };
+
+              this.showBlockForm = false;
+              this.showParagraphMultipleForm = true;
+              this.isParagraphMultiple = false;
+              this.selectedDynamicField = null;
+              this.showDynamicFieldModal = false;
+
+              return;
+            }
+
             if (this.selectedDynamicField) {
               if (this.currentBlockIndex !== null) {
                 this.dynamicFields[this.selectedDynamicField][this.currentBlockIndex] = {
@@ -985,7 +1048,7 @@
             this.selectedDynamicField = null;
             this.showDynamicFieldModal = false;
           },
-          selectTemplate(template) {
+          selectTemplate(template, isParagraphMultiple) {
             this.selectedTemplate = template;
             this.currentBlockIndex = null; // Reset current block index for new blocks
 
@@ -1163,6 +1226,7 @@
               });
             }
             this.showBlocksModal = false;
+            this.showParagraphMultipleForm = false;
             this.showTemplatesList = false;
             if (this.selectedDynamicField) {
               this.showDynamicFieldModal = true;
@@ -1378,7 +1442,8 @@
               const newItem = {
                 title: '',
                 isNew: true,
-                paragraph_id: ''
+                paragraph_id: '',
+                widgets: [],
             };
             
             this.paragraphMultipleForm.items.push(newItem);
@@ -1387,6 +1452,8 @@
           modifyParagraphMultiple(index) {
             const block = this.blocks[index];
             this.currentBlockIndex = index;
+            this.isParagraphMultiple = true;
+            this.currentBlockMultipleIndex = index;
 
             // Initialize the paragraph block form with existing data
             this.paragraphMultipleForm = {
@@ -1399,7 +1466,15 @@
               introduction: block.introduction,
               title: block.title,
               config: {
-                title: block.title || '',
+                image: block.image,
+                imageID: block.imageID,
+                color: block.color,
+                positionImageX: block.positionImageX || '',
+                positionImageY: block.positionImageY || '',
+                imageSize: block.imageSize || '',
+                hideMobile: block.hideMobile == "1" ? true : false,
+                hideDesktop: block.hideDesktop == "1" ? true : false,
+                enableParallax: block.enableParallax == "1" ? true : false,
                 show_title: block.show_title || false,
                 width: block.width || 'narrow_width',
                 spacing: block.spacing || 'small_space',
@@ -1431,7 +1506,7 @@
               this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
               return;
             }
-            if (this.currentBlockIndex !== null) {
+            if (this.currentBlockMultipleIndex !== null) {
               // Modify existing block
               this.blocks[this.currentBlockIndex] = {
                 ...this.blocks[this.currentBlockIndex],
@@ -1440,9 +1515,22 @@
                 introduction: this.paragraphMultipleForm.introduction,
                 items: this.paragraphMultipleForm.items,
                 spacing: this.paragraphMultipleForm.spacing,
-                show_title: this.paragraphMultipleForm.config.show_title,
+                widget_id: this.paragraphMultipleForm.widget_id,
+                widget_data: this.paragraphMultipleForm.widget_data,
+
+                // start configuration
                 width: this.paragraphMultipleForm.config.width,
                 css_classes: this.paragraphMultipleForm.config.css_classes,
+                color: this.paragraphMultipleForm.config.color,
+                image: this.paragraphMultipleForm.config.image,
+                imageID: this.paragraphMultipleForm.config.imageID,
+                positionImageX: this.paragraphMultipleForm.config.positionImageX,
+                positionImageY: this.paragraphMultipleForm.config.positionImageY,
+                imageSize: this.paragraphMultipleForm.config.imageSize,
+                hideDesktop: this.paragraphMultipleForm.config.hideDesktop,
+                hideMobile: this.paragraphMultipleForm.config.hideMobile,
+                enableParallax: this.paragraphMultipleForm.config.enableParallax
+                // end configuration
               };
               this.showNotification('success', '{{ "Paragraph multiple updated successfully"|t }}');
             } else {
@@ -1455,14 +1543,30 @@
                 display: this.paragraphMultipleForm.display,
                 introduction: this.paragraphMultipleForm.introduction,
                 items: this.paragraphMultipleForm.items,
-                show_title: this.paragraphMultipleForm.config.show_title,
-                width: this.paragraphMultipleForm.config.width,
                 spacing: this.paragraphMultipleForm.spacing,
+                widget_id: this.paragraphMultipleForm.widget_id,
+                widget_data: this.paragraphMultipleForm.widget_data,
+
+                // start configuration
+                width: this.paragraphMultipleForm.config.width,
                 css_classes: this.paragraphMultipleForm.config.css_classes,
+                color: this.paragraphMultipleForm.config.color,
+                image: this.paragraphMultipleForm.config.image,
+                imageID: this.paragraphMultipleForm.config.imageID,
+                positionImageX: this.paragraphMultipleForm.config.positionImageX,
+                positionImageY: this.paragraphMultipleForm.config.positionImageY,
+                imageSize: this.paragraphMultipleForm.config.imageSize,
+                hideDesktop: this.paragraphMultipleForm.config.hideDesktop,
+                hideMobile: this.paragraphMultipleForm.config.hideMobile,
+                enableParallax: this.paragraphMultipleForm.config.enableParallax,
+                // end configuration
                 preview: '/modules/custom/vactory_dashboard/assets/images/default-screenshot.png', // Default preview image
               });
               this.showNotification('success', '{{ "Paragraph view added successfully"|t }}');
             }
+
+            console.log("paragraphMultipleForm: ", this.paragraphMultipleForm);
+            console.log("this.blocks: ", this.blocks);
 
             // Reset form
             this.paragraphMultipleForm = {
@@ -1478,6 +1582,8 @@
             };
             
             // Close form and reset current block index
+            this.isParagraphMultiple = false;
+            this.showTemplatesList = false;
             this.showParagraphMultipleForm = false;
             this.showParagraphViewForm = false;
             this.currentBlockIndex = null;
@@ -1876,7 +1982,14 @@
             const target = keys.reduce((o, key) => o[key], obj);
             target[lastKey] = newValue;
           },
-          selectMedia(media) {
+          selectMedia(media, isParagraphMultiple=false) {
+            if (isParagraphMultiple) {
+              this.paragraphMultipleForm.config.image = media.url;
+              this.paragraphMultipleForm.config.imageID = media.id;
+              this.closeMediaLibrary();
+              this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
+              return;
+            }
             this.selectedMedia = media;
             if (!this.selectedMedia || !this.currentField) {
               return;
@@ -1897,7 +2010,13 @@
             this.closeMediaLibrary();
             this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
           },
-          clearImage(fieldName, path, key) {
+          clearImage(fieldName, path, key, isParagraphMultiple) {
+            if (isParagraphMultiple) {
+              this.paragraphMultipleForm.config.image = "";
+              this.paragraphMultipleForm.config.imageID = "";
+              return;
+            }
+
             // for vactory page.
             this.setValueByPath(this.blockForm, path, {
               id: null,

@@ -137,7 +137,9 @@
                 </form>
             </div>
         </div>
-        {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
+        <template x-if="!showParagraphMultipleForm">
+            {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
+        </template>
         {# SEO Tab #}
         {% include "@vactory_dashboard/node/_components/seo-form.html.twig" %}
 

@@ -63,9 +63,14 @@
 
         {# Paragraph multiple Form View #}
         <template x-if="showParagraphMultipleForm" class="h-full">
-            {% include "@vactory_dashboard/_components/paragraph/paragraph-multiple-form.html.twig" %}
+            <div>
+                {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" with {'isMultiple': true} %}
+                {% include "@vactory_dashboard/_components/paragraph/paragraph-multiple-form.html.twig" %}
+            </div>
         </template>
         {# Include the blocks modal #}
-        {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}
+        <template x-if="!showParagraphMultipleForm">
+            {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}
+        </template>
     </div>
 </div>

@@ -118,16 +118,18 @@
             <template x-if="showTemplatesList">
                 <div>
                     {# Back Button #}
-                    <div class="mb-4">
-                        <button
-                                @click="showTemplatesList = false"
-                                class="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                            </svg>
-                            <span class="text-sm">{{ "Back to options"|t }}</span>
-                        </button>
-                    </div>
+                    <template x-if="!isParagraphMultiple">
+                        <div class="mb-4">
+                            <button
+                                    @click="showTemplatesList = false"
+                                    class="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                                <span class="text-sm">{{ "Back to options"|t }}</span>
+                            </button>
+                        </div>
+                    </template>
 
                     <div class="mb-6">
                         <div class="relative">
@@ -135,7 +137,7 @@
                                     x-model="blockSearch"
                                     type="text"
                                     class="w-full py-2.5 px-4 pl-10 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
-                                    placeholder="{{ "Rechercher un template..."|t }}">
+                                    placeholder="{{ "Rechercher une template..."|t }}">
                             <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
                                 <svg class="h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -186,7 +188,7 @@
 
                         <template x-if="!isLoadingTemplates" x-for="template in filteredTemplates" :key="template.id">
                             <button
-                                    @click="selectTemplate(template)"
+                                    @click="selectTemplate(template, {{isMultiple}})"
                                     x-show="template && template.name"
                                     class="group border border-slate-200 rounded-xl hover:border-primary-300 hover:bg-primary-50 transition-all duration-150 flex flex-col overflow-hidden">
                                 <div class="h-40 bg-slate-100 overflow-hidden border-b border-slate-200">
