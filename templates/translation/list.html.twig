@@ -135,6 +135,7 @@
         </template>
 
         <!-- Pagination -->
+        <template x-if="totalPages > 1">
         <div x-show="!loading && !error && translations.length > 0"
              class="mt-6 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
             <div class="flex flex-1 justify-between sm:hidden">
@@ -179,6 +180,7 @@
                 </div>
             </div>
         </div>
+        </template>
 
         <!-- Add translation modal -->
         <div x-show="showAddModal"
