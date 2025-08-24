@@ -118,7 +118,7 @@
             <template x-if="showTemplatesList">
                 <div>
                     {# Back Button #}
-                    <template x-if="!isParagraphMultiple">
+                    <template x-if="!isParagraphMultiple && !isTaxoEdit">
                         <div class="mb-4">
                             <button
                                     @click="showTemplatesList = false"
@@ -188,7 +188,7 @@
 
                         <template x-if="!isLoadingTemplates" x-for="template in filteredTemplates" :key="template.id">
                             <button
-                                    @click="selectTemplate(template, {{isMultiple}})"
+                                    @click="selectTemplate(template, {{ isMultiple is not null ? isMultiple : 'false' }})"
                                     x-show="template && template.name"
                                     class="group border border-slate-200 rounded-xl hover:border-primary-300 hover:bg-primary-50 transition-all duration-150 flex flex-col overflow-hidden">
                                 <div class="h-40 bg-slate-100 overflow-hidden border-b border-slate-200">
