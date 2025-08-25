@@ -282,8 +282,7 @@ function vactory_dashboard_preprocess(&$variables) {
   $data = &drupal_static(__FUNCTION__);
   if (!isset($data)) {
     $data = getSidebarData();
-  }
-
+  } 
   $variables['sidebar'] = $data;
 }
 
