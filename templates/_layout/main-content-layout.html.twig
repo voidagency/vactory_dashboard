@@ -636,7 +636,7 @@
       icon: 'ok',
       statusColor: 'text-green-600',
       fetchStatus() {
-        fetch('/api/ssl-status')
+        fetch('{{ path('vactory_dashboard.ssl_status') }}')
           .then(res => res.json())
           .then(data => {
             this.status = data;
