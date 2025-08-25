@@ -256,34 +256,34 @@ function getLogo() {
 }
 
 /**
- *
+ * Implements hook_preprocess().
  */
 function vactory_dashboard_preprocess(&$variables) {
-  $config = \Drupal::config('vactory_dashboard.settings');
-  $projectID = $config->get('redmine_project_id');
-  $variables['redmineProjectId'] = $projectID;
-  $variables['logo'] = getLogo();
-
-  $current_path = \Drupal::service('path.current')->getPath();
-  $advanced_mode_url = get_admin_path($current_path);
-  $variables['advanced_mode_url'] = $advanced_mode_url;
-
-  $variables['homepage'] = getHomePage();
-
-  [$links, $defaultlang, $currentlang] = getLanguages();
-
-  $variables['languages'] = $links;
-  $variables['default_language'] = $defaultlang;
-  $variables['current_language'] = $currentlang;
-
-  $config = \Drupal::config('vactory_dashboard.global.settings');
-  $variables['pagespeed'] = $config->get('pagespeed_btn');
-
   $data = &drupal_static(__FUNCTION__);
+
   if (!isset($data)) {
-    $data = getSidebarData();
-  } 
-  $variables['sidebar'] = $data;
+    $data = [];
+    $config = \Drupal::config('vactory_dashboard.settings');
+    $data['redmineProjectId'] = $config->get('redmine_project_id');
+    $data['logo'] = getLogo();
+
+    $current_path = \Drupal::service('path.current')->getPath();
+    $data['advanced_mode_url'] = get_admin_path($current_path);
+
+    $data['homepage'] = getHomePage();
+
+    [$links, $defaultlang, $currentlang] = getLanguages();
+    $data['languages'] = $links;
+    $data['default_language'] = $defaultlang;
+    $data['current_language'] = $currentlang;
+
+    $config = \Drupal::config('vactory_dashboard.global.settings');
+    $data['pagespeed'] = $config->get('pagespeed_btn');
+
+    $data['sidebar'] = getSidebarData();
+  }
+
+  $variables = array_merge($variables, $data);
 }
 
 /**
