@@ -279,7 +279,12 @@ function vactory_dashboard_preprocess(&$variables) {
   $config = \Drupal::config('vactory_dashboard.global.settings');
   $variables['pagespeed'] = $config->get('pagespeed_btn');
 
-  $variables['sidebar'] = getSidebarData();
+  $data = &drupal_static(__FUNCTION__);
+  if (!isset($data)) {
+    $data = getSidebarData();
+  }
+
+  $variables['sidebar'] = $data;
 }
 
 /**
