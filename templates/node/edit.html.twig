@@ -1300,7 +1300,9 @@
             // Close form and reset current block index
             this.showParagraphBlockForm = false;
             this.currentBlockIndex = null;
-            this.saveChanges();
+            if (!this.bundle) {
+              this.saveChanges();
+            }
           },
 
           /* View paragraph */
@@ -1402,7 +1404,9 @@
             // Close form and reset current block index
             this.showParagraphViewForm = false;
             this.currentBlockIndex = null;
-            this.saveChanges();
+            if (!this.bundle) {
+              this.saveChanges();
+            }
           },
 
           /* Multiple paragraph */
@@ -1557,7 +1561,9 @@
             this.showTemplatesList = false;
             this.showParagraphViewForm = false;
             this.currentBlockIndex = null;
-            this.saveChanges();
+            if (!this.bundle) {
+              this.saveChanges();
+            }
           },
           isSaving: false,
           notification: {
