@@ -820,6 +820,23 @@
             }
           },
 
+          removeBlock(index, fieldName = '') {
+            // Remove the block at the specified index
+            if (fieldName) {
+              this.dynamicFields[fieldName].splice(index, 1);
+              // Remove default value also on formData.
+              this.formData.fields[fieldName] = {}
+            } else {
+              // Remove the block at the specified index
+              this.blocks.splice(index, 1);
+            }
+            // Show success notification
+            this.showNotification('success', '{{ 'Block removed successfully'|t }}');
+            if (!this.bundle) {
+              this.saveChanges();
+            }
+          },
+
           async saveTerm() {
             if (!this.validateForm()) {
               this.showNotification('error', '{{ "Please fill in all required fields"|t }}');

@@ -64,6 +64,10 @@
           currentParagraphMultipleItem: 0,
           currentBlockMultipleIndex: null,
           selectedTemplate: null,
+          isTaxoEdit: false,
+          showDeleteModalMultiple: false,
+          removeBlockMultipleIndex: null,
+          removeBlockMultipleTemplateIndex: null,
           paragraphBlockForm: {
             blockType: '',
             content: '',
@@ -785,6 +789,13 @@
               this.isParagraphMultiple = false;
               this.selectedDynamicField = null;
               this.showDynamicFieldModal = false;
+
+              this.$nextTick(() => {
+                document.getElementById("onglets")?.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'center'
+                });
+              });
 
               return;
             }
@@ -1898,6 +1909,9 @@
             if (!this.bundle) {
               this.saveChanges();
             }
+          },
+          removeTemplateMultiple() {
+              this.paragraphMultipleForm.items[this.removeBlockMultipleIndex]["widgets"].splice(this.removeBlockMultipleTemplateIndex, 1);
           },
           // Node Specific logique for saving node
           validateForm(id) {

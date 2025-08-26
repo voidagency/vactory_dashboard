@@ -108,6 +108,10 @@
           inputLabelsList: {},
           inputLabels: {},
           suggestions: {},
+          isTaxoEdit: false,
+          showDeleteModalMultiple: false,
+          removeBlockMultipleIndex: null,
+          removeBlockMultipleTemplateIndex: null,
 
           // node
           get contentFields() {
@@ -960,6 +964,13 @@
               this.isParagraphMultiple = false;
               this.selectedDynamicField = null;
               this.showDynamicFieldModal = false;
+
+              this.$nextTick(() => {
+                document.getElementById("onglets")?.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'center'
+                });
+              });
 
               return;
             }
@@ -1885,6 +1896,9 @@
 
             // Show success notification
             this.showNotification('success', '{{ 'Block removed successfully'|t }}');
+          },
+          removeTemplateMultiple() {
+            this.paragraphMultipleForm.items[this.removeBlockMultipleIndex]["widgets"].splice(this.removeBlockMultipleTemplateIndex, 1);
           },
           showParagraphTemplateForm(fieldName) {
             this.selectedDynamicField = fieldName;
