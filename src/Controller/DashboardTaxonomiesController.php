@@ -502,7 +502,10 @@ class DashboardTaxonomiesController extends ControllerBase {
             $term->set($field_name, $field_value);
             continue;
           }
-  
+          if (is_array($field_value) && isset($field_value['widget_id'], $field_value['widget_data'])) {
+            $term->set($field_name, $field_value);
+            continue;
+          }
           if ($field_value) {
             $term->set($field_name, $field_value);
           }
@@ -610,6 +613,10 @@ class DashboardTaxonomiesController extends ControllerBase {
         if ($term->hasField($field_name) && !in_array($field_name, ['name', 'description'])) {
           if (is_array($field_value) && isset($field_value['url'], $field_value['id'])) {
             $term->getTranslation($language)->set($field_name, $field_value['id']);
+            continue;
+          }
+          if (is_array($field_value) && isset($field_value['widget_id'], $field_value['widget_data'])) {
+            $term->getTranslation($language)->set($field_name, $field_value);
             continue;
           }
           if (is_array($field_value) && isset($field_value['value'], $field_value['end_value'])) {

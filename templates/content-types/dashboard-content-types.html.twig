@@ -43,6 +43,7 @@
                 {% include "@vactory_dashboard/content-types/_components/list.html.twig" %}
 
                 {# Pagination #}
+                <template x-if="totalPages > 1">
                 <div class="mt-4 flex items-center justify-end">
                     <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
                         <button @click="loadData(currentPage - 1)"
@@ -66,6 +67,7 @@
                         </button>
                     </nav>
                 </div>
+                </template>
             </div>
         </div>
 
