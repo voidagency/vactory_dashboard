@@ -1,6 +1,6 @@
 <div class="h-full flex flex-col"
      x-data="pageEditor({language: '{{ language }}'})">
-    <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm">
+    <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
         {# Header with back button, title and actions #}
         {% include "@vactory_dashboard/node/_components/actions.html.twig" with {
             label: 'Create Page'|t
@@ -9,13 +9,13 @@
     {# Notification #}
     {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
 
-    <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm">
+    <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
         {# Tabs #}
         {% include "@vactory_dashboard/node/_components/tabs.html.twig" %}
     </div>
 
     {# Node Edit View #}
-    <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm">
+    <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
         {# Content Tab #}
         <div x-show="activeTab === 'content'" class="flex-1 overflow-y-auto p-3">
             <div class="w-full">
@@ -52,6 +52,16 @@
         {% include "@vactory_dashboard/_components/paragraph/paragraph-view-form.html.twig" %}
     </template>
 
+    {# Paragraph Multiple Form #}
+    <template x-if="showParagraphMultipleForm" class="h-full">
+        <div>
+            {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" with {'isMultiple': true} %}
+            {% include "@vactory_dashboard/_components/paragraph/paragraph-multiple-form.html.twig" %}
+        </div>
+    </template>
+
     {# Include the blocks modal #}
-    {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}
+    <template x-if="!showParagraphMultipleForm">
+        {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}
+    </template>
 </div>

@@ -78,7 +78,7 @@ class DashboardPageSearchController extends ControllerBase {
       ], 400);
     }
 
-    if (str_starts_with($queryString, '/') || str_starts_with($queryString, 'http')) {
+    if (str_starts_with($queryString, '/') || str_starts_with($queryString, 'http') || str_starts_with($queryString, 'https')) {
       $result = $this->searchService->search($queryString);
 
       return new JsonResponse([

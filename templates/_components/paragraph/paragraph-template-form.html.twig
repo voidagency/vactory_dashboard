@@ -7,7 +7,7 @@
         <div class="sticky top-0 z-10 bg-white rounded-xl py-4 px-6 border-b border-slate-200 flex justify-between items-center mb-6">
             <div class="flex items-center gap-x-3">
                 {% if not hideBlockConfig %}
-                    <button @click="showBlockForm = false; blockForm = { extra_fields: {}, fields: {}, items: [], config: { title: '', show_title: false, width: 'full_width', spacing: '_none', css_classes: '' } }; selectedTemplate = null; currentBlockIndex = null; $nextTick(() => { const form = document.getElementById('block-form'); if (form) { form.reset(); const inputs = form.querySelectorAll('input, textarea, select'); inputs.forEach(input => { if (input.type === 'checkbox' || input.type === 'radio') { input.checked = false; } else { input.value = ''; } }); } })"
+                    <button @click="showBlockForm = false; if (isTaxoEdit) showTaxoEdit = true; blockForm = { extra_fields: {}, fields: {}, items: [], config: { title: '', show_title: false, width: 'full_width', spacing: '_none', css_classes: '' } }; isParagraphMultiple ? (showParagraphMultipleForm = true, currentMultipleParagraphTemplateIndex = null) : (currentBlockIndex = null); selectedTemplate = null; currentBlockIndex = null; $nextTick(() => { const form = document.getElementById('block-form'); if (form) { form.reset(); const inputs = form.querySelectorAll('input, textarea, select'); inputs.forEach(input => { if (input.type === 'checkbox' || input.type === 'radio') { input.checked = false; } else { input.value = ''; } }); } })"
                             type="button"
                             class="me-3 text-slate-400 hover:text-primary-500 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -27,7 +27,7 @@
                         'size': 'md',
                         'type': 'button',
                         'text': 'Annuler'|t,
-                        'attributes': create_attribute().setAttribute('@click', 'showBlockForm = false; blockForm = { extra_fields: {}, fields: {}, items: [], config: { title: \'\', show_title: false, width: \'full_width\', spacing: \'_none\', css_classes: \'\' } }; selectedTemplate = null; currentBlockIndex = null; $nextTick(() => { const form = document.getElementById(\'block-form\'); if (form) { form.reset(); const inputs = form.querySelectorAll(\'input, textarea, select\'); inputs.forEach(input => { if (input.type === \'checkbox\' || input.type === \'radio\') { input.checked = false; } else { input.value = \'\'; } }); } })')
+                        'attributes': create_attribute().setAttribute('@click', 'showBlockForm = false; if (isTaxoEdit) showTaxoEdit = true; blockForm = { extra_fields: {}, fields: {}, items: [], config: { title: \'\', show_title: false, width: \'full_width\', spacing: \'_none\', css_classes: \'\' } }; isParagraphMultiple ? (showParagraphMultipleForm = true, currentMultipleParagraphTemplateIndex = null) : (currentBlockIndex = null); selectedTemplate = null; $nextTick(() => { const form = document.getElementById(\'block-form\'); if (form) { form.reset(); const inputs = form.querySelectorAll(\'input, textarea, select\'); inputs.forEach(input => { if (input.type === \'checkbox\' || input.type === \'radio\') { input.checked = false; } else { input.value = \'\'; } }); } })')
                     } %}
                 {% endif %}
                 {% include '@vactory_admin/components/button/button.twig' with {
@@ -1175,7 +1175,9 @@
 </div>
 
 {# Include Media Library Modal at the root level #}
+<template x-if="!showParagraphMultipleForm">
 {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
+</template>
 
 {% block javascripts %}
     <script>

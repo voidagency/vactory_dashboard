@@ -183,6 +183,7 @@
                         </div>
                     </div>
                     {# Pagination #}
+                    <template x-if="totalPages > 1">
                     <div class="mt-4 flex items-center justify-end">
                         <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
                             <button @click="loadTaxonomyData(currentPage - 1)" :disabled="currentPage === 1"
@@ -200,6 +201,7 @@
                                 {{ "Suivant" | t }}</button>
                         </nav>
                     </div>
+                    </template>
                 </div>
             </div>
         </div>

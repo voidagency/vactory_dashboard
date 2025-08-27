@@ -95,32 +95,45 @@ class ContentSearchService {
   public function search(string $query) {
     $results = [];
 
-    // Handle search by path or full URL.
+    // Parse the query as a URL.
     $parsed_url = parse_url($query);
     $path = $parsed_url['path'] ?? '';
+
+    // Remove language prefix, e.g., "/en/" → "/"
+    $langcode_pattern = '#^/([a-z]{2})(/|$)#';
+    $path = preg_replace($langcode_pattern, '/', $path);
+
+    // Ensure leading slash
     $path = '/' . ltrim($path, '/');
 
-    $lang = $this->languageManager->getCurrentLanguage()
-      ->getId();
+    // Remove trailing slash (except for root "/")
+    if ($path !== '/') {
+      $path = rtrim($path, '/');
+    }
 
+    $lang = $this->languageManager->getCurrentLanguage()->getId();
     $system_path = $this->aliasManager->getPathByAlias($path, $lang);
 
-    if (preg_match('#^(/([a-z]{2})?)?/node/(\d+)$#', $system_path, $matches)) {
-      $nid = $matches[3];
+    // Handle node paths, including /node/74 and /node/74/edit
+    if (preg_match('#^/node/(\d+)#', $system_path, $matches)) {
+      $nid = $matches[1];
       $node = Node::load($nid);
-      if ($node->hasTranslation($lang)) {
+
+      if ($node && $node->hasTranslation($lang)) {
         $results[] = [
           'id' => $node->id(),
-          'label' => $node->hasTranslation($lang) ? $node->getTranslation($lang)
-            ->label() : $node->label(),
+          'label' => $node->getTranslation($lang)->label(),
           'bundle' => $node->bundle(),
           'isImage' => FALSE,
           'entity_type' => $node->getEntityTypeId(),
           'entity_label' => \Drupal::entityTypeManager()
             ->getDefinition($node->getEntityTypeId())
             ->getLabel(),
-          'url' => Url::fromRoute('vactory_dashboard.vactory_page.edit', ['id' => $node->id()], ['language' => $this->languageManager->getCurrentLanguage()])
-            ->toString(),
+          'url' => Url::fromRoute('vactory_dashboard.vactory_page.edit', [
+              'id' => $node->id(),
+            ], [
+              'language' => $this->languageManager->getCurrentLanguage(),
+            ])->toString(),
         ];
       }
     }
