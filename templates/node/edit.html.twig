@@ -215,8 +215,8 @@
           copyBlock(index) {
             let copy = JSON.parse(JSON.stringify(this.blocks[index]));
             copy.is_new = true;
-            this.blocks.push(copy);
-            this.saveChanges();
+            copy.id = Date.now().toString();
+            this.blocks = [...this.blocks, copy];
           },
           copyTemplateInParagraphMutipleItem(index, widgetIndex) {
             let copy = JSON.parse(JSON.stringify(this.paragraphMultipleForm.items[index].widgets[widgetIndex]));
