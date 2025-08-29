@@ -293,6 +293,27 @@ class NodeService {
         if (!$paragraph) {
           continue;
         }
+
+        $hex = "";
+        if ($paragraph->hasField('field_background_color') && !$paragraph->get('field_background_color')->isEmpty()) {
+          $colorItem = $paragraph->get('field_background_color')->first();
+          $colorRaw = $colorItem->get('color')->getString();
+          $hex = explode(',', $colorRaw)[0];
+        }
+
+        $image = "";
+        $imageID = -1;
+        if ($paragraph->hasField('paragraph_background_image') && !$paragraph->get('paragraph_background_image')->isEmpty()) {
+            $media = $paragraph->get('paragraph_background_image')->entity;
+            if ($media?->hasField('field_media_image') && !$media->get('field_media_image')->isEmpty()) {
+                $file = $media->get('field_media_image')->entity;
+                $imageID = $media->id();
+                if ($file) {
+                    $image = $this->fileUrlGenerator->generateAbsoluteString($file->getFileUri());
+                }
+            }
+        }
+
         if ($paragraph->hasField('field_vactory_component') && $paragraph->bundle() == 'vactory_component') {
           $vactoryComponents = $paragraph->field_vactory_component->getValue();
           foreach ($vactoryComponents as $component) {
@@ -305,14 +326,25 @@ class NodeService {
               'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
               'bundle' => $paragraph->bundle(),
               'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
-              'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
               'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
-              'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
               'pid' => $paragraphData['target_id'],
               'revision_id' => $paragraph->getRevisionId(),
               'widget_id' => $widgetId,
               'widget_data' => $widgetData,
               'widget_config' => $widgetConfig,
+              /* start configuration */
+              'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
+              'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
+              'color' => $hex,
+              'bg_image' => $image,
+              'imageID' => $imageID,
+              'position_image_x' => $paragraph->hasField('field_position_image_x') ? $paragraph->get('field_position_image_x')->value : "",
+              'position_image_y' => $paragraph->hasField('field_position_image_y') ? $paragraph->get('field_position_image_y')->value : "",
+              'size_image' => $paragraph->hasField('field_size_image') ? $paragraph->get('field_size_image')->value : "",
+              'hide_desktop' => $paragraph->hasField('field_paragraph_hide_lg') ? $paragraph->get('field_paragraph_hide_lg')->value : "",
+              'hide_mobile' => $paragraph->hasField('field_paragraph_hide_sm') ? $paragraph->get('field_paragraph_hide_sm')->value : "",
+              'enabel_parallax' => $paragraph->hasField('paragraph_background_parallax') ? $paragraph->get('paragraph_background_parallax')->value : "",
+              /* end configuration */
             ];
           }
         }
@@ -322,9 +354,7 @@ class NodeService {
             'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
             'bundle' => $paragraph->bundle(),
             'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
-            'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
             'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
-            'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
             'pid' => $paragraphData['target_id'],
             'revision_id' => $paragraph->getRevisionId(),
             'screenshot' => \Drupal::service('file_url_generator')
@@ -333,6 +363,19 @@ class NodeService {
             'body' => $paragraph->get('field_vactory_body')->value ?? "",
             'block_id' => $paragraph->get('field_vactory_block')->plugin_id ?? "",
             'block_settings' => $paragraph->get('field_vactory_block')->settings ?? [],
+            /* start configuration */
+            'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
+            'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
+            'color' => $hex,
+            'bg_image' => $image,
+            'imageID' => $imageID,
+            'position_image_x' => $paragraph->hasField('field_position_image_x') ? $paragraph->get('field_position_image_x')->value : "",
+            'position_image_y' => $paragraph->hasField('field_position_image_y') ? $paragraph->get('field_position_image_y')->value : "",
+            'size_image' => $paragraph->hasField('field_size_image') ? $paragraph->get('field_size_image')->value : "",
+            'hide_desktop' => $paragraph->hasField('field_paragraph_hide_lg') ? $paragraph->get('field_paragraph_hide_lg')->value : "",
+            'hide_mobile' => $paragraph->hasField('field_paragraph_hide_sm') ? $paragraph->get('field_paragraph_hide_sm')->value : "",
+            'enabel_parallax' => $paragraph->hasField('paragraph_background_parallax') ? $paragraph->get('paragraph_background_parallax')->value : "",
+            /* end configuration */
           ];
         }
 
@@ -347,10 +390,21 @@ class NodeService {
             'display_id' => $paragraph->hasField('field_views_reference') ? $paragraph->get('field_views_reference')->first()?->getValue()['display_id'] : "",
             'displays' => $this->getViewDisplays($blockID),
             'bundle' => $paragraph->bundle(),
-            'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
+            /* start configuration */
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
-            'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
             'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
+            'color' => $hex,
+            'bg_image' => $image,
+            'imageID' => $imageID,
+            'position_image_x' => $paragraph->hasField('field_position_image_x') ? $paragraph->get('field_position_image_x')->value : "",
+            'position_image_y' => $paragraph->hasField('field_position_image_y') ? $paragraph->get('field_position_image_y')->value : "",
+            'size_image' => $paragraph->hasField('field_size_image') ? $paragraph->get('field_size_image')->value : "",
+            'hide_desktop' => $paragraph->hasField('field_paragraph_hide_lg') ? $paragraph->get('field_paragraph_hide_lg')->value : "",
+            'hide_mobile' => $paragraph->hasField('field_paragraph_hide_sm') ? $paragraph->get('field_paragraph_hide_sm')->value : "",
+            'enabel_parallax' => $paragraph->hasField('paragraph_background_parallax') ? $paragraph->get('paragraph_background_parallax')->value : "",
+            /* end configuration */
+            'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
+            'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
             'pid' => $paragraphData['target_id'],
             'revision_id' => $paragraph->getRevisionId(),
             'screenshot' => \Drupal::service('file_url_generator')
@@ -362,27 +416,6 @@ class NodeService {
         if (in_array($paragraph->bundle(), [
           'vactory_paragraph_multi_template',
         ])) {
-          
-          $hex = "";
-          if ($paragraph->hasField('field_background_color') && !$paragraph->get('field_background_color')->isEmpty()) {
-            $colorItem = $paragraph->get('field_background_color')->first();
-            $colorRaw = $colorItem->get('color')->getString();
-            $hex = explode(',', $colorRaw)[0];
-          }
-
-          $image = "";
-          $imageID = -1;
-          if ($paragraph->hasField('paragraph_background_image') && !$paragraph->get('paragraph_background_image')->isEmpty()) {
-              $media = $paragraph->get('paragraph_background_image')->entity;
-              if ($media?->hasField('field_media_image') && !$media->get('field_media_image')->isEmpty()) {
-                  $file = $media->get('field_media_image')->entity;
-                  $imageID = $media->id();
-                  if ($file) {
-                      $image = $this->fileUrlGenerator->generateAbsoluteString($file->getFileUri());
-                  }
-              }
-          }
-
           $paragraphs[] = [
             'id' => $node->id(),
             'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
@@ -1114,13 +1147,23 @@ class NodeService {
       "type" => "vactory_component",
       "field_vactory_title" => $block['title'],
       "field_vactory_flag" => $block['show_title'],
-      "paragraph_container" => $block['width'],
       "container_spacing" => $block['spacing'],
-      "paragraph_css_class" => $block['css_classes'],
       "field_vactory_component" => [
         "widget_id" => $block['widget_id'],
         "widget_data" => json_encode($block['widget_data']),
       ],
+      /* start configuration */
+      "paragraph_container" => $block['width'],
+      "paragraph_css_class" => $block['css_classes'],
+      "field_background_color"      => !empty($block['color']) ? ['color' => $block['color']] : NULL,
+      "paragraph_background_image"  => !empty($block['image']) ? ['target_id' => $block["imageID"]] : NULL,
+      "field_position_image_x"      => $block['positionImageX'] ?? '',
+      "field_position_image_y"      => $block['positionImageY'] ?? '',
+      "field_size_image"            => $block['imageSize'] ?? '',
+      "field_paragraph_hide_lg"     => !empty($block['hideDesktop']) ? 1 : 0,
+      "field_paragraph_hide_sm"     => !empty($block['hideMobile']) ? 1 : 0,
+      "paragraph_background_parallax"=> !empty($block['enableParallax']) ? 1 : 0,
+      /* end configuration */
     ];
     $is_new = $block['is_new'] ?? FALSE;
     // Paragraph translate.
@@ -1163,6 +1206,48 @@ class NodeService {
           ->set('paragraph_css_class', $block['css_classes']);
       }
 
+      /* start configuration */
+      $field_mapping = [
+        'width'          => 'paragraph_container',
+        'css_classes'    => 'paragraph_css_class',
+        'color'          => 'field_background_color',
+        'image'          => 'paragraph_background_image',
+        'positionImageX' => 'field_position_image_x',
+        'positionImageY' => 'field_position_image_y',
+        'imageSize'      => 'field_size_image',
+        'hideDesktop'    => 'field_paragraph_hide_lg',
+        'hideMobile'     => 'field_paragraph_hide_sm',
+        'enableParallax' => 'paragraph_background_parallax',
+      ];
+
+      foreach ($field_mapping as $block_key => $field_name) {
+        if (isset($block[$block_key])) {
+          if ($block_key === 'color') {
+            $paragraph_entity->getTranslation($language)
+              ->set($field_name, ['color' => $block[$block_key]]);
+          }
+          else if ($block_key === 'image') {
+            $image_id = $block["imageID"] ?? NULL;
+
+            if (!empty($image_id) && $image_id > 0) {
+              // Valid image reference
+              $paragraph_entity->getTranslation($language)
+                ->set($field_name, ['target_id' => $image_id]);
+            }
+            else {
+              // Ensure the field is empty
+              $paragraph_entity->getTranslation($language)
+                ->set($field_name, []);
+            }
+          }
+          else {
+            $paragraph_entity->getTranslation($language)
+              ->set($field_name, $block[$block_key]);
+          }
+        }
+      }
+      /* end configuration */
+
       $paragraph_entity->save();
     }
     else {
@@ -1202,6 +1287,48 @@ class NodeService {
             ->set('paragraph_css_class', $block['css_classes']);
         }
 
+      /* start configuration */
+      $field_mapping = [
+        'width'          => 'paragraph_container',
+        'css_classes'    => 'paragraph_css_class',
+        'color'          => 'field_background_color',
+        'image'          => 'paragraph_background_image',
+        'positionImageX' => 'field_position_image_x',
+        'positionImageY' => 'field_position_image_y',
+        'imageSize'      => 'field_size_image',
+        'hideDesktop'    => 'field_paragraph_hide_lg',
+        'hideMobile'     => 'field_paragraph_hide_sm',
+        'enableParallax' => 'paragraph_background_parallax',
+      ];
+
+      foreach ($field_mapping as $block_key => $field_name) {
+        if (isset($block[$block_key])) {
+          if ($block_key === 'color') {
+            $paragraph_entity->getTranslation($language)
+              ->set($field_name, ['color' => $block[$block_key]]);
+          }
+          else if ($block_key === 'image') {
+            $image_id = $block["imageID"] ?? NULL;
+
+            if (!empty($image_id) && $image_id > 0) {
+              // Valid image reference
+              $paragraph_entity->getTranslation($language)
+                ->set($field_name, ['target_id' => $image_id]);
+            }
+            else {
+              // Ensure the field is empty
+              $paragraph_entity->getTranslation($language)
+                ->set($field_name, []);
+            }
+          }
+          else {
+            $paragraph_entity->getTranslation($language)
+              ->set($field_name, $block[$block_key]);
+          }
+        }
+      }
+      /* end configuration */
+
         $paragraph_entity->save();
       }
     }
@@ -1225,9 +1352,7 @@ class NodeService {
       "type" => "vactory_paragraph_block",
       "field_vactory_title" => $block['title'],
       "field_vactory_flag" => $block['show_title'],
-      "paragraph_container" => $block['width'],
       "container_spacing" => $block['spacing'],
-      "paragraph_css_class" => $block['css_classes'],
       "field_vactory_block" => [
         "plugin_id" => $block['blockType'],
         "settings" => $block['blockType'] === $existing_block_id ? $block['block_settings'] ?? [] : [],
@@ -1236,6 +1361,20 @@ class NodeService {
         'value' => $block['content'] ?? '',
         'format' => 'full_html',
       ],
+
+
+      /* start configuration */
+      "paragraph_container" => $block['width'],
+      "paragraph_css_class" => $block['css_classes'],
+      "field_background_color"      => !empty($block['color']) ? ['color' => $block['color']] : NULL,
+      "paragraph_background_image"  => !empty($block['image']) ? ['target_id' => $block["imageID"]] : NULL,
+      "field_position_image_x"      => $block['positionImageX'] ?? '',
+      "field_position_image_y"      => $block['positionImageY'] ?? '',
+      "field_size_image"            => $block['imageSize'] ?? '',
+      "field_paragraph_hide_lg"     => !empty($block['hideDesktop']) ? 1 : 0,
+      "field_paragraph_hide_sm"     => !empty($block['hideMobile']) ? 1 : 0,
+      "paragraph_background_parallax"=> !empty($block['enableParallax']) ? 1 : 0,
+      /* end configuration */
     ];
     $is_new = $block['is_new'] ?? FALSE;
     // Paragraph translate.
@@ -1284,6 +1423,48 @@ class NodeService {
           ->set('paragraph_css_class', $block['css_classes']);
       }
 
+      /* start configuration */
+      $field_mapping = [
+        'width'          => 'paragraph_container',
+        'css_classes'    => 'paragraph_css_class',
+        'color'          => 'field_background_color',
+        'image'          => 'paragraph_background_image',
+        'positionImageX' => 'field_position_image_x',
+        'positionImageY' => 'field_position_image_y',
+        'imageSize'      => 'field_size_image',
+        'hideDesktop'    => 'field_paragraph_hide_lg',
+        'hideMobile'     => 'field_paragraph_hide_sm',
+        'enableParallax' => 'paragraph_background_parallax',
+      ];
+
+      foreach ($field_mapping as $block_key => $field_name) {
+        if (isset($block[$block_key])) {
+          if ($block_key === 'color') {
+            $paragraph_entity->getTranslation($language)
+              ->set($field_name, ['color' => $block[$block_key]]);
+          }
+          else if ($block_key === 'image') {
+            $image_id = $block["imageID"] ?? NULL;
+
+            if (!empty($image_id) && $image_id > 0) {
+              // Valid image reference
+              $paragraph_entity->getTranslation($language)
+                ->set($field_name, ['target_id' => $image_id]);
+            }
+            else {
+              // Ensure the field is empty
+              $paragraph_entity->getTranslation($language)
+                ->set($field_name, []);
+            }
+          }
+          else {
+            $paragraph_entity->getTranslation($language)
+              ->set($field_name, $block[$block_key]);
+          }
+        }
+      }
+      /* end configuration */
+
       $paragraph_entity->save();
     }
     else {
@@ -1329,6 +1510,48 @@ class NodeService {
             ->set('paragraph_css_class', $block['css_classes']);
         }
 
+      /* start configuration */
+      $field_mapping = [
+        'width'          => 'paragraph_container',
+        'css_classes'    => 'paragraph_css_class',
+        'color'          => 'field_background_color',
+        'image'          => 'paragraph_background_image',
+        'positionImageX' => 'field_position_image_x',
+        'positionImageY' => 'field_position_image_y',
+        'imageSize'      => 'field_size_image',
+        'hideDesktop'    => 'field_paragraph_hide_lg',
+        'hideMobile'     => 'field_paragraph_hide_sm',
+        'enableParallax' => 'paragraph_background_parallax',
+      ];
+
+      foreach ($field_mapping as $block_key => $field_name) {
+        if (isset($block[$block_key])) {
+          if ($block_key === 'color') {
+            $paragraph_entity->getTranslation($language)
+              ->set($field_name, ['color' => $block[$block_key]]);
+          }
+          else if ($block_key === 'image') {
+            $image_id = $block["imageID"] ?? NULL;
+
+            if (!empty($image_id) && $image_id > 0) {
+              // Valid image reference
+              $paragraph_entity->getTranslation($language)
+                ->set($field_name, ['target_id' => $image_id]);
+            }
+            else {
+              // Ensure the field is empty
+              $paragraph_entity->getTranslation($language)
+                ->set($field_name, []);
+            }
+          }
+          else {
+            $paragraph_entity->getTranslation($language)
+              ->set($field_name, $block[$block_key]);
+          }
+        }
+      }
+      /* end configuration */
+
         $paragraph_entity->save();
       }
     }
@@ -1368,14 +1591,25 @@ class NodeService {
     $paragraph = [
       "type" => "views_reference",
       "field_vactory_title" => $block['title'],
-      "paragraph_container" => $block['width'],
       "container_spacing" => $block['spacing'],
-      "paragraph_css_class" => $block['css_classes'],
       "field_views_reference" => [
         "target_id" => $block['blockType'],
         "display_id" => $block['displayID'],
         "settings" => $block['blockType'] === $existing_view_id ? $block['block_settings'] ?? [] : [],
       ],
+
+      /* start configuration */
+      "paragraph_container" => $block['width'],
+      "paragraph_css_class" => $block['css_classes'],
+      "field_background_color"      => !empty($block['color']) ? ['color' => $block['color']] : NULL,
+      "paragraph_background_image"  => !empty($block['image']) ? ['target_id' => $block["imageID"]] : NULL,
+      "field_position_image_x"      => $block['positionImageX'] ?? '',
+      "field_position_image_y"      => $block['positionImageY'] ?? '',
+      "field_size_image"            => $block['imageSize'] ?? '',
+      "field_paragraph_hide_lg"     => !empty($block['hideDesktop']) ? 1 : 0,
+      "field_paragraph_hide_sm"     => !empty($block['hideMobile']) ? 1 : 0,
+      "paragraph_background_parallax"=> !empty($block['enableParallax']) ? 1 : 0,
+      /* end configuration */
     ];
     $is_new = $block['is_new'] ?? FALSE;
     // Paragraph translate.
@@ -1415,6 +1649,48 @@ class NodeService {
           ->set('paragraph_css_class', $block['css_classes']);
       }
 
+      /* start configuration */
+      $field_mapping = [
+        'width'          => 'paragraph_container',
+        'css_classes'    => 'paragraph_css_class',
+        'color'          => 'field_background_color',
+        'image'          => 'paragraph_background_image',
+        'positionImageX' => 'field_position_image_x',
+        'positionImageY' => 'field_position_image_y',
+        'imageSize'      => 'field_size_image',
+        'hideDesktop'    => 'field_paragraph_hide_lg',
+        'hideMobile'     => 'field_paragraph_hide_sm',
+        'enableParallax' => 'paragraph_background_parallax',
+      ];
+
+      foreach ($field_mapping as $block_key => $field_name) {
+        if (isset($block[$block_key])) {
+          if ($block_key === 'color') {
+            $paragraph_entity->getTranslation($language)
+              ->set($field_name, ['color' => $block[$block_key]]);
+          }
+          else if ($block_key === 'image') {
+            $image_id = $block["imageID"] ?? NULL;
+
+            if (!empty($image_id) && $image_id > 0) {
+              // Valid image reference
+              $paragraph_entity->getTranslation($language)
+                ->set($field_name, ['target_id' => $image_id]);
+            }
+            else {
+              // Ensure the field is empty
+              $paragraph_entity->getTranslation($language)
+                ->set($field_name, []);
+            }
+          }
+          else {
+            $paragraph_entity->getTranslation($language)
+              ->set($field_name, $block[$block_key]);
+          }
+        }
+      }
+      /* end configuration */
+
       $paragraph_entity->save();
 
     }
@@ -1453,6 +1729,48 @@ class NodeService {
           $paragraph_entity->getTranslation($language)
             ->set('paragraph_css_class', $block['css_classes']);
         }
+
+      /* start configuration */
+      $field_mapping = [
+        'width'          => 'paragraph_container',
+        'css_classes'    => 'paragraph_css_class',
+        'color'          => 'field_background_color',
+        'image'          => 'paragraph_background_image',
+        'positionImageX' => 'field_position_image_x',
+        'positionImageY' => 'field_position_image_y',
+        'imageSize'      => 'field_size_image',
+        'hideDesktop'    => 'field_paragraph_hide_lg',
+        'hideMobile'     => 'field_paragraph_hide_sm',
+        'enableParallax' => 'paragraph_background_parallax',
+      ];
+
+      foreach ($field_mapping as $block_key => $field_name) {
+        if (isset($block[$block_key])) {
+          if ($block_key === 'color') {
+            $paragraph_entity->getTranslation($language)
+              ->set($field_name, ['color' => $block[$block_key]]);
+          }
+          else if ($block_key === 'image') {
+            $image_id = $block["imageID"] ?? NULL;
+
+            if (!empty($image_id) && $image_id > 0) {
+              // Valid image reference
+              $paragraph_entity->getTranslation($language)
+                ->set($field_name, ['target_id' => $image_id]);
+            }
+            else {
+              // Ensure the field is empty
+              $paragraph_entity->getTranslation($language)
+                ->set($field_name, []);
+            }
+          }
+          else {
+            $paragraph_entity->getTranslation($language)
+              ->set($field_name, $block[$block_key]);
+          }
+        }
+      }
+      /* end configuration */
 
         $paragraph_entity->save();
       }

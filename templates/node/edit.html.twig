@@ -259,6 +259,16 @@
               config: {
                 title: block.title || template.name || '',
                 show_title: block.show_title || false,
+                image: block.image,
+                imageID: block.imageID,
+                color: block.color,
+                positionImageX: block.positionImageX || '',
+                positionImageY: block.positionImageY || '',
+                imageSize: block.imageSize || '',
+                hideMobile: block.hideMobile == "1" ? true : false,
+                hideDesktop: block.hideDesktop == "1" ? true : false,
+                enableParallax: block.enableParallax == "1" ? true : false,
+                show_title: block.show_title || false,
                 width: block.width || 'narrow_width',
                 spacing: block.spacing || 'small_space',
                 css_classes: block.css_classes || '',
@@ -838,11 +848,19 @@
                 this.blocks[this.currentBlockIndex] = {
                   ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
                   widget_data: blockData,
-                  title: this.blockForm.config.title,
-                  show_title: this.blockForm.config.show_title,
+                  // start configuration
                   width: this.blockForm.config.width,
-                  spacing: this.blockForm.config.spacing,
                   css_classes: this.blockForm.config.css_classes,
+                  color: this.blockForm.config.color,
+                  image: this.blockForm.config.image,
+                  imageID: this.blockForm.config.imageID,
+                  positionImageX: this.blockForm.config.positionImageX,
+                  positionImageY: this.blockForm.config.positionImageY,
+                  imageSize: this.blockForm.config.imageSize,
+                  hideDesktop: this.blockForm.config.hideDesktop,
+                  hideMobile: this.blockForm.config.hideMobile,
+                  enableParallax: this.blockForm.config.enableParallax,
+                  // end configuration
                 };
                 this.showNotification('success', '{{ 'Block updated successfully'|t }}');
               } else {
@@ -851,10 +869,19 @@
                   id: Date.now(),
                   is_new: true,
                   title: this.blockForm.config.title,
-                  show_title: this.blockForm.config.show_title,
+                  // start configuration
                   width: this.blockForm.config.width,
-                  spacing: this.blockForm.config.spacing,
                   css_classes: this.blockForm.config.css_classes,
+                  color: this.blockForm.config.color,
+                  image: this.blockForm.config.image,
+                  imageID: this.blockForm.config.imageID,
+                  positionImageX: this.blockForm.config.positionImageX,
+                  positionImageY: this.blockForm.config.positionImageY,
+                  imageSize: this.blockForm.config.imageSize,
+                  hideDesktop: this.blockForm.config.hideDesktop,
+                  hideMobile: this.blockForm.config.hideMobile,
+                  enableParallax: this.blockForm.config.enableParallax,
+                  // end configuration
                   preview: this.selectedTemplate.screenshot,
                   widget_id: this.selectedTemplate.uuid,
                   widget_config: this.selectedTemplate,
@@ -1224,6 +1251,16 @@
               config: {
                 title: block.title || '',
                 show_title: block.show_title || false,
+                image: block.image,
+                imageID: block.imageID,
+                color: block.color,
+                positionImageX: block.positionImageX || '',
+                positionImageY: block.positionImageY || '',
+                imageSize: block.imageSize || '',
+                hideMobile: block.hideMobile == "1" ? true : false,
+                hideDesktop: block.hideDesktop == "1" ? true : false,
+                enableParallax: block.enableParallax == "1" ? true : false,
+                show_title: block.show_title || false,
                 width: block.width || 'narrow_width',
                 spacing: block.spacing || 'small_space',
                 css_classes: block.css_classes || '',
@@ -1264,6 +1301,19 @@
                 css_classes: this.paragraphBlockForm.config.css_classes,
                 blockType: this.paragraphBlockForm.blockType,
                 content: this.paragraphBlockForm.content,
+                // start configuration
+                width: this.paragraphBlockForm.config.width,
+                css_classes: this.paragraphBlockForm.config.css_classes,
+                color: this.paragraphBlockForm.config.color,
+                image: this.paragraphBlockForm.config.image,
+                imageID: this.paragraphBlockForm.config.imageID,
+                positionImageX: this.paragraphBlockForm.config.positionImageX,
+                positionImageY: this.paragraphBlockForm.config.positionImageY,
+                imageSize: this.paragraphBlockForm.config.imageSize,
+                hideDesktop: this.paragraphBlockForm.config.hideDesktop,
+                hideMobile: this.paragraphBlockForm.config.hideMobile,
+                enableParallax: this.paragraphBlockForm.config.enableParallax,
+                // end configuration
               };
               this.showNotification('success', '{{ "Paragraph block updated successfully"|t }}');
             } else {
@@ -1279,6 +1329,19 @@
                 css_classes: this.paragraphBlockForm.config.css_classes,
                 blockType: this.paragraphBlockForm.blockType,
                 content: this.paragraphBlockForm.content,
+                // start configuration
+                width: this.paragraphBlockForm.config.width,
+                css_classes: this.paragraphBlockForm.config.css_classes,
+                color: this.paragraphBlockForm.config.color,
+                image: this.paragraphBlockForm.config.image,
+                imageID: this.paragraphBlockForm.config.imageID,
+                positionImageX: this.paragraphBlockForm.config.positionImageX,
+                positionImageY: this.paragraphBlockForm.config.positionImageY,
+                imageSize: this.paragraphBlockForm.config.imageSize,
+                hideDesktop: this.paragraphBlockForm.config.hideDesktop,
+                hideMobile: this.paragraphBlockForm.config.hideMobile,
+                enableParallax: this.paragraphBlockForm.config.enableParallax,
+                // end configuration
                 preview: '/modules/custom/vactory_dashboard/assets/images/default-screenshot.png', // Default preview image
               });
               this.showNotification('success', '{{ "Paragraph block added successfully"|t }}');
@@ -1326,6 +1389,16 @@
               config: {
                 title: block.title || '',
                 show_title: block.show_title || false,
+                image: block.image,
+                imageID: block.imageID,
+                color: block.color,
+                positionImageX: block.positionImageX || '',
+                positionImageY: block.positionImageY || '',
+                imageSize: block.imageSize || '',
+                hideMobile: block.hideMobile == "1" ? true : false,
+                hideDesktop: block.hideDesktop == "1" ? true : false,
+                enableParallax: block.enableParallax == "1" ? true : false,
+                show_title: block.show_title || false,
                 width: block.width || 'narrow_width',
                 spacing: block.spacing || 'small_space',
                 css_classes: block.css_classes || '',
@@ -1367,6 +1440,19 @@
                 blockType: this.paragraphViewForm.blockType,
                 displayID: this.paragraphViewForm.displayID,
                 content: this.paragraphViewForm.content,
+                // start configuration
+                width: this.paragraphViewForm.config.width,
+                css_classes: this.paragraphViewForm.config.css_classes,
+                color: this.paragraphViewForm.config.color,
+                image: this.paragraphViewForm.config.image,
+                imageID: this.paragraphViewForm.config.imageID,
+                positionImageX: this.paragraphViewForm.config.positionImageX,
+                positionImageY: this.paragraphViewForm.config.positionImageY,
+                imageSize: this.paragraphViewForm.config.imageSize,
+                hideDesktop: this.paragraphViewForm.config.hideDesktop,
+                hideMobile: this.paragraphViewForm.config.hideMobile,
+                enableParallax: this.paragraphViewForm.config.enableParallax,
+                // end configuration
               };
               this.showNotification('success', '{{ "Paragraph block updated successfully"|t }}');
             } else {
@@ -1384,6 +1470,19 @@
                 displayID: this.paragraphViewForm.displayID,
                 content: this.paragraphViewForm.content,
                 preview: '/modules/custom/vactory_dashboard/assets/images/default-screenshot.png', // Default preview image
+                // start configuration
+                width: this.paragraphViewForm.config.width,
+                css_classes: this.paragraphViewForm.config.css_classes,
+                color: this.paragraphViewForm.config.color,
+                image: this.paragraphViewForm.config.image,
+                imageID: this.paragraphViewForm.config.imageID,
+                positionImageX: this.paragraphViewForm.config.positionImageX,
+                positionImageY: this.paragraphViewForm.config.positionImageY,
+                imageSize: this.paragraphViewForm.config.imageSize,
+                hideDesktop: this.paragraphViewForm.config.hideDesktop,
+                hideMobile: this.paragraphViewForm.config.hideMobile,
+                enableParallax: this.paragraphViewForm.config.enableParallax,
+                // end configuration
               });
               this.showNotification('success', '{{ "Paragraph view added successfully"|t }}');
             }
@@ -2157,6 +2256,16 @@
             if (isParagraphMultiple) {
               this.paragraphMultipleForm.config.image = media.url;
               this.paragraphMultipleForm.config.imageID = media.id;
+
+              this.blockForm.config.image = media.url;
+              this.blockForm.config.imageID = media.id;
+
+              this.paragraphBlockForm.config.image = media.url;
+              this.paragraphBlockForm.config.imageID = media.id;
+
+              this.paragraphViewForm.config.image = media.url;
+              this.paragraphViewForm.config.imageID = media.id;
+
               this.closeMediaLibrary();
               this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
               return;
@@ -2186,6 +2295,15 @@
             if (isParagraphMultiple) {
               this.paragraphMultipleForm.config.image = "";
               this.paragraphMultipleForm.config.imageID = "";
+
+              this.blockForm.config.image = "";
+              this.blockForm.config.imageID = "";
+
+              this.paragraphBlockForm.config.image = "";
+              this.paragraphBlockForm.config.imageID = "";
+
+              this.paragraphViewForm.config.image = "";
+              this.paragraphViewForm.config.imageID = "";
               return;
             }
 

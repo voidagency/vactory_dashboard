@@ -2,7 +2,7 @@
 <div class="hidden">
     {{ drupal_form('Drupal\\vactory_dashboard\\Form\\CkeditorFieldForm', 'GENERIC', true, 'item[fieldName]', "field.options?.['#required'] ?? false") }}
 </div>
-<div x-data="{ isRTL: document.dir === 'rtl' }" :dir="isRTL ? 'rtl' : 'ltr'">
+<div x-data="{ isRTL: document.dir === 'rtl', fieldName: '' }" :dir="isRTL ? 'rtl' : 'ltr'">
     <div class="h-full flex flex-col bg-slate-50">
         <div class="sticky top-0 z-10 bg-white rounded-xl py-4 px-6 border-b border-slate-200 flex justify-between items-center mb-6">
             <div class="flex items-center gap-x-3">
@@ -130,6 +130,9 @@
                                                                                 setTimeout(() => {
 
                                                                                     const textarea = $el.querySelector('textarea');
+                                                                                    let ckEditor = $el.querySelector('.ck-editor__editable_inline');
+                                                                                    ckEditor.style.minHeight = '150px';
+
                                                                                     if (field.options?.['#required'] !== undefined) {
                                                                                         textarea.setAttribute('required', 'required');
                                                                                     }
@@ -306,6 +309,9 @@
 
                                                                                                     setTimeout(() => {
 
+                                                                                                        let ckEditor = $el.querySelector('.ck-editor__editable_inline');
+                                                                                                        ckEditor.style.minHeight = '150px';
+
                                                                                                         const textarea = $el.querySelector('textarea');
                                                                                                         if (field.options?.['#required'] !== undefined) {
                                                                                                             textarea.setAttribute('required', 'required');
@@ -462,6 +468,9 @@
                                                                         new MutationObserver((records, observer) => {
 
                                                                             setTimeout(() => {
+
+                                                                                let ckEditor = $el.querySelector('.ck-editor__editable_inline');
+                                                                                ckEditor.style.minHeight = '150px';
 
                                                                                 const textarea = $el.querySelector('textarea');
                                                                                 if (field.options?.['#required'] !== undefined) {
@@ -631,6 +640,9 @@
                                                                                             new MutationObserver((records, observer) => {
 
                                                                                                 setTimeout(() => {
+
+                                                                                                    let ckEditor = $el.querySelector('.ck-editor__editable_inline');
+                                                                                                    ckEditor.style.minHeight = '150px';
 
                                                                                                     const textarea = $el.querySelector('textarea');
                                                                                                     if (field.options?.['#required'] !== undefined) {
@@ -867,6 +879,10 @@
                                                                                                         $nextTick(() => {
                                                                                                         new MutationObserver((records, observer) => {
                                                                                                             setTimeout(() => {
+                                                                                                            
+                                                                                                            let ckEditor = $el.querySelector('.ck-editor__editable_inline');
+                                                                                                            ckEditor.style.minHeight = '150px';
+                                                                                                            
                                                                                                             const textarea = $el.querySelector('textarea');
                                                                                                             if (field.options?.['#required'] !== undefined) {
                                                                                                                 textarea.setAttribute('required', 'required');
@@ -1018,6 +1034,10 @@
                                                                                     $nextTick(() => {
                                                                                     new MutationObserver((records, observer) => {
                                                                                         setTimeout(() => {
+                                                                                        
+                                                                                        let ckEditor = $el.querySelector('.ck-editor__editable_inline');
+                                                                                        ckEditor.style.minHeight = '150px';
+                                                                                        
                                                                                         const textarea = $el.querySelector('textarea');
                                                                                         if (field.options?.['#required'] !== undefined) {
                                                                                             textarea.setAttribute('required', 'required');
@@ -1165,7 +1185,10 @@
                             </div>
                         </div>
                         {% if not hideBlockConfig %}
-                            {% include "@vactory_dashboard/_components/paragraph/configuration-section.html.twig" %}
+                            {% include "@vactory_dashboard/_components/paragraph/appearance.html.twig" with {
+                                isParagraphMultiple: false,
+                                paragraph: 'blockForm',
+                            } %}
                         {% endif %}
                     </div>
                 </form>
@@ -1175,7 +1198,7 @@
 </div>
 
 {# Include Media Library Modal at the root level #}
-<template x-if="!showParagraphMultipleForm">
+<template x-if="showBlockForm">
 {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
 </template>
 

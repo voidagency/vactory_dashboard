@@ -548,6 +548,15 @@
         }
       },
 
+      expandWysi() {
+        setTimeout(() => {
+          let ckEditors = document.querySelectorAll('.ck-editor__editable_inline');
+          ckEditors.forEach(ckEditor => {
+            ckEditor.style.minHeight = '150px';
+          });
+        }, 500);
+      },
+
       select(item) {
         this.query = item.label;
       },
@@ -622,6 +631,7 @@
       init() {
         this.getProfile();
         this.getSupport();
+        this.expandWysi();
       },
 
     }));
