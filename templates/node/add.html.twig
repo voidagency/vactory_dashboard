@@ -2133,19 +2133,10 @@
             const target = keys.reduce((o, key) => o[key], obj);
             target[lastKey] = newValue;
           },
-          selectMedia(media, isParagraphMultiple=false) {
-            if (isParagraphMultiple) {
-              this.paragraphMultipleForm.config.image = media.url;
-              this.paragraphMultipleForm.config.imageID = media.id;
-
-              this.blockForm.config.image = media.url;
-              this.blockForm.config.imageID = media.id;
-
-              this.paragraphBlockForm.config.image = media.url;
-              this.paragraphBlockForm.config.imageID = media.id;
-
-              this.paragraphViewForm.config.image = media.url;
-              this.paragraphViewForm.config.imageID = media.id;
+          selectMedia(media, appearance=false, paragraph=false) {
+            if (appearance) {
+              paragraph.config.image = media.url;
+              paragraph.config.imageID = media.id;
 
               this.closeMediaLibrary();
               this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
