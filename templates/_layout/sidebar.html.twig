@@ -352,6 +352,7 @@
 
                 {# Formulaires #}
                 {% if user.hasPermission('access webform overview') %}
+                  {% if sidebar.forms.items is not empty %}
                   <div class="forms w-full">
                       <button @click="openDropdowns.forms = !openDropdowns.forms"
                               class="h-8 flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 font-semibold text-slate-700 px-3 py-2 group hover:bg-primary-50"
@@ -406,6 +407,7 @@
                           </div>
                       </div>
                   </div>
+                  {% endif %}
                 {% endif %}
 
                 {# Parametres #}

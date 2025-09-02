@@ -123,7 +123,7 @@
             </form>
         </div>
     </div>
-    <template x-if="!showParagraphMultipleForm">
+    <template x-if="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
         {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
     </template>
 
