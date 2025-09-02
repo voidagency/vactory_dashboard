@@ -45,6 +45,7 @@
           currentParagraphMultipleItem: 0,
           currentBlockMultipleIndex: null,
           selectedTemplate: null,
+          appearanceBackgroundImage: false,
           paragraphBlockForm: {
             blockType: '',
             content: '',
@@ -54,6 +55,9 @@
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
+              hideDesktop: false,
+              hideMobile: false,
+              enableParallax: false,
             },
           },
           paragraphViewForm: {
@@ -65,17 +69,9 @@
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
-            },
-          },
-          paragraphViewForm: {
-            blockType: '',
-            title: '',
-            config: {
-              title: '',
-              show_title: false,
-              width: 'narrow_width',
-              spacing: 'small_space',
-              css_classes: '',
+              hideDesktop: false,
+              hideMobile: false,
+              enableParallax: false,
             },
           },
           paragraphMultipleForm: {
@@ -88,6 +84,9 @@
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
+              hideDesktop: false,
+              hideMobile: false,
+              enableParallax: false,
             },
           },
           blockForm: {
@@ -100,6 +99,9 @@
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
+              hideDesktop: false,
+              hideMobile: false,
+              enableParallax: false,
             },
           },
           currentBlockIndex: null,
@@ -154,7 +156,7 @@
 
             let isValid = true;
             let firstInvalidElement = null;
-            console.log("requiredInputs: ", requiredInputs)
+            console.log('requiredInputs: ', requiredInputs);
 
             requiredInputs.forEach(input => {
               // MEDIA FIELDS (BUTTONs)
@@ -164,14 +166,14 @@
 
                 let validMedia = false;
                 switch (type) {
-                  case "image":
+                  case 'image':
                     validMedia = !!parent.querySelector('.image')?.src;
                     break;
-                  case "file":
-                  case "private_file":
+                  case 'file':
+                  case 'private_file':
                     validMedia = !!parent.querySelector('.file-name')?.innerText.trim();
                     break;
-                  case "remote_video":
+                  case 'remote_video':
                     validMedia = !!parent.querySelector('.video-title')?.innerText.trim();
                     break;
                   default:
@@ -181,7 +183,9 @@
                 input.classList.toggle(borderClass, !validMedia);
                 if (!validMedia) {
                   isValid = false;
-                  if (!firstInvalidElement) firstInvalidElement = input;
+                  if (!firstInvalidElement) {
+                    firstInvalidElement = input;
+                  }
                 }
                 return;
               }
@@ -194,7 +198,9 @@
               if (inputIsSummary) {
                 const textarea = input.querySelector('textarea');
                 hasValue = !!(textarea && textarea.value.trim());
-                if (textarea) textarea.parentNode.classList.remove('border', borderClass);
+                if (textarea) {
+                  textarea.parentNode.classList.remove('border', borderClass);
+                }
               } else if (inputIsCKEditorDF) {
                 hasValue = !!input.value.trim();
                 input.parentNode.classList.remove('border', borderClass);
@@ -208,14 +214,20 @@
                   const textarea = input.querySelector('textarea');
                   if (textarea) {
                     textarea.parentNode.classList.add('border', borderClass);
-                    if (!firstInvalidElement) firstInvalidElement = input;
+                    if (!firstInvalidElement) {
+                      firstInvalidElement = input;
+                    }
                   }
                 } else if (inputIsCKEditorDF) {
                   input.parentNode.classList.add('border', borderClass);
-                  if (!firstInvalidElement) firstInvalidElement = input;
+                  if (!firstInvalidElement) {
+                    firstInvalidElement = input;
+                  }
                 } else {
                   input.classList.add('border', borderClass);
-                  if (!firstInvalidElement) firstInvalidElement = input;
+                  if (!firstInvalidElement) {
+                    firstInvalidElement = input;
+                  }
                 }
                 isValid = false;
               }
@@ -228,7 +240,7 @@
 
             return isValid;
           },
-          async saveNode(id="node-form") {
+          async saveNode(id = 'node-form') {
             if (!this.validateForm(id)) {
               this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
               this.activeTab = 'content';
@@ -240,9 +252,9 @@
                 this.formData.fields[field] = {
                   value: this.formData.fields[field],
                   format: 'full_html',
-                }
+                };
               }
-            })
+            });
 
             if (this.isSaving) {
               return;
@@ -371,10 +383,10 @@
             }
           },
           copyBlock(index) {
-              let copy = JSON.parse(JSON.stringify(this.blocks[index]));
-              copy.is_new = true;
-              copy.id = Date.now().toString();
-              this.blocks = [...this.blocks, copy];
+            let copy = JSON.parse(JSON.stringify(this.blocks[index]));
+            copy.is_new = true;
+            copy.id = Date.now().toString();
+            this.blocks = [...this.blocks, copy];
           },
           copyTemplateInParagraphMutipleItem(index, widgetIndex) {
             let copy = JSON.parse(JSON.stringify(this.paragraphMultipleForm.items[index].widgets[widgetIndex]));
@@ -387,7 +399,7 @@
             this.showParagraphMultipleForm = false;
             this.currentParagraphMultipleItem = index;
             this.currentMultipleParagraphTemplateIndex = widgetIndex;
-            this.selectedMultipleParagraphTemplate = this.paragraphMultipleForm.items[index]["widgets"][widgetIndex];
+            this.selectedMultipleParagraphTemplate = this.paragraphMultipleForm.items[index]['widgets'][widgetIndex];
 
             await this.modifyBlock(null, '');
           },
@@ -400,7 +412,6 @@
               block = this.blocks[index];
             }
             this.currentBlockIndex = index;
-
             if (this.isParagraphMultiple) {
               block = this.selectedMultipleParagraphTemplate;
               this.currentBlockIndex = this.currentBlockMultipleIndex;
@@ -415,21 +426,7 @@
               fields: {},
               items: [],
               config: {
-                title: template.name || '',
-                show_title: false,
-                width: block.width || 'narrow_width',
-                spacing: block.spacing || 'small_space',
-                css_classes: block.css_classes || '',
-                show_title: block.show_title || false,
-                image: block.image,
-                imageID: block.imageID,
-                color: block.color,
-                positionImageX: block.positionImageX || '',
-                positionImageY: block.positionImageY || '',
-                imageSize: block.imageSize || '',
-                hideMobile: block.hideMobile == "1" ? true : false,
-                hideDesktop: block.hideDesktop == "1" ? true : false,
-                enableParallax: block.enableParallax == "1" ? true : false,
+                ...this.initializeAppearance(block),
               },
             };
 
@@ -692,7 +689,6 @@
 
                   }
                   // END - extra field
-
                 }
               });
             }
@@ -704,7 +700,7 @@
             }
 
           },
-          saveBlock(id="node-form") {
+          saveBlock(id = 'node-form') {
             if (!this.validateForm(id)) {
               this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
               return;
@@ -939,7 +935,6 @@
 
               });
             }
-
             if (this.isParagraphMultiple) {
               let widgets = this.paragraphMultipleForm.items[this.currentParagraphMultipleItem]?.widgets || [];
 
@@ -948,29 +943,14 @@
                 widgets = widgets.map((w, i) =>
                   i === this.currentMultipleParagraphTemplateIndex
                     ? {
-                        ...w,
-                        widget_id: this.selectedTemplate.uuid,
-                        widget_data: blockData,
-                        config: {
-                          title: this.blockForm.config.title,
-                          show_title: this.blockForm.config.show_title,
-                          spacing: this.blockForm.config.spacing,
-                          // start configuration
-                          width: this.blockForm.config.width,
-                          css_classes: this.blockForm.config.css_classes,
-                          color: this.blockForm.config.color,
-                          image: this.blockForm.config.image,
-                          imageID: this.blockForm.config.imageID,
-                          positionImageX: this.blockForm.config.positionImageX,
-                          positionImageY: this.blockForm.config.positionImageY,
-                          imageSize: this.blockForm.config.imageSize,
-                          hideDesktop: this.blockForm.config.hideDesktop,
-                          hideMobile: this.blockForm.config.hideMobile,
-                          enableParallax: this.blockForm.config.enableParallax,
-                          // end configuration
-                        },
-                      }
-                    : w
+                      ...w,
+                      widget_id: this.selectedTemplate.uuid,
+                      widget_data: blockData,
+                      config: {
+                        ...this.prepareConfigurationData(this.blockForm),
+                      },
+                    }
+                    : w,
                 );
                 this.currentMultipleParagraphTemplateIndex = null; // reset after editing
               } else {
@@ -980,22 +960,7 @@
                   widget_id: this.selectedTemplate.uuid,
                   widget_data: blockData,
                   config: {
-                    title: this.blockForm.config.title,
-                    show_title: this.blockForm.config.show_title,
-                    spacing: this.blockForm.config.spacing,
-                    // start configuration
-                    width: this.blockForm.config.width,
-                    css_classes: this.blockForm.config.css_classes,
-                    color: this.blockForm.config.color,
-                    image: this.blockForm.config.image,
-                    imageID: this.blockForm.config.imageID,
-                    positionImageX: this.blockForm.config.positionImageX,
-                    positionImageY: this.blockForm.config.positionImageY,
-                    imageSize: this.blockForm.config.imageSize,
-                    hideDesktop: this.blockForm.config.hideDesktop,
-                    hideMobile: this.blockForm.config.hideMobile,
-                    enableParallax: this.blockForm.config.enableParallax,
-                    // end configuration
+                    ...this.prepareConfigurationData(this.blockForm),
                   },
                 });
               }
@@ -1012,12 +977,11 @@
               this.showDynamicFieldModal = false;
 
               this.$nextTick(() => {
-                document.getElementById("onglets")?.scrollIntoView({
+                document.getElementById('onglets')?.scrollIntoView({
                   behavior: 'smooth',
-                  block: 'center'
+                  block: 'center',
                 });
               });
-
               return;
             }
 
@@ -1050,8 +1014,8 @@
                 [this.selectedDynamicField]: {
                   widget_id: this.selectedTemplate.uuid,
                   widget_data: JSON.stringify(blockData),
-                }
-              }
+                },
+              };
 
             } else {
               if (this.currentBlockIndex !== null) {
@@ -1060,22 +1024,7 @@
                   ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
                   widget_data: blockData,
                   bundle: 'vactory_component',
-                  title: this.blockForm.config.title,
-                  show_title: this.blockForm.config.show_title,
-                  spacing: this.blockForm.config.spacing,
-                  // start configuration
-                  width: this.blockForm.config.width,
-                  css_classes: this.blockForm.config.css_classes,
-                  color: this.blockForm.config.color,
-                  image: this.blockForm.config.image,
-                  imageID: this.blockForm.config.imageID,
-                  positionImageX: this.blockForm.config.positionImageX,
-                  positionImageY: this.blockForm.config.positionImageY,
-                  imageSize: this.blockForm.config.imageSize,
-                  hideDesktop: this.blockForm.config.hideDesktop,
-                  hideMobile: this.blockForm.config.hideMobile,
-                  enableParallax: this.blockForm.config.enableParallax,
-                  // end configuration
+                  ...this.prepareConfigurationData(this.blockForm),
                 };
                 this.showNotification('success', '{{ 'Block updated successfully'|t }}');
               } else {
@@ -1084,22 +1033,7 @@
                   id: Date.now(),
                   bundle: 'vactory_component',
                   is_new: true,
-                  title: this.blockForm.config.title,
-                  show_title: this.blockForm.config.show_title,
-                  spacing: this.blockForm.config.spacing,
-                  // start configuration
-                  width: this.blockForm.config.width,
-                  css_classes: this.blockForm.config.css_classes,
-                  color: this.blockForm.config.color,
-                  image: this.blockForm.config.image,
-                  imageID: this.blockForm.config.imageID,
-                  positionImageX: this.blockForm.config.positionImageX,
-                  positionImageY: this.blockForm.config.positionImageY,
-                  imageSize: this.blockForm.config.imageSize,
-                  hideDesktop: this.blockForm.config.hideDesktop,
-                  hideMobile: this.blockForm.config.hideMobile,
-                  enableParallax: this.blockForm.config.enableParallax,
-                  // end configuration
+                  ...this.prepareConfigurationData(this.blockForm),
                   preview: this.selectedTemplate.screenshot,
                   widget_id: this.selectedTemplate.uuid,
                   widget_config: this.selectedTemplate,
@@ -1120,17 +1054,20 @@
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
+                hideDesktop: false,
+                hideMobile: false,
+                enableParallax: false,
               },
             };
             this.currentBlockIndex = null;
             this.showBlockForm = false;
             this.selectedDynamicField = null;
+            this.isParagraphMultiple = false;
             this.showDynamicFieldModal = false;
           },
           selectTemplate(template, isParagraphMultiple) {
             this.selectedTemplate = template;
             this.currentBlockIndex = null; // Reset current block index for new blocks
-
             // Initialize the form data structure
             this.blockForm = {
               extra_fields: {},
@@ -1142,6 +1079,9 @@
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
+                hideDesktop: false,
+                hideMobile: false,
+                enableParallax: false,
               },
             };
             // Initialize extra_fields if they exist
@@ -1309,8 +1249,7 @@
             this.showTemplatesList = false;
             if (this.selectedDynamicField) {
               this.showDynamicFieldModal = true;
-            }
-            else {
+            } else {
               this.showBlockForm = true;
             }
           },
@@ -1341,26 +1280,7 @@
               // Modify existing block
               this.blocks[this.currentBlockIndex] = {
                 ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
-                title: this.paragraphBlockForm.config.title,
-                show_title: this.paragraphBlockForm.config.show_title,
-                width: this.paragraphBlockForm.config.width,
-                spacing: this.paragraphBlockForm.config.spacing,
-                css_classes: this.paragraphBlockForm.config.css_classes,
-                blockType: this.paragraphBlockForm.blockType,
-                content: this.paragraphBlockForm.content,
-                // start configuration
-                width: this.paragraphBlockForm.config.width,
-                css_classes: this.paragraphBlockForm.config.css_classes,
-                color: this.paragraphBlockForm.config.color,
-                image: this.paragraphBlockForm.config.image,
-                imageID: this.paragraphBlockForm.config.imageID,
-                positionImageX: this.paragraphBlockForm.config.positionImageX,
-                positionImageY: this.paragraphBlockForm.config.positionImageY,
-                imageSize: this.paragraphBlockForm.config.imageSize,
-                hideDesktop: this.paragraphBlockForm.config.hideDesktop,
-                hideMobile: this.paragraphBlockForm.config.hideMobile,
-                enableParallax: this.paragraphBlockForm.config.enableParallax,
-                // end configuration
+                ...this.prepareConfigurationData(this.paragraphBlockForm),
               };
               this.showNotification('success', '{{ "Paragraph block updated successfully"|t }}');
             } else {
@@ -1369,26 +1289,7 @@
                 id: Date.now(),
                 bundle: 'vactory_paragraph_block',
                 is_new: true,
-                title: this.paragraphBlockForm.config.title,
-                show_title: this.paragraphBlockForm.config.show_title,
-                width: this.paragraphBlockForm.config.width,
-                spacing: this.paragraphBlockForm.config.spacing,
-                css_classes: this.paragraphBlockForm.config.css_classes,
-                blockType: this.paragraphBlockForm.blockType,
-                // start configuration
-                width: this.paragraphBlockForm.config.width,
-                css_classes: this.paragraphBlockForm.config.css_classes,
-                color: this.paragraphBlockForm.config.color,
-                image: this.paragraphBlockForm.config.image,
-                imageID: this.paragraphBlockForm.config.imageID,
-                positionImageX: this.paragraphBlockForm.config.positionImageX,
-                positionImageY: this.paragraphBlockForm.config.positionImageY,
-                imageSize: this.paragraphBlockForm.config.imageSize,
-                hideDesktop: this.paragraphBlockForm.config.hideDesktop,
-                hideMobile: this.paragraphBlockForm.config.hideMobile,
-                enableParallax: this.paragraphBlockForm.config.enableParallax,
-                // end configuration
-                content: this.paragraphBlockForm.content,
+                ...this.prepareConfigurationData(this.paragraphBlockForm),
                 preview: '/modules/custom/vactory_dashboard/assets/images/default-screenshot.png', // Default preview image
               });
               this.showNotification('success', '{{ "Paragraph block added successfully"|t }}');
@@ -1404,6 +1305,9 @@
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
+                hideDesktop: false,
+                hideMobile: false,
+                enableParallax: false,
               },
             };
 
@@ -1420,21 +1324,7 @@
               blockType: block.blockType || '',
               content: block.content || '',
               config: {
-                title: block.title || '',
-                show_title: block.show_title || false,
-                image: block.image,
-                imageID: block.imageID,
-                color: block.color,
-                positionImageX: block.positionImageX || '',
-                positionImageY: block.positionImageY || '',
-                imageSize: block.imageSize || '',
-                hideMobile: block.hideMobile == "1" ? true : false,
-                hideDesktop: block.hideDesktop == "1" ? true : false,
-                enableParallax: block.enableParallax == "1" ? true : false,
-                show_title: block.show_title || false,
-                width: block.width || 'narrow_width',
-                spacing: block.spacing || 'small_space',
-                css_classes: block.css_classes || '',
+                ...this.initializeAppearance(block),
               },
             };
 
@@ -1464,21 +1354,7 @@
               content: block.content || '',
               block_settings: block.block_settings || {},
               config: {
-                title: block.title || '',
-                show_title: block.show_title || false,
-                image: block.image,
-                imageID: block.imageID,
-                color: block.color,
-                positionImageX: block.positionImageX || '',
-                positionImageY: block.positionImageY || '',
-                imageSize: block.imageSize || '',
-                hideMobile: block.hideMobile == "1" ? true : false,
-                hideDesktop: block.hideDesktop == "1" ? true : false,
-                enableParallax: block.enableParallax == "1" ? true : false,
-                show_title: block.show_title || false,
-                width: block.width || 'narrow_width',
-                spacing: block.spacing || 'small_space',
-                css_classes: block.css_classes || '',
+                ...this.initializeAppearance(block),
               },
             };
 
@@ -1509,25 +1385,7 @@
               // Modify existing block
               this.blocks[this.currentBlockIndex] = {
                 ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
-                title: this.paragraphViewForm.config.title,
-                show_title: this.paragraphViewForm.config.show_title,
-                width: this.paragraphViewForm.config.width,
-                spacing: this.paragraphViewForm.config.spacing,
-                css_classes: this.paragraphViewForm.config.css_classes,
-                blockType: this.paragraphViewForm.blockType,
-                displayID: this.paragraphViewForm.displayID,
-                content: this.paragraphViewForm.content,
-                // start configuration
-                color: this.paragraphViewForm.config.color,
-                image: this.paragraphViewForm.config.image,
-                imageID: this.paragraphViewForm.config.imageID,
-                positionImageX: this.paragraphViewForm.config.positionImageX,
-                positionImageY: this.paragraphViewForm.config.positionImageY,
-                imageSize: this.paragraphViewForm.config.imageSize,
-                hideDesktop: this.paragraphViewForm.config.hideDesktop,
-                hideMobile: this.paragraphViewForm.config.hideMobile,
-                enableParallax: this.paragraphViewForm.config.enableParallax,
-                // end configuration
+                ...this.prepareConfigurationData(this.paragraphViewForm),
               };
               this.showNotification('success', '{{ "Paragraph block updated successfully"|t }}');
             } else {
@@ -1536,22 +1394,7 @@
                 id: Date.now(),
                 bundle: 'views_reference',
                 is_new: true,
-                title: this.paragraphViewForm.config.title,
-                show_title: this.paragraphViewForm.config.show_title,
-                spacing: this.paragraphViewForm.config.spacing,
-                blockType: this.paragraphViewForm.blockType,
-                // start configuration
-                width: this.paragraphViewForm.config.width,
-                css_classes: this.paragraphViewForm.config.css_classes,
-                color: this.paragraphViewForm.config.color,
-                image: this.paragraphViewForm.config.image,
-                imageID: this.paragraphViewForm.config.imageID,
-                positionImageX: this.paragraphViewForm.config.positionImageX,
-                positionImageY: this.paragraphViewForm.config.positionImageY,
-                imageSize: this.paragraphViewForm.config.imageSize,
-                hideDesktop: this.paragraphViewForm.config.hideDesktop,
-                hideMobile: this.paragraphViewForm.config.hideMobile,
-                enableParallax: this.paragraphViewForm.config.enableParallax,
+                ...this.prepareConfigurationData(this.paragraphViewForm),
                 // end configuration
                 displayID: this.paragraphViewForm.displayID,
                 content: this.paragraphViewForm.content,
@@ -1570,9 +1413,12 @@
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
+                hideDesktop: false,
+                hideMobile: false,
+                enableParallax: false,
               },
             };
-            
+
             // Close form and reset current block index
             this.showParagraphViewForm = false;
             this.currentBlockIndex = null;
@@ -1591,9 +1437,9 @@
                 isNew: true,
                 paragraph_id: '',
                 widgets: [],
-            };
-            
-            this.paragraphMultipleForm.items.push(newItem);
+              };
+
+              this.paragraphMultipleForm.items.push(newItem);
             }
           },
           modifyParagraphMultiple(index) {
@@ -1619,9 +1465,9 @@
                 positionImageX: block.positionImageX || '',
                 positionImageY: block.positionImageY || '',
                 imageSize: block.imageSize || '',
-                hideMobile: block.hideMobile == "1" ? true : false,
-                hideDesktop: block.hideDesktop == "1" ? true : false,
-                enableParallax: block.enableParallax == "1" ? true : false,
+                hideMobile: block.hideMobile == '1' ? true : false,
+                hideDesktop: block.hideDesktop == '1' ? true : false,
+                enableParallax: block.enableParallax == '1' ? true : false,
                 show_title: block.show_title || false,
                 width: block.width || 'narrow_width',
                 spacing: block.spacing || 'small_space',
@@ -1653,32 +1499,13 @@
               this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
               return;
             }
-            console.log("this.paragraphMultipleForm: ", this.paragraphMultipleForm);
             if (this.currentBlockMultipleIndex !== null) {
               // Modify existing block
               this.blocks[this.currentBlockMultipleIndex] = {
                 ...this.blocks[this.currentBlockMultipleIndex],
-                title: this.paragraphMultipleForm.title,
-                display: this.paragraphMultipleForm.display,
-                introduction: this.paragraphMultipleForm.introduction,
-                items: this.paragraphMultipleForm.items,
-                spacing: this.paragraphMultipleForm.spacing,
+                ...this.prepareConfigurationData(this.paragraphMultipleForm),
                 widget_id: this.paragraphMultipleForm.widget_id,
                 widget_data: this.paragraphMultipleForm.widget_data,
-
-                // start configuration
-                width: this.paragraphMultipleForm.config.width,
-                css_classes: this.paragraphMultipleForm.config.css_classes,
-                color: this.paragraphMultipleForm.config.color,
-                image: this.paragraphMultipleForm.config.image,
-                imageID: this.paragraphMultipleForm.config.imageID,
-                positionImageX: this.paragraphMultipleForm.config.positionImageX,
-                positionImageY: this.paragraphMultipleForm.config.positionImageY,
-                imageSize: this.paragraphMultipleForm.config.imageSize,
-                hideDesktop: this.paragraphMultipleForm.config.hideDesktop,
-                hideMobile: this.paragraphMultipleForm.config.hideMobile,
-                enableParallax: this.paragraphMultipleForm.config.enableParallax
-                // end configuration
               };
               this.showNotification('success', '{{ "Paragraph multiple updated successfully"|t }}');
             } else {
@@ -1687,48 +1514,30 @@
                 id: Date.now(),
                 bundle: 'vactory_paragraph_multi_template',
                 is_new: true,
-                title: this.paragraphMultipleForm.title,
-                display: this.paragraphMultipleForm.display,
-                introduction: this.paragraphMultipleForm.introduction,
-                items: this.paragraphMultipleForm.items,
-                spacing: this.paragraphMultipleForm.spacing,
+                ...this.prepareConfigurationData(this.paragraphMultipleForm),
                 widget_id: this.paragraphMultipleForm.widget_id,
                 widget_data: this.paragraphMultipleForm.widget_data,
-
-                // start configuration
-                width: this.paragraphMultipleForm.config.width,
-                css_classes: this.paragraphMultipleForm.config.css_classes,
-                color: this.paragraphMultipleForm.config.color,
-                image: this.paragraphMultipleForm.config.image,
-                imageID: this.paragraphMultipleForm.config.imageID,
-                positionImageX: this.paragraphMultipleForm.config.positionImageX,
-                positionImageY: this.paragraphMultipleForm.config.positionImageY,
-                imageSize: this.paragraphMultipleForm.config.imageSize,
-                hideDesktop: this.paragraphMultipleForm.config.hideDesktop,
-                hideMobile: this.paragraphMultipleForm.config.hideMobile,
-                enableParallax: this.paragraphMultipleForm.config.enableParallax,
-                // end configuration
                 preview: '/modules/custom/vactory_dashboard/assets/images/default-screenshot.png', // Default preview image
               });
               this.showNotification('success', '{{ "Paragraph view added successfully"|t }}');
             }
-
-            console.log("paragraphMultipleForm: ", this.paragraphMultipleForm);
-            console.log("this.blocks: ", this.blocks);
-
             // Reset form
             this.paragraphMultipleForm = {
               blockType: '',
               content: '',
+              items: [],
               config: {
                 title: '',
                 show_title: false,
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
+                hideDesktop: false,
+                hideMobile: false,
+                enableParallax: false,
               },
             };
-            
+
             // Close form and reset current block index
             this.isParagraphMultiple = false;
             this.showTemplatesList = false;
@@ -1736,8 +1545,48 @@
             this.showParagraphViewForm = false;
             this.currentBlockIndex = null;
           },
-
-
+          initializeAppearance(block) {
+            return {
+              title: block?.title || '',
+              width: block?.config?.width || block.width || 'narrow_width',
+              spacing: block?.config?.spacing || block?.spacing || 'small_space',
+              css_classes: block?.config?.css_classes || block?.css_classes || '',
+              show_title: block?.config?.show_title || block?.show_title || false,
+              image: block?.config?.image || block?.image,
+              imageID: block?.config?.imageID || block?.imageID,
+              color: block?.config?.color || block?.color,
+              positionImageX: block?.config?.positionImageX || block?.positionImageX || '',
+              positionImageY: block?.config?.positionImageY || block?.positionImageY || '',
+              imageSize: block?.config?.imageSize || block.imageSize || '',
+              hideMobile: block?.config?.hideMobile ? block?.config?.hideMobile == '1' : block?.hideMobile == '1',
+              hideDesktop: block?.config?.hideDesktop ? block?.config?.hideDesktop == '1' : block?.hideDesktop == '1',
+              enableParallax: block?.config?.enableParallax ? block?.config?.enableParallax == '1' : block?.enableParallax == '1',
+            };
+          },
+          prepareConfigurationData(form) {
+            return {
+              title: form?.config?.title || form?.title,
+              blockType: form?.blockType,
+              display: form?.config?.display || form?.display,
+              content: form?.content,
+              show_title: form?.config?.show_title,
+              spacing: form?.config?.spacing || form?.spacing,
+              displayID: form?.displayID,
+              width: form?.config?.width,
+              css_classes: form?.config?.css_classes,
+              color: form?.config?.color,
+              image: form?.config?.image,
+              imageID: form?.config?.imageID,
+              positionImageX: form?.config?.positionImageX,
+              positionImageY: form?.config?.positionImageY,
+              imageSize: form?.config?.imageSize,
+              hideDesktop: form?.config?.hideDesktop,
+              hideMobile: form?.config?.hideMobile,
+              enableParallax: form?.config?.enableParallax,
+              items: form?.items || form?.config?.items,
+              introduction: form?.introduction || form?.config?.introduction,
+            };
+          },
           blockSearch: '',
           blockCategory: 'all',
           templates: [],
@@ -2025,7 +1874,7 @@
             if (fieldName) {
               this.dynamicFields[fieldName].splice(index, 1);
               // Remove default value also on formData.
-              this.formData.fields[fieldName] = {}
+              this.formData.fields[fieldName] = {};
             } else {
               // Remove the block at the specified index
               this.blocks.splice(index, 1);
@@ -2035,7 +1884,7 @@
             this.showNotification('success', '{{ 'Block removed successfully'|t }}');
           },
           removeTemplateMultiple() {
-            this.paragraphMultipleForm.items[this.removeBlockMultipleIndex]["widgets"].splice(this.removeBlockMultipleTemplateIndex, 1);
+            this.paragraphMultipleForm.items[this.removeBlockMultipleIndex]['widgets'].splice(this.removeBlockMultipleTemplateIndex, 1);
           },
           showParagraphTemplateForm(fieldName) {
             this.selectedDynamicField = fieldName;
@@ -2111,12 +1960,13 @@
               this.mediaLoading = false;
             }
           },
-          openMediaLibrary(fieldName, path, key = null, type = 'image') {
+          openMediaLibrary(fieldName, path, key = null, type = 'image', appearance = false) {
             this.selectedType = type;
             this.currentField = fieldName;
             this.currentFieldPath = path;
             this.currentFieldKey = key;
             this.showMediaLibrary = true;
+            this.appearanceBackgroundImage = appearance;
             this.loadMedia(1);
           },
           closeMediaLibrary() {
@@ -2133,48 +1983,41 @@
             const target = keys.reduce((o, key) => o[key], obj);
             target[lastKey] = newValue;
           },
-          selectMedia(media, appearance=false, paragraph=false) {
-            if (appearance) {
+          selectMedia(media, paragraph = false) {
+            if (this.appearanceBackgroundImage && paragraph) {
               paragraph.config.image = media.url;
               paragraph.config.imageID = media.id;
-
-              this.closeMediaLibrary();
-              this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
-              return;
+            } else {
+              this.selectedMedia = media;
+              if (!this.selectedMedia || !this.currentField) {
+                return;
+              }
+              const imageData = {
+                id: media.id,
+                url: media.url,
+                name: media.name,
+                path: this.currentFieldPath,
+                key: this.currentFieldKey,
+              };
+              this.setValueByPath(this.blockForm, this.currentFieldPath, imageData);
+              this.formData.fields[this.currentFieldPath] = imageData;
             }
-            this.selectedMedia = media;
-            if (!this.selectedMedia || !this.currentField) {
-              return;
-            }
-
-            // Create the image data structure
-            const imageData = {
-              id: media.id,
-              url: media.url,
-              name: media.name,
-              path: this.currentFieldPath,
-              key: this.currentFieldKey,
-            };
-
-            this.setValueByPath(this.blockForm, this.currentFieldPath, imageData);
-            this.formData.fields[this.currentFieldPath] = imageData;
-
             this.closeMediaLibrary();
             this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
           },
           clearImage(fieldName, path, key, isParagraphMultiple) {
             if (isParagraphMultiple) {
-              this.paragraphMultipleForm.config.image = "";
-              this.paragraphMultipleForm.config.imageID = "";
+              this.paragraphMultipleForm.config.image = '';
+              this.paragraphMultipleForm.config.imageID = '';
 
-              this.blockForm.config.image = "";
-              this.blockForm.config.imageID = "";
+              this.blockForm.config.image = '';
+              this.blockForm.config.imageID = '';
 
-              this.paragraphBlockForm.config.image = "";
-              this.paragraphBlockForm.config.imageID = "";
+              this.paragraphBlockForm.config.image = '';
+              this.paragraphBlockForm.config.imageID = '';
 
-              this.paragraphViewForm.config.image = "";
-              this.paragraphViewForm.config.imageID = "";
+              this.paragraphViewForm.config.image = '';
+              this.paragraphViewForm.config.imageID = '';
               return;
             }
 

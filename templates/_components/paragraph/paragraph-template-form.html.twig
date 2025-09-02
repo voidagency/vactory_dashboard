@@ -11,9 +11,9 @@
                             type="button"
                             class="me-3 text-slate-400 hover:text-primary-500 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" class="h-4 w-4">
+                             stroke="currentColor" class="h-4 w-4">
                             <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
+                                  d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
                         </svg>
                     </button>
                 {% endif %}
@@ -27,7 +27,7 @@
                         'size': 'md',
                         'type': 'button',
                         'text': 'Annuler'|t,
-                        'attributes': create_attribute().setAttribute('@click', 'showBlockForm = false; if (isTaxoEdit) showTaxoEdit = true; blockForm = { extra_fields: {}, fields: {}, items: [], config: { title: \'\', show_title: false, width: \'full_width\', spacing: \'_none\', css_classes: \'\' } }; isParagraphMultiple ? (showParagraphMultipleForm = true, currentMultipleParagraphTemplateIndex = null) : (currentBlockIndex = null); selectedTemplate = null; $nextTick(() => { const form = document.getElementById(\'block-form\'); if (form) { form.reset(); const inputs = form.querySelectorAll(\'input, textarea, select\'); inputs.forEach(input => { if (input.type === \'checkbox\' || input.type === \'radio\') { input.checked = false; } else { input.value = \'\'; } }); } })')
+                        'attributes': create_attribute().setAttribute('@click', 'showBlockForm = false; if (!isParagraphMultiple) isParagraphMultiple = false; if (isTaxoEdit) showTaxoEdit = true; blockForm = { extra_fields: {}, fields: {}, items: [], config: { title: \'\', show_title: false, width: \'full_width\', spacing: \'_none\', css_classes: \'\' } }; isParagraphMultiple ? (showParagraphMultipleForm = true, currentMultipleParagraphTemplateIndex = null) : (currentBlockIndex = null); selectedTemplate = null; $nextTick(() => { const form = document.getElementById(\'block-form\'); if (form) { form.reset(); const inputs = form.querySelectorAll(\'input, textarea, select\'); inputs.forEach(input => { if (input.type === \'checkbox\' || input.type === \'radio\') { input.checked = false; } else { input.value = \'\'; } }); } })')
                     } %}
                 {% endif %}
                 {% include '@vactory_admin/components/button/button.twig' with {
@@ -42,7 +42,8 @@
 
         <div class="flex-1 overflow-y-auto">
             <div x-data="{ collapsedView: false }" class="mx-auto">
-                <form id="block-form" @submit.prevent="saveBlock('block-form')" class="bg-white rounded-xl shadow-sm p-2 lg:p-8">
+                <form id="block-form" @submit.prevent="saveBlock('block-form')"
+                      class="bg-white rounded-xl shadow-sm p-2 lg:p-8">
                     <div class="flex items-start flex-col md:flex-row gap-6">
                         <div
                                 class="{% if not hideBlockConfig %}w-full md:w-2/3{% else %}w-full{% endif %}"
@@ -160,7 +161,7 @@
 
                                                         {# URL Extended Input #}
                                                         <template x-if="field.type === 'url_extended'">
-                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { 'required': 'field.options?.["#required"] ?? false', xmodel: 'blockForm.extra_fields' } %} 
+                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { 'required': 'field.options?.["#required"] ?? false', xmodel: 'blockForm.extra_fields' } %}
                                                         </template>
 
                                                         {# Image Input #}
@@ -244,8 +245,8 @@
                                                                             <template x-if="item.type === 'checkbox'">
                                                                                 <div>
                                                                                     <input type="checkbox"
-                                                                                        :required="item.options?.['#required'] ?? false"
-                                                                                        x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                           :required="item.options?.['#required'] ?? false"
+                                                                                           x-model="blockForm.extra_fields[fieldName][itemName]"
                                                                                     >
                                                                                 </div>
                                                                             </template>
@@ -1168,10 +1169,12 @@
                             </div>
                         </div>
                         {% if not hideBlockConfig %}
-                            {% include "@vactory_dashboard/_components/paragraph/appearance.html.twig" with {
-                                isParagraphMultiple: false,
-                                paragraph: 'blockForm',
-                            } %}
+                            <template x-if="!isParagraphMultiple">
+                                {% include "@vactory_dashboard/_components/paragraph/appearance.html.twig" with {
+                                    isParagraphMultiple: false,
+                                    paragraph: 'blockForm',
+                                } %}
+                            </template>
                         {% endif %}
                     </div>
                 </form>
@@ -1182,7 +1185,7 @@
 
 {# Include Media Library Modal at the root level #}
 <template x-if="showBlockForm">
-{% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
+    {% include "@vactory_dashboard/_components/media/media-library.html.twig" with {'paragraph': 'blockForm'} %}
 </template>
 
 {% block javascripts %}

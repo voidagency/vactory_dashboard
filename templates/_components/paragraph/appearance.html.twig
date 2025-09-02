@@ -115,7 +115,8 @@
                             'url': paragraph ~ '.config.image',
                             'path': 'fieldName', 
                             'key': '-1', 
-                            'type': 'image'
+                            'type': 'image',
+                            'appearance': true,
                         } %}
                     </div>
                 </div>
@@ -234,10 +235,9 @@
                 </div>
             </div>
         </div>
-
         {# Activer Parallax #}
         <div class="flex items-center">
-            <input type="checkbox" 
+            <input type="checkbox"
                 x-model="{{ paragraph }}.config.enableParallax"
                 class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
             <label class="ms-2 block text-sm text-slate-700">

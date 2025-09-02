@@ -64,9 +64,9 @@
             this.showNotification('success', '{{ 'Item order updated'|t }}');
         }
     },
-}" 
+}"
 :dir="isRTL ? 'rtl' : 'ltr'">
-{% include "@vactory_dashboard/_components/media/media-library.html.twig" with {'appearance': true, 'paragraph': 'paragraphMultipleForm'} %}
+{% include "@vactory_dashboard/_components/media/media-library.html.twig" with {'paragraph': 'paragraphMultipleForm'} %}
 {% include '@vactory_dashboard/_components/modals/delete-confirmation-modal.html.twig' with {
     'show_var': 'showDeleteModalMultiple',
     'confirm_action': 'removeTemplateMultiple()',
@@ -157,7 +157,7 @@
                                                 <input x-model="paragraphMultipleForm.display" type="radio" value="accordion">
                                                 Accordion display
                                             </label>
-                                        </div>                                        
+                                        </div>
                                     </div>
 
                                     {# title - input #}
@@ -166,7 +166,7 @@
                                             {{ 'Title'|t }}
                                             <span class="text-red-500">*</span>
                                         </label>
-                                        <input type="text" 
+                                        <input type="text"
                                            x-model="paragraphMultipleForm.title"
                                            required
                                            @invalid="$el.classList.add('border-red-500')"
@@ -294,7 +294,7 @@
                                                                                         Component
                                                                                         </span>
                                                                                     </div>
-                                                                                    
+
                                                                                 </div>
                                                                                 <div class="flex items-center space-x-2">
                                                                                     <div class="flex items-center space-x-2">
@@ -374,7 +374,7 @@
                 </form>
             </div>
         </div>
-        
+
         {# Warning Message #}
         <div class="mt-6 p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
             <div class="flex items-start">
