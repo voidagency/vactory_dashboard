@@ -260,7 +260,6 @@ function getLogo() {
  */
 function vactory_dashboard_preprocess(&$variables) {
   $data = &drupal_static(__FUNCTION__);
-
   if (!isset($data)) {
     $data = [];
     $config = \Drupal::config('vactory_dashboard.settings');
@@ -343,7 +342,7 @@ function vactory_dashboard_get_main_menu_items() {
   // Set the root level to 1 to get only top-level items.
   $parameters->setMinDepth(1);
   // Set maximum depth to 3 levels.
-  $parameters->setMaxDepth(3);
+  $parameters->setMaxDepth(4);
 
   // Load the tree.
   $tree = $menu_tree->load($menu_name, $parameters);
@@ -856,8 +855,8 @@ function vactory_dashboard_user_login($account) {
 
   $config = \Drupal::config('vactory_dashboard.global.settings');
   $redirect_enabled = $config->get('dashboard');
-  if(!$redirect_enabled) {
-      return;
+  if (!$redirect_enabled) {
+    return;
   }
 
   if ($current_user->hasPermission('access dashboard')) {
@@ -875,21 +874,21 @@ function vactory_preprocess_menu_local_task(&$variables) {
   }
 
   $url = $variables['link']['#url'];
-  
+
   if ($url instanceof Url && $url->getRouteName() == 'entity.node.edit_form') {
     $route_parameters = $url->getRouteParameters();
-    $node_id = $route_parameters['node'] ?? null;
+    $node_id = $route_parameters['node'] ?? NULL;
 
     $node = Node::load($node_id);
     $bundle = $node?->bundle();
-    
+
     $new_url = Url::fromRoute('vactory_dashboard.node.edit', [
       'bundle' => $bundle,
-      'nid' => $node_id
+      'nid' => $node_id,
     ]);
-    
+
     $variables['link']['#url'] = $new_url;
-  }  
+  }
 }
 
 /**
@@ -968,7 +967,9 @@ function get_content_types_items() {
     return ['items' => []];
   }
 
-  $types = \Drupal::entityTypeManager()->getStorage('node_type')->loadMultiple($selected_content_types);
+  $types = \Drupal::entityTypeManager()
+    ->getStorage('node_type')
+    ->loadMultiple($selected_content_types);
 
   $content_types = [];
   foreach ($types as $type) {
@@ -1041,22 +1042,11 @@ function get_forms() {
  * Get principal menu items with cache.
  */
 function get_principal_menu_items() {
-  static $cache = [];
-  $cid = 'vactory_dashboard.principal_menu_items';
-
-  if (isset($cache[$cid])) {
-    return $cache[$cid];
-  }
-
-  if ($cache_item = \Drupal::cache()->get($cid)) {
-    $cache[$cid] = $cache_item->data;
-    return $cache[$cid];
-  }
-
-  $menu_id = \Drupal::config('vactory_dashboard.global.settings')->get('menu_id') ?? 'main';
+  $menu_id = \Drupal::config('vactory_dashboard.global.settings')
+    ->get('menu_id') ?? 'main';
 
   $parameters = new MenuTreeParameters();
-  $parameters->onlyEnabledLinks()->setMaxDepth(2)->setMinDepth(1);
+  $parameters->onlyEnabledLinks()->setMaxDepth(4)->setMinDepth(1);
   $menu_tree_service = \Drupal::menuTree();
   $tree = $menu_tree_service->load($menu_id, $parameters);
 
@@ -1065,8 +1055,6 @@ function get_principal_menu_items() {
       'items' => [],
       'total_pages' => 1, // Start with homepage
     ];
-    $cache[$cid] = $response;
-    \Drupal::cache()->set($cid, $response, Cache::PERMANENT, ['config:vactory_dashboard.menu.settings', 'menu:' . $menu_id]);
     return $response;
   }
 
@@ -1086,7 +1074,8 @@ function get_principal_menu_items() {
     foreach ($items as $item) {
       if (empty($item['below'])) {
         $total += 1;
-      } else {
+      }
+      else {
         $total += $countPages($item['below']);
       }
     }
@@ -1097,10 +1086,6 @@ function get_principal_menu_items() {
     'items' => array_values($items),
     'total_pages' => 1 + $countPages($items), // +1 for homepage
   ];
-
-  \Drupal::cache()->set($cid, $response, Cache::PERMANENT, ['config:vactory_dashboard.menu.settings', 'menu:' . $menu_id]);
-
-  $cache[$cid] = $response;
 
   return $response;
 }
@@ -1115,7 +1100,8 @@ function extract_menu_items(array $tree, array &$items = []) {
       $menu_entity = $item_value['original_link']->getEntity();
     }
 
-    if ($menu_entity && $menu_entity->hasField('hide_menu_item') && !$menu_entity->get('hide_menu_item')->isEmpty()) {
+    if ($menu_entity && $menu_entity->hasField('hide_menu_item') && !$menu_entity->get('hide_menu_item')
+        ->isEmpty()) {
       $hide_menu_item = $menu_entity->get('hide_menu_item')->value ?? FALSE;
       if ($hide_menu_item) {
         continue;
@@ -1146,12 +1132,14 @@ function get_element_value(MenuLinkInterface $link) {
 
   $url = $link->getUrlObject()->toString();
   $current_lang = \Drupal::languageManager()->getCurrentLanguage()->getId();
-  $path = \Drupal::service('path_alias.manager')->getPathByAlias(str_replace('/' . $current_lang, '', $url));
+  $path = \Drupal::service('path_alias.manager')
+    ->getPathByAlias(str_replace('/' . $current_lang, '', $url));
 
   if (str_starts_with($path, '/node/')) {
     $node_id = (int) str_replace('/node/', '', $path);
     $return['nid'] = $node_id;
-    $return['url'] = Url::fromRoute('vactory_dashboard.vactory_page.edit', ['id' => $node_id], ['absolute' => TRUE])->toString();
+    $return['url'] = Url::fromRoute('vactory_dashboard.vactory_page.edit', ['id' => $node_id], ['absolute' => TRUE])
+      ->toString();
   }
 
   return $return;
@@ -1179,7 +1167,8 @@ function get_advanced_dashboard() {
     $file_id_value = is_array($file_id) ? reset($file_id) : $file_id;
     $file = File::load($file_id_value);
     if ($file) {
-      $file_url = \Drupal::service('file_url_generator')->generateAbsoluteString($file->getFileUri());
+      $file_url = \Drupal::service('file_url_generator')
+        ->generateAbsoluteString($file->getFileUri());
     }
   }
 
@@ -1208,7 +1197,8 @@ function get_advanced_dashboard_support() {
   if (!empty($image_id) && is_numeric($image_id)) {
     $file = File::load($image_id);
     if ($file) {
-      $image_url = \Drupal::service('file_url_generator')->generateAbsoluteString($file->getFileUri());
+      $image_url = \Drupal::service('file_url_generator')
+        ->generateAbsoluteString($file->getFileUri());
     }
   }
 
