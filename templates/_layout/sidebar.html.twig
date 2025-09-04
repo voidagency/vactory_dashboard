@@ -7,23 +7,25 @@ Macro to render menu items recursively with proper depth and active state handli
 @param depth - Current depth level (0 = root, 1 = sub, 2 = sub-sub)
 @param current_path - Current page path for active state detection
 #}
+
+
+
 {% macro render_menu_items(items, depth, current_path) %}
     {% set depth = depth|default(0) %}
-
     {% for item in items %}
-        {% set is_active = current_path == item.url %}
+        {% set is_active = current_path == item.url or current_path == item.url ~ '/add/translation' %}
         {% set has_children = item.below is defined and item.below|length > 0 %}
         {% set has_active_child = false %}
 
         {# Check if any child or descendant is active #}
         {% if has_children %}
             {% for child in item.below %}
-                {% if current_path == child.url %}
+                {% if current_path == child.url or current_path == child.url ~ '/add/translation' %}
                     {% set has_active_child = true %}
                 {% endif %}
                 {% if child.below is defined and child.below|length > 0 %}
                     {% for grandchild in child.below %}
-                        {% if current_path == grandchild.url %}
+                        {% if current_path == grandchild.url or current_path == grandchild.url ~ '/add/translation' %}
                             {% set has_active_child = true %}
                         {% endif %}
                     {% endfor %}
@@ -43,7 +45,7 @@ Macro to render menu items recursively with proper depth and active state handli
             {% set item_classes = item_classes|merge(['text-sm', 'pl-4', 'pr-3', 'py-1.5', 'mb-0.5']) %}
         {% elseif depth == 2 %}
             {% set item_classes = item_classes|merge(['text-sm', 'px-2', 'py-1.5', 'mb-0.5']) %}
-            {% set padding_left = 'padding-left: 48px;' %}
+            {% set padding_left = 'padding-left: 20px;' %}
         {% endif %}
 
         {% set item_classes = item_classes|merge([
