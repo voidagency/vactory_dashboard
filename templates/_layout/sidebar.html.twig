@@ -1,5 +1,127 @@
 {% set current_path = url('<current>')['#markup'] %}
 
+{#
+Macro to render menu items recursively with proper depth and active state handling
+
+@param items - Array of menu items
+@param depth - Current depth level (0 = root, 1 = sub, 2 = sub-sub)
+@param current_path - Current page path for active state detection
+#}
+{% macro render_menu_items(items, depth, current_path) %}
+    {% set depth = depth|default(0) %}
+
+    {% for item in items %}
+        {% set is_active = current_path == item.url %}
+        {% set has_children = item.below is defined and item.below|length > 0 %}
+        {% set has_active_child = false %}
+
+        {# Check if any child or descendant is active #}
+        {% if has_children %}
+            {% for child in item.below %}
+                {% if current_path == child.url %}
+                    {% set has_active_child = true %}
+                {% endif %}
+                {% if child.below is defined and child.below|length > 0 %}
+                    {% for grandchild in child.below %}
+                        {% if current_path == grandchild.url %}
+                            {% set has_active_child = true %}
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        {% set should_expand = has_active_child %}
+
+        {# Set appropriate classes based on depth and state #}
+        {% set item_classes = [] %}
+        {% set padding_left = '' %}
+
+        {% if depth == 0 %}
+            {% set item_classes = item_classes|merge(['px-2', 'py-1', 'ml-1', 'font-medium']) %}
+        {% elseif depth == 1 %}
+            {% set item_classes = item_classes|merge(['text-sm', 'pl-4', 'pr-3', 'py-1.5', 'mb-0.5']) %}
+        {% elseif depth == 2 %}
+            {% set item_classes = item_classes|merge(['text-sm', 'px-2', 'py-1.5', 'mb-0.5']) %}
+            {% set padding_left = 'padding-left: 48px;' %}
+        {% endif %}
+
+        {% set item_classes = item_classes|merge([
+            'flex', 'items-center', 'w-full', 'rounded-md', 'transition-colors', 'duration-150',
+            'text-gray-600', 'hover:bg-gray-50'
+        ]) %}
+
+        {% if is_active %}
+            {% set item_classes = item_classes|merge(['bg-primary-50', 'text-primary-600']) %}
+        {% endif %}
+
+        {% if has_children %}
+            {% set item_classes = item_classes|merge(['cursor-pointer']) %}
+        {% endif %}
+
+        <div class="w-full"
+                {% if has_children %}
+            x-data="{ subOpen: {{ should_expand ? 'true' : 'false' }} }"
+                {% endif %}>
+
+            {# Render the item #}
+            {% if has_children %}
+                {# Parent item with children - clickable to expand/collapse #}
+                <div class="{{ item_classes|join(' ') }}"
+                     @click="subOpen = !subOpen"
+                     {% if padding_left %}style="{{ padding_left }}"{% endif %}>
+
+                    {% if depth == 2 %}
+                        <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
+                    {% endif %}
+
+                    <span class="flex-1 truncate">{{ item.title }}</span>
+
+                    <span class="text-gray-400 transition-transform"
+                          :class="{ 'rotate-180': subOpen }">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                 viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                 class="w-4 h-4 text-gray-900">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
+            </svg>
+          </span>
+                </div>
+            {% else %}
+                {# Leaf item - link #}
+                {% set href = item.url ?? '#.' %}
+                {% if item.nid is defined and item.nid and depth == 1 %}
+                    {% set href = path('vactory_dashboard.vactory_page.edit', {'id': item.nid}) %}
+                {% endif %}
+
+                <a href="{{ href }}"
+                   class="{{ item_classes|join(' ') }}"
+                   {% if padding_left %}style="{{ padding_left }}{% if is_active %} background-color: #f0f5ff; color: #2563eb;{% endif %}"{% endif %}>
+
+                    {% if depth == 2 %}
+                        <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
+                    {% endif %}
+
+                    <span class="flex-1 truncate">{{ item.title }}</span>
+                </a>
+            {% endif %}
+
+            {# Render children if they exist #}
+            {% if has_children %}
+                {% set container_classes = ['overflow-hidden', 'transition-all', 'duration-200'] %}
+                {% if depth == 0 %}
+                    {% set container_classes = container_classes|merge(['ml-5', 'border-l', 'border-gray-200']) %}
+                {% endif %}
+
+                <div class="{{ container_classes|join(' ') }}"
+                     :class="{ 'max-h-0': !subOpen, '': subOpen }">
+                    {{ _self.render_menu_items(item.below, depth + 1, current_path) }}
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% endmacro %}
+
 <aside x-data="menuData({id: '{{ id }}'})"
        class="flex w-full lg:w-64 bg-white lg:border-r lg:border-slate-200 h-screen flex-col shadow-sm">
     <div class="border-b border-slate-200 relative group">
@@ -38,7 +160,7 @@
               
                         <span class="text-slate-500 mr-3 group-hover:text-primary-600 transition-colors">
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
-                              stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+                               stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
                             <path stroke-linecap="round" stroke-linejoin="round"
                                   d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"></path>
                           </svg>
@@ -46,12 +168,12 @@
 
                         <span class="flex-1 text-left truncate">{{ "Pages"|t }}</span>
                         <span class="inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 mr-2">
-                          {{sidebar.pages.total_pages}}
+                          {{ sidebar.pages.total_pages }}
                         </span>
                         <span class="text-slate-400 transition-transform group-hover:text-primary-500"
                               :class="{ 'rotate-180': openDropdowns.pages }">
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
-                              stroke="currentColor" aria-hidden="true" data-slot="icon" class="w-4 h-4 text-gray-900">
+                               stroke="currentColor" aria-hidden="true" data-slot="icon" class="w-4 h-4 text-gray-900">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
                           </svg>
                         </span>
@@ -59,131 +181,31 @@
                     <div class="ml-5 border-l-2 border-primary-100 overflow-hidden transition-all duration-200 bg-slate-50/30 rounded-r-lg"
                          :class="{ 'max-h-0': !openDropdowns.pages, 'pb-2': openDropdowns.pages }">
 
-                          {% if sidebar.pages.items is empty %}
+                        {% if sidebar.pages.items is empty %}
                             <div class="w-full">
                                 <div class="flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 text-sm pl-4 pr-3 py-1.5 text-gray-600">
                                     <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
                                     <span class="truncate">{{ "Aucune page"|t }}</span>
                                 </div>
                             </div>
-                          {% endif %}
-                        
+                        {% endif %}
 
-                          <div class="space-y-1">
-                              <div class="w-full">
-                                  <a href={{ homepage.url }}
-                                      class="{% if homepage.url in current_path %} bg-primary-50 text-primary-600 {% endif %} flex text-sm items-center justify-between w-full rounded-md rounded-tl-none
-                                      rounded-bl-none transition-colors duration-150 text-gray-600 py-1 px-3 font-medium">
-                                    <span class="truncate">{{ homepage.title|striptags|default('Home page') }}</span>
-                                    <span class="text-gray-400 transition-transform">
+
+                        <div class="space-y-1">
+                            <div class="w-full">
+                                <a href={{ homepage.url }}
+                                   class="{% if homepage.url in current_path %} bg-primary-50 text-primary-600 {% endif %}
+                                   flex text-sm items-center justify-between w-full rounded-md rounded-tl-none
+                                   rounded-bl-none transition-colors duration-150 text-gray-600 py-1 px-3 font-medium">
+                                <span class="truncate">{{ homepage.title|striptags|default('Home page') }}</span>
+                                <span class="text-gray-400 transition-transform">
                                     <span class="inline-flex items-center rounded-full bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-700/10">{{ "Home" | t }}</span>
                                     </span>
-                                  </a>
+                                </a>
 
-                              </div>
-                              {% for item in sidebar.pages.items %}
-                                  {% set subOpenDefault = false %}
-                                  {% if item.below is defined and item.below|length > 0 %}
-                                    {% for sub in item.below %}
-                                        {% if current_path == sub.url %}
-                                            {% set subOpenDefault = true %}
-                                        {% endif %}
-                                        {% if sub.below is defined and sub.below|length > 0 %}
-                                            {% for subSub in sub.below %}
-                                                {% if current_path == subSub.url %}
-                                                    {% set subOpenDefault = true %}
-                                                {% endif %}
-                                            {% endfor %}
-                                        {% endif %}
-                                    {% endfor %}
-                                {% endif %}
-                                  <div class="w-full" x-data="{ subOpen: {{ subOpenDefault ? 'true' : 'false' }} }">
-                                        <!-- Parent item -->
-                                        {% if item.below and item.below|length > 0 %}
-                                          <div class="flex items-center justify-between w-full rounded-md transition-colors duration-150 px-2 py-1 ml-1 text-gray-600 hover:bg-gray-50 cursor-pointer font-medium"
-                                                @click="subOpen = !subOpen">
-                                              <span class="flex-1 truncate">{{item.title}}</span>
-                                              <span class="text-gray-400 transition-transform"
-                                                    :class="{ 'rotate-180': subOpen }">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                                            viewbox="0 0 24 24"
-                                                                            stroke-width="1.5" stroke="currentColor"
-                                                                            class="w-4 h-4 text-gray-900">
-                                                  <path stroke-linecap="round" stroke-linejoin="round"
-                                                                                d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
-                                                </svg>
-                                              </span>
-                                          </div>
-                                        {% endif %}
-
-                                      {% if item.below is not defined or item.below|length == 0 %}
-                                          <a href="{{ item.url ?? '#.' }}"
-                                              class="{% if current_path == item.url %} bg-primary-50 text-primary-600 {% endif %} flex items-center justify-between w-full rounded-md transition-colors duration-150 px-2 py-1 ml-1 text-gray-600 hover:bg-gray-50 cursor-pointer font-medium">
-                                              <span class="flex-1 truncate">{{ item.title }}</span>
-                                          </a>
-                                      {% endif %}
-
-                                      <!-- Sub items -->
-                                      {% if item.below is defined and item.below|length > 0 %}
-                                          <div class="ml-5 overflow-hidden transition-all duration-200 border-l border-gray-200"
-                                                :class="{ 'max-h-0': !subOpen, '': subOpen }">
-                                              {% for subItem in item.below %}
-                                                  <div
-                                                          class="w-full" x-data="{ subSubOpen: false }">
-                                                      <!-- Second level item -->
-                                                      {% if subItem.below is defined and subItem.below|length > 0 %}
-                                                            <div class="flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 text-sm pl-4 pr-3 py-1.5 text-gray-600 hover:bg-gray-50 cursor-pointer"
-                                                                @click="subSubOpen = !subSubOpen">
-                                                              <span class="flex-1 truncate">{{subItem.title}}</span>
-                                                              <span class="text-gray-400 transition-transform"
-                                                                    :class="{ 'rotate-180': subSubOpen }">
-                                                                <svg xmlns="http://www.w3.org/2000/svg"
-                                                                                                    fill="none"
-                                                                                                    viewbox="0 0 24 24"
-                                                                                                    stroke-width="1.5"
-                                                                                                    stroke="currentColor"
-                                                                                                    class="w-4 h-4 text-gray-900">
-                                                                    <path stroke-linecap="round"
-                                                                                                          stroke-linejoin="round"
-                                                                                                          d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
-                                                                  </svg>
-                                                              </span>
-                                                          </div>
-                                                      {% endif %}
-
-                                                      {% if subItem.below is not defined or subItem.below|length == 0 %}
-                                                        {% if subItem.nid is defined and subItem.nid %}
-                                                            <a href="{{ path('vactory_dashboard.vactory_page.edit', {'id': subItem.nid}) }}"
-                                                              class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50
-                                                                      {% if current_path == subItem.url %} bg-primary-50 text-primary-600{% endif %}">
-                                                                <span class="flex-1 truncate">{{ subItem.title }}</span>
-                                                            </a>
-                                                        {% endif %}
-                                                    {% endif %}
-
-
-                                                      <!-- Third level items -->
-                                                      {% if subItem.below is defined and subItem.below|length > 0 %}
-                                                          <div class="overflow-hidden transition-all duration-200" :class="{ 'max-h-0': !subSubOpen, '': subSubOpen }">
-                                                              {% for subSubItem in subItem.below %}
-                                                                  <a href="{{ subSubItem.url }}"
-                                                                    class="{% if current_path == subSubItem.url %} bg-primary-50 text-primary-600{% endif %} flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 text-sm px-2 py-1.5 text-gray-600 hover:bg-gray-50"
-                                                                    style="padding-left: 48px;
-                                                                            {% if subSubItem.url == current_path %} background-color: #f0f5ff; color: #2563eb;{% endif %}">
-                                                                      <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
-                                                                      <span class="truncate">{{ subSubItem.title }}</span>
-                                                                  </a>
-                                                              {% endfor %}
-                                                          </div>
-                                                      {% endif %}
-
-                                                  </div>
-                                              {% endfor %}
-                                          </div>
-                                      {% endif %}
-                                  </div>
-                              {% endfor %}
-                          </div>
+                            </div>
+                            {{ _self.render_menu_items(sidebar.pages.items, 0, current_path) }}
+                        </div>
                     </div>
                 </div>
                 {% endif %}
@@ -196,23 +218,28 @@
                                     class="flex items-center w-full rounded-lg transition-all duration-200 text-slate-700 px-3 hover:bg-primary-50 hover:text-primary-700 group h-8 font-semibold">
                               
                               <span class="text-slate-500 mr-3 group-hover:text-primary-600 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
-                                    stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24"
+                                     stroke-width="1.5"
+                                     stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
                                   <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
                                 </svg>
                               </span>
-                              
-                              <span class="flex-1 text-left truncate">{{ "Catégories"|t }}</span>
 
-                              <span class="inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 mr-2">
+                                <span class="flex-1 text-left truncate">{{ "Catégories"|t }}</span>
+
+                                <span class="inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 mr-2">
                                 {{ sidebar.vocabularies|length }}
                               </span>
-                              
-                              <span class="text-slate-400 transition-transform group-hover:text-primary-500" :class="{ 'rotate-180': openDropdowns.taxonomies }">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
-                                    stroke="currentColor" aria-hidden="true" data-slot="icon" class="w-4 h-4 text-gray-900">
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
+
+                                <span class="text-slate-400 transition-transform group-hover:text-primary-500"
+                                      :class="{ 'rotate-180': openDropdowns.taxonomies }">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24"
+                                     stroke-width="1.5"
+                                     stroke="currentColor" aria-hidden="true" data-slot="icon"
+                                     class="w-4 h-4 text-gray-900">
+                                  <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
                                 </svg>
                               </span>
                             </button>
@@ -224,7 +251,7 @@
                                 {% if sidebar.vocabularies is empty %}
                                     <div class="w-full">
                                         <a href="/parametres/composants"
-                                          class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
+                                           class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
                                             <span class="truncate">{{ 'Aucune catégorie'|t }}</span>
                                         </a>
                                     </div>
@@ -234,7 +261,7 @@
                                     {% for vid, name in sidebar.vocabularies %}
                                         <div class="w-full">
                                             <a href="{{ path('vactory_dashboard.taxonomies', {'vid': vid}) }}"
-                                              class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50 {% if '/admin/dashboard/taxonomy/' ~ vid in current_path %} bg-primary-50 text-primary-600 {% endif %}">
+                                               class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50 {% if '/admin/dashboard/taxonomy/' ~ vid in current_path %} bg-primary-50 text-primary-600 {% endif %}">
                                                 <span class="truncate">{{ name }}</span>
                                             </a>
                                         </div>
@@ -251,29 +278,33 @@
                             <button @click="openDropdowns.contentTypes = !openDropdowns.contentTypes"
                                     class="flex items-center w-full rounded-lg transition-all duration-200 text-slate-700 px-3 hover:bg-primary-50 hover:text-primary-700 group h-8 font-semibold">
                                     <span class="text-slate-500 mr-3 group-hover:text-primary-600 transition-colors">
-                                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
-                                          stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+                                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24"
+                                           stroke-width="1.5"
+                                           stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
                                         <path stroke-linecap="round" stroke-linejoin="round"
                                               d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75"></path>
                                       </svg>
                                     </span>
 
-                                    <span class="flex-1 text-left truncate">{{ "Types de contenus"|t }}</span>
-                                    
-                                    <span class="inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 mr-2">
+                                <span class="flex-1 text-left truncate">{{ "Types de contenus"|t }}</span>
+
+                                <span class="inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 mr-2">
                                       {{ sidebar.content_types.items|length }}
                                     </span>
-                                    <span class="text-slate-400 transition-transform group-hover:text-primary-500"
-                                          :class="{ 'rotate-180': openDropdowns.contentTypes }">
-                                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
-                                                    stroke="currentColor" aria-hidden="true" data-slot="icon" class="w-4 h-4 text-gray-900">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
+                                <span class="text-slate-400 transition-transform group-hover:text-primary-500"
+                                      :class="{ 'rotate-180': openDropdowns.contentTypes }">
+                                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24"
+                                           stroke-width="1.5"
+                                           stroke="currentColor" aria-hidden="true" data-slot="icon"
+                                           class="w-4 h-4 text-gray-900">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
                                       </svg>
                                     </span>
                             </button>
 
                             <div class="ml-5 border-l-2 border-primary-100 overflow-hidden transition-all duration-200 bg-slate-50/30 rounded-r-lg"
-                                  :class="{ 'max-h-0': !openDropdowns.contentTypes, 'pb-2': openDropdowns.contentTypes }">
+                                 :class="{ 'max-h-0': !openDropdowns.contentTypes, 'pb-2': openDropdowns.contentTypes }">
                                 <div class="">
                                     {% if sidebar.content_types.items is empty %}
                                         <div class="w-full">
@@ -284,13 +315,13 @@
                                         </div>
                                     {% endif %}
                                     {% for type in sidebar.content_types.items %}
-                                      <div class="w-full">
-                                          <a href="{{ type.path }}"
-                                            class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50
+                                        <div class="w-full">
+                                            <a href="{{ type.path }}"
+                                               class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50
                                             {% if type.id in current_path %} bg-primary-50 text-primary-600 {% endif %}">
-                                              <span class="truncate">{{ type.label }}</span>
-                                          </a>
-                                      </div>
+                                                <span class="truncate">{{ type.label }}</span>
+                                            </a>
+                                        </div>
                                     {% endfor %}
                                 </div>
                             </div>
@@ -313,7 +344,7 @@
                             <span :class="{ 'text-primary-600': isCurrentPage('{{ url('vactory_dashboard.media', {}, {absolute: true}) }}') }"
                                   class="mr-3 group-hover:text-primary-600 transition-colors">
                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
-                                  stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+                                   stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                       d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a .375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"></path>
                               </svg>
@@ -352,72 +383,74 @@
 
                 {# Formulaires #}
                 {% if user.hasPermission('access webform overview') %}
-                  {% if sidebar.forms.items is not empty %}
-                  <div class="forms w-full">
-                      <button @click="openDropdowns.forms = !openDropdowns.forms"
-                              class="h-8 flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 font-semibold text-slate-700 px-3 py-2 group hover:bg-primary-50"
-                              style="padding-left: 12px;">
+                    {% if sidebar.forms.items is not empty %}
+                        <div class="forms w-full">
+                            <button @click="openDropdowns.forms = !openDropdowns.forms"
+                                    class="h-8 flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 font-semibold text-slate-700 px-3 py-2 group hover:bg-primary-50"
+                                    style="padding-left: 12px;">
                         
                           <span class="text-gray-500 mr-3 group-hover:text-primary-600 transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
-                                stroke="currentColor" class="h-5 w-5">
+                                 stroke="currentColor" class="h-5 w-5">
                               <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V19.5a2.25 2.25 0 0 0 2.25 2.25h.75"></path>
                             </svg>
                           </span>
-                          <span class="flex-1 text-left truncate">{{ "Formulaires"|t }}</span>
-                          <span class="inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 mr-2">
-                            {{ sidebar.forms.items|length}}
+                                <span class="flex-1 text-left truncate">{{ "Formulaires"|t }}</span>
+                                <span class="inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 mr-2">
+                            {{ sidebar.forms.items|length }}
                           </span>
-                          <span class="text-slate-400 transition-transform group-hover:text-primary-500"
-                                :class="{ 'rotate-180': openDropdowns.forms }">
+                                <span class="text-slate-400 transition-transform group-hover:text-primary-500"
+                                      :class="{ 'rotate-180': openDropdowns.forms }">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
-                                          stroke="currentColor" aria-hidden="true" data-slot="icon" class="w-4 h-4 text-gray-900">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
+                                 stroke="currentColor" aria-hidden="true" data-slot="icon"
+                                 class="w-4 h-4 text-gray-900">
+                              <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
                             </svg>
                           </span>
-                      </button>
-                      
-                      <div class="ml-5 border-l-2 border-primary-100 overflow-hidden transition-all duration-200 bg-slate-50/30 rounded-r-lg"
-                            :class="{ 'max-h-0': !openDropdowns.forms, 'pb-2': openDropdowns.forms }">
-                          <div class="">
-                              {% if sidebar.forms.items is empty %}
-                                  <div class="w-full">
-                                      <div class="flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 text-sm pl-4 pr-3 py-1.5 text-gray-600">
-                                          <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
-                                          <span class="truncate">{{ "Aucun formulaire"|t }}</span>
-                                      </div>
-                                  </div>
-                              {% endif %}
+                            </button>
+
+                            <div class="ml-5 border-l-2 border-primary-100 overflow-hidden transition-all duration-200 bg-slate-50/30 rounded-r-lg"
+                                 :class="{ 'max-h-0': !openDropdowns.forms, 'pb-2': openDropdowns.forms }">
+                                <div class="">
+                                    {% if sidebar.forms.items is empty %}
+                                        <div class="w-full">
+                                            <div class="flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 text-sm pl-4 pr-3 py-1.5 text-gray-600">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
+                                                <span class="truncate">{{ "Aucun formulaire"|t }}</span>
+                                            </div>
+                                        </div>
+                                    {% endif %}
 
 
-                              {% if sidebar.forms.items is not empty %}
-                                  <div>
-                                      {% for form in sidebar.forms.items %}
-                                          <div class="w-full">
-                                              <a href="{{ path('vactory_dashboard.webform', {'id': form.id}) }}"
-                                                class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50
+                                    {% if sidebar.forms.items is not empty %}
+                                        <div>
+                                            {% for form in sidebar.forms.items %}
+                                                <div class="w-full">
+                                                    <a href="{{ path('vactory_dashboard.webform', {'id': form.id}) }}"
+                                                       class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50
                                                         {% if form.path in current_path %} bg-primary-50 text-primary-600{% endif %}">
-                                                  <span class="truncate">{{ form.title }}</span>
-                                              </a>
-                                          </div>
-                                      {% endfor %}
-                                  </div>
-                              {% endif %}
-                          </div>
-                      </div>
-                  </div>
-                  {% endif %}
+                                                        <span class="truncate">{{ form.title }}</span>
+                                                    </a>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
                 {% endif %}
 
                 {# Parametres #}
                 <div class="settings w-full">
                     <button @click="openDropdowns.settings = !openDropdowns.settings"
-                          class="flex items-center w-full rounded-lg transition-all duration-200 text-slate-700 px-3 hover:bg-primary-50 hover:text-primary-700 group h-8 font-semibold">
+                            class="flex items-center w-full rounded-lg transition-all duration-200 text-slate-700 px-3 hover:bg-primary-50 hover:text-primary-700 group h-8 font-semibold">
 
                       <span class="text-slate-500 mr-3 group-hover:text-primary-600 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
-                            stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
+                             stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
                           <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"></path>
                           <path stroke-linecap="round" stroke-linejoin="round"
@@ -425,11 +458,11 @@
                         </svg>
                       </span>
 
-                      <span class="flex-1 text-left truncate group-hover:text-primary-600 transition-colors">{{ "Paramètres"|t }}</span>
-                      <span class="text-slate-400 transition-transform group-hover:text-primary-500"
-                            :class="{ 'rotate-180': openDropdowns.settings }">
+                        <span class="flex-1 text-left truncate group-hover:text-primary-600 transition-colors">{{ "Paramètres"|t }}</span>
+                        <span class="text-slate-400 transition-transform group-hover:text-primary-500"
+                              :class="{ 'rotate-180': openDropdowns.settings }">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
-                                      stroke="currentColor" aria-hidden="true" data-slot="icon" class="w-4 h-4 text-gray-900">
+                             stroke="currentColor" aria-hidden="true" data-slot="icon" class="w-4 h-4 text-gray-900">
                           <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
                         </svg>
                       </span>
@@ -447,14 +480,14 @@
                                 </div>
                             {% endif %}
                             {% if user.hasPermission('administer dashboard configuration') %}
-                              {% if sidebar.recaptchaInstalled %}
-                                <div class="w-full">
-                                    <a href="{{ path('vactory_dashboard.settings.captcha') }}"
-                                       class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 {% if 'settings/captcha' in current_path %} bg-primary-50 text-primary-600{% endif %} text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
-                                        <span class="truncate">{{ "Captcha"|t }}</span>
-                                    </a>
-                                </div>
-                              {% endif %}
+                                {% if sidebar.recaptchaInstalled %}
+                                    <div class="w-full">
+                                        <a href="{{ path('vactory_dashboard.settings.captcha') }}"
+                                           class="flex items-center w-full rounded-md transition-colors duration-150 ml-1 {% if 'settings/captcha' in current_path %} bg-primary-50 text-primary-600{% endif %} text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
+                                            <span class="truncate">{{ "Captcha"|t }}</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
                             {% endif %}
                             <div class="w-full">
                                 <a href="{{ path('vactory_dashboard.settings.languages') }}"
@@ -471,14 +504,14 @@
                                 </div>
                             {% endif %}
                             {% if user.hasPermission('administer shield') %}
-                              {% if sidebar.shieldInstalled %}
-                                <div class="w-full">
-                                    <a href="{{ path('vactory_dashboard.settings.shield') }}"
-                                       class="flex items-center w-full rounded-md transition-colors {% if 'settings/shield' in current_path %} bg-primary-50 text-primary-600{% endif %} duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
-                                        <span class="truncate">{{ 'Shield'|t }}</span>
-                                    </a>
-                                </div>
-                              {% endif %}
+                                {% if sidebar.shieldInstalled %}
+                                    <div class="w-full">
+                                        <a href="{{ path('vactory_dashboard.settings.shield') }}"
+                                           class="flex items-center w-full rounded-md transition-colors {% if 'settings/shield' in current_path %} bg-primary-50 text-primary-600{% endif %} duration-150 ml-1 text-sm px-3 py-1 text-[13px] text-gray-600 hover:bg-gray-50">
+                                            <span class="truncate">{{ 'Shield'|t }}</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
                             {% endif %}
                             {% if user.hasPermission('administer block content') %}
                                 <div class="w-full">
@@ -529,44 +562,44 @@
         <div class="border-t border-slate-200 my-3"></div>
 
         <div>
-    <h3 class="text-sm font-bold text-slate-700 mb-4 px-2">{{ "Aide"|t }}</h3>
+            <h3 class="text-sm font-bold text-slate-700 mb-4 px-2">{{ "Aide"|t }}</h3>
 
-    {# Tutoriel vidéo #}
-    <div class="tutoriel-video mb-2">
-        <a href="{{ sidebar.advancedDashboard.video_url ?: '#.' }}"
-           target="_blank" rel="noopener noreferrer"
-           title="{{ sidebar.advancedDashboard.video_url ? '' : 'Vidéo non disponible' }}"
-           class="flex items-center text-sm rounded-lg px-3 transition-all duration-200 group h-8 font-semibold {{ sidebar.advancedDashboard.video_url ? ' hover:bg-white' : ' opacity-50 cursor-not-allowed pointer-events-none' }}">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                 stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon"
-                 class="h-4 w-4 mr-3 text-slate-500 group-hover:text-primary-600 transition-colors">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z"/>
-            </svg>
-            <span class="text-sm font-medium group-hover:text-slate-900 transition-colors">
+            {# Tutoriel vidéo #}
+            <div class="tutoriel-video mb-2">
+                <a href="{{ sidebar.advancedDashboard.video_url ?: '#.' }}"
+                   target="_blank" rel="noopener noreferrer"
+                   title="{{ sidebar.advancedDashboard.video_url ? '' : 'Vidéo non disponible' }}"
+                   class="flex items-center text-sm rounded-lg px-3 transition-all duration-200 group h-8 font-semibold {{ sidebar.advancedDashboard.video_url ? ' hover:bg-white' : ' opacity-50 cursor-not-allowed pointer-events-none' }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                         stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon"
+                         class="h-4 w-4 mr-3 text-slate-500 group-hover:text-primary-600 transition-colors">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z"/>
+                    </svg>
+                    <span class="text-sm font-medium group-hover:text-slate-900 transition-colors">
                 {{ "Tutoriel vidéo"|t }}
             </span>
-        </a>
-    </div>
+                </a>
+            </div>
 
-    {# Manuel d'utilisation #}
-    <div class="manuel">
-        <a href="{{ sidebar.advancedDashboard.file_url ?: '#.' }}"
-           {% if sidebar.advancedDashboard.file_url %}download{% endif %}
-           title="{{ sidebar.advancedDashboard.file_url ? '' : 'Fichier non disponible' }}"
-           class="flex items-center text-sm rounded-lg px-3 transition-all duration-200 group h-8 font-semibold{{ sidebar.advancedDashboard.file_url ? ' hover:bg-white' : ' opacity-50 cursor-not-allowed pointer-events-none' }}">
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 class="h-4 w-4 mr-3 text-slate-500 group-hover:text-primary-600 transition-colors"
-                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <span class="text-sm font-medium group-hover:text-slate-900 transition-colors">
+            {# Manuel d'utilisation #}
+            <div class="manuel">
+                <a href="{{ sidebar.advancedDashboard.file_url ?: '#.' }}"
+                   {% if sidebar.advancedDashboard.file_url %}download{% endif %}
+                   title="{{ sidebar.advancedDashboard.file_url ? '' : 'Fichier non disponible' }}"
+                   class="flex items-center text-sm rounded-lg px-3 transition-all duration-200 group h-8 font-semibold{{ sidebar.advancedDashboard.file_url ? ' hover:bg-white' : ' opacity-50 cursor-not-allowed pointer-events-none' }}">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="h-4 w-4 mr-3 text-slate-500 group-hover:text-primary-600 transition-colors"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span class="text-sm font-medium group-hover:text-slate-900 transition-colors">
                 {{ "Manuel d'utilisation"|t }}
             </span>
-        </a>
-    </div>
-</div>
+                </a>
+            </div>
+        </div>
 
     </div>
 </aside>
@@ -590,7 +623,7 @@
       erreurMessage: '',
       subOpenStates: {},
       init() {
-          
+
         this.initializeOpenDropdowns();
         this.observeAsideLinks();
 
