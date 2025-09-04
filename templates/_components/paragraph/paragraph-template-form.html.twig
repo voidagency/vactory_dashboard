@@ -144,6 +144,12 @@
                                                                                         }
                                                                                     });
 
+                                                                                    // Hide all divs with class .js-form-type-select
+                                                                                    const formTypeSelects = document.querySelectorAll('.js-form-type-select');
+                                                                                    formTypeSelects.forEach(select => {
+                                                                                        select.style.display = 'none';
+                                                                                    });
+
                                                                                     if (ckeditor) {
                                                                                         ckeditor.model.document.on('change:data', () => {
                                                                                             blockForm.extra_fields[fieldName] = ckeditor.getData();
@@ -321,6 +327,12 @@
                                                                                                             }
                                                                                                         });
 
+                                                                                                        // Hide all divs with class .js-form-type-select
+                                                                                                        const formTypeSelects = document.querySelectorAll('.js-form-type-select');
+                                                                                                        formTypeSelects.forEach(select => {
+                                                                                                            select.style.display = 'none';
+                                                                                                        });
+
                                                                                                         if (ckeditor) {
                                                                                                             ckeditor.model.document.on('change:data', () => {
                                                                                                                 blockForm.extra_fields[fieldName][itemName] = ckeditor.getData();
@@ -476,6 +488,12 @@
                                                                                     if (instanceID == id) {
                                                                                         ckeditor = instance;
                                                                                     }
+                                                                                });
+
+                                                                                // Hide all divs with class .js-form-type-select
+                                                                                const formTypeSelects = document.querySelectorAll('.js-form-type-select');
+                                                                                formTypeSelects.forEach(select => {
+                                                                                    select.style.display = 'none';
                                                                                 });
 
                                                                                 if (ckeditor) {
@@ -645,6 +663,12 @@
                                                                                                         if (instanceID == id) {
                                                                                                             ckeditor = instance;
                                                                                                         }
+                                                                                                    });
+
+                                                                                                    // Hide all divs with class .js-form-type-select
+                                                                                                    const formTypeSelects = document.querySelectorAll('.js-form-type-select');
+                                                                                                    formTypeSelects.forEach(select => {
+                                                                                                        select.style.display = 'none';
                                                                                                     });
 
                                                                                                     if (ckeditor) {
@@ -882,6 +906,13 @@
                                                                                                                 ckeditor = instance;
                                                                                                                 }
                                                                                                             });
+
+                                                                                                            // Hide all divs with class .js-form-type-select
+                                                                                                            const formTypeSelects = document.querySelectorAll('.js-form-type-select');
+                                                                                                            formTypeSelects.forEach(select => {
+                                                                                                                select.style.display = 'none';
+                                                                                                            });
+
                                                                                                             if (ckeditor) {
                                                                                                                 ckeditor.model.document.on('change:data', () => {
                                                                                                                 item[fieldName][itemName] = ckeditor.getData();
@@ -1034,6 +1065,12 @@
                                                                                             ckeditor = instance;
                                                                                             }
                                                                                         });
+                                                                                        // Hide all divs with class .js-form-type-select
+                                                                                        const formTypeSelects = document.querySelectorAll('.js-form-type-select');
+                                                                                        formTypeSelects.forEach(select => {
+                                                                                            select.style.display = 'none';
+                                                                                        });
+
                                                                                         if (ckeditor) {
                                                                                             ckeditor.model.document.on('change:data', () => {
                                                                                             item[fieldName] = ckeditor.getData();

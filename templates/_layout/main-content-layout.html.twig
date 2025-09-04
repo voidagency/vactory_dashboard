@@ -523,7 +523,7 @@
         error: false,
         message: '',
       },
-
+      
       async globalSearch() {
         if (this.query.length < 2) {
           this.results = [];
@@ -622,6 +622,13 @@
       init() {
         this.getProfile();
         this.getSupport();
+        setTimeout(() => {
+          // Hide all divs with class .js-form-type-select
+          const formTypeSelects = document.querySelectorAll('.js-form-type-select');
+          formTypeSelects.forEach(select => {
+            select.style.display = 'none';
+          });
+        }, '2000');
       },
 
     }));
