@@ -859,7 +859,7 @@ vactory_dashboard.node_links:
 vactory_dashboard.wysiwyg:
   path: '/api/dashboard/wysiwyg'
   defaults:
-    _controller: '\Drupal\vactory_dashboard\Controller\DashboardWysiwyg::getForm'
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardWysiwyg::prepareCkeditorField'
   requirements:
     _permission: 'access dashboard'
   methods: [POST]
