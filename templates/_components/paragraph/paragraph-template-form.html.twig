@@ -422,6 +422,10 @@
                                                                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                                         </template>
 
+                                                        <template x-if="field.type === 'vactory_icon_picker'">
+                                                            {% include "@vactory_dashboard/_components/fields/icon-picker-field.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'x_model': 'blockForm.fields[fieldName]'} %}
+                                                        </template>
+
                                                         {# Checkbox #}
                                                         <template x-if="field.type === 'checkbox'">
                                                             <input type="checkbox"
@@ -586,6 +590,12 @@
                                                                                        :required="item.options?.['#required'] ?? false"
                                                                                        x-model="blockForm.fields[fieldName][itemName]"
                                                                                        class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                                            </template>
+
+                                                                            {# Icon Picker #}
+                                                                            <template
+                                                                                    x-if="item.type === 'vactory_icon_picker'">
+                                                                                {% include "@vactory_dashboard/_components/fields/icon-picker-field.html.twig" with {'required': 'item.options?.["#required"] ?? false', 'x_model': 'blockForm.fields[fieldName][itemName]'} %}
                                                                             </template>
 
                                                                             {# Checkbox #}
@@ -843,6 +853,12 @@
                                                                                                    class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
                                                                                         </template>
 
+                                                                                        {# Icon Picker #}
+                                                                                        <template
+                                                                                                x-if="field.type === 'vactory_icon_picker'">
+                                                                                            {% include "@vactory_dashboard/_components/fields/icon-picker-field.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'x_model': 'item[fieldName][itemName]'} %}
+                                                                                        </template>
+
                                                                                         {# Checkbox #}
                                                                                         <template
                                                                                                 x-if="field.type === 'checkbox'">
@@ -1008,6 +1024,12 @@
                                                                                :required="field.options?.['#required'] ?? false"
                                                                                x-model="item[fieldName]"
                                                                                class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
+                                                                    </template>
+
+                                                                    {# Icon Picker #}
+                                                                    <template
+                                                                            x-if="field.type === 'vactory_icon_picker'">
+                                                                        {% include "@vactory_dashboard/_components/fields/icon-picker-field.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'x_model': 'item[fieldName]'} %}
                                                                     </template>
 
                                                                     {# Checkbox #}
