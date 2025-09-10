@@ -616,7 +616,6 @@ class NodeService {
 
               // Add the URL to the image data.
               $extra_fields[$key][$randomKey]['selection'][0]['url'] = $url;
-              $widgetData[$key][$randomKey]['selection'][0]['url'] = $url;
             }
           }
         }
