@@ -2,8 +2,8 @@
 
 {% block content %}
     <div x-data="{ isRTL: document.dir === 'rtl' }" :dir="isRTL ? 'rtl' : 'ltr'">
-    <div class="h-full flex flex-col"
-         x-data="taxonomyEditor({
+        <div class="h-full flex flex-col"
+             x-data="taxonomyEditor({
            vid: '{{ vid }}',
            vocabulary_label: '{{ vocabulary_label }}',
            language: '{{ language }}',
@@ -14,91 +14,91 @@
            changed: '{{ changed }}',
            status: '{{ status }}'
          })">
-        <div x-show="showTaxoEdit" class="sticky top-0 z-10 bg-white">
-            {# Header with back button, title and actions #}
-            <div class="bg-white py-4 px-3 border-b border-slate-200 flex justify-between items-center gap-x-4 md:[dir='rtl']:flex-row-reverse">
-                <div class="flex items-center gap-x-3 md:[dir='rtl']:flex-row-reverse">
-                    <a href="{{ path('vactory_dashboard.taxonomies', {'vid': vid}) }}"
-                       class="mr-3 text-slate-500 hover:text-primary-500 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                             stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-4 w-4">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                  d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
-                        </svg>
-                    </a>
-                    <h1 class="text-lg font-medium">{{ "Edit"|t }} {{ vocabulary_label }}</h1>
-                </div>
-                <div class="flex max-lg:w-full max-lg:flex-wrap max-lg:gap-3 max-lg:[&>*]:w-full max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:px-3 max-lg:py-4 lg:items-center lg:space-x-4">
-                    {# Publish checkbox #}
-                    <div class="flex items-center">
-                        <input
-                                type="checkbox"
-                                id="publish-status"
-                                x-model="formData.status"
-                                class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
-                        <label for="publish-status" class="ms-2 block text-sm text-slate-700">
-                            {{ 'Publish'|t }}
-                        </label>
+            <div x-show="showTaxoEdit" class="sticky top-0 z-10 bg-white">
+                {# Header with back button, title and actions #}
+                <div class="bg-white py-4 px-3 border-b border-slate-200 flex justify-between items-center gap-x-4 md:[dir='rtl']:flex-row-reverse">
+                    <div class="flex items-center gap-x-3 md:[dir='rtl']:flex-row-reverse">
+                        <a href="{{ path('vactory_dashboard.taxonomies', {'vid': vid}) }}"
+                           class="mr-3 text-slate-500 hover:text-primary-500 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                 stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-4 w-4">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
+                            </svg>
+                        </a>
+                        <h1 class="text-lg font-medium">{{ "Edit"|t }} {{ vocabulary_label }}</h1>
                     </div>
-                    {% include "@vactory_dashboard/node/_components/langs.html.twig" with {
-                        node_default_lang: vocabulary_default_lang
-                    } %}
+                    <div class="flex max-lg:w-full max-lg:flex-wrap max-lg:gap-3 max-lg:[&>*]:w-full max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:px-3 max-lg:py-4 lg:items-center lg:space-x-4">
+                        {# Publish checkbox #}
+                        <div class="flex items-center">
+                            <input
+                                    type="checkbox"
+                                    id="publish-status"
+                                    x-model="formData.status"
+                                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
+                            <label for="publish-status" class="ms-2 block text-sm text-slate-700">
+                                {{ 'Publish'|t }}
+                            </label>
+                        </div>
+                        {% include "@vactory_dashboard/node/_components/langs.html.twig" with {
+                            node_default_lang: vocabulary_default_lang
+                        } %}
 
-                    <button
-                            @click="saveTerm()"
-                            :disabled="isSaving"
-                            :class="{
+                        <button
+                                @click="saveTerm()"
+                                :disabled="isSaving"
+                                :class="{
                     'opacity-50 cursor-not-allowed': isSaving,
                     'bg-primary-500 hover:bg-primary-600': !isSaving,
                     'bg-primary-400': isSaving
                 }"
-                            class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                    >
-                        <!-- Loading spinner (shown when saving) -->
-                        <svg x-show="isSaving" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg"
-                             fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                    stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor"
-                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <!-- Button text (changes based on loading state) -->
-                        <span x-text="isSaving ? '{{ 'Saving...'|t }}' : '{{ 'Save'|t }}'"></span>
-                    </button>
+                                class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                        >
+                            <!-- Loading spinner (shown when saving) -->
+                            <svg x-show="isSaving" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                                 fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <!-- Button text (changes based on loading state) -->
+                            <span x-text="isSaving ? '{{ 'Saving...'|t }}' : '{{ 'Save'|t }}'"></span>
+                        </button>
+                    </div>
+                </div>
+                {# Notification #}
+                {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
+            </div>
+            {# Form Fields #}
+            <div x-show="showTaxoEdit" class="flex-1 overflow-y-auto">
+                <div class="mx-auto">
+                    <form id="taxonomy-form" @submit.prevent="saveTerm()"
+                          class="bg-white rounded-lg shadow-sm p-2 space-y-6">
+                        <div class="flex gap-y-6 flex-col">
+                            <template x-for="(field, fieldName) in fields" :key="field.name">
+                                {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
+                                    field: 'field',
+                                    formData: 'formData',
+                                    isEdit: true,
+                                    language: language,
+                                    node_default_lang: vocabulary_default_lang
+                                } %}
+                            </template>
+                        </div>
+                    </form>
                 </div>
             </div>
-            {# Notification #}
-            {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
-        </div>
-        {# Form Fields #}
-        <div x-show="showTaxoEdit" class="flex-1 overflow-y-auto">
-            <div class="mx-auto">
-                <form id="taxonomy-form" @submit.prevent="saveTerm()"
-                      class="bg-white rounded-lg shadow-sm p-2 space-y-6">
-                    <div class="flex gap-y-6 flex-col">
-                        <template x-for="(field, fieldName) in fields" :key="field.name">
-                            {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
-                                field: 'field',
-                                formData: 'formData',
-                                isEdit: true,
-                                language: language,
-                                node_default_lang: vocabulary_default_lang
-                            } %}
-                        </template>
-                    </div>
-                </form>
+            {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
+            {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}
+
+            <div x-show="showBlockForm" class="h-full">
+                <div>
+                    {% include "@vactory_dashboard/_components/paragraph/paragraph-template-form.html.twig" %}
+                </div>
             </div>
         </div>
-        {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
-        {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}
-
-        <div x-show="showBlockForm" class="h-full">
-          <div>
-            {% include "@vactory_dashboard/_components/paragraph/paragraph-template-form.html.twig"  %}
-          </div>
-        </div>
     </div>
-</div> 
 {% endblock %}
 
 {% block javascripts %}
@@ -150,7 +150,7 @@
           showParagraphMultipleForm: false,
           isParagraphMultiple: false,
           isTaxoEdit: false,
-          paragraphMultipleForm: {items: []},
+          paragraphMultipleForm: { items: [] },
           currentParagraphMultipleItem: null,
           currentMultipleParagraphTemplateIndex: null,
           loaderCK: false,
@@ -186,7 +186,6 @@
             Object.keys(this.fields).forEach((fieldKey) => {
               const field = this.fields[fieldKey];
               const existingValue = this.term.fields && this.term.fields[fieldKey];
-
               if (field?.textFormatField) {
                 setTimeout(() => {
                   Drupal.editors.ckeditor5.onChange(document.getElementById(`edit-${field.name.replaceAll('_', '-')}-value`), () => {
@@ -196,6 +195,18 @@
                 }, '3000');
               }
 
+              // Media fields.
+              if (field.type === 'image' || field.type === 'file' || field.type === 'remote_video' || field.type === 'private_file') {
+                this.formData.fields[fieldKey] = existingValue || {
+                  id: null,
+                  url: null,
+                  name: null,
+                  path: fieldKey,
+                  key: new Date().getTime(),
+                };
+                return;
+              }
+
               // Checkboxes
               if (field.type === 'checkboxes') {
                 this.formData.fields[fieldKey] = existingValue || [];
@@ -203,23 +214,25 @@
               }
 
               // Wysiwyg
-              if (field.type === "field_wysiwyg_dynamic") {
+              if (field.type === 'field_wysiwyg_dynamic') {
                 this.formData.fields[fieldKey] = existingValue || [];
-                this.dynamicFields = {
-                      ...this.dynamicFields,
-                      [fieldKey]: [
-                        ...(this.dynamicFields[fieldKey] || []),
-                        {
-                          id: Date.now(),
-                          title: existingValue[0].widget_config?.name ?? '',
-                          bundle: 'vactory_component',
-                          widget_data: existingValue[0].widget_data,
-                          widget_config: existingValue[0].widget_config,
-                          preview: existingValue[0].widget_config.screenshot,
-                          widget_id: existingValue[0].widget_config.uuid,
-                        },
-                      ],
-                    };
+                if (Object.keys(existingValue || {})?.length > 0) {
+                  this.dynamicFields = {
+                    ...this.dynamicFields,
+                    [fieldKey]: [
+                      ...(this.dynamicFields[fieldKey] || []),
+                      {
+                        id: Date.now(),
+                        title: existingValue?.[0]?.widget_config?.name ?? '',
+                        bundle: 'vactory_component',
+                        widget_data: existingValue?.[0]?.widget_data,
+                        widget_config: existingValue?.[0]?.widget_config,
+                        preview: existingValue?.[0]?.widget_config?.screenshot,
+                        widget_id: existingValue?.[0]?.widget_config?.uuid,
+                      },
+                    ],
+                  };
+                }
                 return;
               }
 
@@ -229,24 +242,14 @@
                 return;
               }
 
-              // Image, file, remote_video, private_file
-              if (field.type === 'image' || field.type === 'file' || field.type === 'remote_video' || field.type === 'private_file') {
-                this.formData.fields[fieldKey] = existingValue || {
-                  id: null,
-                  url: null,
-                  name: null,
-                  path: fieldKey,
-                  key: new Date().getTime(),
-                };
-              } else {
-                this.formData.fields[fieldKey] = existingValue || '';
-              }
+              this.formData.fields[fieldKey] = existingValue || '';
+
             });
 
             this.fetchTemplates();
           },
 
-          selectTemplate(template, isParagraphMultiple=false) {
+          selectTemplate(template, isParagraphMultiple = false) {
             this.selectedTemplate = template;
             this.showBlockForm = true;
             this.showTaxoEdit = false;
@@ -527,10 +530,9 @@
               block = this.blocks[index];
             }
             this.currentBlockIndex = index;
-            
+
             // Find the template that matches this block
             const template = block.widget_config;
-            console.log("template: ", template);
             this.selectedTemplate = template;
             // Initialize the form data structure
             this.blockForm = {
@@ -825,7 +827,7 @@
             if (fieldName) {
               this.dynamicFields[fieldName].splice(index, 1);
               // Remove default value also on formData.
-              this.formData.fields[fieldName] = {}
+              this.formData.fields[fieldName] = {};
             } else {
               // Remove the block at the specified index
               this.blocks.splice(index, 1);
