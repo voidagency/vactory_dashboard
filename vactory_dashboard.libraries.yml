@@ -28,3 +28,8 @@ alpine-translation:
     assets/js/translation.js: {}
   dependencies:
     - vactory_admin/alpinejs
+alpine-icon-picker:
+  js:
+    assets/js/icon-picker.js: {}
+  dependencies:
+    - vactory_admin/alpinejs

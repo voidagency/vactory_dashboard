@@ -1,0 +1,42 @@
+{{ attach_library('vactory_dashboard/alpine-icon-picker') }}
+
+{#
+Simple Icon Picker Field Component
+Fetches icons from API and populates a select dropdown
+#}
+
+{% set field_name = element['#name'] | default('icon') %}
+{% set field_value = element['#default_value'] | default('') %}
+{% set field_id = element['#id'] | default('icon-picker') %}
+
+<div class="icon-picker-field"
+     x-data="iconSelectData()"
+>
+
+    <!-- Loading State -->
+    <div x-show="isLoading" class="mb-4">
+        <span class="text-gray-500">Loading icons...</span>
+    </div>
+
+    <!-- Error State -->
+    <div x-show="hasError && !isLoading" class="mb-4">
+        <span class="text-red-500">Failed to load icons</span>
+        <button @click="loadIcons()" class="ml-2 text-blue-500 underline">Retry</button>
+    </div>
+
+    <!-- Simple Select Dropdown -->
+    <div x-show="!isLoading && !hasError">
+        <select
+                x-model="{{ x_model }}"
+                :required="{{ required }}"
+                :id="fieldId"
+                x-model="selectedIcon"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+            <option value="">Select an icon...</option>
+            <template x-for="icon in icons" :key="icon.name">
+                <option :selected="icon.name === {{ x_model }}" :value="icon.name" x-text="icon.label"></option>
+            </template>
+        </select>
+    </div>
+</div>
