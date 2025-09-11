@@ -1,21 +1,23 @@
 {% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
 
 {% block content %}
-	<div class="flex-1 overflow-y-auto" x-data="imageUploader()">
-    {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
-		<div x-cloak>
+    <div class="flex-1 overflow-y-auto" x-data="imageUploader()">
+        {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
+        <div x-cloak>
 
-			<!-- Titre -->
-			<div class="flex items-center gap-x-2 mb-6">
-				<a href="javascript:history.back()">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
-					</svg>
-				</a>
-				<div class="sm:flex-auto">
-					<h1 class="text-2xl font-semibold text-gray-900">{{ 'Ajouter une image' | t }}</h1>
-				</div>
-			</div>
+            <!-- Titre -->
+            <div class="flex items-center gap-x-2 mb-6">
+                <a href="javascript:history.back()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                         stroke="currentColor" class="h-4 w-4">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
+                    </svg>
+                </a>
+                <div class="sm:flex-auto">
+                    <h1 class="text-2xl font-semibold text-gray-900">{{ 'Ajouter une image' | t }}</h1>
+                </div>
+            </div>
 
             <!-- Formulaire -->
             <div class="bg-white shadow sm:rounded-lg p-6">
@@ -44,8 +46,13 @@
                             {{ "Image" | t }}<span class="text-red-500">*</span>
                         </label>
 
-                        <div class="flex items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-pointer"
-                             x-ref="dropzone">
+                        <div class="flex items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-pointer transition-colors duration-200"
+                             x-ref="dropzone"
+                             @dragover.prevent="dragOver = true"
+                             @dragenter.prevent="dragOver = true"
+                             @dragleave.prevent="dragOver = false"
+                             @drop.prevent="handleDrop($event)"
+                             :class="{'border-primary-500 bg-primary-50': dragOver, 'border-gray-300 bg-gray-50': !dragOver}">
                             <label
                                     for="image" class="w-full h-full flex items-center justify-center">
                                 <!-- Show upload instructions if no preview -->
@@ -85,36 +92,39 @@
                         </template>
                     </div>
 
-					<div class="flex justify-end space-x-2">
-						{% include '@vactory_admin/components/button/button.twig' with {
-							variant: 'secondary',
-							text: 'Annuler' | t,
-							type: 'button',
-							alpine_attrs: '@click="$refs.form.reset(); preview = null; history.back()"'
-						} %}
+                    <div class="flex justify-end space-x-2">
+                        {% include '@vactory_admin/components/button/button.twig' with {
+                            variant: 'secondary',
+                            text: 'Annuler' | t,
+                            type: 'button',
+                            alpine_attrs: '@click="$refs.form.reset(); preview = null; history.back()"'
+                        } %}
 
-						<button 
-              @click.prevent="loading = true; submitForm()"
-              :data-is-loading="loading"
-              :disabled="loading"
-              :class="{'opacity-50 cursor-not-allowed': loading,'bg-primary-500 hover:bg-primary-600': !loading,'bg-primary-400': loading}"
-              class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
-                  <!-- Button text (changes based on loading state) -->
-                  <span x-text="loading ? '{{ 'Ajout...'|t }}' : '{{ 'Ajouter'|t }}'"></span>
-                  
-                  <!-- Loading spinner (shown when saving) -->
-                  <svg x-show="loading" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-            </button>
-					</div>
+                        <button
+                                @click.prevent="loading = true; submitForm()"
+                                :data-is-loading="loading"
+                                :disabled="loading"
+                                :class="{'opacity-50 cursor-not-allowed': loading,'bg-primary-500 hover:bg-primary-600': !loading,'bg-primary-400': loading}"
+                                class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                            <!-- Button text (changes based on loading state) -->
+                            <span x-text="loading ? '{{ 'Ajout...'|t }}' : '{{ 'Ajouter'|t }}'"></span>
+
+                            <!-- Loading spinner (shown when saving) -->
+                            <svg x-show="loading" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                                 fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </button>
+                    </div>
 
 
-				</form>
-			</div>
-		</div>
-	</div>
+                </form>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 {% block javascripts %}
     <script>
@@ -123,6 +133,7 @@
           loading: false,
           errors: {},
           preview: null,
+          dragOver: false,
           notification: {
             show: false,
             type: 'success',
@@ -159,6 +170,32 @@
             }
           },
 
+          handleDrop(event) {
+            this.dragOver = false;
+            const files = event.dataTransfer.files;
+
+            if (files.length > 0) {
+              const file = files[0];
+
+              // Check if it's an image file
+              if (file.type.startsWith('image/')) {
+                // Create a DataTransfer object to set the file input
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                this.$refs.image.files = dataTransfer.files;
+
+                // Trigger the preview
+                this.previewImage({ target: this.$refs.image });
+
+                // Clear any previous errors
+                this.errors.image = null;
+              } else {
+                this.errors.image = "{{ 'Veuillez sélectionner un fichier image valide.' | t }}";
+                this.preview = null;
+              }
+            }
+          },
+
           async submitForm() {
             this.loading = true;
             this.errors = {};
@@ -174,6 +211,20 @@
             }
 
             const formData = new FormData(form);
+
+            // Debug: Log what's in the FormData
+            console.log('FormData contents:');
+            for (let [key, value] of formData.entries()) {
+              console.log(key, value);
+            }
+
+            // Ensure the image file is properly included
+            if (imageInput.files[0]) {
+              // Remove any existing image entry and add the current one
+              formData.delete('image');
+              formData.append('image', imageInput.files[0]);
+              console.log('Added image file:', imageInput.files[0]);
+            }
 
             try {
               const typeId = 'image';
@@ -194,7 +245,7 @@
               }
             } catch (error) {
               console.error('Erreur :', error);
-                this.showNotification('error', '{{ "Une erreur est survenue"|t }}');
+              this.showNotification('error', '{{ "Une erreur est survenue"|t }}');
             } finally {
               this.loading = false;
             }
