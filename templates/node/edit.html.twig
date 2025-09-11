@@ -85,6 +85,7 @@
           },
           paragraphViewForm: {
             blockType: '',
+            displayID: '',
             title: '',
             config: {
               title: '',
@@ -1375,6 +1376,7 @@
             // Reset form
             this.paragraphViewForm = {
               blockType: '',
+              displayID: '',
               content: '',
               config: {
                 title: '',
@@ -1533,6 +1535,7 @@
               title: form?.title || form?.config?.title,
               show_title: form?.show_title || form?.config?.show_title,
               blockType: form?.blockType,
+              displayID: form?.displayID,
               content: form?.content,
               display: form?.display || form?.config?.display,
               introduction: form?.introduction || form?.config?.introduction,

@@ -1121,29 +1121,20 @@ class NodeService {
       $ordered_paragraphs = [];
       foreach ($blocks as $block) {
         $bundle = $block['bundle'] ?? "vactory_component";
-        if ($bundle === 'vactory_component') {
-          $this->updateParagraphTemplatesInNode($block, $language, $node_default_lang, $ordered_paragraphs);
+        $handlers = [
+          'vactory_component' => 'updateParagraphTemplatesInNode',
+          'vactory_paragraph_block' => 'updateParagraphBlocksInNode',
+          'views_reference' => 'updateParagraphViewsInNode',
+          'vactory_paragraph_multi_template' => 'updateParagraphMultipleInNode',
+        ];
+        if (isset($handlers[$bundle])) {
+          $this->{$handlers[$bundle]}($block, $language, $node_default_lang, $ordered_paragraphs);
         }
         else {
-          if ($bundle === 'vactory_paragraph_block') {
-            $this->updateParagraphBlocksInNode($block, $language, $node_default_lang, $ordered_paragraphs);
-          }
-          else {
-            if ($bundle === 'views_reference') {
-              $this->updateParagraphViewsInNode($block, $language, $node_default_lang, $ordered_paragraphs);
-            }
-            else {
-              if ($bundle === 'vactory_paragraph_multi_template') {
-                $this->updateParagraphMultipleInNode($block, $language, $node_default_lang, $ordered_paragraphs);
-              }
-              else {
-                $ordered_paragraphs[] = [
-                  'target_id' => $block['id'],
-                  'target_revision_id' => $block['revision_id'],
-                ];
-              }
-            }
-          }
+          $ordered_paragraphs[] = [
+            'target_id' => $block['id'],
+            'target_revision_id' => $block['revision_id'],
+          ];
         }
       }
       if (!empty($ordered_paragraphs)) {
@@ -1638,7 +1629,6 @@ class NodeService {
       if (!$paragraph_entity->hasTranslation($language)) {
         $paragraph_entity->addTranslation($language, $paragraph_entity->toArray());
       }
-
       // Now we can safely access and modify the translation.
       $paragraph_entity->getTranslation($language)
         ->set('field_views_reference', [
