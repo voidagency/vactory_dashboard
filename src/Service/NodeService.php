@@ -1646,9 +1646,25 @@ class NodeService {
   public function getParagraphBlocksList() {
     $field_vactory_block = $this->entityFieldManager->getFieldDefinitions('paragraph', 'vactory_paragraph_block');
     $field_vactory_block = $field_vactory_block['field_vactory_block'] ?? [];
+    $paragraph_blocks = [];
 
     $blocks = $field_vactory_block->getSettings()['selection_settings']['plugin_ids'] ?? [];
-    $paragraph_blocks = [];
+
+    if (empty($blocks)) {
+      // Load all blocks.
+      $plugin_definitions = \Drupal::service('block_field.manager')
+        ->getBlockDefinitions();
+      $custom_block_plugins = [];
+
+      foreach ($plugin_definitions as $plugin_id => $definition) {
+        $custom_block_plugins[] = [
+          'id' => $plugin_id,
+          'label' => $definition['admin_label'] . ' (' . $plugin_id . ')',
+        ];
+      }
+      return $custom_block_plugins;
+    }
+
     foreach ($blocks as $block) {
       $paragraph_blocks[] = [
         'id' => $block,
