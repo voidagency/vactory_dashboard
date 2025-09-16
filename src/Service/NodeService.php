@@ -577,7 +577,7 @@ class NodeService {
     $extraFieldsFileFields = array_keys($fileRemoteVideoFields);
 
     // Process extra fields image fields.
-    if ($widgetData['extra_field']) {
+    if (array_key_exists('extra_field', $widgetData ?? []) && $widgetData['extra_field']) {
       $this->handleExtraFieldsImageType($widgetData, $extraFieldsImageFields);
       $this->handleExtraFieldsRemoteVideoType($widgetData, $extraFieldsRemoteVideoFields);
       $this->handleExtraFieldsFileType($widgetData, $extraFieldsFileFields);
