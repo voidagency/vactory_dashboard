@@ -157,4 +157,17 @@ final class DashboardConstants {
     'agr_mail_message',
   ];
 
+  public final const PARAGARAPH_APPARENCE_FIELDS = [
+    'width' => 'paragraph_container',
+    'css_classes' => 'paragraph_css_class',
+    'color' => 'field_background_color',
+    'image' => 'paragraph_background_image',
+    'positionImageX' => 'field_position_image_x',
+    'positionImageY' => 'field_position_image_y',
+    'imageSize' => 'field_size_image',
+    'hideDesktop' => 'field_paragraph_hide_lg',
+    'hideMobile' => 'field_paragraph_hide_sm',
+    'enableParallax' => 'paragraph_background_parallax',
+  ];
+
 }

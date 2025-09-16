@@ -1150,7 +1150,6 @@ class NodeService {
    * Update paragraph templates in node.
    */
   private function updateParagraphTemplatesInNode($block, $language, $node_default_lang, &$ordered_paragraphs) {
-    $paragraph_entity = NULL;
     $paragraph = [
       "type" => "vactory_component",
       "field_vactory_title" => $block['title'],
@@ -1160,7 +1159,6 @@ class NodeService {
         "widget_id" => $block['widget_id'],
         "widget_data" => json_encode($block['widget_data']),
       ],
-      /* start configuration */
       "paragraph_container" => $block['width'],
       "paragraph_css_class" => $block['css_classes'],
       "field_background_color" => !empty($block['color']) ? ['color' => $block['color']] : NULL,
@@ -1171,94 +1169,17 @@ class NodeService {
       "field_paragraph_hide_lg" => !empty($block['hideDesktop']) ? 1 : 0,
       "field_paragraph_hide_sm" => !empty($block['hideMobile']) ? 1 : 0,
       "paragraph_background_parallax" => !empty($block['enableParallax']) ? 1 : 0,
-      /* end configuration */
     ];
     $is_new = $block['is_new'] ?? FALSE;
     // Paragraph translate.
     if ($language != $node_default_lang) {
       // Handle translations.
       $paragraph_entity = Paragraph::load($block['id']);
-
       // Check if translation exists, if not create it first.
       if (!$paragraph_entity->hasTranslation($language)) {
         $paragraph_entity->addTranslation($language, $paragraph_entity->toArray());
       }
-
-      // Now we can safely access and modify the translation.
-      $paragraph_entity->getTranslation($language)
-        ->set('field_vactory_component', [
-          "widget_id" => $block['widget_id'],
-          "widget_data" => json_encode($block['widget_data']),
-        ]);
-
-      if (isset($block['title'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('field_vactory_title', $block['title']);
-      }
-
-      $paragraph_entity->getTranslation($language)
-        ->set('field_vactory_flag', $block['show_title']);
-
-      if (isset($block['width'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('paragraph_container', $block['width']);
-      }
-
-      if (isset($block['spacing'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('container_spacing', $block['spacing']);
-      }
-
-      if (isset($block['css_classes'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('paragraph_css_class', $block['css_classes']);
-      }
-
-      /* start configuration */
-      $field_mapping = [
-        'width' => 'paragraph_container',
-        'css_classes' => 'paragraph_css_class',
-        'color' => 'field_background_color',
-        'image' => 'paragraph_background_image',
-        'positionImageX' => 'field_position_image_x',
-        'positionImageY' => 'field_position_image_y',
-        'imageSize' => 'field_size_image',
-        'hideDesktop' => 'field_paragraph_hide_lg',
-        'hideMobile' => 'field_paragraph_hide_sm',
-        'enableParallax' => 'paragraph_background_parallax',
-      ];
-
-      foreach ($field_mapping as $block_key => $field_name) {
-        if (isset($block[$block_key])) {
-          if ($block_key === 'color') {
-            $paragraph_entity->getTranslation($language)
-              ->set($field_name, ['color' => $block[$block_key]]);
-          }
-          else {
-            if ($block_key === 'image') {
-              $image_id = $block["imageID"] ?? NULL;
-
-              if (!empty($image_id) && $image_id > 0) {
-                // Valid image reference
-                $paragraph_entity->getTranslation($language)
-                  ->set($field_name, ['target_id' => $image_id]);
-              }
-              else {
-                // Ensure the field is empty
-                $paragraph_entity->getTranslation($language)
-                  ->set($field_name, []);
-              }
-            }
-            else {
-              $paragraph_entity->getTranslation($language)
-                ->set($field_name, $block[$block_key]);
-            }
-          }
-        }
-      }
-      /* end configuration */
-
-      $paragraph_entity->save();
+      $this->updateParagraphAppearanceSettings($paragraph_entity, $block, $language);
     }
     else {
       if ($is_new) {
@@ -1268,80 +1189,7 @@ class NodeService {
       }
       else {
         $paragraph_entity = Paragraph::load($block['id']);
-        $paragraph_entity->getTranslation($language)
-          ->set('field_vactory_component', [
-            "widget_id" => $block['widget_id'],
-            "widget_data" => json_encode($block['widget_data']),
-          ]);
-
-        if (isset($block['title'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('field_vactory_title', $block['title']);
-        }
-
-        $paragraph_entity->getTranslation($language)
-          ->set('field_vactory_flag', $block['show_title']);
-
-        if (isset($block['width'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('paragraph_container', $block['width']);
-        }
-
-        if (isset($block['spacing'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('container_spacing', $block['spacing']);
-        }
-
-        if (isset($block['css_classes'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('paragraph_css_class', $block['css_classes']);
-        }
-
-        /* start configuration */
-        $field_mapping = [
-          'width' => 'paragraph_container',
-          'css_classes' => 'paragraph_css_class',
-          'color' => 'field_background_color',
-          'image' => 'paragraph_background_image',
-          'positionImageX' => 'field_position_image_x',
-          'positionImageY' => 'field_position_image_y',
-          'imageSize' => 'field_size_image',
-          'hideDesktop' => 'field_paragraph_hide_lg',
-          'hideMobile' => 'field_paragraph_hide_sm',
-          'enableParallax' => 'paragraph_background_parallax',
-        ];
-
-        foreach ($field_mapping as $block_key => $field_name) {
-          if (isset($block[$block_key])) {
-            if ($block_key === 'color') {
-              $paragraph_entity->getTranslation($language)
-                ->set($field_name, ['color' => $block[$block_key]]);
-            }
-            else {
-              if ($block_key === 'image') {
-                $image_id = $block["imageID"] ?? NULL;
-
-                if (!empty($image_id) && $image_id > 0) {
-                  // Valid image reference
-                  $paragraph_entity->getTranslation($language)
-                    ->set($field_name, ['target_id' => $image_id]);
-                }
-                else {
-                  // Ensure the field is empty
-                  $paragraph_entity->getTranslation($language)
-                    ->set($field_name, []);
-                }
-              }
-              else {
-                $paragraph_entity->getTranslation($language)
-                  ->set($field_name, $block[$block_key]);
-              }
-            }
-          }
-        }
-        /* end configuration */
-
-        $paragraph_entity->save();
+        $this->updateParagraphAppearanceSettings($paragraph_entity, $block, $language);
       }
     }
     if ($paragraph_entity instanceof ParagraphInterface) {
@@ -1358,19 +1206,6 @@ class NodeService {
    * Update paragraph blocks in node.
    */
   private function updateParagraphBlocksInNode($block, $language, $node_default_lang, &$ordered_paragraphs) {
-    $field_mapping = [
-      'width' => 'paragraph_container',
-      'css_classes' => 'paragraph_css_class',
-      'color' => 'field_background_color',
-      'image' => 'paragraph_background_image',
-      'positionImageX' => 'field_position_image_x',
-      'positionImageY' => 'field_position_image_y',
-      'imageSize' => 'field_size_image',
-      'hideDesktop' => 'field_paragraph_hide_lg',
-      'hideMobile' => 'field_paragraph_hide_sm',
-      'enableParallax' => 'paragraph_background_parallax',
-    ];
-
     $existing_block_id = $block['block_settings']['id'] ?? NULL;
     $paragraph = [
       "type" => "vactory_paragraph_block",
@@ -1385,8 +1220,6 @@ class NodeService {
         'value' => $block['content'] ?? '',
         'format' => 'full_html',
       ],
-
-      /* start configuration */
       "paragraph_container" => $block['width'],
       "paragraph_css_class" => $block['css_classes'],
       "field_background_color" => !empty($block['color']) ? ['color' => $block['color']] : NULL,
@@ -1397,7 +1230,6 @@ class NodeService {
       "field_paragraph_hide_lg" => !empty($block['hideDesktop']) ? 1 : 0,
       "field_paragraph_hide_sm" => !empty($block['hideMobile']) ? 1 : 0,
       "paragraph_background_parallax" => !empty($block['enableParallax']) ? 1 : 0,
-      /* end configuration */
     ];
     $is_new = $block['is_new'] ?? FALSE;
     // Paragraph translate.
@@ -1410,73 +1242,7 @@ class NodeService {
         $paragraph_entity->addTranslation($language, $paragraph_entity->toArray());
       }
 
-      // Now we can safely access and modify the translation.
-      $paragraph_entity->getTranslation($language)
-        ->set('field_vactory_block', [
-          "plugin_id" => $block['blockType'],
-          "settings" => $block['blockType'] === $existing_block_id ? $block['block_settings'] ?? [] : [],
-        ]);
-
-      $paragraph_entity->getTranslation($language)
-        ->set('field_vactory_body', [
-          'value' => $block['content'] ?? '',
-          'format' => 'full_html',
-        ]);
-
-      if (isset($block['title'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('field_vactory_title', $block['title']);
-      }
-
-      $paragraph_entity->getTranslation($language)
-        ->set('field_vactory_flag', $block['show_title']);
-
-      if (isset($block['width'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('paragraph_container', $block['width']);
-      }
-
-      if (isset($block['spacing'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('container_spacing', $block['spacing']);
-      }
-
-      if (isset($block['css_classes'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('paragraph_css_class', $block['css_classes']);
-      }
-
-      foreach ($field_mapping as $block_key => $field_name) {
-        if (isset($block[$block_key])) {
-          if ($block_key === 'color') {
-            $paragraph_entity->getTranslation($language)
-              ->set($field_name, ['color' => $block[$block_key]]);
-          }
-          else {
-            if ($block_key === 'image') {
-              $image_id = $block["imageID"] ?? NULL;
-
-              if (!empty($image_id) && $image_id > 0) {
-                // Valid image reference
-                $paragraph_entity->getTranslation($language)
-                  ->set($field_name, ['target_id' => $image_id]);
-              }
-              else {
-                // Ensure the field is empty
-                $paragraph_entity->getTranslation($language)
-                  ->set($field_name, []);
-              }
-            }
-            else {
-              $paragraph_entity->getTranslation($language)
-                ->set($field_name, $block[$block_key]);
-            }
-          }
-        }
-      }
-      /* end configuration */
-
-      $paragraph_entity->save();
+      $this->updateParagraphAppearanceSettings($paragraph_entity, $block, $language, 'block');
     }
     else {
       if ($is_new) {
@@ -1486,71 +1252,7 @@ class NodeService {
       }
       else {
         $paragraph_entity = Paragraph::load($block['id']);
-        $paragraph_entity->getTranslation($language)
-          ->set('field_vactory_block', [
-            "plugin_id" => $block['blockType'],
-            "settings" => $block['blockType'] === $existing_block_id ? $block['block_settings'] ?? [] : [],
-          ]);
-
-        if (isset($block['title'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('field_vactory_title', $block['title']);
-        }
-
-        $paragraph_entity->getTranslation($language)
-          ->set('field_vactory_body', [
-            'value' => $block['content'] ?? '',
-            'format' => 'full_html',
-          ]);
-
-        $paragraph_entity->getTranslation($language)
-          ->set('field_vactory_flag', $block['show_title']);
-
-        if (isset($block['width'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('paragraph_container', $block['width']);
-        }
-
-        if (isset($block['spacing'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('container_spacing', $block['spacing']);
-        }
-
-        if (isset($block['css_classes'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('paragraph_css_class', $block['css_classes']);
-        }
-        foreach ($field_mapping as $block_key => $field_name) {
-          if (isset($block[$block_key])) {
-            if ($block_key === 'color') {
-              $paragraph_entity->getTranslation($language)
-                ->set($field_name, ['color' => $block[$block_key]]);
-            }
-            else {
-              if ($block_key === 'image') {
-                $image_id = $block["imageID"] ?? NULL;
-
-                if (!empty($image_id) && $image_id > 0) {
-                  // Valid image reference
-                  $paragraph_entity->getTranslation($language)
-                    ->set($field_name, ['target_id' => $image_id]);
-                }
-                else {
-                  // Ensure the field is empty
-                  $paragraph_entity->getTranslation($language)
-                    ->set($field_name, []);
-                }
-              }
-              else {
-                $paragraph_entity->getTranslation($language)
-                  ->set($field_name, $block[$block_key]);
-              }
-            }
-          }
-        }
-        /* end configuration */
-
-        $paragraph_entity->save();
+        $this->updateParagraphAppearanceSettings($paragraph_entity, $block, $language, 'block');
       }
     }
     if ($paragraph_entity instanceof ParagraphInterface) {
@@ -1584,18 +1286,6 @@ class NodeService {
    *   (with target_id and target_revision_id) to later attach to the node.
    */
   private function updateParagraphViewsInNode($block, $language, $node_default_lang, &$ordered_paragraphs) {
-    $field_mapping = [
-      'width' => 'paragraph_container',
-      'css_classes' => 'paragraph_css_class',
-      'color' => 'field_background_color',
-      'image' => 'paragraph_background_image',
-      'positionImageX' => 'field_position_image_x',
-      'positionImageY' => 'field_position_image_y',
-      'imageSize' => 'field_size_image',
-      'hideDesktop' => 'field_paragraph_hide_lg',
-      'hideMobile' => 'field_paragraph_hide_sm',
-      'enableParallax' => 'paragraph_background_parallax',
-    ];
     $existing_view_id = $block['block_settings']['id'] ?? NULL;
     $paragraph = [
       "type" => "views_reference",
@@ -1629,64 +1319,7 @@ class NodeService {
       if (!$paragraph_entity->hasTranslation($language)) {
         $paragraph_entity->addTranslation($language, $paragraph_entity->toArray());
       }
-      // Now we can safely access and modify the translation.
-      $paragraph_entity->getTranslation($language)
-        ->set('field_views_reference', [
-          "target_id" => $block['blockType'],
-          "display_id" => $block['displayID'],
-          "settings" => $block['blockType'] === $existing_view_id ? $block['block_settings'] ?? [] : [],
-        ]);
-
-      if (isset($block['title'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('field_vactory_title', $block['title']);
-      }
-
-      if (isset($block['width'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('paragraph_container', $block['width']);
-      }
-
-      if (isset($block['spacing'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('container_spacing', $block['spacing']);
-      }
-
-      if (isset($block['css_classes'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('paragraph_css_class', $block['css_classes']);
-      }
-      foreach ($field_mapping as $block_key => $field_name) {
-        if (isset($block[$block_key])) {
-          if ($block_key === 'color') {
-            $paragraph_entity->getTranslation($language)
-              ->set($field_name, ['color' => $block[$block_key]]);
-          }
-          else {
-            if ($block_key === 'image') {
-              $image_id = $block["imageID"] ?? NULL;
-
-              if (!empty($image_id) && $image_id > 0) {
-                // Valid image reference
-                $paragraph_entity->getTranslation($language)
-                  ->set($field_name, ['target_id' => $image_id]);
-              }
-              else {
-                // Ensure the field is empty
-                $paragraph_entity->getTranslation($language)
-                  ->set($field_name, []);
-              }
-            }
-            else {
-              $paragraph_entity->getTranslation($language)
-                ->set($field_name, $block[$block_key]);
-            }
-          }
-        }
-      }
-      /* end configuration */
-
-      $paragraph_entity->save();
+      $this->updateParagraphAppearanceSettings($paragraph_entity, $block, $language, 'view');
     }
     else {
       if ($is_new) {
@@ -1696,62 +1329,7 @@ class NodeService {
       }
       else {
         $paragraph_entity = Paragraph::load($block['id']);
-
-        $paragraph_entity->getTranslation($language)
-          ->set('field_views_reference', [
-            "target_id" => $block['blockType'],
-            "display_id" => $block['displayID'],
-            "settings" => $block['blockType'] === $existing_view_id ? $block['block_settings'] ?? [] : [],
-          ]);
-
-        if (isset($block['title'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('field_vactory_title', $block['title']);
-        }
-
-        if (isset($block['width'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('paragraph_container', $block['width']);
-        }
-
-        if (isset($block['spacing'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('container_spacing', $block['spacing']);
-        }
-
-        if (isset($block['css_classes'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('paragraph_css_class', $block['css_classes']);
-        }
-        foreach ($field_mapping as $block_key => $field_name) {
-          if (isset($block[$block_key])) {
-            if ($block_key === 'color') {
-              $paragraph_entity->getTranslation($language)
-                ->set($field_name, ['color' => $block[$block_key]]);
-            }
-            else {
-              if ($block_key === 'image') {
-                $image_id = $block["imageID"] ?? NULL;
-
-                if (!empty($image_id) && $image_id > 0) {
-                  // Valid image reference
-                  $paragraph_entity->getTranslation($language)
-                    ->set($field_name, ['target_id' => $image_id]);
-                }
-                else {
-                  // Ensure the field is empty
-                  $paragraph_entity->getTranslation($language)
-                    ->set($field_name, []);
-                }
-              }
-              else {
-                $paragraph_entity->getTranslation($language)
-                  ->set($field_name, $block[$block_key]);
-              }
-            }
-          }
-        }
-        $paragraph_entity->save();
+        $this->updateParagraphAppearanceSettings($paragraph_entity, $block, $language, 'view');
       }
     }
     if ($paragraph_entity instanceof ParagraphInterface) {
@@ -1782,20 +1360,6 @@ class NodeService {
    */
   private function updateParagraphMultipleInNode($block, $language, $node_default_lang, &$ordered_paragraphs) {
     $field_vactory_paragraph_tab = [];
-
-    $field_mapping = [
-      'width' => 'paragraph_container',
-      'css_classes' => 'paragraph_css_class',
-      'color' => 'field_background_color',
-      'image' => 'paragraph_background_image',
-      'positionImageX' => 'field_position_image_x',
-      'positionImageY' => 'field_position_image_y',
-      'imageSize' => 'field_size_image',
-      'hideDesktop' => 'field_paragraph_hide_lg',
-      'hideMobile' => 'field_paragraph_hide_sm',
-      'enableParallax' => 'paragraph_background_parallax',
-    ];
-
     if (!empty($block['items']) && is_array($block['items'])) {
       foreach ($block['items'] as $item) {
         // If paragraph exists → update it
@@ -1869,8 +1433,6 @@ class NodeService {
       "field_multi_paragraph_type" => $block['display'],
       "field_paragraph_introduction" => $block['introduction'],
       "field_vactory_paragraph_tab" => $field_vactory_paragraph_tab,
-
-      /* start configuration */
       "paragraph_container" => $block['width'],
       "paragraph_css_class" => $block['css_classes'],
       "field_background_color" => !empty($block['color']) ? ['color' => $block['color']] : NULL,
@@ -1881,7 +1443,6 @@ class NodeService {
       "field_paragraph_hide_lg" => !empty($block['hideDesktop']) ? 1 : 0,
       "field_paragraph_hide_sm" => !empty($block['hideMobile']) ? 1 : 0,
       "paragraph_background_parallax" => !empty($block['enableParallax']) ? 1 : 0,
-      /* end configuration */
     ];
 
     $is_new = $block['is_new'] ?? FALSE;
@@ -1893,65 +1454,9 @@ class NodeService {
       if (!$paragraph_entity->hasTranslation($language)) {
         $paragraph_entity->addTranslation($language, $paragraph_entity->toArray());
       }
-
-      // Now we can safely access and modify the translation.
-      $paragraph_entity->getTranslation($language)
-        ->set('field_vactory_paragraph_tab', $field_vactory_paragraph_tab);
-
-      if (isset($block['title'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('field_vactory_title', $block['title']);
-      }
-
-      $paragraph_entity->getTranslation($language)
-        ->set('field_vactory_flag', $block['show_title']);
-
-      if (isset($block['spacing'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('container_spacing', $block['spacing']);
-      }
-
-      if (isset($block['display'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('field_multi_paragraph_type', $block['display']);
-      }
-
-      if (isset($block['introduction'])) {
-        $paragraph_entity->getTranslation($language)
-          ->set('field_paragraph_introduction', $block['introduction']);
-      }
-
-      foreach ($field_mapping as $block_key => $field_name) {
-        if (isset($block[$block_key])) {
-          if ($block_key === 'color') {
-            $paragraph_entity->getTranslation($language)
-              ->set($field_name, ['color' => $block[$block_key]]);
-          }
-          else {
-            if ($block_key === 'image') {
-              $image_id = $block["imageID"] ?? NULL;
-
-              if (!empty($image_id) && $image_id > 0) {
-                // Valid image reference
-                $paragraph_entity->getTranslation($language)
-                  ->set($field_name, ['target_id' => $image_id]);
-              }
-              else {
-                // Ensure the field is empty
-                $paragraph_entity->getTranslation($language)
-                  ->set($field_name, []);
-              }
-            }
-            else {
-              $paragraph_entity->getTranslation($language)
-                ->set($field_name, $block[$block_key]);
-            }
-          }
-        }
-      }
-      /* end configuration */
-
-      $paragraph_entity->save();
+      $this->updateParagraphAppearanceSettings($paragraph_entity, $block, $language, 'multiple', [
+        'field_vactory_paragraph_tab' => $field_vactory_paragraph_tab,
+      ]);
     }
     else {
       if ($is_new) {
@@ -1961,61 +1466,9 @@ class NodeService {
       }
       else {
         $paragraph_entity = Paragraph::load($block['id']);
-
-        $paragraph_entity->getTranslation($language)
-          ->set('field_vactory_paragraph_tab', $field_vactory_paragraph_tab);
-
-        if (isset($block['title'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('field_vactory_title', $block['title']);
-        }
-
-        $paragraph_entity->getTranslation($language)
-          ->set('field_vactory_flag', $block['show_title']);
-
-        if (isset($block['introduction'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('field_paragraph_introduction', $block['introduction']);
-        }
-
-        if (isset($block['display'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('field_multi_paragraph_type', $block['display']);
-        }
-
-        if (isset($block['spacing'])) {
-          $paragraph_entity->getTranslation($language)
-            ->set('container_spacing', $block['spacing']);
-        }
-        foreach ($field_mapping as $block_key => $field_name) {
-          if (isset($block[$block_key])) {
-            if ($block_key === 'color') {
-              $paragraph_entity->getTranslation($language)
-                ->set($field_name, ['color' => $block[$block_key]]);
-            }
-            else {
-              if ($block_key === 'image') {
-                $image_id = $block["imageID"] ?? NULL;
-
-                if (!empty($image_id) && $image_id > 0) {
-                  // Valid image reference
-                  $paragraph_entity->getTranslation($language)
-                    ->set($field_name, ['target_id' => $image_id]);
-                }
-                else {
-                  // Ensure the field is empty
-                  $paragraph_entity->getTranslation($language)
-                    ->set($field_name, []);
-                }
-              }
-              else {
-                $paragraph_entity->getTranslation($language)
-                  ->set($field_name, $block[$block_key]);
-              }
-            }
-          }
-        }
-        $paragraph_entity->save();
+        $this->updateParagraphAppearanceSettings($paragraph_entity, $block, $language, 'multiple', [
+          'field_vactory_paragraph_tab' => $field_vactory_paragraph_tab,
+        ]);
       }
     }
     if ($paragraph_entity instanceof ParagraphInterface) {
@@ -2295,6 +1748,112 @@ class NodeService {
       '#isParagraphTemplateEnabled' => array_key_exists('vactory_component', $settings['handler_settings']['target_bundles']),
       '#isParagraphMultipleEnabled' => array_key_exists('vactory_paragraph_multi_template', $settings['handler_settings']['target_bundles']),
     ];
+  }
+
+  /**
+   * Update paragraph template appearance settings.
+   *
+   * @todo: move to paragraph service.
+   */
+  private function updateParagraphAppearanceSettings($paragraph_entity, $block, $language, $paragraph_type = 'template', $extra_data = []) {
+    switch ($paragraph_type) {
+      case 'template':
+        $paragraph_entity->getTranslation($language)
+          ->set('field_vactory_component', [
+            "widget_id" => $block['widget_id'],
+            "widget_data" => json_encode($block['widget_data']),
+          ]);
+        break;
+      case 'block':
+        $existing_block_id = $block['block_settings']['id'] ?? NULL;
+        $paragraph_entity->getTranslation($language)
+          ->set('field_vactory_block', [
+            "plugin_id" => $block['blockType'],
+            "settings" => $block['blockType'] === $existing_block_id ? $block['block_settings'] ?? [] : [],
+          ]);
+        if ($paragraph_entity->hasField('field_vactory_body')) {
+          $paragraph_entity->getTranslation($language)
+            ->set('field_vactory_body', [
+              'value' => $block['content'] ?? '',
+              'format' => 'full_html',
+            ]);
+        }
+        break;
+      case 'view':
+        $existing_view_id = $block['block_settings']['id'] ?? NULL;
+        $paragraph_entity->getTranslation($language)
+          ->set('field_views_reference', [
+            "target_id" => $block['blockType'],
+            "display_id" => $block['displayID'],
+            "settings" => $block['blockType'] === $existing_view_id ? $block['block_settings'] ?? [] : [],
+          ]);
+        break;
+      case 'multiple':
+        $paragraph_entity->getTranslation($language)
+          ->set('field_vactory_paragraph_tab', $extra_data['field_vactory_paragraph_tab']);
+        if ($paragraph_entity->hasField('field_paragraph_introduction') && isset($block['introduction'])) {
+          $paragraph_entity->getTranslation($language)
+            ->set('field_paragraph_introduction', $block['introduction']);
+        }
+        if ($paragraph_entity->hasField('field_multi_paragraph_type') && isset($block['display'])) {
+          $paragraph_entity->getTranslation($language)
+            ->set('field_multi_paragraph_type', $block['display']);
+        }
+        break;
+    }
+
+    if ($paragraph_entity->hasField('field_vactory_title') && isset($block['title'])) {
+      $paragraph_entity->getTranslation($language)
+        ->set('field_vactory_title', $block['title']);
+    }
+
+    if ($paragraph_entity->hasField('field_vactory_flag')) {
+      $paragraph_entity->getTranslation($language)
+        ->set('field_vactory_flag', $block['show_title']);
+    }
+
+    if ($paragraph_entity->hasField('paragraph_container') && isset($block['width'])) {
+      $paragraph_entity->getTranslation($language)
+        ->set('paragraph_container', $block['width']);
+    }
+
+    if ($paragraph_entity->hasField('spacing') && isset($block['spacing'])) {
+      $paragraph_entity->getTranslation($language)
+        ->set('container_spacing', $block['spacing']);
+    }
+
+    if ($paragraph_entity->hasField('css_classes') && isset($block['css_classes'])) {
+      $paragraph_entity->getTranslation($language)
+        ->set('paragraph_css_class', $block['css_classes']);
+    }
+    foreach (DashboardConstants::PARAGARAPH_APPARENCE_FIELDS as $block_key => $field_name) {
+      if (!$paragraph_entity->hasField($field_name)) {
+        continue;
+      }
+      if (!isset($block[$block_key])) {
+        continue;
+      }
+      if ($block_key === 'color') {
+        $paragraph_entity->getTranslation($language)
+          ->set($field_name, ['color' => $block[$block_key]]);
+        continue;
+      }
+      if ($block_key === 'image') {
+        $image_id = $block["imageID"] ?? NULL;
+        if (isset($image_id) && $image_id !== -1) {
+          $paragraph_entity->getTranslation($language)
+            ->set($field_name, ['target_id' => $image_id]);
+        }
+        else {
+          $paragraph_entity->getTranslation($language)
+            ->set($field_name, []);
+        }
+        continue;
+      }
+      $paragraph_entity->getTranslation($language)
+        ->set($field_name, $block[$block_key]);
+    }
+    $paragraph_entity->save();
   }
 
 }
