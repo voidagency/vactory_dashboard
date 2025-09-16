@@ -14,7 +14,7 @@ function iconSelectData() {
       this.hasError = false;
 
       try {
-        const response = await fetch('/admin/vactory-dashboard/api/icons');
+        const response = await fetch(Drupal.url('admin/vactory-dashboard/api/icons'));
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
