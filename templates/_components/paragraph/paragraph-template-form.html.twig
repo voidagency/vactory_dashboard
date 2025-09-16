@@ -90,7 +90,8 @@
                                                                 <option value="">{{ 'Select...'|t }}</option>
                                                                 <template x-for="option in field.options['#options']"
                                                                           :key="Object.keys(option)[0]">
-                                                                    <option :value="Object.keys(option)[0]"
+                                                                    <option :selected="Object.keys(option)[0] === blockForm.extra_fields[fieldName]"
+                                                                            :value="Object.keys(option)[0]"
                                                                             x-text="Object.values(option)[0]"></option>
                                                                 </template>
                                                             </select>
@@ -266,7 +267,8 @@
                                                                                     <template
                                                                                             x-for="option in item.options['#options']"
                                                                                             :key="Object.keys(option)[0]">
-                                                                                        <option :value="Object.keys(option)[0]"
+                                                                                        <option :selected="Object.keys(option)[0] === blockForm.extra_fields[fieldName][itemName]"
+                                                                                                :value="Object.keys(option)[0]"
                                                                                                 x-text="Object.values(option)[0]"></option>
                                                                                     </template>
                                                                                 </select>
@@ -441,7 +443,8 @@
                                                                 <option value="">{{ 'Select...'|t }}</option>
                                                                 <template x-for="option in field.options['#options']"
                                                                           :key="Object.keys(option)[0]">
-                                                                    <option :value="Object.keys(option)[0]"
+                                                                    <option :selected="Object.keys(option)[0] === blockForm.fields[fieldName]"
+                                                                            :value="Object.keys(option)[0]"
                                                                             x-text="Object.values(option)[0]"></option>
                                                                 </template>
                                                             </select>
@@ -615,7 +618,8 @@
                                                                                     <template
                                                                                             x-for="option in item.options['#options']"
                                                                                             :key="Object.keys(option)[0]">
-                                                                                        <option :value="Object.keys(option)[0]"
+                                                                                        <option :selected="Object.keys(option)[0] === blockForm.fields[fieldName][itemName]"
+                                                                                                :value="Object.keys(option)[0]"
                                                                                                 x-text="Object.values(option)[0]"></option>
                                                                                     </template>
                                                                                 </select>
@@ -953,7 +957,8 @@
                                                                                                 <template
                                                                                                         x-for="option in field.options['#options']"
                                                                                                         :key="Object.keys(option)[0]">
-                                                                                                    <option :value="Object.keys(option)[0]"
+                                                                                                    <option :selected="Object.keys(option)[0] === blockForm.fields[fieldName][itemName]"
+                                                                                                            :value="Object.keys(option)[0]"
                                                                                                             x-text="Object.values(option)[0]"></option>
                                                                                                 </template>
                                                                                             </select>
@@ -1116,7 +1121,8 @@
                                                                             <template
                                                                                     x-for="option in field.options['#options']"
                                                                                     :key="Object.keys(option)[0]">
-                                                                                <option :value="Object.keys(option)[0]"
+                                                                                <option :selected="Object.keys(option)[0] === item[fieldName]"
+                                                                                        :value="Object.keys(option)[0]"
                                                                                         x-text="Object.values(option)[0]"></option>
                                                                             </template>
                                                                         </select>

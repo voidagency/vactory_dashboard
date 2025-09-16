@@ -577,10 +577,11 @@ class NodeService {
     $extraFieldsFileFields = array_keys($fileRemoteVideoFields);
 
     // Process extra fields image fields.
-    $this->handleExtraFieldsImageType($widgetData, $extraFieldsImageFields);
-    $this->handleExtraFieldsRemoteVideoType($widgetData, $extraFieldsRemoteVideoFields);
-    $this->handleExtraFieldsFileType($widgetData, $extraFieldsFileFields);
-
+    if ($widgetData['extra_field']) {
+      $this->handleExtraFieldsImageType($widgetData, $extraFieldsImageFields);
+      $this->handleExtraFieldsRemoteVideoType($widgetData, $extraFieldsRemoteVideoFields);
+      $this->handleExtraFieldsFileType($widgetData, $extraFieldsFileFields);
+    }
     // Process each numeric key (0, 1, etc.) in widgetData.
     $this->handleNonExtraFieldsImageType($widgetData, $imageFields);
     $this->handleNonExtraFieldsRemoteVideoType($widgetData, $remoteVideoFields);
