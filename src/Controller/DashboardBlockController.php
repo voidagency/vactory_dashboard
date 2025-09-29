@@ -136,19 +136,19 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
             $image = !empty($widget['screenshot']) ? $widget['screenshot'] : "";
           }
         }
+        $block_data[] = [
+          'id' => $block->id(),
+          'label' => $block->label(),
+          'region' => $config['region'],
+          'theme' => $config['theme'],
+          'visibility' => $config['visibility'],
+          'content' => $content,
+          'status' => !empty($config['status']),
+          'weight' => $config['weight'],
+          'image' => $image,
+          'edit_path' => $edit_url,
+        ];
       }
-      $block_data[] = [
-        'id' => $block->id(),
-        'label' => $block->label(),
-        'region' => $config['region'],
-        'theme' => $config['theme'],
-        'visibility' => $config['visibility'],
-        'content' => $content,
-        'status' => !empty($config['status']),
-        'weight' => $config['weight'],
-        'image' => $image,
-        'edit_path' => $edit_url,
-      ];
     }
 
     return new JsonResponse([
