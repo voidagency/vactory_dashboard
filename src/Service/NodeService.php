@@ -4,15 +4,19 @@ namespace Drupal\vactory_dashboard\Service;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\file\FileInterface;
 use Drupal\media\MediaInterface;
 use Drupal\node\Entity\NodeType;
 use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\paragraphs\Entity\ParagraphsType;
 use Drupal\paragraphs\ParagraphInterface;
+use Drupal\paragraphs\ParagraphsTypeInterface;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
 use Drupal\Core\TypedData\TranslatableInterface;
@@ -60,12 +64,20 @@ class NodeService {
    */
   protected $fileUrlGenerator;
 
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager, ConfigFactoryInterface $configFactory, EntityRepositoryInterface $entityRepository, FileUrlGeneratorInterface $fileUrlGenerator) {
+  /**
+   * The module handler.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager, ConfigFactoryInterface $configFactory, EntityRepositoryInterface $entityRepository, FileUrlGeneratorInterface $fileUrlGenerator, ModuleHandlerInterface $moduleHandler) {
     $this->entityTypeManager = $entityTypeManager;
     $this->entityFieldManager = $entityFieldManager;
     $this->configFactory = $configFactory;
     $this->entityRepository = $entityRepository;
     $this->fileUrlGenerator = $fileUrlGenerator;
+    $this->moduleHandler = $moduleHandler;
   }
 
   /**
@@ -224,7 +236,7 @@ class NodeService {
         }
       }
       elseif ($field['type'] === "field_cross_content") {
-        $node_data[$field['name']] = array_values(explode(" ", $entity->get($field['name'])->value) ?? []);
+        $node_data[$field['name']] = array_values(explode(" ", $entity->get($field['name'])->value ?? "") ?? []);
         $node_data[$field['name']] = array_filter($node_data[$field['name']], function($vccNode) {
           return $vccNode !== "";
         });
@@ -241,7 +253,20 @@ class NodeService {
         }
       }
       else {
-        $node_data[$field['name']] = $entity->get($field['name'])->value ?? "";
+        if ($field['type'] === 'datetime' && $field['settings']['datetime_type'] === 'datetime') {
+          $datetime_value = $entity->get($field['name'])->value;
+          if ($datetime_value) {
+            $date = new \DateTime($datetime_value, new \DateTimeZone('UTC'));
+            $date->setTimezone(new \DateTimeZone(date_default_timezone_get() ?? 'UTC'));
+            $node_data[$field['name']] = $date->format('Y-m-d\TH:i:s');
+          }
+          else {
+            $node_data[$field['name']] = "";
+          }
+        }
+        else {
+          $node_data[$field['name']] = $entity->get($field['name'])->value ?? "";
+        }
       }
     }
 
@@ -890,9 +915,13 @@ class NodeService {
       return ($a['weight'] ?? 0) <=> ($b['weight'] ?? 0);
     });
 
+    $skipped_fields = DashboardConstants::SKIPPED_FIELDS;
+    $context = ['entity_type' => $type, 'bundle' => $bundle];
+    $this->moduleHandler->alter('dashboard_form_skipped_fields', $skipped_fields, $context);
+
     foreach ($components as $field_name => $component) {
-      // Skip technical/system fields
-      if (!isset($fields[$field_name]) || in_array($field_name, DashboardConstants::SKIPPED_FIELDS)) {
+      // Skip technical/system fields.
+      if (!isset($fields[$field_name]) || in_array($field_name, $skipped_fields)) {
         continue;
       }
 
@@ -1748,23 +1777,37 @@ class NodeService {
    */
   public function isParagraphTypeEnabled($bundle = "vactory_page"): array {
     $field_config = FieldConfig::loadByName('node', $bundle, 'field_vactory_paragraphs');
-
     if (!$field_config) {
       return [];
     }
 
     $settings = $field_config->getSettings();
+    $target_bundles = $settings['handler_settings']['target_bundles'] ?? NULL;
 
-    if (!isset($settings['handler_settings']['target_bundles'])) {
-      return [];
+    $paragraph_types = [
+      '#isParagraphViewEnabled' => 'views_reference',
+      '#isParagraphBlockEnabled' => 'vactory_paragraph_block',
+      '#isParagraphTemplateEnabled' => 'vactory_component',
+      '#isParagraphMultipleEnabled' => 'vactory_paragraph_multi_template',
+    ];
+
+    $types = [];
+
+    foreach ($paragraph_types as $key => $bundle_name) {
+      if ($target_bundles !== NULL) {
+        // Check if bundle exists in target_bundles.
+        $types[$key] = array_key_exists($bundle_name, $target_bundles);
+      }
+      else {
+        // Check if paragraph type exists.
+        $paragraph_type = ParagraphsType::load($bundle_name);
+        if ($paragraph_type instanceof ParagraphsTypeInterface) {
+          $types[$key] = TRUE;
+        }
+      }
     }
 
-    return [
-      '#isParagraphViewEnabled' => array_key_exists('views_reference', $settings['handler_settings']['target_bundles']),
-      '#isParagraphBlockEnabled' => array_key_exists('vactory_paragraph_block', $settings['handler_settings']['target_bundles']),
-      '#isParagraphTemplateEnabled' => array_key_exists('vactory_component', $settings['handler_settings']['target_bundles']),
-      '#isParagraphMultipleEnabled' => array_key_exists('vactory_paragraph_multi_template', $settings['handler_settings']['target_bundles']),
-    ];
+    return $types;
   }
 
   /**
