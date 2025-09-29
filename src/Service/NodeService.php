@@ -9,6 +9,7 @@ use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\file\FileInterface;
 use Drupal\media\MediaInterface;
 use Drupal\node\Entity\NodeType;
@@ -63,12 +64,20 @@ class NodeService {
    */
   protected $fileUrlGenerator;
 
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager, ConfigFactoryInterface $configFactory, EntityRepositoryInterface $entityRepository, FileUrlGeneratorInterface $fileUrlGenerator) {
+  /**
+   * The module handler.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager, ConfigFactoryInterface $configFactory, EntityRepositoryInterface $entityRepository, FileUrlGeneratorInterface $fileUrlGenerator, ModuleHandlerInterface $moduleHandler) {
     $this->entityTypeManager = $entityTypeManager;
     $this->entityFieldManager = $entityFieldManager;
     $this->configFactory = $configFactory;
     $this->entityRepository = $entityRepository;
     $this->fileUrlGenerator = $fileUrlGenerator;
+    $this->moduleHandler = $moduleHandler;
   }
 
   /**
@@ -243,19 +252,21 @@ class NodeService {
           $node_data[$field['name']] = $entity->get($field['name'])->target_id ?? NULL;
         }
       }
-      else if ($field['type'] === 'datetime' && $field['settings']['datetime_type'] === 'datetime') {
-        $datetime_value = $entity->get($field['name'])->value;
-        if ($datetime_value) {
-          $date = new \DateTime($datetime_value, new \DateTimeZone('UTC'));
-          $date->setTimezone(new \DateTimeZone(date_default_timezone_get() ?? 'UTC'));
-          $node_data[$field['name']] = $date->format('Y-m-d\TH:i:s');
-        } else {
-          $node_data[$field['name']] = "";
-        }
-      }
       else {
-
-        $node_data[$field['name']] = $entity->get($field['name'])->value ?? "";
+        if ($field['type'] === 'datetime' && $field['settings']['datetime_type'] === 'datetime') {
+          $datetime_value = $entity->get($field['name'])->value;
+          if ($datetime_value) {
+            $date = new \DateTime($datetime_value, new \DateTimeZone('UTC'));
+            $date->setTimezone(new \DateTimeZone(date_default_timezone_get() ?? 'UTC'));
+            $node_data[$field['name']] = $date->format('Y-m-d\TH:i:s');
+          }
+          else {
+            $node_data[$field['name']] = "";
+          }
+        }
+        else {
+          $node_data[$field['name']] = $entity->get($field['name'])->value ?? "";
+        }
       }
     }
 
@@ -904,9 +915,13 @@ class NodeService {
       return ($a['weight'] ?? 0) <=> ($b['weight'] ?? 0);
     });
 
+    $skipped_fields = DashboardConstants::SKIPPED_FIELDS;
+    $context = ['entity_type' => $type, 'bundle' => $bundle];
+    $this->moduleHandler->alter('dashboard_form_skipped_fields', $skipped_fields, $context);
+
     foreach ($components as $field_name => $component) {
-      // Skip technical/system fields
-      if (!isset($fields[$field_name]) || in_array($field_name, DashboardConstants::SKIPPED_FIELDS)) {
+      // Skip technical/system fields.
+      if (!isset($fields[$field_name]) || in_array($field_name, $skipped_fields)) {
         continue;
       }
 
@@ -1767,7 +1782,7 @@ class NodeService {
     }
 
     $settings = $field_config->getSettings();
-    $target_bundles = $settings['handler_settings']['target_bundles'] ?? null;
+    $target_bundles = $settings['handler_settings']['target_bundles'] ?? NULL;
 
     $paragraph_types = [
       '#isParagraphViewEnabled' => 'views_reference',
@@ -1779,10 +1794,11 @@ class NodeService {
     $types = [];
 
     foreach ($paragraph_types as $key => $bundle_name) {
-      if ($target_bundles !== null) {
+      if ($target_bundles !== NULL) {
         // Check if bundle exists in target_bundles.
         $types[$key] = array_key_exists($bundle_name, $target_bundles);
-      } else {
+      }
+      else {
         // Check if paragraph type exists.
         $paragraph_type = ParagraphsType::load($bundle_name);
         if ($paragraph_type instanceof ParagraphsTypeInterface) {
