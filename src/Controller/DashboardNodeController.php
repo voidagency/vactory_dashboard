@@ -383,7 +383,6 @@ class DashboardNodeController extends ControllerBase {
    */
   public function edit($bundle, $nid) {
     $manager = \Drupal::service('content_translation.manager');
-
     $vid = $this->entityTypeManager
       ->getStorage('node')
       ->getLatestRevisionId($nid);
@@ -599,6 +598,17 @@ class DashboardNodeController extends ControllerBase {
           continue;
         }
 
+        if (is_string($field_value) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $field_value)) {
+          $timezone = new \DateTimeZone(date_default_timezone_get());
+          $date = \DateTime::createFromFormat('Y-m-d\TH:i', $field_value, $timezone);
+
+          if ($date !== false) {
+            $date->setTimezone(new \DateTimeZone('UTC'));
+            $node->set($field_name, $date->format('Y-m-d\TH:i:s'));
+            continue;
+          }
+        }
+
         if ($field_value) {
           $node->set($field_name, $field_value);
         }
@@ -723,6 +733,17 @@ class DashboardNodeController extends ControllerBase {
           }
           $node->getTranslation($language)->set($field_name, $field_value);
           continue;
+        }
+
+        if (is_string($field_value) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $field_value)) {
+          $timezone = new \DateTimeZone(date_default_timezone_get());
+          $date = \DateTime::createFromFormat('Y-m-d\TH:i', $field_value, $timezone);
+
+          if ($date !== false) {
+            $date->setTimezone(new \DateTimeZone('UTC'));
+            $node->getTranslation($language)->set($field_name, $date->format('Y-m-d\TH:i:s'));
+            continue;
+          }
         }
 
         if ($field_value || is_array($field_value)) {

@@ -4,6 +4,7 @@ namespace Drupal\vactory_dashboard\Service;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
@@ -242,7 +243,18 @@ class NodeService {
           $node_data[$field['name']] = $entity->get($field['name'])->target_id ?? NULL;
         }
       }
+      else if ($field['type'] === 'datetime' && $field['settings']['datetime_type'] === 'datetime') {
+        $datetime_value = $entity->get($field['name'])->value;
+        if ($datetime_value) {
+          $date = new \DateTime($datetime_value, new \DateTimeZone('UTC'));
+          $date->setTimezone(new \DateTimeZone(date_default_timezone_get() ?? 'UTC'));
+          $node_data[$field['name']] = $date->format('Y-m-d\TH:i:s');
+        } else {
+          $node_data[$field['name']] = "";
+        }
+      }
       else {
+
         $node_data[$field['name']] = $entity->get($field['name'])->value ?? "";
       }
     }
