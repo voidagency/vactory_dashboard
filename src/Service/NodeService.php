@@ -226,7 +226,7 @@ class NodeService {
         }
       }
       elseif ($field['type'] === "field_cross_content") {
-        $node_data[$field['name']] = array_values(explode(" ", $entity->get($field['name'])->value) ?? []);
+        $node_data[$field['name']] = array_values(explode(" ", $entity->get($field['name'])->value ?? "") ?? []);
         $node_data[$field['name']] = array_filter($node_data[$field['name']], function($vccNode) {
           return $vccNode !== "";
         });
