@@ -12,7 +12,9 @@ use Drupal\file\FileInterface;
 use Drupal\media\MediaInterface;
 use Drupal\node\Entity\NodeType;
 use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\paragraphs\Entity\ParagraphsType;
 use Drupal\paragraphs\ParagraphInterface;
+use Drupal\paragraphs\ParagraphsTypeInterface;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\vactory_dashboard\Constants\DashboardConstants;
 use Drupal\Core\TypedData\TranslatableInterface;
@@ -1748,23 +1750,36 @@ class NodeService {
    */
   public function isParagraphTypeEnabled($bundle = "vactory_page"): array {
     $field_config = FieldConfig::loadByName('node', $bundle, 'field_vactory_paragraphs');
-
     if (!$field_config) {
       return [];
     }
 
     $settings = $field_config->getSettings();
+    $target_bundles = $settings['handler_settings']['target_bundles'] ?? null;
 
-    if (!isset($settings['handler_settings']['target_bundles'])) {
-      return [];
+    $paragraph_types = [
+      '#isParagraphViewEnabled' => 'views_reference',
+      '#isParagraphBlockEnabled' => 'vactory_paragraph_block',
+      '#isParagraphTemplateEnabled' => 'vactory_component',
+      '#isParagraphMultipleEnabled' => 'vactory_paragraph_multi_template',
+    ];
+
+    $types = [];
+
+    foreach ($paragraph_types as $key => $bundle_name) {
+      if ($target_bundles !== null) {
+        // Check if bundle exists in target_bundles.
+        $types[$key] = array_key_exists($bundle_name, $target_bundles);
+      } else {
+        // Check if paragraph type exists.
+        $paragraph_type = ParagraphsType::load($bundle_name);
+        if ($paragraph_type instanceof ParagraphsTypeInterface) {
+          $types[$key] = TRUE;
+        }
+      }
     }
 
-    return [
-      '#isParagraphViewEnabled' => array_key_exists('views_reference', $settings['handler_settings']['target_bundles']),
-      '#isParagraphBlockEnabled' => array_key_exists('vactory_paragraph_block', $settings['handler_settings']['target_bundles']),
-      '#isParagraphTemplateEnabled' => array_key_exists('vactory_component', $settings['handler_settings']['target_bundles']),
-      '#isParagraphMultipleEnabled' => array_key_exists('vactory_paragraph_multi_template', $settings['handler_settings']['target_bundles']),
-    ];
+    return $types;
   }
 
   /**
