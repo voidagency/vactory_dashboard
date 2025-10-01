@@ -1109,13 +1109,7 @@ class NodeService {
       return FALSE;
     }
 
-    $settings = $fields['field_vactory_paragraphs']['settings'];
-    if (in_array('vactory_component', $settings['handler_settings']['target_bundles'] ?? [])) {
-      //unset($fields['field_vactory_paragraphs']);
-      return TRUE;
-    }
-
-    return FALSE;
+    return TRUE;
   }
 
   /**
