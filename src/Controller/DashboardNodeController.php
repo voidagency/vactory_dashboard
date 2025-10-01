@@ -746,9 +746,10 @@ class DashboardNodeController extends ControllerBase {
           }
         }
 
-        if ($field_value || is_array($field_value)) {
+        if ($field_value || is_array($field_value) || is_bool($field_value)) {
           $node->getTranslation($language)->set($field_name, $field_value);
         }
+
       }
 
       // Update SEO fields if they exist

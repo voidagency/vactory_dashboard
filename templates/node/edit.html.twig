@@ -1681,6 +1681,11 @@
                   return;
                 }
 
+                if (field.type === 'boolean') {
+                  this.formData.fields[fieldKey] = node[fieldKey] === '1' ?? false;
+                  return;
+                }
+
                 this.formData.fields[fieldKey] = node[fieldKey] ?? '';
 
               });

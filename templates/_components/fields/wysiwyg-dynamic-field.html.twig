@@ -1,14 +1,22 @@
 <template x-if="dynamicFields?.[field.name] === undefined || dynamicFields?.[field.name]?.length === 0">
-    <div class="mb-4 flex justify-between items-center">
-        <div class="flex space-x-2">
-            {% include '@vactory_admin/components/button/button.twig' with {
-                text: 'Add block'|t,
-                size: 'md',
-                type: 'button',
-                variant: 'primary',
-                click_handler: 'showParagraphTemplateForm(field.name)',
-                icon_left: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path></svg>'
-            } %}
+    <div class="relative">
+        <!-- Empty State Container -->
+        <div class="border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 ease-in-out">
+            <div class="px-8 py-4 text-center">
+                <!-- Action Button -->
+                <div class="flex justify-center">
+                    {% include '@vactory_admin/components/button/button.twig' with {
+                        text: 'Choose Template'|t,
+                        size: 'lg',
+                        type: 'button',
+                        variant: 'primary',
+                        click_handler: 'showParagraphTemplateForm(field.name)',
+                        icon_left: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path></svg>',
+                        additional_classes: 'shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200'
+                    } %}
+                </div>
+            
+            </div>
         </div>
     </div>
 </template>
