@@ -1,13 +1,13 @@
 {# Reusable Form Field Builder Component #}
-{# 
-  Usage: 
-  {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
-    field: field,
-    formData: 'formData',
-    isEdit: true|false,
-    language: language,
-    node_default_lang: node_default_lang
-  } %}
+{#
+Usage:
+{% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
+  field: field,
+  formData: 'formData',
+  isEdit: true|false,
+  language: language,
+  node_default_lang: node_default_lang
+} %}
 #}
 
 <div>
@@ -23,15 +23,15 @@
 
     {# Text Input #}
     <template x-if="field.type === 'string'">
-        <input type="text" 
-               :required="field.required" 
+        <input type="text"
+               :required="field.required"
                x-model="formData.fields[field.name]"
                @invalid="$el.classList.add('border-red-500')"
                @input="$el.classList.remove('border-red-500')"
                class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
-               {% if isEdit and language != node_default_lang %}
-                   :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
-               {% endif %}>
+                {% if isEdit and language != node_default_lang %}
+            :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                {% endif %}>
     </template>
 
     {# Text with Summary #}
@@ -41,8 +41,8 @@
 
     {# Textarea #}
     <template x-if="field.type === 'text_long' || field.type === 'string_long'">
-        <textarea :required="field.required" 
-                  x-model="formData.fields[field.name]" 
+        <textarea :required="field.required"
+                  x-model="formData.fields[field.name]"
                   rows="4"
                   class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
                   {% if isEdit and language != node_default_lang %}
@@ -53,13 +53,16 @@
     {# Entity Reference Revisions (Templates) #}
     <template x-if="field.type === 'entity_reference_revisions'">
         <div class="flex items-center">
-            <button @click.prevent="activeTab = 'templates'" 
-                    type="button" 
+            <button @click.prevent="activeTab = 'templates'"
+                    type="button"
                     class="group relative flex items-center justify-center rounded-md font-bold border border-primary-500 text-primary-500 w-full px-3.5 py-4 shadow-sm transition duration-150 hover:bg-primary-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500">
                 <span x-text="blocks.length === 0 ? `Ajouter une template` : `${blocks.length} Template${blocks.length > 1 ? 's' : ''} disponible${blocks.length > 1 ? 's' : ''}`"></span>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="absolute size-6 group-hover:text-white text-primary-500 right-1 top-1">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                     stroke="currentColor"
+                     class="absolute size-6 group-hover:text-white text-primary-500 right-1 top-1">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
                 </svg>
             </button>
         </div>
@@ -70,9 +73,9 @@
         <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
                 'required': 'field.required',
-                'url': 'formData.fields[field.name].url', 
-                'path': 'formData.fields[field.name].path', 
-                'key': 'formData.fields[field.name].key', 
+                'url': 'formData.fields[field.name].url',
+                'path': 'formData.fields[field.name].path',
+                'key': 'formData.fields[field.name].key',
                 'type': 'image'
             } %}
         </div>
@@ -88,10 +91,10 @@
         <div>
             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
                 'required': 'field.required',
-                'name': 'formData.fields[field.name].name', 
-                'url': 'formData.fields[field.name].url', 
-                'path': 'formData.fields[field.name].path', 
-                'key': 'formData.fields[field.name].key', 
+                'name': 'formData.fields[field.name].name',
+                'url': 'formData.fields[field.name].url',
+                'path': 'formData.fields[field.name].path',
+                'key': 'formData.fields[field.name].key',
                 'type': 'remote_video'
             } %}
         </div>
@@ -102,10 +105,10 @@
         <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
                 'required': 'field.required',
-                'name': 'formData.fields[field.name].name', 
-                'url': 'formData.fields[field.name].url', 
-                'path': 'formData.fields[field.name].path', 
-                'key': 'formData.fields[field.name].key', 
+                'name': 'formData.fields[field.name].name',
+                'url': 'formData.fields[field.name].url',
+                'path': 'formData.fields[field.name].path',
+                'key': 'formData.fields[field.name].key',
                 'type': 'file'
             } %}
         </div>
@@ -116,10 +119,10 @@
         <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
                 'required': 'field.required',
-                'name': 'formData.fields[field.name].name', 
-                'url': 'formData.fields[field.name].url', 
-                'path': 'formData.fields[field.name].path', 
-                'key': 'formData.fields[field.name].key', 
+                'name': 'formData.fields[field.name].name',
+                'url': 'formData.fields[field.name].url',
+                'path': 'formData.fields[field.name].path',
+                'key': 'formData.fields[field.name].key',
                 'type': 'private_file'
             } %}
         </div>
@@ -127,35 +130,35 @@
 
     {# Link Field #}
     <template x-if="field.type === 'link'">
-        <input type="text" 
-               :required="field.required" 
+        <input type="text"
+               :required="field.required"
                x-model="formData.fields[field.name]"
                class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
-               {% if isEdit and language != node_default_lang %}
-                   :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
-               {% endif %}>
+                {% if isEdit and language != node_default_lang %}
+            :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                {% endif %}>
     </template>
 
     {# Email Input #}
     <template x-if="field.type === 'email'">
-        <input type="email" 
-               :required="field.required" 
+        <input type="email"
+               :required="field.required"
                x-model="formData.fields[field.name]"
                class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
-               {% if isEdit and language != node_default_lang %}
-                   :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
-               {% endif %}>
+                {% if isEdit and language != node_default_lang %}
+            :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                {% endif %}>
     </template>
 
     {# Date #}
     <template x-if="field.type === 'datetime' && field?.settings?.datetime_type === 'date'">
-        <input type="date" 
-               :required="field.required" 
+        <input type="date"
+               :required="field.required"
                x-model="formData.fields[field.name]"
                class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
-               {% if isEdit and language != node_default_lang %}
-                   :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
-               {% endif %}>
+                {% if isEdit and language != node_default_lang %}
+            :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                {% endif %}>
     </template>
 
     {# Datetime #}
@@ -183,12 +186,12 @@
     <template x-if="field.type === 'select'">
         <div>
             <select :key="field.name + JSON.stringify(formData.fields[field.name])"
-                    :required="field.required" 
+                    :required="field.required"
                     :multiple="field.multiple"
                     x-model="formData.fields[field.name]"
                     class="w-full py-1.5 px-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
                     {% if isEdit and language != node_default_lang %}
-                        :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
                     {% endif %}>
                 <template x-if="!field.multiple">
                     <option value="">{{ 'Select...'|t }}</option>
@@ -211,8 +214,8 @@
         <div class="space-y-1 flex flex-col">
             <template x-for="(label, key) in field.options" :key="key">
                 <label class="items-center space-x-2">
-                    <input type="checkbox" 
-                           :value="key" 
+                    <input type="checkbox"
+                           :value="key"
                            x-model="formData.fields[field.name]"/>
                     <span x-text="label"></span>
                 </label>
@@ -225,13 +228,23 @@
         <div class="space-y-1 flex flex-col">
             <template x-for="(label, key) in field.options" :key="key">
                 <label class="items-center space-x-2">
-                    <input type="radio" 
-                           :value="key" 
+                    <input type="radio"
+                           :value="key"
                            x-model="formData.fields[field.name]"/>
                     <span x-text="label"></span>
                 </label>
             </template>
         </div>
+    </template>
+
+    {# Radio #}
+    <template x-if="field.type === 'boolean'">
+        <input type="checkbox"
+               x-model="formData.fields[field.name]"
+               class="py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+                {% if isEdit and language != node_default_lang %}
+            :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                {% endif %}/>
     </template>
 
     {# Field Description #}
