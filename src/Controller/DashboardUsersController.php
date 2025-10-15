@@ -57,6 +57,14 @@ class DashboardUsersController extends ControllerBase {
   }
 
   /**
+   * @return bool
+   *   TRUE if the user is an admin, FALSE otherwise.
+   */
+  protected function isCurrentUserAdmin() {
+    return in_array('administrator', $this->currentUser->getRoles());
+  }
+
+  /**
    * Returns the users dashboard page.
    *
    * @return array
@@ -164,14 +172,6 @@ class DashboardUsersController extends ControllerBase {
         return $this->t($role);
       }, $roles);
 
-      $roles = Role::loadMultiple();
-      $role_options = [];
-      foreach ($roles as $role_id => $role) {
-        if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
-          $role_options[$role_id] = $role->label();
-        }
-      }
-
       $currentUser = $this->currentUser;
       $user_roles = $currentUser->getRoles();
 
@@ -189,6 +189,17 @@ class DashboardUsersController extends ControllerBase {
       ];
     }
 
+    // Only load roles if user is admin
+    $role_options = [];
+    if ($this->isCurrentUserAdmin()) {
+      $roles = Role::loadMultiple();
+      foreach ($roles as $role_id => $role) {
+        if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
+          $role_options[$role_id] = $role->label();
+        }
+      }
+    }
+
     return new JsonResponse([
       'data' => $data,
       'total' => $total,
@@ -197,7 +208,6 @@ class DashboardUsersController extends ControllerBase {
       'pages' => ceil($total / $limit),
       'roles' => $role_options,
       'current_user_role' => $user_roles,
-
     ]);
   }
 
@@ -240,13 +250,17 @@ class DashboardUsersController extends ControllerBase {
    *   A render array for the user update page.
    */
   public function pageUpdate($userId) {
-    $roles = Role::loadMultiple();
+    // Only load roles if user is admin
     $role_options = [];
-    foreach ($roles as $role_id => $role) {
-      if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
-        $role_options[$role_id] = $role->label();
+    if ($this->isCurrentUserAdmin()) {
+      $roles = Role::loadMultiple();
+      foreach ($roles as $role_id => $role) {
+        if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
+          $role_options[$role_id] = $role->label();
+        }
       }
     }
+
     // Check if the user exists
     $user = $this->entityTypeManager->getStorage('user')->load($userId);
     if (!$user) {
@@ -303,11 +317,14 @@ class DashboardUsersController extends ControllerBase {
       throw new NotFoundHttpException('Utilisateur non trouvé.');
     }
 
-    $roles = Role::loadMultiple();
+    // Only load roles if user is admin
     $role_options = [];
-    foreach ($roles as $role_id => $role) {
-      if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
-        $role_options[$role_id] = $role->label();
+    if ($this->isCurrentUserAdmin()) {
+      $roles = Role::loadMultiple();
+      foreach ($roles as $role_id => $role) {
+        if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
+          $role_options[$role_id] = $role->label();
+        }
       }
     }
 
@@ -399,6 +416,14 @@ class DashboardUsersController extends ControllerBase {
     }
 
     if (isset($data['roles'])) {
+      // Security check: prevent non-admin users from modifying roles at all
+      if (!$this->isCurrentUserAdmin()) {
+        return new JsonResponse([
+          'message' => 'Access denied: You cannot modify user roles',
+          'errors' => ['roles' => 'You do not have permission to modify user roles']
+        ], Response::HTTP_FORBIDDEN);
+      }
+
       $user->set('roles', $data['roles']);
     }
 
