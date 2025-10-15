@@ -393,6 +393,10 @@ class DashboardVactoryPageController extends ControllerBase {
         $node->getTranslation($language)->set('title', $settings['title']);
       }
 
+      if (isset($settings['summary'])) {
+        $node->getTranslation($language)->set('node_summary', $settings['summary']);
+      }
+
       if (isset($settings['alias'])) {
         $alias = trim($settings['alias']);
 
@@ -497,6 +501,10 @@ class DashboardVactoryPageController extends ControllerBase {
 
       if (isset($settings['title'])) {
         $node->set('title', $settings['title']);
+      }
+
+      if (isset($settings['summary'])) {
+        $node->set('node_summary', $settings['summary']);
       }
 
       // Update SEO fields if they exist.

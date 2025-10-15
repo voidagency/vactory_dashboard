@@ -288,6 +288,7 @@ class DashboardNodeController extends ControllerBase {
       $data[] = [
         'id' => $node->id(),
         'title' => $node->label(),
+        'summary' => $node->summary(),
         'author' => $node->getOwner() ? $node->getOwner()
           ->getDisplayName() : '',
         'created' => $node->getCreatedTime(),
