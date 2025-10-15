@@ -9,7 +9,7 @@
 {% endfor %}
 
 {% block content %}
-    <div class="content-type-layout" x-data="dataTable()">
+    <div class="content-type-layout" x-data="dataTable('{{ id }}', {{ configured_limit|default(10) }})">
         {# Page header #}
         <div class="mb-6 flex justify-between items-center">
             <h1 class="text-2xl font-semibold text-slate-900">{{ bundle_label|t }}</h1>
@@ -131,7 +131,7 @@
 
 {% block javascripts %}
     <script>
-      function dataTable(id) {
+      function dataTable(id, configuredLimit) {
         return {
           id: id,
           vocabularyIds: {{ vocabulary_ids|json_encode|raw }},
@@ -164,7 +164,7 @@
           termName: '',
           termDescription: '',
           termLang: '',
-          limit: Alpine.store('limit'),
+          limit: configuredLimit,
           total: 0,
           totalPages: 1,
           pages: [],
@@ -179,7 +179,7 @@
             this.currentPage = page;
             const params = new URLSearchParams({
               page: page,
-              limit: Alpine.store('limit'),
+              limit: this.limit,
               search: this.filters.search,
             });
 
@@ -264,7 +264,7 @@
             this.currentPage = page;
             const params = new URLSearchParams({
               page: page,
-              limit: Alpine.store('limit'),
+              limit: this.limit,
             });
 
             try {

@@ -4,6 +4,7 @@ namespace Drupal\vactory_dashboard\Controller;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Url;
@@ -78,12 +79,31 @@ class DashboardNodeController extends ControllerBase {
   protected $nodeService;
 
   /**
+   * The config factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
+
+  /**
    * Constructs a new DashboardUsersController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
    * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
    *   The entity field manager.
+   * @param \Drupal\vactory_dashboard\Service\MetatagService $metatag_service
+   *   The metatag service.
+   * @param \Drupal\token\Token $tokenService
+   *   The token service.
+   * @param \Drupal\vactory_dashboard\Service\PreviewUrlService $previewUrlService
+   *   The preview URL service.
+   * @param \Drupal\path_alias\AliasManagerInterface $alias_manager
+   *   The alias manager.
+   * @param \Drupal\vactory_dashboard\Service\NodeService $node_service
+   *   The node service.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The config factory.
    */
   public function __construct(
     EntityTypeManagerInterface $entity_type_manager,
@@ -92,7 +112,8 @@ class DashboardNodeController extends ControllerBase {
     Token $tokenService,
     PreviewUrlService $previewUrlService,
     AliasManagerInterface $alias_manager,
-    NodeService $node_service
+    NodeService $node_service,
+    ConfigFactoryInterface $config_factory
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
@@ -101,6 +122,7 @@ class DashboardNodeController extends ControllerBase {
     $this->previewUrlService = $previewUrlService;
     $this->aliasManager = $alias_manager;
     $this->nodeService = $node_service;
+    $this->configFactory = $config_factory;
   }
 
   /**
@@ -115,6 +137,7 @@ class DashboardNodeController extends ControllerBase {
       $container->get('vactory_dashboard.preview_url'),
       $container->get('path_alias.manager'),
       $container->get('vactory_dashboard.node_service'),
+      $container->get('config.factory')
     );
   }
 
@@ -179,6 +202,11 @@ class DashboardNodeController extends ControllerBase {
       $langs[$lang->getId()] = $lang->getName();
     }
 
+    // Get configured limit for the content type
+    $config = $this->configFactory->get('vactory_dashboard.advanced.content_types');
+    $content_type_limits = $config->get('content_type_limits') ?? [];
+    $configured_limit = $content_type_limits[$bundle] ?? 50;
+
     return [
       '#theme' => 'vactory_dashboard_content_types',
       '#id' => $bundle,
@@ -188,6 +216,7 @@ class DashboardNodeController extends ControllerBase {
       '#taxonomies' => $this->nodeService->getReferencedTaxonomies($bundle),
       '#langs' => $langs,
       '#has_metatag' => array_key_exists('field_vactory_meta_tags', $this->entityFieldManager->getFieldDefinitions('node', $bundle)),
+      '#configured_limit' => $configured_limit,
     ];
   }
 
@@ -203,9 +232,14 @@ class DashboardNodeController extends ControllerBase {
    *   A JSON response containing the data.
    */
   public function getData($bundle, Request $request) {
+    // Get configured limit for the content type
+    $config = $this->configFactory->get('vactory_dashboard.advanced.content_types');
+    $content_type_limits = $config->get('content_type_limits') ?? [];
+    $default_limit = $content_type_limits[$bundle] ?? 50;
+
     // Get pagination parameters.
     $page = max(1, (int) $request->query->get('page', 1));
-    $limit = max(1, (int) $request->query->get('limit', 10));
+    $limit = max(1, (int) $request->query->get('limit', $default_limit));
     $search = $request->query->get('search', '');
     $offset = ($page - 1) * $limit;
 
