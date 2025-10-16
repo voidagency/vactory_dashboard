@@ -104,7 +104,7 @@
                                     x-transition:leave="transition ease-in duration-150"
                                     x-transition:leave-start="opacity-100 translate-y-0"
                                     x-transition:leave-end="opacity-0 translate-y-1"
-                                    class="absolute left-0 z-[100] w-full bg-white border border-slate-200 rounded-xl shadow-xl mt-2 overflow-hidden">
+                                    class="absolute left-0 z-[100] w-full border border-slate-200 rounded-xl shadow-xl mt-2 overflow-hidden overflow-y-auto max-h-[calc(100vh-70px)] overflow-auto bg-white">
 
                                 {# data state #}
                                 <template x-if="results.length > 0">
@@ -113,12 +113,12 @@
                                             <a class="flex items-center justify-between px-4 py-3 w-full cursor-pointer hover:bg-primary-50 transition-colors duration-150"
                                                :href="item.url"
                                                :target="item.entity_type === 'media' ? '_blank' : null">
-                                                <div class="flex items-center">
+                                                <div class="flex items-center overflow-hidden">
                                                     <template x-if="item.isImage">
                                                         <img class="bg-slate-100 w-10 h-10 border border-slate-200 rounded-lg mr-3 object-cover"
                                                              :src="item.url" :alt="item.label"/>
                                                     </template>
-                                                    <span class="inline-block text-slate-700"
+                                                    <span class="inline-block text-slate-700 truncate mr-5"
                                                           x-html="item.label"></span>
                                                 </div>
                                                 <div class="flex items-center">
