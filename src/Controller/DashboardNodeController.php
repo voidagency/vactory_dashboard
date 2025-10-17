@@ -214,7 +214,8 @@ class DashboardNodeController extends ControllerBase {
       ->condition('type', $bundle)
       ->accessCheck(TRUE)
       ->sort('created', 'DESC')
-      ->sort('nid', 'DESC');
+      ->sort('nid', 'DESC')
+      ->latestRevision();
 
     // Add search condition if search term is provided.
     if (!empty($search)) {
@@ -238,12 +239,12 @@ class DashboardNodeController extends ControllerBase {
     // Format the data
     $data = [];
     foreach ($nodes as $node) {
-      $vid = $this->entityTypeManager
-        ->getStorage('node')
-        ->getLatestRevisionId($node->id());
+      // $vid = $this->entityTypeManager
+      //   ->getStorage('node')
+      //   ->getLatestRevisionId($node->id());
 
-      /** @var \Drupal\node\Entity\Node $node */
-      $node = $this->entityTypeManager->getStorage('node')->loadRevision($vid);
+      // /** @var \Drupal\node\Entity\Node $node */
+      // $node = $this->entityTypeManager->getStorage('node')->loadRevision($vid);
 
       $metatags = [];
       $raw_metatags = $this->metatagService->prepareMetatags($node);

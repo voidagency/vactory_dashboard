@@ -11,6 +11,7 @@ use Drupal\media\MediaInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Drupal\Core\Cache\CacheableJsonResponse;
 use Drupal\file\Entity\File;
 use Drupal\media\Entity\Media;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,6 +20,8 @@ use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Drupal\Core\Session\AccountProxyInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\image\Entity\ImageStyle;
+use Drupal\Core\Cache\CacheableMetadata;
 
 define('UPLOAD_BASE_PATH_PRIVATE', 'private://uploads');
 define('UPLOAD_BASE_PATH_PUBLIC', 'public://');
@@ -149,7 +152,10 @@ class DashboardMediaController extends ControllerBase {
     $medias = $this->entityTypeManager->getStorage('media')
       ->loadMultiple($mids);
     $data = [];
+    $cacheTags = ['media_list'];
+
     foreach ($medias as $media) {
+      $cacheTags[] = 'media:' . $media->id();
       /** @var \Drupal\media\Entity\Media $media */
       $item = [
         'id' => $media->id(),
@@ -165,13 +171,19 @@ class DashboardMediaController extends ControllerBase {
       $data[] = $item;
     }
 
-    return new JsonResponse([
+    $cacheMetadata = ['#cache' => ['tags' => $cacheTags]];
+
+    $response = new CacheableJsonResponse([
       'data' => $data,
       'total' => $total,
       'page' => $page,
       'limit' => $limit,
       'pages' => ceil($total / $limit),
     ]);
+
+    $response->addCacheableDependency(CacheableMetadata::createFromRenderArray($cacheMetadata));
+
+    return $response;
   }
 
   /**
@@ -195,12 +207,11 @@ class DashboardMediaController extends ControllerBase {
   protected function getMediaUrl($media) {
     $bundle = $media->bundle();
     if ($bundle == 'image') {
-      if ($media->hasField('thumbnail') && !$media->get('thumbnail')
-          ->isEmpty()) {
+      if ($media->hasField('thumbnail') && !$media->get('thumbnail')->isEmpty()) {
         $file = $media->get('thumbnail')->entity;
-        if ($file) {
-          return $file->createFileUrl();
-        }
+        $style = ImageStyle::load('thumbnail');
+        $thumbnailUrl = $style->buildUrl($file->getFileUri());
+        return $thumbnailUrl;
       }
     }
 
@@ -208,19 +219,19 @@ class DashboardMediaController extends ControllerBase {
       return $media->get('field_media_oembed_video')->value;
     }
 
-    if ($bundle == 'file') {
-      $file = $media->get('field_media_file')->entity;
-      if ($file instanceof FileInterface) {
-        return $file->createFileUrl();
-      }
-    }
+    // if ($bundle == 'file') {
+    //   $file = $media->get('field_media_file')->entity;
+    //   if ($file instanceof FileInterface) {
+    //     return $file->createFileUrl();
+    //   }
+    // }
 
-    if ($bundle == 'private_file') {
-      $file = $media->get('field_media_file_1')->entity;
-      if ($file instanceof FileInterface) {
-        return $file->createFileUrl();
-      }
-    }
+    // if ($bundle == 'private_file') {
+    //   $file = $media->get('field_media_file_1')->entity;
+    //   if ($file instanceof FileInterface) {
+    //     return $file->createFileUrl();
+    //   }
+    // }
 
     return '';
   }
