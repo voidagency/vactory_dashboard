@@ -14,14 +14,15 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\Cache\CacheableJsonResponse;
 use Drupal\file\Entity\File;
 use Drupal\media\Entity\Media;
-use Symfony\Component\HttpFoundation\Response;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Drupal\Core\Session\AccountProxyInterface;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Drupal\image\Entity\ImageStyle;
 use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Database\Connection;
+use Drupal\Core\File\FileUrlGeneratorInterface;
+use Drupal\Core\Datetime\DateFormatterInterface;
+use Drupal\Component\Datetime\TimeInterface;
 
 define('UPLOAD_BASE_PATH_PRIVATE', 'private://uploads');
 define('UPLOAD_BASE_PATH_PUBLIC', 'public://');
@@ -58,16 +59,71 @@ class DashboardMediaController extends ControllerBase {
   protected $currentUser;
 
   /**
+   * The database connection.
+   *
+   * @var \Drupal\Core\Database\Connection
+   */
+  protected $database;
+
+  /**
+   * The file URL generator.
+   *
+   * @var \Drupal\Core\File\FileUrlGeneratorInterface
+   */
+  protected $fileUrlGenerator;
+
+  /**
+   * The date formatter.
+   *
+   * @var \Drupal\Core\Datetime\DateFormatterInterface
+   */
+  protected $dateFormatter;
+
+  /**
+   * The time service.
+   *
+   * @var \Drupal\Component\Datetime\TimeInterface
+   */
+  protected $time;
+
+  /**
    * Constructs a new DashboardMediaController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
+   *   The entity field manager.
+   * @param \Drupal\Core\File\FileSystemInterface $file_system
+   *   The file system.
+   * @param \Drupal\Core\Session\AccountProxyInterface $current_user
+   *   The current user.
+   * @param \Drupal\Core\Database\Connection $database
+   *   The database connection.
+   * @param \Drupal\Core\File\FileUrlGeneratorInterface $file_url_generator
+   *   The file URL generator.
+   * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
+   *   The date formatter.
+   * @param \Drupal\Component\Datetime\TimeInterface $time
+   *   The time service.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $entity_field_manager, FileSystemInterface $file_system, AccountProxyInterface $current_user) {
+  public function __construct(
+    EntityTypeManagerInterface $entity_type_manager,
+    EntityFieldManagerInterface $entity_field_manager,
+    FileSystemInterface $file_system,
+    AccountProxyInterface $current_user,
+    Connection $database,
+    FileUrlGeneratorInterface $file_url_generator,
+    DateFormatterInterface $date_formatter,
+    TimeInterface $time
+  ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
     $this->fileSystem = $file_system;
     $this->currentUser = $current_user;
+    $this->database = $database;
+    $this->fileUrlGenerator = $file_url_generator;
+    $this->dateFormatter = $date_formatter;
+    $this->time = $time;
   }
 
   /**
@@ -78,7 +134,11 @@ class DashboardMediaController extends ControllerBase {
       $container->get('entity_type.manager'),
       $container->get('entity_field.manager'),
       $container->get('file_system'),
-      $container->get('current_user')
+      $container->get('current_user'),
+      $container->get('database'),
+      $container->get('file_url_generator'),
+      $container->get('date.formatter'),
+      $container->get('datetime.time')
     );
   }
 
@@ -105,6 +165,255 @@ class DashboardMediaController extends ControllerBase {
   }
 
   /**
+   * Returns the media detail page.
+   *
+   * @param int $media_id
+   *   The media entity ID.
+   *
+   * @return array
+   *   A render array for the media detail page.
+   */
+  public function detail($media_id) {
+    // Load the media entity.
+    $media = $this->entityTypeManager->getStorage('media')->load($media_id);
+
+    if (!$media) {
+      throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+    }
+
+    // Get media type information.
+    $media_type = $media->bundle();
+    $media_type_entity = $this->entityTypeManager->getStorage('media_type')->load($media_type);
+
+    // Get the source field.
+    $source_field = $media_type_entity->getSource()->getSourceFieldDefinition($media_type_entity);
+    $source_field_name = $source_field->getName();
+
+    // Get media data.
+    $media_data = [
+      'id' => $media->id(),
+      'name' => $media->getName(),
+      'type' => $media_type,
+      'type_label' => $media_type_entity->label(),
+      'created' => $media->getCreatedTime(),
+      'changed' => $media->getChangedTime(),
+      'author' => $media->getOwner()->getDisplayName(),
+      'status' => $media->isPublished(),
+    ];
+
+    // Get file information if available.
+    if ($media->hasField($source_field_name) && !$media->get($source_field_name)->isEmpty()) {
+      $source_value = $media->get($source_field_name)->first();
+
+      if ($source_value && $source_value->entity instanceof FileInterface) {
+        $file = $source_value->entity;
+        $media_data['file'] = [
+          'filename' => $file->getFilename(),
+          'uri' => $file->getFileUri(),
+          'url' => $this->fileUrlGenerator->generateString($file->getFileUri()),
+          'size' => $file->getSize(),
+          'mime_type' => $file->getMimeType(),
+        ];
+      } elseif ($media_type === 'remote_video') {
+        $media_data['remote_url'] = $source_value->value;
+      }
+    }
+
+    // Get alternative text for images.
+    if ($media->hasField('field_media_image') && !$media->get('field_media_image')->isEmpty()) {
+      $image_field = $media->get('field_media_image')->first();
+      if ($image_field) {
+        $media_data['alt_text'] = $image_field->alt;
+      }
+    }
+
+    // Load revisions.
+    $revisions = [];
+    if ($media->getEntityType()->isRevisionable()) {
+      // Use the database to get revision IDs.
+      $query = $this->database->select('media_revision', 'mr')
+        ->fields('mr', ['vid'])
+        ->condition('mr.mid', $media->id())
+        ->orderBy('mr.vid', 'DESC');
+
+      $revision_ids = $query->execute()->fetchCol();
+
+      foreach ($revision_ids as $revision_id) {
+        $revision = $this->entityTypeManager->getStorage('media')
+          ->loadRevision($revision_id);
+        
+        if ($revision) {
+          $revisions[] = [
+            'revision_id' => $revision_id,
+            'created' => $revision->getRevisionCreationTime(),
+            'author' => $revision->getRevisionUser() ? $revision->getRevisionUser()->getDisplayName() : 'Anonymous',
+            'log_message' => $revision->getRevisionLogMessage(),
+            'is_current' => $revision_id == $media->getRevisionId(),
+          ];
+        }
+      }
+    }
+
+    return [
+      '#theme' => 'vactory_dashboard_media_detail',
+      '#media' => $media_data,
+      '#media_entity' => $media,
+      '#revisions' => $revisions,
+    ];
+  }
+
+  /**
+   * Saves media data.
+   *
+   * @param int $media_id
+   *   The media entity ID.
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request object.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   The JSON response.
+   */
+  public function saveMedia($media_id, Request $request) {
+    try {
+      // Load the media entity.
+      $media = $this->entityTypeManager->getStorage('media')->load($media_id);
+
+      if (!$media) {
+        return new JsonResponse(['error' => 'Media not found'], 404);
+      }
+
+      // Get form data from request.
+      $data = json_decode($request->getContent(), TRUE);
+
+      if (!$data) {
+        return new JsonResponse(['error' => 'Invalid data'], 400);
+      }
+
+      // Update media fields.
+      if (isset($data['name'])) {
+        $media->setName($data['name']);
+      }
+
+      if (isset($data['published'])) {
+        $media->setPublished($data['published']);
+      }
+
+      // Handle alt text for images.
+      if ($media->hasField('field_media_image') && isset($data['alt_text'])) {
+        $image_field = $media->get('field_media_image');
+        if (!$image_field->isEmpty()) {
+          $image_field->first()->set('alt', $data['alt_text']);
+        }
+      }
+
+      // Always create a revision when saving changes.
+      $media->setNewRevision(TRUE);
+
+      // Set revision log message.
+      $revision_log = '';
+      if (isset($data['create_revision']) && $data['create_revision'] && isset($data['revision_log']) && !empty($data['revision_log'])) {
+        $revision_log = $data['revision_log'];
+      } else {
+        // Default revision message.
+        $revision_log = 'Updated media via dashboard';
+      }
+
+      $media->setRevisionLogMessage($revision_log);
+      $media->setRevisionUserId($this->currentUser->id());
+      $media->setRevisionCreationTime($this->time->getRequestTime());
+
+      // Save the media entity.
+      $media->save();
+
+      return new JsonResponse([
+        'success' => TRUE,
+        'message' => ($this->t('Media saved successfully')),
+        'media_id' => $media->id(),
+      ]);
+
+    } catch (\Exception $e) {
+      \Drupal::logger('vactory_dashboard')->error('Error saving media @id: @message', [
+        '@id' => $media_id,
+        '@message' => $e->getMessage(),
+      ]);
+
+      return new JsonResponse([
+        'error' => ($this->t('An error occurred while saving the media')),
+        'details' => $e->getMessage(),
+      ], 500);
+    }
+  }
+
+  /**
+   * Reverts media to a specific revision.
+   *
+   * @param int $media_id
+   *   The media entity ID.
+   * @param int $revision_id
+   *   The revision ID to revert to.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   The JSON response.
+   */
+  public function revertToRevision($media_id, $revision_id) {
+    try {
+      // Load the current media entity.
+      $media = $this->entityTypeManager->getStorage('media')->load($media_id);
+
+      if (!$media) {
+        return new JsonResponse(['error' => ($this->t('Media not found'))], 404);
+      }
+
+      // Load the revision to revert to.
+      $revision = $this->entityTypeManager->getStorage('media')->loadRevision($revision_id);
+
+      if (!$revision) {
+        return new JsonResponse(['error' => ($this->t('Revision not found'))], 404);
+      }
+
+      // Create a new revision based on the old revision.
+      $media->setName($revision->getName());
+      $media->setPublished($revision->isPublished());
+
+      // Copy field values from the revision.
+      foreach ($revision->getFields() as $field_name => $field) {
+        if (!in_array($field_name, ['vid', 'revision_timestamp', 'revision_uid', 'revision_log'])) {
+          if ($media->hasField($field_name)) {
+            $media->set($field_name, $field->getValue());
+          }
+        }
+      }
+
+      // Create a new revision.
+      $media->setNewRevision(TRUE);
+      $media->setRevisionUserId($this->currentUser->id());
+      $media->setRevisionCreationTime($this->time->getRequestTime());
+
+      // Save the media entity.
+      $media->save();
+
+      return new JsonResponse([
+        'success' => TRUE,
+        'message' => 'Media reverted successfully',
+        'media_id' => $media->id(),
+        'new_revision_id' => $media->getRevisionId(),
+      ]);
+
+    } catch (\Exception $e) {
+      \Drupal::logger('vactory_dashboard')->error('Error reverting media @id to revision @revision: @message', [
+        '@id' => $media_id,
+        '@revision' => $revision_id,
+        '@message' => $e->getMessage(),
+      ]);
+
+      return new JsonResponse([
+        'error' => ($this->t('An error occurred while reverting the media')),
+        'details' => $e->getMessage(),
+      ], 500);
+    }
+  }
+
+  /**
    * Returns paginated media data.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
@@ -119,6 +428,24 @@ class DashboardMediaController extends ControllerBase {
     $search = $request->query->get('search', '');
     $type = $request->query->get('type', '');
 
+    // Validate and sanitize the type parameter
+    $valid_types = [];
+    $media_types = $this->entityTypeManager->getStorage('media_type')->loadMultiple();
+    foreach ($media_types as $media_type) {
+      $valid_types[] = $media_type->id();
+    }
+
+    // If type is provided but not valid, return empty result
+    if (!empty($type) && !in_array($type, $valid_types)) {
+      return new JsonResponse([
+        'data' => [],
+        'total' => 0,
+        'page' => $page,
+        'limit' => $limit,
+        'error' => 'Invalid media type: ' . $type . '. Valid types: ' . implode(', ', $valid_types)
+      ]);
+    }
+
     // Create query for counting.
     $count_query = $this->entityTypeManager->getStorage('media')->getQuery();
     $count_query->accessCheck(FALSE);
@@ -128,15 +455,16 @@ class DashboardMediaController extends ControllerBase {
     $query->accessCheck(FALSE);
     $query->sort('created', 'DESC');
 
-    // Apply filters.
+    // Apply search filter.
     if (!empty($search)) {
       $query->condition('name', $search, 'CONTAINS');
       $count_query->condition('name', $search, 'CONTAINS');
     }
 
-    if (!empty($type)) {
-      $query->condition('bundle', $type);
-      $count_query->condition('bundle', $type);
+    // Apply type filter.
+    if (!empty($type) && in_array($type, $valid_types)) {
+      $query->condition('bundle', $type, '=');
+      $count_query->condition('bundle', $type, '=');
     }
 
     // Get total count.
@@ -157,10 +485,18 @@ class DashboardMediaController extends ControllerBase {
     foreach ($medias as $media) {
       $cacheTags[] = 'media:' . $media->id();
       /** @var \Drupal\media\Entity\Media $media */
+
+      // Double-check: Skip if type filter is applied and this media doesn't match
+      if (!empty($type) && $media->bundle() !== $type) {
+        continue;
+      }
+
+      $media_type = $this->entityTypeManager->getStorage('media_type')->load($media->bundle());
       $item = [
         'id' => $media->id(),
         'name' => $media->getName(),
         'type' => $media->bundle(),
+        'type_label' => $media_type ? $media_type->label() : $media->bundle(),
         'created' => $media->getCreatedTime(),
         'changed' => $media->getChangedTime(),
         'url' => $this->getMediaUrl($media),
@@ -179,9 +515,30 @@ class DashboardMediaController extends ControllerBase {
       'page' => $page,
       'limit' => $limit,
       'pages' => ceil($total / $limit),
+      'filters' => [
+        'search' => $search,
+        'type' => $type,
+        'valid_types' => $valid_types,
+      ],
     ]);
 
     $response->addCacheableDependency(CacheableMetadata::createFromRenderArray($cacheMetadata));
+
+    // Add cache contexts to create separate cache entries for each filter combination
+    $response->getCacheableMetadata()->addCacheContexts([
+      'url.query_args:page',
+      'url.query_args:limit', 
+      'url.query_args:search',
+      'url.query_args:type'
+    ]);
+
+    // Add cache tags for media types to allow targeted cache invalidation
+    if (!empty($type)) {
+      $response->getCacheableMetadata()->addCacheTags(['media_type:' . $type]);
+    }
+
+    // Set reasonable cache max age (5 minutes)
+    $response->getCacheableMetadata()->setCacheMaxAge(300);
 
     return $response;
   }
@@ -192,7 +549,7 @@ class DashboardMediaController extends ControllerBase {
    * @return void
    */
   protected function getRemoteVideoThumbnail(MediaInterface $media) {
-    return \Drupal::service('file_url_generator')->generateAbsoluteString($media->thumbnail->entity->getFileUri());
+    return $this->fileUrlGenerator->generateString($media->thumbnail->entity->getFileUri());
   }
 
   /**
@@ -207,11 +564,19 @@ class DashboardMediaController extends ControllerBase {
   protected function getMediaUrl($media) {
     $bundle = $media->bundle();
     if ($bundle == 'image') {
+      // For images, return the full-sized image URL instead of thumbnail
+      if ($media->hasField('field_media_image') && !$media->get('field_media_image')->isEmpty()) {
+        $file = $media->get('field_media_image')->entity;
+        if ($file instanceof FileInterface) {
+          return $this->fileUrlGenerator->generateString($file->getFileUri());
+        }
+      }
+      // Fallback to thumbnail if field_media_image is not available
       if ($media->hasField('thumbnail') && !$media->get('thumbnail')->isEmpty()) {
         $file = $media->get('thumbnail')->entity;
-        $style = ImageStyle::load('thumbnail');
-        $thumbnailUrl = $style->buildUrl($file->getFileUri());
-        return $thumbnailUrl;
+        if ($file instanceof FileInterface) {
+          return $this->fileUrlGenerator->generateString($file->getFileUri());
+        }
       }
     }
 

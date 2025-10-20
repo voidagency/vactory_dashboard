@@ -1,0 +1,408 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% block content %}
+<div x-data="{ isRTL: document.dir === 'rtl' }" :dir="isRTL ? 'rtl' : 'ltr'">
+    <div class="h-full flex flex-col" x-data="mediaEditForm()">
+        <div class="sticky top-0 z-10 bg-slate-50">
+            <!-- Header with back button, title and actions -->
+            <div class="bg-white z-30 sticky top-0 py-4 px-4 border-b border-slate-200 shadow-sm rounded-xl flex flex-col md:flex-row gap-4 md:gap-0 justify-between items-center mb-2">
+                <div class="flex items-center gap-x-3">
+                    <a href="{{ path('vactory_dashboard.media') }}" 
+                       class="me-3 text-slate-500 hover:text-primary-500 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                             stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-4 w-4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
+                        </svg>
+                    </a>     
+                    <h1 class="font-semibold text-xl text-slate-900 text-center flex items-center justify-center gap-2">
+                        <span class="shrink-0">{{ "Edit"|t }} {{ media.type_label }} - </span>
+                        <span class="capitalize truncate min-w-0">{{ media.name }}</span>
+                    </h1>
+                </div>
+                
+                <div class="flex max-lg:w-full max-lg:flex-wrap max-lg:gap-3 max-lg:[&>*]:w-full max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:px-3 max-lg:py-4 lg:items-center lg:space-x-4">
+                    <div class="flex max-lg:items-center">
+                        <input type="checkbox" id="publish-status" x-model="formData.published" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded transition-all duration-150">
+                        <label for="publish-status" class="ml-2 block text-sm text-slate-700 font-medium">
+                            {{ 'Published'|t }}
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <button type="button" 
+                                @click="showDeleteModal = true"
+                                class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-300 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            {{ "Delete"|t }}
+                        </button>
+                        
+                        <button @click="saveMedia()" 
+                                :disabled="saving" 
+                                :class="{
+                                    'opacity-50 cursor-not-allowed': saving,
+                                    'bg-primary-500 hover:bg-primary-600': !saving,
+                                    'bg-primary-400': saving
+                                }" 
+                                class="max-lg:w-full inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                            <!-- Loading spinner (shown when saving) -->
+                            <svg x-show="saving" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <!-- Button text (changes based on loading state) -->
+                            <span x-text="saving ? '{{ 'Saving...'|t }}' : '{{ 'Save'|t }}'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="bg-white border-b border-slate-200 mb-2 flex items-center justify-between">
+                <div class="flex space-x-1">
+                    <button @click="activeTab = 'edit'"
+                            :class="{
+                                'border-primary-500 text-primary-600 bg-primary-50/50': activeTab === 'edit',
+                                'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50': activeTab !== 'edit'
+                            }"
+                            class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
+                        {{ 'Edit'|t }}
+                    </button>
+                    <button @click="activeTab = 'revisions'"
+                            :class="{
+                                'border-primary-500 text-primary-600 bg-primary-50/50': activeTab === 'revisions',
+                                'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50': activeTab !== 'revisions'
+                            }"
+                            class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
+                        {{ 'Revisions'|t }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Tab Content -->
+        <div x-show="activeTab === 'edit'" class="flex-1 overflow-y-auto p-3">
+            <form @submit.prevent="saveMedia()" class="space-y-4">
+                <!-- Name Field -->
+                <div class="bg-white shadow-sm border border-slate-200 rounded-xl p-6">
+                    <label for="media_name" class="block text-sm font-medium text-slate-700 mb-2">
+                        {{ "Name"|t }} <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" 
+                           id="media_name" 
+                           x-model="formData.name"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500 transition-all duration-150"
+                           required>
+                    <div class="mt-1 text-sm text-slate-500">
+                        <span x-text="formData.name.length"></span>/255
+                    </div>
+                </div>
+
+                <!-- Media Field -->
+                {% if media.type == 'image' %}
+                <div class="bg-white shadow-sm border border-slate-200 rounded-xl p-6">
+                    <h3 class="text-lg font-medium text-slate-900 mb-4">
+                        {{ "Image"|t }} <span class="text-red-500">*</span>
+                    </h3>
+                    
+                    <div class="flex items-start space-x-4">
+                        {% if media.file %}
+                        <div class="flex-shrink-0">
+                            <img src="{{ media.file.url }}" 
+                                 alt="{{ media.alt_text|default(media.name) }}" 
+                                 class="h-20 w-20 object-cover rounded-lg border border-slate-200">
+                        </div>
+                        {% endif %}
+                        
+                        <div class="flex-1">
+                            {% if media.file %}
+                            <div class="mb-4">
+                                <a href="{{ media.file.url }}" target="_blank" class="text-primary-600 hover:text-primary-500 text-sm font-medium">
+                                    {{ media.file.filename }}
+                                </a>
+                                <span class="text-slate-500 text-sm ml-2">({{ (media.file.size / 1024)|round(2) }} KB)</span>
+                            </div>
+                            {% endif %}
+                            
+                            <div>
+                                <label for="alt_text" class="block text-sm font-medium text-slate-700 mb-2">
+                                    {{ "Texte alternatif"|t }} <span class="text-red-500">*</span>
+                                </label>
+                                <textarea id="alt_text" 
+                                          x-model="formData.alt_text"
+                                          rows="3" 
+                                          class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500 transition-all duration-150"
+                                          placeholder="{{ 'Brève description de l\'image utilisée par les lecteurs d\'écran et affichée lorsque l\'image n\'est pas chargée. Ceci est important pour l\'accessibilité.'|t }}"></textarea>
+                                <div class="mt-1 text-sm text-slate-500">
+                                    {{ "Brève description de l'image utilisée par les lecteurs d'écran et affichée lorsque l'image n'est pas chargée. Ceci est important pour l'accessibilité."|t }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Revision Information -->
+                <div class="bg-white shadow-sm border border-slate-200 rounded-xl p-6">
+                    <h3 class="text-lg font-medium text-primary-600 mb-4">
+                        {{ "Informations sur les révisions"|t }}
+                    </h3>
+                    <p class="text-sm text-slate-600 mb-4">{{ "Nouvelle révision"|t }}</p>
+                    
+                    <div class="flex items-center mb-4">
+                        <input type="checkbox" 
+                               id="create_revision" 
+                               x-model="formData.create_revision"
+                               class="h-4 w-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500 transition-all duration-150">
+                        <label for="create_revision" class="ml-2 text-sm text-slate-700">
+                            {{ "Créer une nouvelle révision"|t }}
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <label for="revision_log" class="block text-sm font-medium text-slate-700 mb-2">
+                            {{ "Message du journal de révision"|t }}
+                        </label>
+                        <textarea id="revision_log" 
+                                  x-model="formData.revision_log"
+                                  rows="3" 
+                                  class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500 transition-all duration-150"
+                                  placeholder="{{ 'Décrire brièvement les modifications apportées.'|t }}"></textarea>
+                        <div class="mt-1 text-sm text-slate-500">
+                            {{ "Décrire brièvement les modifications apportées."|t }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Authoring Information -->
+                <div class="bg-white shadow-sm border border-slate-200 rounded-xl p-6">
+                    <h3 class="text-lg font-medium text-slate-900 mb-4">{{ "Authoring information"|t }}</h3>
+                    <p class="text-sm text-slate-600">
+                        {{ "Par"|t }} {{ media.author }} {{ "le"|t }} {{ media.created|date('d/m/Y - H:i') }}
+                    </p>
+                </div>
+            </form>
+        </div>
+
+
+        <!-- Revisions Tab Content -->
+        <div x-show="activeTab === 'revisions'" class="flex-1 overflow-y-auto p-3">
+            <div class="bg-white shadow-sm border border-slate-200 rounded-xl p-6">
+                <h3 class="text-lg font-medium text-slate-900 mb-4">{{ "Révisions"|t }}</h3>
+                
+                {% if revisions is not empty %}
+                    <div class="space-y-4">
+                        {% for revision in revisions %}
+                            <div class="border border-slate-200 rounded-lg p-4 {{ revision.is_current ? 'bg-primary-50 border-primary-200' : 'bg-white' }}">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-2 mb-2">
+                                            <span class="text-sm font-medium text-slate-900">
+                                                {{ revision.created|date('d/m/Y H:i:s') }}
+                                            </span>
+                                            {% if revision.is_current %}
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                                                    {{ "Current revision"|t }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="text-sm text-slate-600 mb-1">
+                                            {{ "Par"|t }} <span class="font-medium">{{ revision.author }}</span>
+                                        </div>
+                                        
+                                        {% if revision.log_message %}
+                                            <div class="text-sm text-slate-700 bg-slate-50 rounded p-2 mt-2">
+                                                <strong>{{ "Message de révision:"|t }}</strong><br>
+                                                {{ revision.log_message }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="flex items-center space-x-2 ml-4">
+                                        {% if not revision.is_current %}
+                                            <button type="button" 
+                                                    @click="revertToRevision({{ revision.revision_id }})"
+                                                    class="text-xs px-2 py-1 text-primary-600 hover:text-primary-700 border border-primary-300 rounded hover:bg-primary-50 transition-colors">
+                                                {{ "Revert"|t }}
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-sm text-slate-600">{{ "Aucune révision disponible pour ce média."|t }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Delete confirmation modal -->
+        {% include "@vactory_dashboard/_components/modals/delete-confirmation-modal.html.twig" with {
+            show_var: 'showDeleteModal',
+            confirm_action: 'deleteMedia',
+            title: 'Confirmer la suppression'|t,
+            message: 'Êtes-vous sûr de vouloir supprimer ce média ? Cette action est irréversible.'|t,
+            confirm_text: 'Supprimer'|t,
+            cancel_text: 'Annuler'|t
+        } %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function mediaEditForm() {
+    return {
+        activeTab: 'edit',
+        saving: false,
+        deleting: false,
+        showDeleteModal: false,
+        formData: {
+            name: '{{ media.name|e('js') }}',
+            alt_text: '{{ media.alt_text|default('')|e('js') }}',
+            published: {{ media.status ? 'true' : 'false' }},
+            create_revision: false,
+            revision_log: ''
+        },
+
+        async saveMedia() {
+            this.saving = true;
+            
+            try {
+                const response = await fetch('/api/vactory-dashboard/media/{{ media.id }}/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(this.formData),
+                });
+
+                if (response.ok) {
+                    // Show success message
+                    this.showNotification('{{ "Média sauvegardé avec succès"|t }}', 'success');
+                    
+                    // Reload the page to show updated revisions
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    const errorData = await response.json();
+                    this.showNotification(errorData.error || '{{ "Erreur lors de la sauvegarde"|t }}', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                this.showNotification('{{ "Une erreur est survenue lors de la sauvegarde"|t }}', 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        async revertToRevision(revisionId) {
+            if (!confirm('{{ "Êtes-vous sûr de vouloir revenir à cette révision ?"|t }}')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/vactory-dashboard/media/{{ media.id }}/revert/' + revisionId, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    this.showNotification('{{ "Révision restaurée avec succès"|t }}', 'success');
+                    
+                    // Reload the page to show the reverted content
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    const errorData = await response.json();
+                    this.showNotification(errorData.error || '{{ "Erreur lors de la restauration"|t }}', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                this.showNotification('{{ "Une erreur est survenue lors de la restauration"|t }}', 'error');
+            }
+        },
+
+        async deleteMedia() {
+            this.deleting = true;
+            
+            try {
+                const response = await fetch('/api/vactory-dashboard/media/delete-multiple', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ ids: [{{ media.id }}] }),
+                });
+
+                if (response.ok) {
+                    this.showNotification('{{ "Média supprimé avec succès"|t }}', 'success');
+                    
+                    // Redirect to media list after successful deletion
+                    setTimeout(() => {
+                        window.location.href = '{{ path('vactory_dashboard.media') }}';
+                    }, 1000);
+                } else {
+                    const errorData = await response.json();
+                    this.showNotification(errorData.error || '{{ "Erreur lors de la suppression"|t }}', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                this.showNotification('{{ "Une erreur est survenue lors de la suppression"|t }}', 'error');
+            } finally {
+                this.deleting = false;
+            }
+        },
+
+
+        showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg max-w-sm ${
+                type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
+                type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
+                'bg-blue-50 text-blue-800 border border-blue-200'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        ${type === 'success' ? 
+                            '<svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>' :
+                            type === 'error' ?
+                            '<svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>' :
+                            '<svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>'
+                        }
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium">${message}</p>
+                    </div>
+                    <div class="ml-auto pl-3">
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="inline-flex text-gray-400 hover:text-gray-600">
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+    };
+}
+</script>
+{% endblock %}
