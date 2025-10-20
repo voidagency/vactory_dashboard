@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Drupal\Core\Url;
 
 /**
  * Controller for the taxonomy calls dashboard.
@@ -257,14 +258,24 @@ class DashboardTaxonomiesController extends ControllerBase {
       ->getCurrentLanguage()
       ->getId();
 
-    // Get vocabulary available languages
+    // Get enabled languages from our custom configuration.
+    $config = \Drupal::config('vactory_dashboard.global.settings');
+    $enabled_languages = $config->get('dashboard_languages') ?? [];
+    $enabled_languages = array_filter($enabled_languages);
+
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
+
     foreach ($languages as $language) {
-      $available_languages_list[] = [
-        'id' => $language->getId(),
-        'url' => \Drupal\Core\Url::fromRoute('vactory_dashboard.taxonomy.add', ['vid' => $vid], ['language' => $language]),
-      ];
+      $lang_id = $language->getId();
+
+      // Only show languages that are enabled in our custom configuration.
+      if (empty($enabled_languages) || isset($enabled_languages[$lang_id])) {
+        $available_languages_list[] = [
+          'id' => $lang_id,
+          'url' => Url::fromRoute('vactory_dashboard.taxonomy.add', ['vid' => $vid], ['language' => $language])->toString(),
+        ];
+      }
     }
 
     // Get vocabulary fields
@@ -330,15 +341,33 @@ class DashboardTaxonomiesController extends ControllerBase {
 
     $term_translation = $term->getTranslation($current_language);
 
-    // Get vocabulary available languages
+    // Get enabled languages from our custom configuration.
+    $config = \Drupal::config('vactory_dashboard.global.settings');
+    $enabled_languages = $config->get('dashboard_languages') ?? [];
+    $enabled_languages = array_filter($enabled_languages);
+
+    // Get existing translations.
+    $existing_translations = $term->getTranslationLanguages();
+
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
-    $available_languages = $term->getTranslationLanguages();
+
     foreach ($languages as $language) {
-      $available_languages_list[] = [
-        'id' => $language->getId(),
-        'url' => in_array($language->getId(), array_keys($available_languages)) ? '/' . $language->getId() . '/admin/dashboard/taxonomies/' . $vid . '/edit/' . $tid : '/' . $language->getId() . '/admin/dashboard/taxonomies/' . $vid . '/edit/' . $tid . '/add/translation',
-      ];
+      $lang_id = $language->getId();
+      $has_existing_translation = array_key_exists($lang_id, $existing_translations);
+
+      // Show language if: enabled in config OR has existing translation.
+      $is_enabled = empty($enabled_languages) || isset($enabled_languages[$lang_id]);
+
+      if ($is_enabled || $has_existing_translation) {
+        $available_languages_list[] = [
+          'id' => $lang_id,
+          'url' => $has_existing_translation 
+            ? '/' . $lang_id . '/admin/dashboard/taxonomies/' . $vid . '/edit/' . $tid 
+            : '/' . $lang_id . '/admin/dashboard/taxonomies/' . $vid . '/edit/' . $tid . '/add/translation',
+          'has_translation' => $has_existing_translation,
+        ];
+      }
     }
 
     // Get vocabulary fields
@@ -411,15 +440,33 @@ class DashboardTaxonomiesController extends ControllerBase {
       // If there's an error checking translation, continue to translate form
     }
 
-    // Get vocabulary available languages
+    // Get enabled languages from our configuration.
+    $config = \Drupal::config('vactory_dashboard.global.settings');
+    $enabled_languages = $config->get('dashboard_languages') ?? [];
+    $enabled_languages = array_filter($enabled_languages);
+
+    // Get existing translations.
+    $existing_translations = $term->getTranslationLanguages();
+
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
-    $available_languages = $term->getTranslationLanguages();
+
     foreach ($languages as $language) {
-      $available_languages_list[] = [
-        'id' => $language->getId(),
-        'url' => in_array($language->getId(), array_keys($available_languages)) ? '/' . $language->getId() . '/admin/dashboard/taxonomies/' . $vid . '/edit/' . $tid : '/' . $language->getId() . '/admin/dashboard/taxonomies/' . $vid . '/edit/' . $tid . '/add/translation',
-      ];
+      $lang_id = $language->getId();
+      $has_existing_translation = array_key_exists($lang_id, $existing_translations);
+
+      // Show language if: enabled in config OR has existing translation.
+      $is_enabled = empty($enabled_languages) || isset($enabled_languages[$lang_id]);
+
+      if ($is_enabled || $has_existing_translation) {
+        $available_languages_list[] = [
+          'id' => $lang_id,
+          'url' => $has_existing_translation 
+            ? '/' . $lang_id . '/admin/dashboard/taxonomies/' . $vid . '/edit/' . $tid 
+            : '/' . $lang_id . '/admin/dashboard/taxonomies/' . $vid . '/edit/' . $tid . '/add/translation',
+          'has_translation' => $has_existing_translation,
+        ];
+      }
     }
 
     // Get vocabulary fields
