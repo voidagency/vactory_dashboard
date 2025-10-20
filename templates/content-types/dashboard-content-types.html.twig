@@ -4,8 +4,8 @@
 {% set vocabulary_map = {} %}
 
 {% for vocab in taxonomies %}
-  {% set vocabulary_map = vocabulary_map|merge({ (vocab.id): vocab.id }) %}
-  {% set vocabulary_ids = vocabulary_ids|merge([vocab.id]) %}
+    {% set vocabulary_map = vocabulary_map|merge({ (vocab.id): vocab.id }) %}
+    {% set vocabulary_ids = vocabulary_ids|merge([vocab.id]) %}
 {% endfor %}
 
 {% block content %}
@@ -44,29 +44,29 @@
 
                 {# Pagination #}
                 <template x-if="totalPages > 1">
-                <div class="mt-4 flex items-center justify-end">
-                    <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                        <button @click="loadData(currentPage - 1)"
-                                :disabled="currentPage === 1"
-                                class="relative inline-flex items-center rounded-l-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
-                            {{ "Précédent" | t }}
-                        </button>
-
-                        <template x-for="page in pages" :key="page">
-                            <button @click="loadData(page)"
-                                    :class="page === currentPage ? 'z-10 bg-primary-500 text-white focus:z-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600' : 'text-gray-900 ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-50 focus:z-20 focus:outline-offset-0'"
-                                    class="relative inline-flex items-center px-4 py-2 text-sm font-semibold">
-                                <span x-text="page"></span>
+                    <div class="mt-4 flex items-center justify-end">
+                        <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                            <button @click="loadData(currentPage - 1)"
+                                    :disabled="currentPage === 1"
+                                    class="relative inline-flex items-center rounded-l-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
+                                {{ "Précédent" | t }}
                             </button>
-                        </template>
 
-                        <button @click="loadData(currentPage + 1)"
-                                :disabled="currentPage === totalPages"
-                                class="relative ml-3 inline-flex items-center rounded-r-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
-                            {{ "Suivant" | t }}
-                        </button>
-                    </nav>
-                </div>
+                            <template x-for="page in pages" :key="page">
+                                <button @click="loadData(page)"
+                                        :class="page === currentPage ? 'z-10 bg-primary-500 text-white focus:z-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600' : 'text-gray-900 ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-50 focus:z-20 focus:outline-offset-0'"
+                                        class="relative inline-flex items-center px-4 py-2 text-sm font-semibold">
+                                    <span x-text="page"></span>
+                                </button>
+                            </template>
+
+                            <button @click="loadData(currentPage + 1)"
+                                    :disabled="currentPage === totalPages"
+                                    class="relative ml-3 inline-flex items-center rounded-r-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
+                                {{ "Suivant" | t }}
+                            </button>
+                        </nav>
+                    </div>
                 </template>
             </div>
         </div>
@@ -147,10 +147,10 @@
             search: '',
           },
           pages: [],
-          
+
           // taxonomies
           terms: [],
-          vid: "",
+          vid: '',
           selectedTerms: [],
           selectAll: false,
           loading: false,
@@ -240,9 +240,9 @@
               });
 
               if (response.ok) {
-                
+
                 const itemsToDeleteCount = this.itemToDelete ? 1 : this.selectedItems.length;
-                if (this.currentPage > 1 && (this.data.length - itemsToDeleteCount ) == 0) {
+                if (this.currentPage > 1 && (this.data.length - itemsToDeleteCount) == 0) {
                   this.currentPage -= 1;
                 }
                 await this.$nextTick();
@@ -300,10 +300,13 @@
             });
 
             try {
+              if (!this.vid) {
+                return;
+              }
               const response = await fetch(`{{ path('vactory_dashboard.settings.taxonomies.data', { vid: 'REPLACE_VID' }) }}`.replace('REPLACE_VID', this.vid) + `?${params}`);
               const data = await response.json();
               this.terms = data.data;
-              console.log("terms: ", this.terms);
+              console.log('terms: ', this.terms);
               this.total = data.total;
               this.totalPages = data.pages;
               this.pages = this.generatePageNumbers(data.page, data.pages);
@@ -348,8 +351,6 @@
                 if (shouldGoToPreviousPage) {
                   this.currentPage -= 1;
                 }
-
-                
 
                 await this.$nextTick();
                 await this.loadTaxonomyData(this.currentPage);
@@ -451,7 +452,7 @@
             }
           },
           uncheck() {
-            document.getElementById("term-check-toggle").checked = false;
+            document.getElementById('term-check-toggle').checked = false;
           },
 
         };
