@@ -119,17 +119,31 @@ class ContentTypesSettingsForm extends ConfigFormBase {
         }
       }
 
+      // Get current limit configuration
+      $limit_config = $config->get('content_type_limits') ?? [];
+      $current_limit = $limit_config[$type_id] ?? 50;
+
+      $form[$type_id] = [
+        '#type' => 'details',
+        '#title' => $type->label(),
+        '#open' => FALSE,
+        'fetch_limit' => [
+          '#type' => 'number',
+          '#title' => $this->t('Fetch Limit'),
+          '#description' => $this->t('Maximum number of items to fetch per page for this content type. Default is 50.'),
+          '#default_value' => $current_limit,
+          '#min' => 1,
+          '#max' => 100,
+          '#required' => TRUE,
+        ],
+      ];
+
       if (count($options) > 0) {
-        $form[$type_id] = [
-          '#type' => 'details',
-          '#title' => $type->label(),
-          '#open' => FALSE,
-          'taxonomies' => [
-            '#type' => 'checkboxes',
-            '#title' => $this->t('Taxonomies'),
-            '#options' => $options,
-            '#default_value' => $default_vocabularies,
-          ],
+        $form[$type_id]['taxonomies'] = [
+          '#type' => 'checkboxes',
+          '#title' => $this->t('Taxonomies'),
+          '#options' => $options,
+          '#default_value' => $default_vocabularies,
         ];
       }
     }
@@ -150,9 +164,15 @@ class ContentTypesSettingsForm extends ConfigFormBase {
       ->loadMultiple();
 
     $saved_config = [];
+    $limit_config = [];
 
     foreach ($content_types as $type_id => $type) {
       $values = $form_state->getValue($type_id);
+
+      // Save fetch limit configuration
+      $fetch_limit = $values['fetch_limit'] ?? 50;
+      $limit_config[$type_id] = (int) $fetch_limit;
+
       $taxonomy_values = $values['taxonomies'] ?? [];
 
       // Collect only selected vocabularies (i.e., checked ones)
@@ -167,6 +187,7 @@ class ContentTypesSettingsForm extends ConfigFormBase {
     }
 
     $config->set('taxonomy_selections', $saved_config);
+    $config->set('content_type_limits', $limit_config);
     $config->save();
   }
 

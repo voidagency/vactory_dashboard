@@ -62,6 +62,7 @@
                 </div>
 
                 <!-- Rôles -->
+                {% if roles is not empty %}
                 <div class="mb-6">
                     <label class="block text-sm font-semibold text-gray-700 mb-1">
                         {{ 'Rôles' | t }}
@@ -76,6 +77,7 @@
                         </template>
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- Statut -->
                 <div class="mb-6 mt-8">
