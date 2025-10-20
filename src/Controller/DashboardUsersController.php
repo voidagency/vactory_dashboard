@@ -224,6 +224,10 @@ class DashboardUsersController extends ControllerBase {
     $content = json_decode($request->getContent(), TRUE);
     $userIds = $content['userIds'] ?? [];
 
+    if (in_array(1, $userIds)) {
+      return new JsonResponse(['message' => 'Action not permitted', 401]);
+    }
+
     if (empty($userIds)) {
       return new JsonResponse(['message' => 'No users specified'], Response::HTTP_BAD_REQUEST);
     }
@@ -251,6 +255,9 @@ class DashboardUsersController extends ControllerBase {
    */
   public function pageUpdate($userId) {
     // Only load roles if user is admin
+    if ($userId == 1) {
+      throw new NotFoundHttpException();
+    }
     $role_options = [];
     if ($this->isCurrentUserAdmin()) {
       $roles = Role::loadMultiple();
@@ -292,7 +299,8 @@ class DashboardUsersController extends ControllerBase {
         'library' => ['vactory_dashboard/alpine-users-edit'],
         'drupalSettings' => [
           'vactoryDashboard' => [
-            'editPath' => Url::fromRoute('vactory_dashboard.settings.user.edit', ['userId' => $userId])->toString(),
+            'editPath' => Url::fromRoute('vactory_dashboard.settings.user.edit', ['userId' => $userId])
+              ->toString(),
             'listPath' => Url::fromRoute('vactory_dashboard.users')
               ->toString(),
           ],
@@ -420,7 +428,7 @@ class DashboardUsersController extends ControllerBase {
       if (!$this->isCurrentUserAdmin()) {
         return new JsonResponse([
           'message' => 'Access denied: You cannot modify user roles',
-          'errors' => ['roles' => 'You do not have permission to modify user roles']
+          'errors' => ['roles' => 'You do not have permission to modify user roles'],
         ], Response::HTTP_FORBIDDEN);
       }
 
