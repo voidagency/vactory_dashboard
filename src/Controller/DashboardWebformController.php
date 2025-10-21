@@ -11,12 +11,15 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Render\RenderContext;
 use Drupal\Core\Url;
 use Drupal\vactory_dashboard\Service\FormSearchService;
+use Drupal\vactory_dashboard\Service\WebformService;
 use Drupal\webform\Entity\WebformSubmission;
+use Drupal\webform\WebformInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\webform\Entity\Webform;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\file\Entity\File;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Controller for the webform dashboard.
@@ -47,15 +50,23 @@ class DashboardWebformController extends ControllerBase {
   protected $formSearchService;
 
   /**
+   * The webform service.
+   *
+   * @var \Drupal\vactory_dashboard\Service\WebformService
+   */
+  protected $webformService;
+
+  /**
    * Constructs a new DashboardMediaController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $database, FormSearchService $formSearchService) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $database, FormSearchService $formSearchService, WebformService $webformService) {
     $this->entityTypeManager = $entity_type_manager;
     $this->database = $database;
     $this->formSearchService = $formSearchService;
+    $this->webformService = $webformService;
   }
 
   /**
@@ -66,6 +77,7 @@ class DashboardWebformController extends ControllerBase {
       $container->get('entity_type.manager'),
       $container->get('database'),
       $container->get('vactory_dashboard.form_search'),
+      $container->get('vactory_dashboard.webform.service')
     );
   }
 
@@ -76,9 +88,21 @@ class DashboardWebformController extends ControllerBase {
    *   A render array for the webform dashboard.
    */
   public function content($id) {
+    $webform = Webform::load($id);
+    if (!$webform instanceof WebformInterface) {
+      throw new NotFoundHttpException();
+    }
+
+    $shouldHideExportButton = FALSE;
+    if ($this->moduleHandler()->moduleExists('vactory_webform_anonymize')) {
+      if (\Drupal::service('vactory_webform_anonymize.helper')->shouldAnonymize($webform)) {
+        $shouldHideExportButton = TRUE;
+      }
+    }
     return [
       '#theme' => 'vactory_dashboard_webform',
       '#id' => $id,
+      '#hideExportButton' => $shouldHideExportButton,
       '#attached' => [
         'library' => ['vactory_dashboard/alpine-webform'],
         'drupalSettings' => [
@@ -170,8 +194,8 @@ class DashboardWebformController extends ControllerBase {
                   }
 
                   $files[] = [
-                    'url' => $this->anonymizeData($webform, $settings, $file_url),
-                    'filename' => $this->anonymizeData($webform, $settings, $file->getFilename()),
+                    'url' => $this->webformService->anonymizeData($webform, $settings, $file_url),
+                    'filename' => $this->webformService->anonymizeData($webform, $settings, $file->getFilename()),
                   ];
                 }
               }
@@ -183,12 +207,12 @@ class DashboardWebformController extends ControllerBase {
             else {
               if (is_array($field_value)) {
                 $field_value = array_map(function($item) use ($webform, $settings) {
-                  return $this->anonymizeData($webform, $settings, $item);
+                  return $this->webformService->anonymizeData($webform, $settings, $item);
                 }, $field_value);
               }
               $submission_data[$field_name] = is_array($field_value)
                 ? implode(', ', $field_value)
-                : $this->anonymizeData($webform, $settings, $field_value);
+                : $this->webformService->anonymizeData($webform, $settings, $field_value);
             }
           }
 
@@ -216,20 +240,6 @@ class DashboardWebformController extends ControllerBase {
     $response->addCacheableDependency($cacheMetadata);
 
     return $response;
-  }
-
-  /**
-   * Anonymize data.
-   */
-  protected function anonymizeData($webform, $settings = [], $value = '') {
-    if (!$this->moduleHandler()->moduleExists('vactory_webform_anonymize')) {
-      return $value;
-    }
-    $anonymizeHelper = \Drupal::service('vactory_webform_anonymize.helper');
-    if (!$anonymizeHelper->shouldAnonymize($webform)) {
-      return $value;
-    }
-    return $anonymizeHelper->anonymizeValue($value, $settings);
   }
 
   /**
