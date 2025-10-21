@@ -70,14 +70,6 @@
                             class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
                         {{ 'Edit'|t }}
                     </button>
-                    <button @click="activeTab = 'revisions'"
-                            :class="{
-                                'border-primary-500 text-primary-600 bg-primary-50/50': activeTab === 'revisions',
-                                'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50': activeTab !== 'revisions'
-                            }"
-                            class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
-                        {{ 'Revisions'|t }}
-                    </button>
                 </div>
             </div>
         </div>
@@ -144,37 +136,6 @@
                 </div>
                 {% endif %}
 
-                <!-- Revision Information -->
-                <div class="bg-white shadow-sm border border-slate-200 rounded-xl p-6">
-                    <h3 class="text-lg font-medium text-primary-600 mb-4">
-                        {{ "Informations sur les révisions"|t }}
-                    </h3>
-                    <p class="text-sm text-slate-600 mb-4">{{ "Nouvelle révision"|t }}</p>
-                    
-                    <div class="flex items-center mb-4">
-                        <input type="checkbox" 
-                               id="create_revision" 
-                               x-model="formData.create_revision"
-                               class="h-4 w-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500 transition-all duration-150">
-                        <label for="create_revision" class="ml-2 text-sm text-slate-700">
-                            {{ "Créer une nouvelle révision"|t }}
-                        </label>
-                    </div>
-                    
-                    <div>
-                        <label for="revision_log" class="block text-sm font-medium text-slate-700 mb-2">
-                            {{ "Message du journal de révision"|t }}
-                        </label>
-                        <textarea id="revision_log" 
-                                  x-model="formData.revision_log"
-                                  rows="3" 
-                                  class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500 transition-all duration-150"
-                                  placeholder="{{ 'Décrire brièvement les modifications apportées.'|t }}"></textarea>
-                        <div class="mt-1 text-sm text-slate-500">
-                            {{ "Décrire brièvement les modifications apportées."|t }}
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Authoring Information -->
                 <div class="bg-white shadow-sm border border-slate-200 rounded-xl p-6">
@@ -187,58 +148,6 @@
         </div>
 
 
-        <!-- Revisions Tab Content -->
-        <div x-show="activeTab === 'revisions'" class="flex-1 overflow-y-auto p-3">
-            <div class="bg-white shadow-sm border border-slate-200 rounded-xl p-6">
-                <h3 class="text-lg font-medium text-slate-900 mb-4">{{ "Révisions"|t }}</h3>
-                
-                {% if revisions is not empty %}
-                    <div class="space-y-4">
-                        {% for revision in revisions %}
-                            <div class="border border-slate-200 rounded-lg p-4 {{ revision.is_current ? 'bg-primary-50 border-primary-200' : 'bg-white' }}">
-                                <div class="flex items-start justify-between">
-                                    <div class="flex-1">
-                                        <div class="flex items-center space-x-2 mb-2">
-                                            <span class="text-sm font-medium text-slate-900">
-                                                {{ revision.created|date('d/m/Y H:i:s') }}
-                                            </span>
-                                            {% if revision.is_current %}
-                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-                                                    {{ "Current revision"|t }}
-                                                </span>
-                                            {% endif %}
-                                        </div>
-                                        
-                                        <div class="text-sm text-slate-600 mb-1">
-                                            {{ "Par"|t }} <span class="font-medium">{{ revision.author }}</span>
-                                        </div>
-                                        
-                                        {% if revision.log_message %}
-                                            <div class="text-sm text-slate-700 bg-slate-50 rounded p-2 mt-2">
-                                                <strong>{{ "Message de révision:"|t }}</strong><br>
-                                                {{ revision.log_message }}
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                    
-                                    <div class="flex items-center space-x-2 ml-4">
-                                        {% if not revision.is_current %}
-                                            <button type="button" 
-                                                    @click="revertToRevision({{ revision.revision_id }})"
-                                                    class="text-xs px-2 py-1 text-primary-600 hover:text-primary-700 border border-primary-300 rounded hover:bg-primary-50 transition-colors">
-                                                {{ "Revert"|t }}
-                                            </button>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="text-sm text-slate-600">{{ "Aucune révision disponible pour ce média."|t }}</p>
-                {% endif %}
-            </div>
-        </div>
 
         <!-- Delete confirmation modal -->
         {% include "@vactory_dashboard/_components/modals/delete-confirmation-modal.html.twig" with {
@@ -264,8 +173,6 @@ function mediaEditForm() {
             name: '{{ media.name|e('js') }}',
             alt_text: '{{ media.alt_text|default('')|e('js') }}',
             published: {{ media.status ? 'true' : 'false' }},
-            create_revision: false,
-            revision_log: ''
         },
 
         async saveMedia() {
@@ -284,7 +191,7 @@ function mediaEditForm() {
                     // Show success message
                     this.showNotification('{{ "Média sauvegardé avec succès"|t }}', 'success');
                     
-                    // Reload the page to show updated revisions
+                    // Reload the page to show updated content
                     setTimeout(() => {
                         window.location.reload();
                     }, 1000);
@@ -300,35 +207,6 @@ function mediaEditForm() {
             }
         },
 
-        async revertToRevision(revisionId) {
-            if (!confirm('{{ "Êtes-vous sûr de vouloir revenir à cette révision ?"|t }}')) {
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/vactory-dashboard/media/{{ media.id }}/revert/' + revisionId, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                });
-
-                if (response.ok) {
-                    this.showNotification('{{ "Révision restaurée avec succès"|t }}', 'success');
-                    
-                    // Reload the page to show the reverted content
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    const errorData = await response.json();
-                    this.showNotification(errorData.error || '{{ "Erreur lors de la restauration"|t }}', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur:', error);
-                this.showNotification('{{ "Une erreur est survenue lors de la restauration"|t }}', 'error');
-            }
-        },
 
         async deleteMedia() {
             this.deleting = true;

@@ -64,7 +64,6 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
       'variables' => [
         'media' => [],
         'media_entity' => NULL,
-        'revisions' => [],
       ],
     ],
     'vactory_dashboard_ajoute_medias_files' => [

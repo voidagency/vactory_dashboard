@@ -7,13 +7,12 @@ use Drupal\Component\Utility\Environment;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\file\FileInterface;
-use Drupal\media\MediaInterface;
+use Drupal\media\Entity\Media;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\Cache\CacheableJsonResponse;
 use Drupal\file\Entity\File;
-use Drupal\media\Entity\Media;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -21,8 +20,6 @@ use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\File\FileUrlGeneratorInterface;
-use Drupal\Core\Datetime\DateFormatterInterface;
-use Drupal\Component\Datetime\TimeInterface;
 
 define('UPLOAD_BASE_PATH_PRIVATE', 'private://uploads');
 define('UPLOAD_BASE_PATH_PUBLIC', 'public://');
@@ -72,19 +69,6 @@ class DashboardMediaController extends ControllerBase {
    */
   protected $fileUrlGenerator;
 
-  /**
-   * The date formatter.
-   *
-   * @var \Drupal\Core\Datetime\DateFormatterInterface
-   */
-  protected $dateFormatter;
-
-  /**
-   * The time service.
-   *
-   * @var \Drupal\Component\Datetime\TimeInterface
-   */
-  protected $time;
 
   /**
    * Constructs a new DashboardMediaController object.
@@ -101,10 +85,6 @@ class DashboardMediaController extends ControllerBase {
    *   The database connection.
    * @param \Drupal\Core\File\FileUrlGeneratorInterface $file_url_generator
    *   The file URL generator.
-   * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
-   *   The date formatter.
-   * @param \Drupal\Component\Datetime\TimeInterface $time
-   *   The time service.
    */
   public function __construct(
     EntityTypeManagerInterface $entity_type_manager,
@@ -112,9 +92,7 @@ class DashboardMediaController extends ControllerBase {
     FileSystemInterface $file_system,
     AccountProxyInterface $current_user,
     Connection $database,
-    FileUrlGeneratorInterface $file_url_generator,
-    DateFormatterInterface $date_formatter,
-    TimeInterface $time
+    FileUrlGeneratorInterface $file_url_generator
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
@@ -122,8 +100,6 @@ class DashboardMediaController extends ControllerBase {
     $this->currentUser = $current_user;
     $this->database = $database;
     $this->fileUrlGenerator = $file_url_generator;
-    $this->dateFormatter = $date_formatter;
-    $this->time = $time;
   }
 
   /**
@@ -136,9 +112,7 @@ class DashboardMediaController extends ControllerBase {
       $container->get('file_system'),
       $container->get('current_user'),
       $container->get('database'),
-      $container->get('file_url_generator'),
-      $container->get('date.formatter'),
-      $container->get('datetime.time')
+      $container->get('file_url_generator')
     );
   }
 
@@ -175,6 +149,7 @@ class DashboardMediaController extends ControllerBase {
    */
   public function detail($media_id) {
     // Load the media entity.
+    /** @var \Drupal\media\Entity\Media $media */
     $media = $this->entityTypeManager->getStorage('media')->load($media_id);
 
     if (!$media) {
@@ -227,38 +202,10 @@ class DashboardMediaController extends ControllerBase {
       }
     }
 
-    // Load revisions.
-    $revisions = [];
-    if ($media->getEntityType()->isRevisionable()) {
-      // Use the database to get revision IDs.
-      $query = $this->database->select('media_revision', 'mr')
-        ->fields('mr', ['vid'])
-        ->condition('mr.mid', $media->id())
-        ->orderBy('mr.vid', 'DESC');
-
-      $revision_ids = $query->execute()->fetchCol();
-
-      foreach ($revision_ids as $revision_id) {
-        $revision = $this->entityTypeManager->getStorage('media')
-          ->loadRevision($revision_id);
-        
-        if ($revision) {
-          $revisions[] = [
-            'revision_id' => $revision_id,
-            'created' => $revision->getRevisionCreationTime(),
-            'author' => $revision->getRevisionUser() ? $revision->getRevisionUser()->getDisplayName() : 'Anonymous',
-            'log_message' => $revision->getRevisionLogMessage(),
-            'is_current' => $revision_id == $media->getRevisionId(),
-          ];
-        }
-      }
-    }
-
     return [
       '#theme' => 'vactory_dashboard_media_detail',
       '#media' => $media_data,
       '#media_entity' => $media,
-      '#revisions' => $revisions,
     ];
   }
 
@@ -276,6 +223,7 @@ class DashboardMediaController extends ControllerBase {
   public function saveMedia($media_id, Request $request) {
     try {
       // Load the media entity.
+      /** @var \Drupal\media\Entity\Media $media */
       $media = $this->entityTypeManager->getStorage('media')->load($media_id);
 
       if (!$media) {
@@ -306,21 +254,6 @@ class DashboardMediaController extends ControllerBase {
         }
       }
 
-      // Always create a revision when saving changes.
-      $media->setNewRevision(TRUE);
-
-      // Set revision log message.
-      $revision_log = '';
-      if (isset($data['create_revision']) && $data['create_revision'] && isset($data['revision_log']) && !empty($data['revision_log'])) {
-        $revision_log = $data['revision_log'];
-      } else {
-        // Default revision message.
-        $revision_log = 'Updated media via dashboard';
-      }
-
-      $media->setRevisionLogMessage($revision_log);
-      $media->setRevisionUserId($this->currentUser->id());
-      $media->setRevisionCreationTime($this->time->getRequestTime());
 
       // Save the media entity.
       $media->save();
@@ -344,74 +277,6 @@ class DashboardMediaController extends ControllerBase {
     }
   }
 
-  /**
-   * Reverts media to a specific revision.
-   *
-   * @param int $media_id
-   *   The media entity ID.
-   * @param int $revision_id
-   *   The revision ID to revert to.
-   *
-   * @return \Symfony\Component\HttpFoundation\JsonResponse
-   *   The JSON response.
-   */
-  public function revertToRevision($media_id, $revision_id) {
-    try {
-      // Load the current media entity.
-      $media = $this->entityTypeManager->getStorage('media')->load($media_id);
-
-      if (!$media) {
-        return new JsonResponse(['error' => ($this->t('Media not found'))], 404);
-      }
-
-      // Load the revision to revert to.
-      $revision = $this->entityTypeManager->getStorage('media')->loadRevision($revision_id);
-
-      if (!$revision) {
-        return new JsonResponse(['error' => ($this->t('Revision not found'))], 404);
-      }
-
-      // Create a new revision based on the old revision.
-      $media->setName($revision->getName());
-      $media->setPublished($revision->isPublished());
-
-      // Copy field values from the revision.
-      foreach ($revision->getFields() as $field_name => $field) {
-        if (!in_array($field_name, ['vid', 'revision_timestamp', 'revision_uid', 'revision_log'])) {
-          if ($media->hasField($field_name)) {
-            $media->set($field_name, $field->getValue());
-          }
-        }
-      }
-
-      // Create a new revision.
-      $media->setNewRevision(TRUE);
-      $media->setRevisionUserId($this->currentUser->id());
-      $media->setRevisionCreationTime($this->time->getRequestTime());
-
-      // Save the media entity.
-      $media->save();
-
-      return new JsonResponse([
-        'success' => TRUE,
-        'message' => 'Media reverted successfully',
-        'media_id' => $media->id(),
-        'new_revision_id' => $media->getRevisionId(),
-      ]);
-
-    } catch (\Exception $e) {
-      \Drupal::logger('vactory_dashboard')->error('Error reverting media @id to revision @revision: @message', [
-        '@id' => $media_id,
-        '@revision' => $revision_id,
-        '@message' => $e->getMessage(),
-      ]);
-
-      return new JsonResponse([
-        'error' => ($this->t('An error occurred while reverting the media')),
-        'details' => $e->getMessage(),
-      ], 500);
-    }
-  }
 
   /**
    * Returns paginated media data.
@@ -544,11 +409,15 @@ class DashboardMediaController extends ControllerBase {
   }
 
   /**
-   * @param \Drupal\media\MediaInterface $media
+   * Get the thumbnail URL for a remote video media entity.
    *
-   * @return void
+   * @param \Drupal\media\Entity\Media $media
+   *   The media entity.
+   *
+   * @return string
+   *   The thumbnail URL.
    */
-  protected function getRemoteVideoThumbnail(MediaInterface $media) {
+  protected function getRemoteVideoThumbnail(Media $media) {
     return $this->fileUrlGenerator->generateString($media->thumbnail->entity->getFileUri());
   }
 
@@ -561,7 +430,7 @@ class DashboardMediaController extends ControllerBase {
    * @return string
    *   The thumbnail URL.
    */
-  protected function getMediaUrl($media) {
+  protected function getMediaUrl(Media $media) {
     $bundle = $media->bundle();
     if ($bundle == 'image') {
       // For images, return the full-sized image URL instead of thumbnail

@@ -229,14 +229,6 @@ vactory_dashboard.media.save:
   requirements:
     _permission: "update any media"
 
-vactory_dashboard.media.revert:
-  path: "/api/vactory-dashboard/media/{media_id}/revert/{revision_id}"
-  defaults:
-    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::revertToRevision'
-    _title: "Revert Media to Revision"
-  methods: [POST]
-  requirements:
-    _permission: "update any media"
 
 vactory_dashboard_ajoute_media:
   path: "/admin/dashboard/media/add"
