@@ -70,6 +70,7 @@ class DashboardPageSearchController extends ControllerBase {
    */
   public function globalSearch(Request $request) {
     $queryString = $request->query->get('q');
+    $entityType = $request->query->get('type');
 
     if (empty($queryString)) {
       return new JsonResponse([
@@ -98,10 +99,31 @@ class DashboardPageSearchController extends ControllerBase {
 
     $query = $index->query();
     $query->keys($queryString);
-    $query->range(0, 10);
+
+    // Add entity type filter if specified by limiting datasources
+    if (!empty($entityType) && in_array($entityType, ['node', 'media', 'taxonomy_term'])) {
+      // Filter by datasource using the correct Search API method
+      $datasources = $query->getIndex()->getDatasources();
+      $targetDatasource = 'entity:' . $entityType;
+      if (isset($datasources[$targetDatasource])) {
+        $query->setOption('search_api_datasource', [$targetDatasource]);
+      }
+    }
+
+    $range = !empty($entityType) ? 30 : 10;
+    $query->range(0, $range);
 
     $results = $query->execute();
     $items = [];
+
+    // Define entity type priority for sorting
+    $entityTypePriority = [
+      'node' => 1,
+      'media' => 2,
+      'taxonomy_term' => 3,
+      'user' => 4,
+      'webform_submission' => 5,
+    ];
 
     foreach ($results as $item) {
       $original = $item->getOriginalObject()->getValue();
@@ -112,6 +134,12 @@ class DashboardPageSearchController extends ControllerBase {
       $bundle = $original->bundle();
       $url = $original->toUrl()->toString();
       $entity_type = $original->getEntityTypeId();
+
+      // Skip this item if we're filtering by entity type and it doesn't match
+      if (!empty($entityType) && $entity_type !== $entityType) {
+        continue;
+      }
+
       $entity_label = \Drupal::entityTypeManager()
         ->getDefinition($entity_type)
         ->getLabel();
@@ -198,12 +226,31 @@ class DashboardPageSearchController extends ControllerBase {
         'entity_type' => $entity_type,
         'entity_label' => $entity_label,
         'isImage' => $isImage,
+        'priority' => $entityTypePriority[$entity_type] ?? 999,
       ];
     }
+
+    // Sort results by entity type priority, then by label
+    usort($items, function($a, $b) {
+      if ($a['priority'] === $b['priority']) {
+        return strcasecmp($a['label'], $b['label']);
+      }
+      return $a['priority'] <=> $b['priority'];
+    });
+
+    // Remove priority from final results as it's not needed in frontend
+    $items = array_map(function($item) {
+      unset($item['priority']);
+      return $item;
+    }, $items);
+
+    // Limit final results to 10 items
+    $items = array_slice($items, 0, 10);
 
     return new JsonResponse([
       'status' => 'success',
       'query' => $queryString,
+      'type' => $entityType,
       'results' => $items,
     ]);
   }

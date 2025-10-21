@@ -87,16 +87,73 @@
                         </div>
                         <div :class="showMobileSearch ? '' : 'max-lg:hidden'"
                              class="max-lg:absolute max-lg:top-[63px] max-lg:z-[40] max-lg:bg-white max-lg:left-1/2 max-lg:-translate-x-1/2 max-lg:p-3 max-lg:border max-lg:border-slate-200 max-lg:shadow-xl relative w-full text-slate-400 focus-within:text-slate-600">
-                            <div class="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-5 lg:pl-4">
-                                {% include '@twigComponents/icons/search.html.twig' %}
+                            <!-- Search Input with integrated filter dropdown -->
+                            <div class="relative w-full">
+                                <div class="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-5 pl-4">
+                                    {% include '@twigComponents/icons/search.html.twig' %}
+                                </div>
+                                <input
+                                        x-model="query" @input.debounce.300ms="globalSearch" id="search-field"
+                                        class="block w-full h-10 pl-12 pr-28 pr-3 lg:pr-4 py-3 border text-slate-900 placeholder-slate-400 focus:outline-none focus:placeholder-slate-300 focus:ring-0 sm:text-sm bg-slate-50/50 rounded-lg transition-all duration-200 focus:bg-white focus:shadow-sm text-sm leading-6"
+                                        placeholder="Rechercher..." type="search"/>
+
+                                <!-- Filter Dropdown - Inside input, right corner -->
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-2" x-data="{ filterOpen: false }">
+                                    <button
+                                            @click="filterOpen = !filterOpen"
+                                            @click.outside="filterOpen = false"
+                                            type="button"
+                                            class="text-gray-700 inline-flex justify-center rounded-md bg-white px-2 py-1 text-xs font-semibold shadow-sm ring-1 ring-inset ring-slate-200 hover:bg-slate-50 h-7 items-center"
+                                            :aria-expanded="filterOpen"
+                                            aria-haspopup="true">
+                                        <span class="max-w-16 truncate" x-text="selectedFilterLabel"></span>
+                                        <svg class="-mr-1 ml-1 size-3 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
+                                            <path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </button>
+
+                                    <!-- Dropdown -->
+                                    <div x-show="filterOpen" @click.outside="filterOpen = false"
+                                        x-transition:enter="transition ease-out duration-100"
+                                        x-transition:enter-start="transform opacity-0 scale-95"
+                                        x-transition:enter-end="transform opacity-100 scale-100"
+                                        x-transition:leave="transition ease-in duration-75"
+                                        x-transition:leave-start="transform opacity-100 scale-100"
+                                        x-transition:leave-end="transform opacity-0 scale-95"
+                                        class="absolute top-full right-0 z-40 mt-1 w-[max-content] origin-top-right divide-y divide-slate-100 rounded-xl bg-white shadow-xl ring-1 ring-slate-200 focus:outline-none overflow-hidden z-[999]"
+                                        role="menu" aria-orientation="vertical" tabindex="-1">
+                                        <div class="py-1" role="none">
+                                            <button @click="setFilter('all'); filterOpen = false"
+                                                    class="flex-1 w-full flex justify-start px-4 py-3 text-sm text-slate-700 hover:bg-primary-50 hover:text-primary-700 transition-colors duration-150"
+                                                    :class="selectedFilter === 'all' ? 'bg-primary-50 text-primary-700' : ''"
+                                                    role="menuitem">
+                                                {{ "Tout"|t }}
+                                            </button>
+                                            <button @click="setFilter('node'); filterOpen = false"
+                                                    class="flex-1 w-full flex justify-start px-4 py-3 text-sm text-slate-700 hover:bg-primary-50 hover:text-primary-700 transition-colors duration-150"
+                                                    :class="selectedFilter === 'node' ? 'bg-primary-50 text-primary-700' : ''"
+                                                    role="menuitem">
+                                                {{ "Contenu"|t }}
+                                            </button>
+                                            <button @click="setFilter('media'); filterOpen = false"
+                                                    class="flex-1 w-full flex justify-start px-4 py-3 text-sm text-slate-700 hover:bg-primary-50 hover:text-primary-700 transition-colors duration-150"
+                                                    :class="selectedFilter === 'media' ? 'bg-primary-50 text-primary-700' : ''"
+                                                    role="menuitem">
+                                                {{ "Média"|t }}
+                                            </button>
+                                            <button @click="setFilter('taxonomy_term'); filterOpen = false"
+                                                    class="flex-1 w-full flex justify-start px-4 py-3 text-sm text-slate-700 hover:bg-primary-50 hover:text-primary-700 transition-colors duration-150"
+                                                    :class="selectedFilter === 'taxonomy_term' ? 'bg-primary-50 text-primary-700' : ''"
+                                                    role="menuitem">
+                                                {{ "Catégorie"|t }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <input
-                                    x-model="query" @input.debounce.300ms="globalSearch" id="search-field"
-                                    class="block w-full h-10 pl-8 lg:pl-12 pr-3 lg:pr-4 py-3 border text-slate-900 placeholder-slate-400 focus:outline-none focus:placeholder-slate-300 focus:ring-0 sm:text-sm bg-slate-50/50 rounded-lg transition-all duration-200 focus:bg-white focus:shadow-sm text-sm leading-6"
-                                    placeholder="Rechercher une page..." type="search"/>
 
                             {# search auto-complete results #}
-                            <ul
+                            <div
                                     x-show="!loading && query.length >= 2"
                                     x-transition:enter="transition ease-out duration-200"
                                     x-transition:enter-start="opacity-0 translate-y-1"
@@ -106,42 +163,55 @@
                                     x-transition:leave-end="opacity-0 translate-y-1"
                                     class="absolute left-0 z-[100] w-full bg-white border border-slate-200 rounded-xl shadow-xl mt-2 overflow-hidden">
 
-                                {# data state #}
-                                <template x-if="results.length > 0">
-                                    <template x-for="(item, index) in results" :key="index">
-                                        <li class="even:bg-slate-50/50 text-sm text-slate-700 font-medium cursor-pointer border-b border-slate-100 last:border-b-0">
-                                            <a class="flex items-center justify-between px-4 py-3 w-full cursor-pointer hover:bg-primary-50 transition-colors duration-150"
-                                               :href="item.url"
-                                               :target="item.entity_type === 'media' ? '_blank' : null">
-                                                <div class="flex items-center">
-                                                    <template x-if="item.isImage">
-                                                        <img class="bg-slate-100 w-10 h-10 border border-slate-200 rounded-lg mr-3 object-cover"
-                                                             :src="item.url" :alt="item.label"/>
-                                                    </template>
-                                                    <span class="inline-block text-slate-700"
-                                                          x-html="item.label"></span>
+                                {# data state - grouped results #}
+                                <template x-if="Object.keys(groupedResults).length > 0">
+                                    <div>
+                                        <template x-for="(group, entityType) in groupedResults" :key="entityType">
+                                            <div x-show="group.items.length > 0" class="border-b border-slate-100 last:border-b-0">
+                                                <!-- Group Header -->
+                                                <div class="px-4 py-2 bg-slate-50 border-b border-slate-100">
+                                                    <h4 class="text-xs font-semibold text-slate-600 uppercase tracking-wide" 
+                                                        x-text="group.label + ' (' + group.items.length + ')'"></h4>
                                                 </div>
-                                                <div class="flex items-center">
-                                                    <span class="capitalize min-w-[max-content] text-slate-500 text-xs"
-                                                          x-text="item.entity_label"></span>
-                                                    <svg x-show="item.entity_type === 'media'"
-                                                         xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                         viewbox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                         class="text-slate-400 ml-2 w-4 h-4">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                              d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
-                                                    </svg>
-                                                </div>
-                                            </a>
-                                        </li>
-                                    </template>
+                                                <!-- Group Items -->
+                                                <template x-for="(item, index) in group.items" :key="entityType + '_' + index">
+                                                    <div class="even:bg-slate-50/50 text-sm text-slate-700 font-medium cursor-pointer border-b border-slate-100 last:border-b-0">
+                                                        <a class="flex items-center justify-between px-4 py-3 w-full cursor-pointer hover:bg-primary-50 transition-colors duration-150"
+                                                           :href="item.url"
+                                                           :target="item.entity_type === 'media' ? '_blank' : null">
+                                                            <div class="flex items-center overflow-hidden">
+                                                                <template x-if="item.isImage">
+                                                                    <img class="bg-slate-100 w-10 h-10 border border-slate-200 rounded-lg mr-3 object-cover"
+                                                                         :src="item.url" :alt="item.label"/>
+                                                                </template>
+                                                                <div class="flex flex-col overflow-hidden">
+                                                                    <span class="inline-block text-slate-700 truncate mr-5"
+                                                                          x-html="item.label"></span>
+                                                                    <span class="text-xs text-slate-500 truncate" x-text="item.bundle"></span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex items-center">
+                                                                <svg x-show="item.entity_type === 'media'"
+                                                                     xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                                     viewbox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                                     class="text-slate-400 ml-2 w-4 h-4">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                                          d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+                                                                </svg>
+                                                            </div>
+                                                        </a>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </template>
 
                                 {# empty state #}
-                                <template x-if="!loading && results.length === 0">
-                                    <li class="text-sm text-slate-500 font-medium px-4 py-3">{{ "Aucun résultat"|t }}</li>
+                                <template x-if="!loading && Object.keys(groupedResults).length === 0">
+                                    <div class="text-sm text-slate-500 font-medium px-4 py-3">{{ "Aucun résultat"|t }}</div>
                                 </template>
-                            </ul>
+                            </div>
 
                             {# search auto-complete loader #}
                             <ul x-show="loading && query.length >= 2"
@@ -509,6 +579,9 @@
     Alpine.data('contentSearch', () => ({
       query: '',
       results: [],
+      groupedResults: {},
+      selectedFilter: 'all',
+      selectedFilterLabel: '{{ "Tout"|t }}',
       bundle: 'vactory_page',
       loading: true,
       showProfile: false,
@@ -527,10 +600,14 @@
       async globalSearch() {
         if (this.query.length < 2) {
           this.results = [];
+          this.groupedResults = {};
           return;
         }
 
-        const params = new URLSearchParams({ q: this.query });
+        const params = new URLSearchParams({ 
+          q: this.query,
+          type: this.selectedFilter !== 'all' ? this.selectedFilter : ''
+        });
 
         try {
           this.loading = true;
@@ -539,12 +616,64 @@
           }`);
           const data = await response.json();
           this.results = data.results;
+          this.groupResults();
           console.log('Search: ', this.results);
         } catch (error) {
           console.error('Search error:', error);
           this.results = [];
+          this.groupedResults = {};
         } finally {
           this.loading = false;
+        }
+      },
+
+      groupResults() {
+        const groups = {};
+        const entityLabels = {
+          'node': '{{ "Contenu"|t }}',
+          'media': '{{ "Média"|t }}',
+          'taxonomy_term': '{{ "Catégorie"|t }}',
+        };
+
+        // Initialize groups
+        Object.keys(entityLabels).forEach(type => {
+          groups[type] = {
+            label: entityLabels[type],
+            items: []
+          };
+        });
+
+        // Group results by entity type
+        this.results.forEach(item => {
+          if (groups[item.entity_type]) {
+            groups[item.entity_type].items.push(item);
+          }
+        });
+
+        // Only keep groups that have items
+        const filteredGroups = {};
+        Object.keys(groups).forEach(type => {
+          if (groups[type].items.length > 0) {
+            filteredGroups[type] = groups[type];
+          }
+        });
+
+        this.groupedResults = filteredGroups;
+      },
+
+      setFilter(filterType) {
+        this.selectedFilter = filterType;
+        const filterLabels = {
+          'all': '{{ "Tout"|t }}',
+          'node': '{{ "Contenu"|t }}',
+          'media': '{{ "Média"|t }}',
+          'taxonomy_term': '{{ "Catégorie"|t }}'
+        };
+        this.selectedFilterLabel = filterLabels[filterType] || '{{ "Tout"|t }}';
+
+        // Re-run search with new filter if there's a query
+        if (this.query.length >= 2) {
+          this.globalSearch();
         }
       },
 
