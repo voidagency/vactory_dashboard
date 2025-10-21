@@ -48,7 +48,7 @@
         </div>
 
         {# Export Progress Bar - Moved to top #}
-        <div x-show="exportLoading" 
+        <div x-show="exportLoading"
              class="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100"
              x-transition:enter="transition ease-out duration-300"
              x-transition:enter-start="opacity-0 transform -translate-y-2"
@@ -59,9 +59,12 @@
             <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center space-x-3">
                     <div class="flex-shrink-0">
-                        <svg class="animate-spin h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <svg class="animate-spin h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg"
+                             fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     </div>
                     <div>
@@ -70,7 +73,8 @@
                     </div>
                 </div>
                 <div class="text-right">
-                    <span class="text-lg font-semibold text-primary-600" x-text="`${Math.round(exportProgressPercent)}%`"></span>
+                    <span class="text-lg font-semibold text-primary-600"
+                          x-text="`${Math.round(exportProgressPercent)}%`"></span>
                 </div>
             </div>
             <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
@@ -101,15 +105,17 @@
                 </div>
             </div>
             {# Export button #}
-            <div class="flex justify-end">
-                {% include '@vactory_admin/components/button/button.twig' with {
-                    text: 'Exporter',
-                    size: "md",
-                    variant: "primary",
-                    is_loading: false,
-                    alpine_attrs: ':disabled="exportLoading" @click="download"'
-                } %}
-            </div>
+            {% if not hideExportButton %}
+                <div class="flex justify-end">
+                    {% include '@vactory_admin/components/button/button.twig' with {
+                        text: 'Exporter',
+                        size: "md",
+                        variant: "primary",
+                        is_loading: false,
+                        alpine_attrs: ':disabled="exportLoading" @click="download"'
+                    } %}
+                </div>
+            {% endif %}
         </div>
 
         {# Selection header #}
@@ -258,27 +264,27 @@
 
         {# Pagination #}
         <template x-if="totalPages > 1">
-        <div x-show="filters.search.length == 0" class="mt-4 flex items-center justify-end">
-            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                <button @click="loadWebforms(currentPage - 1)" :disabled="currentPage === 1"
-                        class="relative inline-flex items-center rounded-l-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
-                    {{ "Précédent" | t }}
-                </button>
-
-                <template x-for="page in pages" :key="page">
-                    <button @click="loadWebforms(page)"
-                            :class="page === currentPage ? 'z-10 bg-primary-500 text-white focus:z-20 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-indigo-600' : 'text-gray-900 ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-50 focus:z-20 focus:outline-offset-0'"
-                            class="relative inline-flex items-center px-4 py-2 text-sm font-semibold">
-                        <span x-text="page"></span>
+            <div x-show="filters.search.length == 0" class="mt-4 flex items-center justify-end">
+                <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <button @click="loadWebforms(currentPage - 1)" :disabled="currentPage === 1"
+                            class="relative inline-flex items-center rounded-l-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
+                        {{ "Précédent" | t }}
                     </button>
-                </template>
 
-                <button @click="loadWebforms(currentPage + 1)" :disabled="currentPage === totalPages"
-                        class="relative ml-3 inline-flex items-center rounded-r-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
-                    {{ "Suivant" | t }}
-                </button>
-            </nav>
-        </div>
+                    <template x-for="page in pages" :key="page">
+                        <button @click="loadWebforms(page)"
+                                :class="page === currentPage ? 'z-10 bg-primary-500 text-white focus:z-20 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-indigo-600' : 'text-gray-900 ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-50 focus:z-20 focus:outline-offset-0'"
+                                class="relative inline-flex items-center px-4 py-2 text-sm font-semibold">
+                            <span x-text="page"></span>
+                        </button>
+                    </template>
+
+                    <button @click="loadWebforms(currentPage + 1)" :disabled="currentPage === totalPages"
+                            class="relative ml-3 inline-flex items-center rounded-r-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50">
+                        {{ "Suivant" | t }}
+                    </button>
+                </nav>
+            </div>
         </template>
 
         {# Search pagination #}
