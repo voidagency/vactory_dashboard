@@ -172,7 +172,7 @@ class DashboardMediaController extends ControllerBase {
       'type_label' => $media_type_entity->label(),
       'created' => $media->getCreatedTime(),
       'changed' => $media->getChangedTime(),
-      'author' => $media->getOwner()->getDisplayName(),
+      'author' => $media->getOwner() ? $media->getOwner()->getDisplayName() : '',
       'status' => $media->isPublished(),
     ];
 
