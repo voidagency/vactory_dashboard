@@ -103,6 +103,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
       'template' => 'webform/dashboard-webform',
       'variables' => [
         'id' => NULL,
+        'hideExportButton' => NULL,
       ],
     ],
     'vactory_dashboard_update_user' => [
