@@ -96,6 +96,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
       'template' => 'webform/dashboard-webform',
       'variables' => [
         'id' => NULL,
+        'hideExportButton' => NULL,
       ],
     ],
     'vactory_dashboard_update_user' => [
@@ -136,6 +137,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'taxonomies' => NULL,
         'langs' => NULL,
         'has_metatag' => NULL,
+        'configured_limit' => NULL,
       ],
     ],
     'vactory_dashboard_captcha' => [

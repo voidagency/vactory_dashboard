@@ -416,7 +416,7 @@ vactory_dashboard.webform.submission:
     _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::content'
     _title: "Voir une soumission"
   requirements:
-    _permission: "edit any webform submission"
+    _permission: "view any webform submission"
 
 vactory_dashboard.webform.submission.page.edit:
   path: "/admin/dashboard/forms/{id}/submissions/{submission_id}/edit"
@@ -432,7 +432,7 @@ vactory_dashboard.webform.submission.data:
     _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::getSubmission'
     _title: "Recuperer une submission"
   requirements:
-    _permission: "edit any webform submission"
+    _permission: "view any webform submission"
 
 vactory_dashboard.webform.submission.edit:
   path: "/api/vactory-dashboard/forms/{id}/submissions/{submission_id}/edit"
@@ -919,3 +919,12 @@ vactory_dashboard.icons.search:
     _permission: 'access dashboard'
   options:
     no_cache: TRUE
+
+vactory_dashboard.languages_config:
+  path: '/admin/dashboard/languages-config'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\VactoryDashboardController::getLanguagesConfig'
+    _title: 'Languages Config'
+  methods: [GET]
+  requirements:
+    _permission: 'administer dashboard configuration'

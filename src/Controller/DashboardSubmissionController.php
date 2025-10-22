@@ -3,6 +3,7 @@
 namespace Drupal\vactory_dashboard\Controller;
 
 use Drupal\Core\Url;
+use Drupal\vactory_dashboard\Service\WebformService;
 use Drupal\webform\Entity\Webform;
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\Request;
@@ -41,6 +42,11 @@ class DashboardSubmissionController extends ControllerBase {
    */
   protected $submissionExporter;
 
+  /**
+   * The file url generator service.
+   *
+   * @var \Drupal\Core\File\FileUrlGeneratorInterface
+   */
   protected $fileUrlGenerator;
 
   /**
@@ -49,16 +55,24 @@ class DashboardSubmissionController extends ControllerBase {
   protected $cache;
 
   /**
+   * The webform service.
+   *
+   * @var \Drupal\vactory_dashboard\Service\WebformService
+   */
+  protected $webformService;
+
+  /**
    * Constructs a new DashboardSubmissionController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, WebformSubmissionExporterInterface $submissionExporter, FileUrlGeneratorInterface $fileUrlGenerator, CacheBackendInterface $cache) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, WebformSubmissionExporterInterface $submissionExporter, FileUrlGeneratorInterface $fileUrlGenerator, CacheBackendInterface $cache, WebformService $webformService) {
     $this->entityTypeManager = $entity_type_manager;
     $this->submissionExporter = $submissionExporter;
     $this->fileUrlGenerator = $fileUrlGenerator;
     $this->cache = $cache;
+    $this->webformService = $webformService;
   }
 
   /**
@@ -70,6 +84,7 @@ class DashboardSubmissionController extends ControllerBase {
       $container->get('webform_submission.exporter'),
       $container->get('file_url_generator'),
       $container->get('cache.default'),
+      $container->get('vactory_dashboard.webform.service')
     );
   }
 
@@ -88,7 +103,10 @@ class DashboardSubmissionController extends ControllerBase {
         'library' => ['vactory_dashboard/alpine-webform-submission-detail'],
         'drupalSettings' => [
           'vactoryDashboard' => [
-            'dataPath' => Url::fromRoute('vactory_dashboard.webform.submission.data', ['id' => $id, 'submission_id' => $submission_id])->toString(),
+            'dataPath' => Url::fromRoute('vactory_dashboard.webform.submission.data', [
+              'id' => $id,
+              'submission_id' => $submission_id,
+            ])->toString(),
           ],
         ],
       ],
@@ -110,8 +128,14 @@ class DashboardSubmissionController extends ControllerBase {
         'library' => ['vactory_dashboard/alpine-webform-submission-edit'],
         'drupalSettings' => [
           'vactoryDashboard' => [
-            'dataPath' => Url::fromRoute('vactory_dashboard.webform.submission.data', ['id' => $id, 'submission_id' => $submission_id])->toString(),
-            'editPath' => Url::fromRoute('vactory_dashboard.webform.submission.edit', ['id' => $id, 'submission_id' => $submission_id])->toString(),
+            'dataPath' => Url::fromRoute('vactory_dashboard.webform.submission.data', [
+              'id' => $id,
+              'submission_id' => $submission_id,
+            ])->toString(),
+            'editPath' => Url::fromRoute('vactory_dashboard.webform.submission.edit', [
+              'id' => $id,
+              'submission_id' => $submission_id,
+            ])->toString(),
           ],
         ],
       ],
@@ -146,6 +170,8 @@ class DashboardSubmissionController extends ControllerBase {
       return new JsonResponse(['error' => 'Submission not found or does not belong to the given webform.'], 404);
     }
 
+    $settings = $webform->getThirdPartySetting('vactory_webform_anonymize', 'settings', []);
+
     $formatted_data = [];
     $data = $submission->getData();
 
@@ -162,12 +188,12 @@ class DashboardSubmissionController extends ControllerBase {
         foreach ($file_ids as $fid) {
           $file = File::load($fid);
           if ($file) {
+            $file_url = \Drupal::service('file_url_generator')
+              ->generateAbsoluteString($file->getFileUri());
             $files[] = [
-              'url' => \Drupal::service('file_url_generator')
-                ->generateAbsoluteString($file->getFileUri()),
-              'filename' => $file->getFilename(),
               'filesize' => $this->human_filesize($file->getSize()),
-
+              'url' => $this->webformService->anonymizeData($webform, $settings, $file_url),
+              'filename' => $this->webformService->anonymizeData($webform, $settings, $file->getFilename()),
             ];
           }
         }
@@ -179,10 +205,14 @@ class DashboardSubmissionController extends ControllerBase {
         ];
       }
       else {
-        // Handle regular fields
+        if (is_array($field_value)) {
+          $field_value = array_map(function($item) use ($webform, $settings) {
+            return $this->webformService->anonymizeData($webform, $settings, $item);
+          }, $field_value);
+        }
         $formatted_data[$field_name] = [
           'name' => $label,
-          'value' => is_array($field_value) ? implode(', ', $field_value) : $field_value,
+          'value' => is_array($field_value) ? implode(', ', $field_value) : $this->webformService->anonymizeData($webform, $settings, $field_value),
           'type' => $field_type,
         ];
       }
@@ -279,7 +309,7 @@ class DashboardSubmissionController extends ControllerBase {
 
     // Récupérer toutes les soumissions à exporter
     $submission_ids = $this->getSubmissionIds($webform_id);
-    
+
     if (empty($submission_ids)) {
       return new JsonResponse(['error' => 'Aucune soumission à exporter'], 400);
     }
@@ -328,10 +358,10 @@ class DashboardSubmissionController extends ControllerBase {
     // Traiter le prochain lot
     $batch_size = 50;
     $chunk = array_splice($submission_ids, 0, $batch_size);
-    
+
     $filepath = $export_data->data['filepath'];
     $is_first_batch = $export_data->data['done'] === 0;
-    
+
     $this->processSubmissionChunk($chunk, $filepath, $is_first_batch);
 
     // Mettre à jour la progression
@@ -423,7 +453,8 @@ class DashboardSubmissionController extends ControllerBase {
       foreach ($submissions as $submission) {
         $this->writeCsvRow($handle, $submission);
       }
-    } finally {
+    }
+    finally {
       fclose($handle);
     }
   }
@@ -465,7 +496,7 @@ class DashboardSubmissionController extends ControllerBase {
   private function getFilteredData($data) {
     $excluded_fields = $this->getExcludedFields();
     $filtered_data = array_diff_key($data, array_flip($excluded_fields));
-    
+
     return array_map(function($value, $key) {
       return $this->formatFieldValue($value, $key);
     }, $filtered_data, array_keys($filtered_data));
@@ -479,12 +510,12 @@ class DashboardSubmissionController extends ControllerBase {
     if ($this->isFileField($value)) {
       return $this->formatFileField($value);
     }
-    
+
     // Gérer les tableaux
     if (is_array($value)) {
       return implode(', ', $value);
     }
-    
+
     return $value;
   }
 
@@ -496,25 +527,25 @@ class DashboardSubmissionController extends ControllerBase {
       // Vérifier si c'est un tableau de fichiers
       foreach ($value as $item) {
         if (is_array($item) && isset($item['fid'])) {
-          return true;
+          return TRUE;
         }
         if (is_numeric($item)) {
-          return true; // ID de fichier
+          return TRUE; // ID de fichier
         }
       }
     }
-    
+
     // Vérifier si c'est un ID de fichier simple
     if (is_numeric($value)) {
-      return true;
+      return TRUE;
     }
-    
+
     // Vérifier si c'est un objet fichier
     if (is_array($value) && isset($value['fid'])) {
-      return true;
+      return TRUE;
     }
-    
-    return false;
+
+    return FALSE;
   }
 
   /**
@@ -522,22 +553,23 @@ class DashboardSubmissionController extends ControllerBase {
    */
   private function formatFileField($value) {
     $files = [];
-    
+
     // Normaliser en tableau
     if (!is_array($value)) {
       $value = [$value];
     }
-    
+
     foreach ($value as $file_item) {
-      $file_id = null;
-      
+      $file_id = NULL;
+
       // Extraire l'ID du fichier
       if (is_numeric($file_item)) {
         $file_id = $file_item;
-      } elseif (is_array($file_item) && isset($file_item['fid'])) {
+      }
+      elseif (is_array($file_item) && isset($file_item['fid'])) {
         $file_id = $file_item['fid'];
       }
-      
+
       if ($file_id) {
         $file = File::load($file_id);
         if ($file) {
@@ -546,7 +578,7 @@ class DashboardSubmissionController extends ControllerBase {
         }
       }
     }
-    
+
     return implode(', ', $files);
   }
 
