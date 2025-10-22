@@ -212,6 +212,24 @@ vactory_dashboard.media.data:
   requirements:
     _permission: "access media overview"
 
+vactory_dashboard.media.detail:
+  path: "/admin/dashboard/media/{media_id}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::detail'
+    _title: "Détail du média"
+  requirements:
+    _permission: "access media overview"
+
+vactory_dashboard.media.save:
+  path: "/api/vactory-dashboard/media/{media_id}/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::saveMedia'
+    _title: "Save Media"
+  methods: [POST]
+  requirements:
+    _permission: "update any media"
+
+
 vactory_dashboard_ajoute_media:
   path: "/admin/dashboard/media/add"
   defaults:
@@ -416,7 +434,7 @@ vactory_dashboard.webform.submission:
     _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::content'
     _title: "Voir une soumission"
   requirements:
-    _permission: "edit any webform submission"
+    _permission: "view any webform submission"
 
 vactory_dashboard.webform.submission.page.edit:
   path: "/admin/dashboard/forms/{id}/submissions/{submission_id}/edit"
@@ -432,7 +450,7 @@ vactory_dashboard.webform.submission.data:
     _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::getSubmission'
     _title: "Recuperer une submission"
   requirements:
-    _permission: "edit any webform submission"
+    _permission: "view any webform submission"
 
 vactory_dashboard.webform.submission.edit:
   path: "/api/vactory-dashboard/forms/{id}/submissions/{submission_id}/edit"
@@ -919,12 +937,3 @@ vactory_dashboard.icons.search:
     _permission: 'access dashboard'
   options:
     no_cache: TRUE
-
-vactory_dashboard.languages_config:
-  path: '/admin/dashboard/languages-config'
-  defaults:
-    _controller: '\Drupal\vactory_dashboard\Controller\VactoryDashboardController::getLanguagesConfig'
-    _title: 'Languages Config'
-  methods: [GET]
-  requirements:
-    _permission: 'administer dashboard configuration'

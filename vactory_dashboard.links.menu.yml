@@ -2,7 +2,7 @@ advanced_dashboard.settings:
   title: 'Dashboard config'
   description: 'Dashboard config settings.'
   parent: system.admin
-  route_name: <nolink>
+  route_name: advanced_dashboard.settings
   weight: 100
 
 advanced_dashboard.settings.help:

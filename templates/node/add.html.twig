@@ -1434,7 +1434,6 @@
             if (this.paragraphMultipleForm.items.length == 0) {
               const newItem = {
                 title: '',
-                tab_id: '',
                 isNew: true,
                 paragraph_id: '',
                 widgets: [],
@@ -1756,8 +1755,17 @@
                   const label = document.getElementById(`edit-${field.name.replaceAll('_', '-')}-format-help`);
                   label.style.display = 'none';
                   Drupal.editors.ckeditor5.onChange(document.getElementById(`edit-${field.name.replaceAll('_', '-')}-value`), () => {
-                    const ckInstance = Drupal.CKEditor5Instances.values().next().value;
-                    this.formData.fields[field.name] = ckInstance.getData();
+                    const textareaId = `edit-${field.name.replaceAll('_', '-')}-value`;
+                    let ckInstance = null;
+                    for (const [key, instance] of Drupal.CKEditor5Instances.entries()) {
+                      if (instance.sourceElement && instance.sourceElement.id === textareaId) {
+                        ckInstance = instance;
+                        break;
+                      }
+                    }
+                    if (ckInstance) {
+                      this.formData.fields[field.name] = ckInstance.getData();
+                    }
                   });
                 }, '2000');
               }
