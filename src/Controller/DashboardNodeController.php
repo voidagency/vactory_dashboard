@@ -4,7 +4,6 @@ namespace Drupal\vactory_dashboard\Controller;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Url;
@@ -79,31 +78,12 @@ class DashboardNodeController extends ControllerBase {
   protected $nodeService;
 
   /**
-   * The config factory.
-   *
-   * @var \Drupal\Core\Config\ConfigFactoryInterface
-   */
-  protected $configFactory;
-
-  /**
    * Constructs a new DashboardUsersController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
    * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
    *   The entity field manager.
-   * @param \Drupal\vactory_dashboard\Service\MetatagService $metatag_service
-   *   The metatag service.
-   * @param \Drupal\token\Token $tokenService
-   *   The token service.
-   * @param \Drupal\vactory_dashboard\Service\PreviewUrlService $previewUrlService
-   *   The preview URL service.
-   * @param \Drupal\path_alias\AliasManagerInterface $alias_manager
-   *   The alias manager.
-   * @param \Drupal\vactory_dashboard\Service\NodeService $node_service
-   *   The node service.
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
-   *   The config factory.
    */
   public function __construct(
     EntityTypeManagerInterface $entity_type_manager,
@@ -112,8 +92,7 @@ class DashboardNodeController extends ControllerBase {
     Token $tokenService,
     PreviewUrlService $previewUrlService,
     AliasManagerInterface $alias_manager,
-    NodeService $node_service,
-    ConfigFactoryInterface $config_factory
+    NodeService $node_service
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
@@ -122,7 +101,6 @@ class DashboardNodeController extends ControllerBase {
     $this->previewUrlService = $previewUrlService;
     $this->aliasManager = $alias_manager;
     $this->nodeService = $node_service;
-    $this->configFactory = $config_factory;
   }
 
   /**
@@ -137,7 +115,6 @@ class DashboardNodeController extends ControllerBase {
       $container->get('vactory_dashboard.preview_url'),
       $container->get('path_alias.manager'),
       $container->get('vactory_dashboard.node_service'),
-      $container->get('config.factory')
     );
   }
 
@@ -202,11 +179,6 @@ class DashboardNodeController extends ControllerBase {
       $langs[$lang->getId()] = $lang->getName();
     }
 
-    // Get configured limit for the content type
-    $config = $this->configFactory->get('vactory_dashboard.advanced.content_types');
-    $content_type_limits = $config->get('content_type_limits') ?? [];
-    $configured_limit = $content_type_limits[$bundle] ?? 50;
-
     return [
       '#theme' => 'vactory_dashboard_content_types',
       '#id' => $bundle,
@@ -216,7 +188,6 @@ class DashboardNodeController extends ControllerBase {
       '#taxonomies' => $this->nodeService->getReferencedTaxonomies($bundle),
       '#langs' => $langs,
       '#has_metatag' => array_key_exists('field_vactory_meta_tags', $this->entityFieldManager->getFieldDefinitions('node', $bundle)),
-      '#configured_limit' => $configured_limit,
     ];
   }
 
@@ -232,14 +203,9 @@ class DashboardNodeController extends ControllerBase {
    *   A JSON response containing the data.
    */
   public function getData($bundle, Request $request) {
-    // Get configured limit for the content type
-    $config = $this->configFactory->get('vactory_dashboard.advanced.content_types');
-    $content_type_limits = $config->get('content_type_limits') ?? [];
-    $default_limit = $content_type_limits[$bundle] ?? 50;
-
     // Get pagination parameters.
     $page = max(1, (int) $request->query->get('page', 1));
-    $limit = max(1, (int) $request->query->get('limit', $default_limit));
+    $limit = max(1, (int) $request->query->get('limit', 10));
     $search = $request->query->get('search', '');
     $offset = ($page - 1) * $limit;
 
@@ -248,7 +214,8 @@ class DashboardNodeController extends ControllerBase {
       ->condition('type', $bundle)
       ->accessCheck(TRUE)
       ->sort('created', 'DESC')
-      ->sort('nid', 'DESC');
+      ->sort('nid', 'DESC')
+      ->latestRevision();
 
     // Add search condition if search term is provided.
     if (!empty($search)) {
@@ -272,12 +239,12 @@ class DashboardNodeController extends ControllerBase {
     // Format the data
     $data = [];
     foreach ($nodes as $node) {
-      $vid = $this->entityTypeManager
-        ->getStorage('node')
-        ->getLatestRevisionId($node->id());
+      // $vid = $this->entityTypeManager
+      //   ->getStorage('node')
+      //   ->getLatestRevisionId($node->id());
 
-      /** @var \Drupal\node\Entity\Node $node */
-      $node = $this->entityTypeManager->getStorage('node')->loadRevision($vid);
+      // /** @var \Drupal\node\Entity\Node $node */
+      // $node = $this->entityTypeManager->getStorage('node')->loadRevision($vid);
 
       $metatags = [];
       $raw_metatags = $this->metatagService->prepareMetatags($node);
@@ -322,7 +289,6 @@ class DashboardNodeController extends ControllerBase {
       $data[] = [
         'id' => $node->id(),
         'title' => $node->label(),
-        'summary' => $node->summary(),
         'author' => $node->getOwner() ? $node->getOwner()
           ->getDisplayName() : '',
         'created' => $node->getCreatedTime(),
@@ -370,26 +336,14 @@ class DashboardNodeController extends ControllerBase {
       ->getCurrentLanguage()
       ->getId();
 
-    // Get enabled languages from our custom configuration.
-    $config = \Drupal::config('vactory_dashboard.global.settings');
-    $enabled_languages = $config->get('dashboard_languages') ?? [];
-    $enabled_languages = array_filter($enabled_languages);
-
+    // Get node available languages
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
-
     foreach ($languages as $language) {
-      $lang_id = $language->getId();
-
-      // Only show languages that are enabled in our custom configuration.
-      if (empty($enabled_languages) || isset($enabled_languages[$lang_id])) {
-        $available_languages_list[] = [
-          'id' => $lang_id,
-          'url' => Url::fromRoute('vactory_dashboard.node.add', 
-                  ['bundle' => $bundle], 
-                  ['language' => $language])->toString(),
-        ];
-      }
+      $available_languages_list[] = [
+        'id' => $language->getId(),
+        'url' => Url::fromRoute('vactory_dashboard.node.add', ['bundle' => $bundle], ['language' => $language]),
+      ];
     }
 
     // Get bundle fields.
@@ -457,31 +411,15 @@ class DashboardNodeController extends ControllerBase {
     $node_translation = $node->getTranslation($current_language);
     $meta_tags = $this->metatagService->prepareMetatags($node_translation ?? $node);
 
-    // Get enabled languages from our custom configuration.
-    $config = \Drupal::config('vactory_dashboard.global.settings');
-    $enabled_languages = $config->get('dashboard_languages') ?? [];
-    $enabled_languages = array_filter($enabled_languages);
-
-    // Get existing translations.
-    $existing_translations = $node->getTranslationLanguages();
-
+    // Get node available languages.
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
-
-    foreach ($languages as $language) {
-      $lang_id = $language->getId();
-      $has_existing_translation = array_key_exists($lang_id, $existing_translations);
-
-      // Show language if: enabled in config OR has existing translation.
-      $is_enabled = empty($enabled_languages) || isset($enabled_languages[$lang_id]);
-
-      if ($is_enabled || $has_existing_translation) {
+    if ($manager->isEnabled('node', $bundle)) {
+      $available_languages = $node->getTranslationLanguages();
+      foreach ($languages as $language) {
         $available_languages_list[] = [
-          'id' => $lang_id,
-          'url' => $has_existing_translation 
-            ? '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid 
-            : '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid . '/add/translation',
-          'has_translation' => $has_existing_translation,
+          'id' => $language->getId(),
+          'url' => in_array($language->getId(), array_keys($available_languages)) ? '/' . $language->getId() . '/admin/dashboard/' . $bundle . '/edit/' . $nid : '/' . $language->getId() . '/admin/dashboard/' . $bundle . '/edit/' . $nid . '/add/translation',
         ];
       }
     }
@@ -558,33 +496,15 @@ class DashboardNodeController extends ControllerBase {
     catch (\Exception $e) {
     }
 
-    // Get enabled languages from our configuration.
-    $config = \Drupal::config('vactory_dashboard.global.settings');
-    $enabled_languages = $config->get('dashboard_languages') ?? [];
-    $enabled_languages = array_filter($enabled_languages);
-
-    // Get existing translations.
-    $existing_translations = $node->getTranslationLanguages();
-
+    // Get node available languages.
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
-
+    $available_languages = $node->getTranslationLanguages();
     foreach ($languages as $language) {
-      $lang_id = $language->getId();
-      $has_existing_translation = array_key_exists($lang_id, $existing_translations);
-
-      // Show language if: enabled in config OR has existing translation.
-      $is_enabled = empty($enabled_languages) || isset($enabled_languages[$lang_id]);
-
-      if ($is_enabled || $has_existing_translation) {
-        $available_languages_list[] = [
-          'id' => $lang_id,
-          'url' => $has_existing_translation 
-            ? '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid 
-            : '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid . '/add/translation',
-          'has_translation' => $has_existing_translation,
-        ];
-      }
+      $available_languages_list[] = [
+        'id' => $language->getId(),
+        'url' => in_array($language->getId(), array_keys($available_languages)) ? '/' . $language->getId() . '/admin/dashboard/' . $bundle . '/edit/' . $nid : '/' . $language->getId() . '/admin/dashboard/' . $bundle . '/edit/' . $nid . '/add/translation',
+      ];
     }
 
     // Get bundle fields.

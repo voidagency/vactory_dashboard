@@ -161,7 +161,7 @@
                                     x-transition:leave="transition ease-in duration-150"
                                     x-transition:leave-start="opacity-100 translate-y-0"
                                     x-transition:leave-end="opacity-0 translate-y-1"
-                                    class="absolute left-0 z-[100] w-full border border-slate-200 rounded-xl shadow-xl mt-2 overflow-hidden overflow-y-auto max-h-[calc(100vh-70px)] overflow-auto bg-white">
+                                    class="absolute left-0 z-[100] w-full bg-white border border-slate-200 rounded-xl shadow-xl mt-2 overflow-hidden">
 
                                 {# data state - grouped results #}
                                 <template x-if="Object.keys(groupedResults).length > 0">
@@ -335,74 +335,49 @@
                             </div>
                         {% endif %}
                         {# translation dropdown #}
-                        <div id="language" class="relative inline-block text-left">
-                            <div x-data="{ 
-                                open: false, 
-                                enabledLanguages: [], 
-                                languagesCount: 0,
-                                init() {
-                                    fetch('{{ path('vactory_dashboard.languages_config') }}')
-                                        .then(response => response.json())
-                                        .then(data => { 
-                                            this.enabledLanguages = data.languages || []; 
-                                            this.languagesCount = this.enabledLanguages.length;
-                                        })
-                                        .catch(error => console.error('Error fetching languages config:', error))
-                                }
-                            }">
-                                {# Single language display - no dropdown needed #}
-                                <template x-if="languagesCount <= 1">
-                                    <div class="text-gray-700 inline-flex justify-center rounded-lg bg-white px-2 lg:px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ring-slate-200 h-10 items-center">
-                                        <span class="max-lg:hidden">{{ current_language | t }}</span>
-                                        <span class="lg:hidden">{{ current_language | t | slice(0, 2) }}</span>
-                                    </div>
-                                </template>
+                        <div id="language" x-data="{ open: false }" class="relative inline-block text-left">
+                            <div>
+                                <button
+                                        @click="open = !open"
+                                        type="button"
+                                        class="text-gray-700 inline-flex w-full justify-center rounded-lg bg-white px-2 lg:px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ring-slate-200 hover:bg-slate-50 h-10"
+                                        id="menu-button"
+                                        :aria-expanded="open"
+                                        aria-haspopup="true"
+                                >
+                                    <span class="max-lg:hidden">{{ current_language | t }}</span>
+                                    <span class="lg:hidden">{{ current_language | t | slice(0, 2) }}</span>
+                                    <svg class="-mr-1 size-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"
+                                         aria-hidden="true" data-slot="icon">
+                                        <path fill-rule="evenodd"
+                                              d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+                                              clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                            </div>
 
-                                {# Multiple languages - show dropdown #}
-                                <template x-if="languagesCount > 1">
-                                    <div>
-                                        <button
-                                                @click="open = !open"
-                                                type="button"
-                                                class="text-gray-700 inline-flex w-full justify-center rounded-lg bg-white px-2 lg:px-3 py-2 text-sm font-semibold shadow-sm ring-1 ring-inset ring-slate-200 hover:bg-slate-50 h-10"
-                                                id="menu-button"
-                                                :aria-expanded="open"
-                                                aria-haspopup="true"
-                                        >
-                                            <span class="max-lg:hidden">{{ current_language | t }}</span>
-                                            <span class="lg:hidden">{{ current_language | t | slice(0, 2) }}</span>
-                                            <svg class="-mr-1 size-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
-                                                <path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/>
-                                            </svg>
-                                        </button>
-
-                                        <!-- Dropdown -->
-                                        <div x-show="open" @click.outside="open = false"
-                                            x-transition:enter="transition ease-out duration-100"
-                                            x-transition:enter-start="transform opacity-0 scale-95"
-                                            x-transition:enter-end="transform opacity-100 scale-100"
-                                            x-transition:leave="transition ease-in duration-75"
-                                            x-transition:leave-start="transform opacity-100 scale-100"
-                                            x-transition:leave-end="transform opacity-0 scale-95"
-                                            class="absolute right-0 z-40 mt-2 w-[max-content] origin-top-right divide-y divide-slate-100 rounded-xl bg-white shadow-xl ring-1 ring-slate-200 focus:outline-none overflow-hidden"
-                                            role="menu" aria-orientation="vertical" aria-labelledby="menu-button" tabindex="-1">
-                                            <div class="py-1" role="none">
-                                                {% for language in languages %}
-                                                    <template x-if="enabledLanguages.length === 0 || enabledLanguages.includes('{{ language.id }}')">
-                                                        <a href="{{ language.url }}"
-                                                          class="flex-1 w-full flex justify-start px-4 py-3 text-sm text-slate-700 hover:bg-primary-50 hover:text-primary-700 transition-colors duration-150"
-                                                          role="menuitem">
-                                                                {{ language.name | t }}
-                                                                {% if language.is_default %}
-                                                                    <span class="ml-2 inline-flex items-center rounded-full bg-primary-100 px-2 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-600/20">{{ "Default" | t }}</span>
-                                                                {% endif %}
-                                                        </a>
-                                                    </template>
-                                                {% endfor %}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
+                            <!-- Dropdown -->
+                            <div x-show="open" @click.outside="open = false"
+                                 x-transition:enter="transition ease-out duration-100"
+                                 x-transition:enter-start="transform opacity-0 scale-95"
+                                 x-transition:enter-end="transform opacity-100 scale-100"
+                                 x-transition:leave="transition ease-in duration-75"
+                                 x-transition:leave-start="transform opacity-100 scale-100"
+                                 x-transition:leave-end="transform opacity-0 scale-95"
+                                 class="absolute right-0 z-40 mt-2 w-[max-content] origin-top-right divide-y divide-slate-100 rounded-xl bg-white shadow-xl ring-1 ring-slate-200 focus:outline-none overflow-hidden"
+                                 role="menu" aria-orientation="vertical" aria-labelledby="menu-button" tabindex="-1">
+                                <div class="py-1" role="none">
+                                    {% for language in languages %}
+                                        <a href="{{ language.url }}"
+                                           class="flex-1 w-full flex justify-start px-4 py-3 text-sm text-slate-700 hover:bg-primary-50 hover:text-primary-700 transition-colors duration-150"
+                                           role="menuitem">
+                                            {{ language.name | t }}
+                                            {% if language.is_default %}
+                                                <span class="ml-2 inline-flex items-center rounded-full bg-primary-100 px-2 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-600/20">{{ "Default" | t }}</span>
+                                            {% endif %}
+                                        </a>
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
 
@@ -600,7 +575,7 @@
   });
 
   document.addEventListener('alpine:init', () => {
-    Alpine.store('limit', 50);
+    Alpine.store('limit', 100);
     Alpine.data('contentSearch', () => ({
       query: '',
       results: [],

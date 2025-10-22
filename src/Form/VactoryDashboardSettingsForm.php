@@ -99,49 +99,6 @@ class VactoryDashboardSettingsForm extends ConfigFormBase {
 
     ];
 
-    // SECTION LANGUAGES //
-    $form['language'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Languages to display in dashboard'),
-      '#open' => TRUE,
-    ];
-
-    // Get all available languages
-    $languages = \Drupal::languageManager()->getLanguages();
-    $language_options = [];
-    foreach ($languages as $language) {
-      $language_options[$language->getId()] = $language->getName();
-    }
-
-    // Get the site default language (the one marked as default in language config).
-    $default_langcode = \Drupal::languageManager()->getDefaultLanguage()->getId();
-
-    // Get current config.
-    $selected_languages = $config->get('dashboard_languages') ?? [];
-
-    // Ensure default language is always selected.
-    if (empty($selected_languages)) {
-      $selected_languages = [$default_langcode => $default_langcode];
-    }
-    else {
-      $selected_languages[$default_langcode] = $default_langcode;
-    }
-
-    // Languages checkboxes
-    $form['language']['dashboard_languages'] = [
-      '#type' => 'checkboxes',
-      '#title' => $this->t('Languages'),
-      '#description' => $this->t('Select the languages you want to display in the dashboard.'),
-      '#options' => $language_options,
-      '#default_value' => $selected_languages,
-    ];
-
-    // Disable the default language checkbox
-    $form['language']['dashboard_languages'][$default_langcode] = [
-      '#disabled' => TRUE,
-      '#description' => $this->t('Default language - cannot be disabled'),
-    ];
-
     // SECTION WEBFORMS //
     $form['webforms'] = [
       '#type' => 'details',
@@ -235,12 +192,6 @@ class VactoryDashboardSettingsForm extends ConfigFormBase {
     $menu_id = $form_state->getValue('menu_id');
     $this->config('vactory_dashboard.global.settings')
       ->set('menu_id', $menu_id)
-      ->save();
-
-    // Save languages configuration
-    $selected_languages = array_filter($form_state->getValue('dashboard_languages'));
-    $this->configFactory()->getEditable('vactory_dashboard.global.settings')
-      ->set('dashboard_languages', $selected_languages)
       ->save();
 
     $selected_webforms = array_filter($form_state->getValue('dashboard_webforms'));

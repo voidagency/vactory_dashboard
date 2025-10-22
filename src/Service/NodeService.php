@@ -292,7 +292,6 @@ class NodeService {
 
     // Get node fields.
     $node_data['title'] = $node->getTitle();
-    $node_data['summary'] = $node->hasField('node_summary') ? $node->get('node_summary')->value ?? "" : "";
     $node_data['body'] = $node->hasField('node_summary') ? $node->get('node_summary')->value ?? "" : "";
 
     $this->prepareVactoryParagraphsData($node, $node_data);
@@ -516,7 +515,6 @@ class NodeService {
 
         $tabs[] = [
           'title' => $tab_paragraph->get('field_vactory_title')->value ?? NULL,
-          'tab_id' => $tab_paragraph->get('paragraph_identifier')->value ?? NULL,
           'widgets' => $widgets,
           'id' => $tab_paragraph->id() ?? NULL,
         ];
@@ -1400,11 +1398,6 @@ class NodeService {
               $paragraph_entity->set('field_vactory_title', $item['title']);
             }
 
-            // Update tab_id if provided
-            if (isset($item['tab_id'])) {
-              $paragraph_entity->set('paragraph_identifier', $item['tab_id']);
-            }
-
             // Save widgets if provided
             if (!empty($item['widgets']) && is_array($item['widgets'])) {
               $components = [];
@@ -1432,7 +1425,6 @@ class NodeService {
           $tab_paragraph = Paragraph::create([
             'type' => 'vactory_paragraph_tab',
             'field_vactory_title' => $item['title'] ?? '',
-            'paragraph_identifier' => $item['tab_id'] ?? '',
           ]);
 
           // Save widgets if provided
@@ -1597,11 +1589,6 @@ class NodeService {
                           $paragraph_entity->set('field_vactory_title', $item['title']);
                         }
 
-                        // Update tab_id if provided
-                        if (isset($item['tab_id'])) {
-                          $paragraph_entity->set('paragraph_identifier', $item['tab_id']);
-                        }
-
                         // Save widgets if provided
                         if (!empty($item['widgets']) && is_array($item['widgets'])) {
                           $components = [];
@@ -1629,7 +1616,6 @@ class NodeService {
                       $tab_paragraph = Paragraph::create([
                         'type' => 'vactory_paragraph_tab',
                         'field_vactory_title' => $item['title'] ?? '',
-                        'paragraph_identifier' => $item['tab_id'] ?? '',
                       ]);
 
                       // Save widgets if provided

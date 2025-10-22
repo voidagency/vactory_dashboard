@@ -7,18 +7,19 @@ use Drupal\Component\Utility\Environment;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\file\FileInterface;
-use Drupal\media\MediaInterface;
+use Drupal\media\Entity\Media;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Drupal\Core\Cache\CacheableJsonResponse;
 use Drupal\file\Entity\File;
-use Drupal\media\Entity\Media;
-use Symfony\Component\HttpFoundation\Response;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Drupal\Core\Session\AccountProxyInterface;
-use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Database\Connection;
+use Drupal\Core\File\FileUrlGeneratorInterface;
 
 define('UPLOAD_BASE_PATH_PRIVATE', 'private://uploads');
 define('UPLOAD_BASE_PATH_PUBLIC', 'public://');
@@ -55,16 +56,50 @@ class DashboardMediaController extends ControllerBase {
   protected $currentUser;
 
   /**
+   * The database connection.
+   *
+   * @var \Drupal\Core\Database\Connection
+   */
+  protected $database;
+
+  /**
+   * The file URL generator.
+   *
+   * @var \Drupal\Core\File\FileUrlGeneratorInterface
+   */
+  protected $fileUrlGenerator;
+
+
+  /**
    * Constructs a new DashboardMediaController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
+   *   The entity field manager.
+   * @param \Drupal\Core\File\FileSystemInterface $file_system
+   *   The file system.
+   * @param \Drupal\Core\Session\AccountProxyInterface $current_user
+   *   The current user.
+   * @param \Drupal\Core\Database\Connection $database
+   *   The database connection.
+   * @param \Drupal\Core\File\FileUrlGeneratorInterface $file_url_generator
+   *   The file URL generator.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $entity_field_manager, FileSystemInterface $file_system, AccountProxyInterface $current_user) {
+  public function __construct(
+    EntityTypeManagerInterface $entity_type_manager,
+    EntityFieldManagerInterface $entity_field_manager,
+    FileSystemInterface $file_system,
+    AccountProxyInterface $current_user,
+    Connection $database,
+    FileUrlGeneratorInterface $file_url_generator
+  ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
     $this->fileSystem = $file_system;
     $this->currentUser = $current_user;
+    $this->database = $database;
+    $this->fileUrlGenerator = $file_url_generator;
   }
 
   /**
@@ -75,7 +110,9 @@ class DashboardMediaController extends ControllerBase {
       $container->get('entity_type.manager'),
       $container->get('entity_field.manager'),
       $container->get('file_system'),
-      $container->get('current_user')
+      $container->get('current_user'),
+      $container->get('database'),
+      $container->get('file_url_generator')
     );
   }
 
@@ -102,6 +139,146 @@ class DashboardMediaController extends ControllerBase {
   }
 
   /**
+   * Returns the media detail page.
+   *
+   * @param int $media_id
+   *   The media entity ID.
+   *
+   * @return array
+   *   A render array for the media detail page.
+   */
+  public function detail($media_id) {
+    // Load the media entity.
+    /** @var \Drupal\media\Entity\Media $media */
+    $media = $this->entityTypeManager->getStorage('media')->load($media_id);
+
+    if (!$media) {
+      throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+    }
+
+    // Get media type information.
+    $media_type = $media->bundle();
+    $media_type_entity = $this->entityTypeManager->getStorage('media_type')->load($media_type);
+
+    // Get the source field.
+    $source_field = $media_type_entity->getSource()->getSourceFieldDefinition($media_type_entity);
+    $source_field_name = $source_field->getName();
+
+    // Get media data.
+    $media_data = [
+      'id' => $media->id(),
+      'name' => $media->getName(),
+      'type' => $media_type,
+      'type_label' => $media_type_entity->label(),
+      'created' => $media->getCreatedTime(),
+      'changed' => $media->getChangedTime(),
+      'author' => $media->getOwner() ? $media->getOwner()->getDisplayName() : '',
+      'status' => $media->isPublished(),
+    ];
+
+    // Get file information if available.
+    if ($media->hasField($source_field_name) && !$media->get($source_field_name)->isEmpty()) {
+      $source_value = $media->get($source_field_name)->first();
+
+      if ($source_value && $source_value->entity instanceof FileInterface) {
+        $file = $source_value->entity;
+        $media_data['file'] = [
+          'filename' => $file->getFilename(),
+          'uri' => $file->getFileUri(),
+          'url' => $this->fileUrlGenerator->generateString($file->getFileUri()),
+          'size' => $file->getSize(),
+          'mime_type' => $file->getMimeType(),
+        ];
+      } elseif ($media_type === 'remote_video') {
+        $media_data['remote_url'] = $source_value->value;
+      }
+    }
+
+    // Get alternative text for images.
+    if ($media->hasField('field_media_image') && !$media->get('field_media_image')->isEmpty()) {
+      $image_field = $media->get('field_media_image')->first();
+      if ($image_field) {
+        $media_data['alt_text'] = $image_field->alt;
+      }
+    }
+
+    return [
+      '#theme' => 'vactory_dashboard_media_detail',
+      '#media' => $media_data,
+      '#media_entity' => $media,
+    ];
+  }
+
+  /**
+   * Saves media data.
+   *
+   * @param int $media_id
+   *   The media entity ID.
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request object.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   The JSON response.
+   */
+  public function saveMedia($media_id, Request $request) {
+    try {
+      // Load the media entity.
+      /** @var \Drupal\media\Entity\Media $media */
+      $media = $this->entityTypeManager->getStorage('media')->load($media_id);
+
+      if (!$media) {
+        return new JsonResponse(['error' => 'Media not found'], 404);
+      }
+
+      // Get form data from request.
+      $data = json_decode($request->getContent(), TRUE);
+
+      if (!$data) {
+        return new JsonResponse(['error' => 'Invalid data'], 400);
+      }
+
+      // Update media fields.
+      if (isset($data['name'])) {
+        $media->setName($data['name']);
+      }
+
+      if (isset($data['published'])) {
+        $media->setPublished($data['published']);
+      }
+
+      // Handle alt text for images.
+      if ($media->hasField('field_media_image') && isset($data['alt_text'])) {
+        $image_field = $media->get('field_media_image');
+        if (!$image_field->isEmpty()) {
+          $image_field->first()->set('alt', $data['alt_text']);
+        }
+      }
+
+
+      // Save the media entity.
+      $media->save();
+
+      return new JsonResponse([
+        'success' => TRUE,
+        'message' => ($this->t('Media saved successfully')),
+        'media_id' => $media->id(),
+      ]);
+
+    } catch (\Exception $e) {
+      \Drupal::logger('vactory_dashboard')->error('Error saving media @id: @message', [
+        '@id' => $media_id,
+        '@message' => $e->getMessage(),
+      ]);
+
+      return new JsonResponse([
+        'error' => ($this->t('An error occurred while saving the media')),
+        'details' => $e->getMessage(),
+      ], 500);
+    }
+  }
+
+
+  /**
    * Returns paginated media data.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
@@ -116,6 +293,24 @@ class DashboardMediaController extends ControllerBase {
     $search = $request->query->get('search', '');
     $type = $request->query->get('type', '');
 
+    // Validate and sanitize the type parameter
+    $valid_types = [];
+    $media_types = $this->entityTypeManager->getStorage('media_type')->loadMultiple();
+    foreach ($media_types as $media_type) {
+      $valid_types[] = $media_type->id();
+    }
+
+    // If type is provided but not valid, return empty result
+    if (!empty($type) && !in_array($type, $valid_types)) {
+      return new JsonResponse([
+        'data' => [],
+        'total' => 0,
+        'page' => $page,
+        'limit' => $limit,
+        'error' => 'Invalid media type: ' . $type . '. Valid types: ' . implode(', ', $valid_types)
+      ]);
+    }
+
     // Create query for counting.
     $count_query = $this->entityTypeManager->getStorage('media')->getQuery();
     $count_query->accessCheck(FALSE);
@@ -125,15 +320,16 @@ class DashboardMediaController extends ControllerBase {
     $query->accessCheck(FALSE);
     $query->sort('created', 'DESC');
 
-    // Apply filters.
+    // Apply search filter.
     if (!empty($search)) {
       $query->condition('name', $search, 'CONTAINS');
       $count_query->condition('name', $search, 'CONTAINS');
     }
 
-    if (!empty($type)) {
-      $query->condition('bundle', $type);
-      $count_query->condition('bundle', $type);
+    // Apply type filter.
+    if (!empty($type) && in_array($type, $valid_types)) {
+      $query->condition('bundle', $type, '=');
+      $count_query->condition('bundle', $type, '=');
     }
 
     // Get total count.
@@ -149,12 +345,23 @@ class DashboardMediaController extends ControllerBase {
     $medias = $this->entityTypeManager->getStorage('media')
       ->loadMultiple($mids);
     $data = [];
+    $cacheTags = ['media_list'];
+
     foreach ($medias as $media) {
+      $cacheTags[] = 'media:' . $media->id();
       /** @var \Drupal\media\Entity\Media $media */
+
+      // Double-check: Skip if type filter is applied and this media doesn't match
+      if (!empty($type) && $media->bundle() !== $type) {
+        continue;
+      }
+
+      $media_type = $this->entityTypeManager->getStorage('media_type')->load($media->bundle());
       $item = [
         'id' => $media->id(),
         'name' => $media->getName(),
         'type' => $media->bundle(),
+        'type_label' => $media_type ? $media_type->label() : $media->bundle(),
         'created' => $media->getCreatedTime(),
         'changed' => $media->getChangedTime(),
         'url' => $this->getMediaUrl($media),
@@ -165,22 +372,53 @@ class DashboardMediaController extends ControllerBase {
       $data[] = $item;
     }
 
-    return new JsonResponse([
+    $cacheMetadata = ['#cache' => ['tags' => $cacheTags]];
+
+    $response = new CacheableJsonResponse([
       'data' => $data,
       'total' => $total,
       'page' => $page,
       'limit' => $limit,
       'pages' => ceil($total / $limit),
+      'filters' => [
+        'search' => $search,
+        'type' => $type,
+        'valid_types' => $valid_types,
+      ],
     ]);
+
+    $response->addCacheableDependency(CacheableMetadata::createFromRenderArray($cacheMetadata));
+
+    // Add cache contexts to create separate cache entries for each filter combination
+    $response->getCacheableMetadata()->addCacheContexts([
+      'url.query_args:page',
+      'url.query_args:limit', 
+      'url.query_args:search',
+      'url.query_args:type'
+    ]);
+
+    // Add cache tags for media types to allow targeted cache invalidation
+    if (!empty($type)) {
+      $response->getCacheableMetadata()->addCacheTags(['media_type:' . $type]);
+    }
+
+    // Set reasonable cache max age (5 minutes)
+    $response->getCacheableMetadata()->setCacheMaxAge(300);
+
+    return $response;
   }
 
   /**
-   * @param \Drupal\media\MediaInterface $media
+   * Get the thumbnail URL for a remote video media entity.
    *
-   * @return void
+   * @param \Drupal\media\Entity\Media $media
+   *   The media entity.
+   *
+   * @return string
+   *   The thumbnail URL.
    */
-  protected function getRemoteVideoThumbnail(MediaInterface $media) {
-    return \Drupal::service('file_url_generator')->generateAbsoluteString($media->thumbnail->entity->getFileUri());
+  protected function getRemoteVideoThumbnail(Media $media) {
+    return $this->fileUrlGenerator->generateString($media->thumbnail->entity->getFileUri());
   }
 
   /**
@@ -192,14 +430,21 @@ class DashboardMediaController extends ControllerBase {
    * @return string
    *   The thumbnail URL.
    */
-  protected function getMediaUrl($media) {
+  protected function getMediaUrl(Media $media) {
     $bundle = $media->bundle();
     if ($bundle == 'image') {
-      if ($media->hasField('thumbnail') && !$media->get('thumbnail')
-          ->isEmpty()) {
+      // For images, return the full-sized image URL instead of thumbnail
+      if ($media->hasField('field_media_image') && !$media->get('field_media_image')->isEmpty()) {
+        $file = $media->get('field_media_image')->entity;
+        if ($file instanceof FileInterface) {
+          return $this->fileUrlGenerator->generateString($file->getFileUri());
+        }
+      }
+      // Fallback to thumbnail if field_media_image is not available
+      if ($media->hasField('thumbnail') && !$media->get('thumbnail')->isEmpty()) {
         $file = $media->get('thumbnail')->entity;
-        if ($file) {
-          return $file->createFileUrl();
+        if ($file instanceof FileInterface) {
+          return $this->fileUrlGenerator->generateString($file->getFileUri());
         }
       }
     }
@@ -208,19 +453,19 @@ class DashboardMediaController extends ControllerBase {
       return $media->get('field_media_oembed_video')->value;
     }
 
-    if ($bundle == 'file') {
-      $file = $media->get('field_media_file')->entity;
-      if ($file instanceof FileInterface) {
-        return $file->createFileUrl();
-      }
-    }
+    // if ($bundle == 'file') {
+    //   $file = $media->get('field_media_file')->entity;
+    //   if ($file instanceof FileInterface) {
+    //     return $file->createFileUrl();
+    //   }
+    // }
 
-    if ($bundle == 'private_file') {
-      $file = $media->get('field_media_file_1')->entity;
-      if ($file instanceof FileInterface) {
-        return $file->createFileUrl();
-      }
-    }
+    // if ($bundle == 'private_file') {
+    //   $file = $media->get('field_media_file_1')->entity;
+    //   if ($file instanceof FileInterface) {
+    //     return $file->createFileUrl();
+    //   }
+    // }
 
     return '';
   }
