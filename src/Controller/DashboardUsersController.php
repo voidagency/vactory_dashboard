@@ -57,6 +57,14 @@ class DashboardUsersController extends ControllerBase {
   }
 
   /**
+   * @return bool
+   *   TRUE if the user is an admin, FALSE otherwise.
+   */
+  protected function isCurrentUserAdmin() {
+    return in_array('administrator', $this->currentUser->getRoles());
+  }
+
+  /**
    * Returns the users dashboard page.
    *
    * @return array
@@ -189,6 +197,17 @@ class DashboardUsersController extends ControllerBase {
       ];
     }
 
+    // Only load roles if user is admin
+    $role_options = [];
+    if ($this->isCurrentUserAdmin()) {
+      $roles = Role::loadMultiple();
+      foreach ($roles as $role_id => $role) {
+        if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
+          $role_options[$role_id] = $role->label();
+        }
+      }
+    }
+
     return new JsonResponse([
       'data' => $data,
       'total' => $total,
@@ -213,6 +232,10 @@ class DashboardUsersController extends ControllerBase {
   public function deleteUsers(Request $request) {
     $content = json_decode($request->getContent(), TRUE);
     $userIds = $content['userIds'] ?? [];
+
+    if (in_array(1, $userIds)) {
+      return new JsonResponse(['message' => 'Action not permitted', 401]);
+    }
 
     if (empty($userIds)) {
       return new JsonResponse(['message' => 'No users specified'], Response::HTTP_BAD_REQUEST);
@@ -278,7 +301,8 @@ class DashboardUsersController extends ControllerBase {
         'library' => ['vactory_dashboard/alpine-users-edit'],
         'drupalSettings' => [
           'vactoryDashboard' => [
-            'editPath' => Url::fromRoute('vactory_dashboard.settings.user.edit', ['userId' => $userId])->toString(),
+            'editPath' => Url::fromRoute('vactory_dashboard.settings.user.edit', ['userId' => $userId])
+              ->toString(),
             'listPath' => Url::fromRoute('vactory_dashboard.users')
               ->toString(),
           ],
@@ -304,10 +328,17 @@ class DashboardUsersController extends ControllerBase {
     }
 
     $roles = Role::loadMultiple();
+    // Only load roles if user is admin
+    if ($userId == 1) {
+      throw new NotFoundHttpException();
+    }
     $role_options = [];
-    foreach ($roles as $role_id => $role) {
-      if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
-        $role_options[$role_id] = $role->label();
+    if ($this->isCurrentUserAdmin()) {
+      $roles = Role::loadMultiple();
+      foreach ($roles as $role_id => $role) {
+        if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
+          $role_options[$role_id] = $role->label();
+        }
       }
     }
 
@@ -399,6 +430,14 @@ class DashboardUsersController extends ControllerBase {
     }
 
     if (isset($data['roles'])) {
+      // Security check: prevent non-admin users from modifying roles at all
+      if (!$this->isCurrentUserAdmin()) {
+        return new JsonResponse([
+          'message' => 'Access denied: You cannot modify user roles',
+          'errors' => ['roles' => 'You do not have permission to modify user roles'],
+        ], Response::HTTP_FORBIDDEN);
+      }
+
       $user->set('roles', $data['roles']);
     }
 
