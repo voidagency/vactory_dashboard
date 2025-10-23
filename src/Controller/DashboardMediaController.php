@@ -456,20 +456,6 @@ class DashboardMediaController extends ControllerBase {
       return $media->get('field_media_oembed_video')->value;
     }
 
-    // if ($bundle == 'file') {
-    //   $file = $media->get('field_media_file')->entity;
-    //   if ($file instanceof FileInterface) {
-    //     return $file->createFileUrl();
-    //   }
-    // }
-
-    // if ($bundle == 'private_file') {
-    //   $file = $media->get('field_media_file_1')->entity;
-    //   if ($file instanceof FileInterface) {
-    //     return $file->createFileUrl();
-    //   }
-    // }
-
     return '';
   }
 

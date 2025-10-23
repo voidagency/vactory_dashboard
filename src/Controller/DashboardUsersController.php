@@ -170,15 +170,7 @@ class DashboardUsersController extends ControllerBase {
       $roles = $user->getRoles(TRUE);
       $role_names = array_map(function($role) {
         return $this->t($role);
-      }, $roles);
-
-      $roles = Role::loadMultiple();
-      $role_options = [];
-      foreach ($roles as $role_id => $role) {
-        if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
-          $role_options[$role_id] = $role->label();
-        }
-      }
+      }, $roles);      
 
       $currentUser = $this->currentUser;
       $user_roles = $currentUser->getRoles();
@@ -263,11 +255,14 @@ class DashboardUsersController extends ControllerBase {
    *   A render array for the user update page.
    */
   public function pageUpdate($userId) {
-    $roles = Role::loadMultiple();
+    // Only load roles if user is admin
     $role_options = [];
-    foreach ($roles as $role_id => $role) {
-      if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
-        $role_options[$role_id] = $role->label();
+    if ($this->isCurrentUserAdmin()) {
+      $roles = Role::loadMultiple();
+      foreach ($roles as $role_id => $role) {
+        if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
+          $role_options[$role_id] = $role->label();
+        }
       }
     }
     // Check if the user exists
@@ -327,11 +322,7 @@ class DashboardUsersController extends ControllerBase {
       throw new NotFoundHttpException('Utilisateur non trouvé.');
     }
 
-    $roles = Role::loadMultiple();
     // Only load roles if user is admin
-    if ($userId == 1) {
-      throw new NotFoundHttpException();
-    }
     $role_options = [];
     if ($this->isCurrentUserAdmin()) {
       $roles = Role::loadMultiple();
@@ -434,7 +425,7 @@ class DashboardUsersController extends ControllerBase {
       if (!$this->isCurrentUserAdmin()) {
         return new JsonResponse([
           'message' => 'Access denied: You cannot modify user roles',
-          'errors' => ['roles' => 'You do not have permission to modify user roles'],
+          'errors' => ['roles' => 'You do not have permission to modify user roles']
         ], Response::HTTP_FORBIDDEN);
       }
 

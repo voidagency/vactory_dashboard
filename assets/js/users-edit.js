@@ -22,14 +22,12 @@ function editUserPage(props) {
         const userToSave = {
           name: this.user.name,
           email: this.user.email,
-          roles: rolesArray,
           status: this.user.status,
 
         };
 
         // Only include roles if roles object is not empty.
         if (Object.keys(this.roles).length > 0) {
-          const rolesArray = Array.isArray(this.user.roles) ? [...this.user.roles] : [];
           userToSave.roles = rolesArray;
         }
         
