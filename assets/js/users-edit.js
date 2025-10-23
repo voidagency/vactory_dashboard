@@ -22,10 +22,15 @@ function editUserPage(props) {
         const userToSave = {
           name: this.user.name,
           email: this.user.email,
-          roles: rolesArray,
           status: this.user.status,
 
         };
+
+        // Only include roles if roles object is not empty.
+        if (Object.keys(this.roles).length > 0) {
+          userToSave.roles = rolesArray;
+        }
+        
         const response = await fetch(drupalSettings.vactoryDashboard.editPath, {
           method: 'PUT',
           headers: {

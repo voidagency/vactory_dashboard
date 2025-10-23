@@ -926,6 +926,15 @@ vactory_dashboard.icons:
   options:
     no_cache: TRUE
 
+vactory_dashboard.languages_config:
+  path: '/admin/dashboard/languages-config'
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\VactoryDashboardController::getLanguagesConfig'
+    _title: 'Languages Config'
+  methods: [GET]
+  requirements:
+    _permission: 'administer dashboard configuration'
+
 vactory_dashboard.icons.search:
   path: '/admin/vactory-dashboard/api/icons/search/{query}'
   defaults:

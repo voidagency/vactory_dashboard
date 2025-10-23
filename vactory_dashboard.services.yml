@@ -62,7 +62,7 @@ services:
 
   vactory_dashboard.ssl_service:
     class: Drupal\vactory_dashboard\Service\SslService
-    arguments: ['@config.factory', '@http_client']
+    arguments: ['@config.factory', '@http_client', '@logger.factory']
 
   vactory_dashboard.node_service:
     class: Drupal\vactory_dashboard\Service\NodeService

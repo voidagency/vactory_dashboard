@@ -1,7 +1,7 @@
 <?php
 
 namespace Drupal\vactory_dashboard\Service;
-
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use GuzzleHttp\ClientInterface; 
 
@@ -9,11 +9,46 @@ class SslService {
 
   protected $configFactory;
   protected $httpClient;
+  protected $logger;
 
   // Change the type hint for $http_client
-  public function __construct(ConfigFactoryInterface $config_factory, ClientInterface $http_client) {
+  public function __construct(ConfigFactoryInterface $config_factory, ClientInterface $http_client, LoggerChannelFactoryInterface $logger_factory) {
     $this->configFactory = $config_factory;
     $this->httpClient = $http_client;
+    $this->logger = $logger_factory->get('vactory_dashboard');
+  }
+
+  /**
+   * Vérifie les prérequis système pour la vérification SSL.
+   *
+   * @return array
+   *   Tableau avec 'success' (bool) et 'message' (string).
+   */
+  private function checkSystemRequirements(): array {
+    // Vérifier si shell_exec est disponible
+    if (!function_exists('shell_exec')) {
+      $message = 'La fonction shell_exec n\'est pas disponible. Vérifiez la configuration PHP (disable_functions).';
+      $this->logger->error($message);
+      return ['success' => FALSE, 'message' => $message];
+    }
+
+    // Vérifier si shell_exec est désactivée
+    $disabled_functions = explode(',', ini_get('disable_functions'));
+    if (in_array('shell_exec', array_map('trim', $disabled_functions))) {
+      $message = 'La fonction shell_exec est désactivée dans la configuration PHP (disable_functions).';
+      $this->logger->error($message);
+      return ['success' => FALSE, 'message' => $message];
+    }
+
+    // Vérifier si OpenSSL est installé
+    $openssl_check = shell_exec('which openssl 2>/dev/null');
+    if (empty($openssl_check)) {
+      $message = 'La commande OpenSSL n\'est pas installée sur le système. Installez OpenSSL pour utiliser la vérification SSL.';
+      $this->logger->error($message);
+      return ['success' => FALSE, 'message' => $message];
+    }
+    return ['success' => TRUE];
+
   }
 
   /**
@@ -29,6 +64,13 @@ class SslService {
    */
   public function getSSLStatus(?string $domain = NULL, bool $force_refresh = FALSE): array {
     try {
+      // Vérifier les prérequis système avant tout
+      $requirements_check = $this->checkSystemRequirements();
+      if (!$requirements_check['success']) {
+        $this->logger->error('Échec de la vérification SSL : ' . $requirements_check['message']);
+        return ['error' => $requirements_check['message']];
+      }
+
       $config = $this->configFactory->getEditable('vactory_dashboard.ssl.settings');
       $stored_data = $config->get('ssl_info');
 
@@ -53,8 +95,16 @@ class SslService {
       );
       $output = shell_exec($cmd);
 
-      if (!$output) {
-        return ['error' => "Impossible de récupérer le certificat SSL via OpenSSL."];
+      if ($output === NULL) {
+        $error_message = "Échec de l'exécution de la commande shell_exec pour OpenSSL.";
+        $this->logger->error($error_message);
+        return ['error' => $error_message];
+      }
+
+      if (empty($output) || trim($output) === '') {
+        $error_message = "La commande OpenSSL n'a retourné aucun résultat. Vérifiez la connectivité au domaine: " . $domain;
+        $this->logger->error($error_message);
+        return ['error' => $error_message];
       }
 
       // Extraction des infos nécessaires
@@ -79,11 +129,16 @@ class SslService {
       }
 
       if (empty($issuer) || empty($valid_till)) {
-        return ['error' => "Le certificat SSL n'a pas pu être extrait."];
+        $error_message = "Le certificat SSL n'a pas pu être extrait. Données manquantes : issuer=" . ($issuer ?: 'vide') . ", valid_till=" . ($valid_till ?: 'vide');
+        $this->logger->error($error_message);
+        return ['error' => $error_message];
       }
 
       // Conversion date et calcul des jours restants
       $expires = \DateTime::createFromFormat('M d H:i:s Y T', $valid_till);
+      if (!$expires) {
+        $this->logger->warning('Impossible de parser la date d\'expiration : ' . $valid_till);
+      }
       $valid_till_formatted = $expires ? $expires->format('M j Y') : $valid_till;
       $days_left = $expires ? (int) floor(($expires->getTimestamp() - time()) / 86400) : 0;
       
@@ -103,7 +158,9 @@ class SslService {
       return $data;
     }
     catch (\Exception $e) {
-      return ['error' => 'Exception: ' . $e->getMessage()];
+      $error_message = 'Exception lors de la vérification SSL : ' . $e->getMessage();
+      $this->logger->error($error_message);
+      return ['error' => $error_message];
     }
   }
 
