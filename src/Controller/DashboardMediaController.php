@@ -8,6 +8,9 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\file\FileInterface;
 use Drupal\media\Entity\Media;
+use Drupal\media\MediaInterface;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -452,20 +455,6 @@ class DashboardMediaController extends ControllerBase {
     if ($bundle == 'remote_video') {
       return $media->get('field_media_oembed_video')->value;
     }
-
-    // if ($bundle == 'file') {
-    //   $file = $media->get('field_media_file')->entity;
-    //   if ($file instanceof FileInterface) {
-    //     return $file->createFileUrl();
-    //   }
-    // }
-
-    // if ($bundle == 'private_file') {
-    //   $file = $media->get('field_media_file_1')->entity;
-    //   if ($file instanceof FileInterface) {
-    //     return $file->createFileUrl();
-    //   }
-    // }
 
     return '';
   }

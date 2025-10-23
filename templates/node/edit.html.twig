@@ -45,6 +45,7 @@
           changed: config.changed,
           settings: {
             title: '',
+            summary: '',
             alias: '',
             status: config.status === '1',
           },
@@ -1408,6 +1409,7 @@
             if (this.paragraphMultipleForm.items.length == 0) {
               const newItem = {
                 title: '',
+                tab_id: '',
                 isNew: true,
                 paragraph_id: '',
                 widgets: [],
@@ -1739,6 +1741,7 @@
               }));
             }
             this.settings.title = node?.title || '';
+            this.settings.summary = node?.summary || '';
             this.settings.alias = node?.alias || '';
             // this.settings.status = node.status || false;
 

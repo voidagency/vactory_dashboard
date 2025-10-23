@@ -396,4 +396,22 @@ protected static $cache = [];
     ]);
   }
 
+  /**
+   * Returns enabled languages configuration as JSON.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   A JSON response containing the enabled languages.
+   */
+  public function getLanguagesConfig() {
+    $config = $this->configFactory->get('vactory_dashboard.global.settings');
+    $enabled_languages = $config->get('dashboard_languages') ?: [];
+
+    // Filter out empty values (unchecked checkboxes).
+    $enabled_languages = array_filter($enabled_languages);
+
+    return new JsonResponse([
+      'languages' => array_keys($enabled_languages),
+    ]);
+  }
+
 }

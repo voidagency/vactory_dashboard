@@ -99,14 +99,24 @@ class DashboardVactoryPageController extends ControllerBase {
       ->getCurrentLanguage()
       ->getId();
 
-    // Get node available languages.
+    // Get enabled languages from our custom configuration.
+    $config = \Drupal::config('vactory_dashboard.global.settings');
+    $enabled_languages = $config->get('dashboard_languages') ?? [];
+    $enabled_languages = array_filter($enabled_languages);
+
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
+
     foreach ($languages as $language) {
-      $available_languages_list[] = [
-        'id' => $language->getId(),
-        'url' => Url::fromRoute('vactory_dashboard.vactory_page.add', [], ['language' => $language]),
-      ];
+      $lang_id = $language->getId();
+
+      // Only show languages that are enabled in our custom configuration.
+      if (empty($enabled_languages) || isset($enabled_languages[$lang_id])) {
+        $available_languages_list[] = [
+          'id' => $lang_id,
+          'url' => Url::fromRoute('vactory_dashboard.vactory_page.add', [], ['language' => $language])->toString(),
+        ];
+      }
     }
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
@@ -150,15 +160,33 @@ class DashboardVactoryPageController extends ControllerBase {
 
     $node_translation = $node->getTranslation($current_language);
 
-    // Get node available languages.
-    $available_languages = $node->getTranslationLanguages();
+    // Get enabled languages from our custom configuration.
+    $config = \Drupal::config('vactory_dashboard.global.settings');
+    $enabled_languages = $config->get('dashboard_languages') ?? [];
+    $enabled_languages = array_filter($enabled_languages);
+
+    // Get existing translations.
+    $existing_translations = $node->getTranslationLanguages();
+
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
+
     foreach ($languages as $language) {
-      $available_languages_list[] = [
-        'id' => $language->getId(),
-        'url' => in_array($language->getId(), array_keys($available_languages)) ? '/' . $language->getId() . '/admin/dashboard/vactory_page/edit/' . $id : '/' . $language->getId() . '/admin/dashboard/vactory_page/edit/' . $id . '/add/translation',
-      ];
+      $lang_id = $language->getId();
+      $has_existing_translation = array_key_exists($lang_id, $existing_translations);
+
+      // Show language if: enabled in config OR has existing translation.
+      $is_enabled = empty($enabled_languages) || isset($enabled_languages[$lang_id]);
+
+      if ($is_enabled || $has_existing_translation) {
+        $available_languages_list[] = [
+          'id' => $lang_id,
+          'url' => $has_existing_translation 
+            ? '/' . $lang_id . '/admin/dashboard/vactory_page/edit/' . $id 
+            : '/' . $lang_id . '/admin/dashboard/vactory_page/edit/' . $id . '/add/translation',
+          'has_translation' => $has_existing_translation,
+        ];
+      }
     }
 
     $meta_tags = $this->metatagService->prepareMetatags($node_translation ?? $node);
@@ -210,15 +238,33 @@ class DashboardVactoryPageController extends ControllerBase {
     catch (\Exception $e) {
     }
 
-    // Get node available languages.
-    $available_languages = $node->getTranslationLanguages();
+    // Get enabled languages from our configuration.
+    $config = \Drupal::config('vactory_dashboard.global.settings');
+    $enabled_languages = $config->get('dashboard_languages') ?? [];
+    $enabled_languages = array_filter($enabled_languages);
+
+    // Get existing translations.
+    $existing_translations = $node->getTranslationLanguages();
+
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
+
     foreach ($languages as $language) {
-      $available_languages_list[] = [
-        'id' => $language->getId(),
-        'url' => in_array($language->getId(), array_keys($available_languages)) ? '/' . $language->getId() . '/admin/dashboard/vactory_page/edit/' . $id : '/' . $language->getId() . '/admin/dashboard/vactory_page/edit/' . $id . '/add/translation',
-      ];
+      $lang_id = $language->getId();
+      $has_existing_translation = array_key_exists($lang_id, $existing_translations);
+
+      // Show language if: enabled in config OR has existing translation.
+      $is_enabled = empty($enabled_languages) || isset($enabled_languages[$lang_id]);
+
+      if ($is_enabled || $has_existing_translation) {
+        $available_languages_list[] = [
+          'id' => $lang_id,
+          'url' => $has_existing_translation 
+            ? '/' . $lang_id . '/admin/dashboard/vactory_page/edit/' . $id 
+            : '/' . $lang_id . '/admin/dashboard/vactory_page/edit/' . $id . '/add/translation',
+          'has_translation' => $has_existing_translation,
+        ];
+      }
     }
 
     $meta_tags = $this->metatagService->prepareMetatags($node);
@@ -393,6 +439,10 @@ class DashboardVactoryPageController extends ControllerBase {
         $node->getTranslation($language)->set('title', $settings['title']);
       }
 
+      if (isset($settings['summary'])) {
+        $node->getTranslation($language)->set('node_summary', $settings['summary']);
+      }
+
       if (isset($settings['alias'])) {
         $alias = trim($settings['alias']);
 
@@ -497,6 +547,10 @@ class DashboardVactoryPageController extends ControllerBase {
 
       if (isset($settings['title'])) {
         $node->set('title', $settings['title']);
+      }
+
+      if (isset($settings['summary'])) {
+        $node->set('node_summary', $settings['summary']);
       }
 
       // Update SEO fields if they exist.
