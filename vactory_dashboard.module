@@ -89,7 +89,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
 
     'vactory_dashboard_ajoute_medias_remote_video' => [
       'template' => 'media/dashboard-ajoute-medias-remote-video',
-
+      'variables' => []
     ],
 
     'vactory_dashboard_ajoute_media' => [
@@ -155,9 +155,11 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
     ],
     'vactory_dashboard_languages' => [
       'template' => 'languages/dashboard-languages',
+      'variables' => []
     ],
     'vactory_dashboard_sitemap' => [
       'template' => 'sitemap/dashboard-sitemap',
+      'variables' => []
     ],
     'vactory_dashboard_shield' => [
       'template' => 'shield/dashboard-shield',
@@ -1158,8 +1160,7 @@ function get_element_value(MenuLinkInterface $link) {
  * Check if a module is installed.
  */
 function is_module_installed($module_name) {
-  $exists = \Drupal::moduleHandler()->moduleExists($module_name);
-  return ['exists' => $exists];
+  return \Drupal::moduleHandler()->moduleExists($module_name);
 }
 
 /**
