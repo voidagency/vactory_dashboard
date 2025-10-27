@@ -710,6 +710,9 @@
         this.notification.show = true;
         this.notification.error = isError;
         this.notification.message = message;
+        setTimeout(() => {
+          this.closeNotification()
+        }, 3000)
       },
 
       closeNotification() {
