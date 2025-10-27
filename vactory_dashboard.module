@@ -1158,8 +1158,7 @@ function get_element_value(MenuLinkInterface $link) {
  * Check if a module is installed.
  */
 function is_module_installed($module_name) {
-  $exists = \Drupal::moduleHandler()->moduleExists($module_name);
-  return ['exists' => $exists];
+  return \Drupal::moduleHandler()->moduleExists($module_name);
 }
 
 /**
