@@ -89,7 +89,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
 
     'vactory_dashboard_ajoute_medias_remote_video' => [
       'template' => 'media/dashboard-ajoute-medias-remote-video',
-
+      'variables' => []
     ],
 
     'vactory_dashboard_ajoute_media' => [
@@ -155,9 +155,11 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
     ],
     'vactory_dashboard_languages' => [
       'template' => 'languages/dashboard-languages',
+      'variables' => []
     ],
     'vactory_dashboard_sitemap' => [
       'template' => 'sitemap/dashboard-sitemap',
+      'variables' => []
     ],
     'vactory_dashboard_shield' => [
       'template' => 'shield/dashboard-shield',
