@@ -8,28 +8,33 @@
             <div class="bg-white z-30 sticky top-0 py-4 px-4 border-b border-slate-200 shadow-sm rounded-xl flex flex-col md:flex-row gap-4 md:gap-0 justify-between items-center mb-2">
                 <div class="flex items-center gap-x-3">
                     <a href="{{ path('vactory_dashboard.media') }}" 
-                       class="me-3 text-slate-500 hover:text-primary-500 transition-colors">
+                       class="text-slate-500 hover:text-primary-500 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                              stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-4 w-4">
                             <path stroke-linecap="round" stroke-linejoin="round"
                                   d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
                         </svg>
                     </a>     
-                    <h1 class="font-semibold text-xl text-slate-900 text-center flex items-center justify-center gap-2">
-                        <span class="shrink-0">{{ "Edit"|t }} {{ media.type_label }} - </span>
-                        <span class="capitalize truncate min-w-0">{{ media.name }}</span>
+                    <h1 class="flex flex-wrap items-center text-xl font-semibold text-slate-900">
+                        {{ "Détail du média"|t }} -
+                        <span class="inline-block capitalize">{{ media.name }}</span>
                     </h1>
                 </div>
 
                 <div class="flex max-lg:w-full max-lg:flex-wrap max-lg:gap-3 max-lg:[&>*]:w-full max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:px-3 max-lg:py-4 lg:items-center lg:space-x-4">
                     <div class="flex max-lg:items-center">
-                        <input type="checkbox" id="publish-status" x-model="formData.published" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded transition-all duration-150">
+                        <input type="checkbox"
+                               id="publish-status"
+                               x-model="formData.published"
+                               {% if not (user.hasPermission('edit any ' ~ media.type ~ ' media') or (user.hasPermission('edit own ' ~ media.type ~ ' media') and media_entity.getOwner().id() == user.id)) %}disabled{% endif %}
+                               class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded transition-all duration-150 {% if not (user.hasPermission('edit any ' ~ media.type ~ ' media') or (user.hasPermission('edit own ' ~ media.type ~ ' media') and media_entity.getOwner().id() == user.id)) %}opacity-50 cursor-not-allowed{% endif %}">
                         <label for="publish-status" class="ml-2 block text-sm text-slate-700 font-medium">
                             {{ 'Published'|t }}
                         </label>
                     </div>
 
                     <div class="flex items-center gap-2">
+                        {% if user.hasPermission('delete any ' ~ media.type ~ ' media') or (user.hasPermission('delete own ' ~ media.type ~ ' media') and media_entity.getOwner().id() == user.id) %}
                         <button type="button" 
                                 @click="showDeleteModal = true"
                                 class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-300 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
@@ -38,7 +43,9 @@
                             </svg>
                             {{ "Delete"|t }}
                         </button>
+                        {% endif %}
 
+                        {% if user.hasPermission('edit any ' ~ media.type ~ ' media') or (user.hasPermission('edit own ' ~ media.type ~ ' media') and media_entity.getOwner().id() == user.id) %}
                         <button @click="saveMedia()" 
                                 :disabled="saving" 
                                 :class="{
@@ -55,27 +62,14 @@
                             <!-- Button text (changes based on loading state) -->
                             <span x-text="saving ? '{{ 'Saving...'|t }}' : '{{ 'Save'|t }}'"></span>
                         </button>
+                        {% endif %}
                     </div>
-                </div>
-            </div>
-
-            <!-- Tabs -->
-            <div class="bg-white border-b border-slate-200 mb-2 flex items-center justify-between">
-                <div class="flex space-x-1">
-                    <button @click="activeTab = 'edit'"
-                            :class="{
-                                'border-primary-500 text-primary-600 bg-primary-50/50': activeTab === 'edit',
-                                'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50': activeTab !== 'edit'
-                            }"
-                            class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
-                        {{ 'Edit'|t }}
-                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Edit Tab Content -->
-        <div x-show="activeTab === 'edit'" class="flex-1 overflow-y-auto p-3">
+        <!-- Media Detail Content -->
+        <div class="flex-1 overflow-y-auto p-3">
             <form @submit.prevent="saveMedia()" class="space-y-4">
                 <!-- Name Field -->
                 <div class="bg-white shadow-sm border border-slate-200 rounded-xl p-6">
@@ -85,7 +79,8 @@
                     <input type="text" 
                            id="media_name" 
                            x-model="formData.name"
-                           class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500 transition-all duration-150"
+                           {% if not (user.hasPermission('edit any ' ~ media.type ~ ' media') or (user.hasPermission('edit own ' ~ media.type ~ ' media') and media_entity.getOwner().id() == user.id)) %}readonly{% endif %}
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm {% if user.hasPermission('edit any ' ~ media.type ~ ' media') or (user.hasPermission('edit own ' ~ media.type ~ ' media') and media_entity.getOwner().id() == user.id) %}focus:ring-primary-500 focus:border-primary-500{% else %}bg-slate-50 text-slate-500{% endif %} transition-all duration-150"
                            required>
                     <div class="mt-1 text-sm text-slate-500">
                         <span x-text="formData.name.length"></span>/255
@@ -125,7 +120,8 @@
                                 <textarea id="alt_text" 
                                           x-model="formData.alt_text"
                                           rows="3" 
-                                          class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:ring-primary-500 focus:border-primary-500 transition-all duration-150"
+                                          {% if not (user.hasPermission('edit any ' ~ media.type ~ ' media') or (user.hasPermission('edit own ' ~ media.type ~ ' media') and media_entity.getOwner().id() == user.id)) %}readonly{% endif %}
+                                          class="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm {% if user.hasPermission('edit any ' ~ media.type ~ ' media') or (user.hasPermission('edit own ' ~ media.type ~ ' media') and media_entity.getOwner().id() == user.id) %}focus:ring-primary-500 focus:border-primary-500{% else %}bg-slate-50 text-slate-500{% endif %} transition-all duration-150"
                                           placeholder="{{ 'Brève description de l\'image utilisée par les lecteurs d\'écran et affichée lorsque l\'image n\'est pas chargée. Ceci est important pour l\'accessibilité.'|t }}"></textarea>
                                 <div class="mt-1 text-sm text-slate-500">
                                     {{ "Brève description de l'image utilisée par les lecteurs d'écran et affichée lorsque l'image n'est pas chargée. Ceci est important pour l'accessibilité."|t }}
@@ -269,7 +265,6 @@
 <script>
 function mediaEditForm() {
     return {
-        activeTab: 'edit',
         saving: false,
         deleting: false,
         showDeleteModal: false,

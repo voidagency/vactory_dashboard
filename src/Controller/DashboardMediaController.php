@@ -126,6 +126,11 @@ class DashboardMediaController extends ControllerBase {
    *   A render array for the media dashboard.
    */
   public function content() {
+    // Check if user has permission to view media.
+    if (!$this->currentUser->hasPermission('view media')) {
+      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+    }
+
     // Get all media types.
     $media_types = $this->entityTypeManager->getStorage('media_type')
       ->loadMultiple();
@@ -159,6 +164,11 @@ class DashboardMediaController extends ControllerBase {
       throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
     }
 
+    // Check if user has permission to view this media.
+    if (!$media->access('view', $this->currentUser)) {
+      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+    }
+
     // Get media type information.
     $media_type = $media->bundle();
     $media_type_entity = $this->entityTypeManager->getStorage('media_type')->load($media_type);
@@ -183,7 +193,7 @@ class DashboardMediaController extends ControllerBase {
     if ($media->hasField($source_field_name) && !$media->get($source_field_name)->isEmpty()) {
       $source_value = $media->get($source_field_name)->first();
 
-      if ($source_value && $source_value->entity instanceof FileInterface) {
+      if ($source_value && isset($source_value->entity) && $source_value->entity instanceof FileInterface) {
         $file = $source_value->entity;
         $media_data['file'] = [
           'filename' => $file->getFilename(),
@@ -192,16 +202,16 @@ class DashboardMediaController extends ControllerBase {
           'size' => $file->getSize(),
           'mime_type' => $file->getMimeType(),
         ];
-      } elseif ($media_type === 'remote_video') {
+      } elseif ($media_type === 'remote_video' && isset($source_value->value)) {
         $media_data['remote_url'] = $source_value->value;
       }
     }
 
     // Get alternative text for images.
     if ($media->hasField('field_media_image') && !$media->get('field_media_image')->isEmpty()) {
-      $image_field = $media->get('field_media_image')->first();
-      if ($image_field) {
-        $media_data['alt_text'] = $image_field->alt;
+      $image_field_value = $media->get('field_media_image')->getValue();
+      if (!empty($image_field_value) && isset($image_field_value[0]['alt'])) {
+        $media_data['alt_text'] = $image_field_value[0]['alt'];
       }
     }
 
@@ -233,6 +243,11 @@ class DashboardMediaController extends ControllerBase {
         return new JsonResponse(['error' => 'Media not found'], 404);
       }
 
+      // Check if user has permission to edit this media.
+      if (!$media->access('update', $this->currentUser)) {
+        return new JsonResponse(['error' => 'Access denied'], 403);
+      }
+
       // Get form data from request.
       $data = json_decode($request->getContent(), TRUE);
 
@@ -246,14 +261,15 @@ class DashboardMediaController extends ControllerBase {
       }
 
       if (isset($data['published'])) {
-        $media->setPublished($data['published']);
+        $media->set('status', $data['published']);
       }
 
       // Handle alt text for images.
       if ($media->hasField('field_media_image') && isset($data['alt_text'])) {
-        $image_field = $media->get('field_media_image');
-        if (!$image_field->isEmpty()) {
-          $image_field->first()->set('alt', $data['alt_text']);
+        $image_field_value = $media->get('field_media_image')->getValue();
+        if (!empty($image_field_value)) {
+          $image_field_value[0]['alt'] = $data['alt_text'];
+          $media->set('field_media_image', $image_field_value);
         }
       }
 
@@ -291,6 +307,11 @@ class DashboardMediaController extends ControllerBase {
    *   The JSON response with media data.
    */
   public function getMediaData(Request $request) {
+    // Check if user has permission to view media.
+    if (!$this->currentUser->hasPermission('view media')) {
+      return new JsonResponse(['error' => 'Access denied'], 403);
+    }
+
     $page = $request->query->get('page', 1);
     $limit = $request->query->get('limit', 12);
     $search = $request->query->get('search', '');
@@ -316,11 +337,11 @@ class DashboardMediaController extends ControllerBase {
 
     // Create query for counting.
     $count_query = $this->entityTypeManager->getStorage('media')->getQuery();
-    $count_query->accessCheck(FALSE);
+    $count_query->accessCheck(TRUE);
 
     // Create main query.
     $query = $this->entityTypeManager->getStorage('media')->getQuery();
-    $query->accessCheck(FALSE);
+    $query->accessCheck(TRUE);
     $query->sort('created', 'DESC');
 
     // Apply search filter.
@@ -466,6 +487,11 @@ class DashboardMediaController extends ControllerBase {
    *   An array of media types.
    */
   public function add() {
+    // Check if user has permission to create media.
+    if (!$this->currentUser->hasPermission('create media')) {
+      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+    }
+
     $media_types = $this->entityTypeManager->getStorage('media_type')
       ->loadMultiple();
 
@@ -487,6 +513,11 @@ class DashboardMediaController extends ControllerBase {
    *   An array of allowed extensions .
    */
   public function addFiles() {
+    // Check if user has permission to create file media.
+    if (!$this->currentUser->hasPermission('create file media')) {
+      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+    }
+
     //Récupération des extensions autorisées depuis le champ "field_media_file"
     $field_definitions = $this->entityFieldManager->getFieldDefinitions('media', 'file');
     $field = $field_definitions['field_media_file'];
@@ -513,6 +544,11 @@ class DashboardMediaController extends ControllerBase {
    *   An array of allowed extensions .
    */
   public function pageAddImage() {
+    // Check if user has permission to create image media.
+    if (!$this->currentUser->hasPermission('create image media')) {
+      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+    }
+
     $field_definitions = $this->entityFieldManager->getFieldDefinitions('media', 'image');
     $field = $field_definitions['field_media_image'];
     $settings = $field->getSettings();
@@ -538,6 +574,12 @@ class DashboardMediaController extends ControllerBase {
    */
 
   public function addFileUpload($type_id, Request $request) {
+    // Check if user has permission to create this type of media.
+    $permission = "create {$type_id} media";
+    if (!$this->currentUser->hasPermission($permission)) {
+      return new JsonResponse(['error' => 'Access denied'], 403);
+    }
+
     try {
       $errors = [];
 
@@ -649,6 +691,11 @@ class DashboardMediaController extends ControllerBase {
    *   The JSON response.
    */
   public function addImage(Request $request) {
+    // Check if user has permission to create image media.
+    if (!$this->currentUser->hasPermission('create image media')) {
+      return new JsonResponse(['error' => 'Access denied'], 403);
+    }
+
     try {
       $errors = [];
 
@@ -760,6 +807,11 @@ class DashboardMediaController extends ControllerBase {
    */
 
   public function pageAddRemoteVideo() {
+    // Check if user has permission to create remote video media.
+    if (!$this->currentUser->hasPermission('create remote_video media')) {
+      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+    }
+
     return [
       '#theme' => 'vactory_dashboard_ajoute_medias_remote_video',
     ];
@@ -776,6 +828,11 @@ class DashboardMediaController extends ControllerBase {
    */
 
   public function addRemoteVideo(Request $request) {
+    // Check if user has permission to create remote video media.
+    if (!$this->currentUser->hasPermission('create remote_video media')) {
+      return new JsonResponse(['error' => 'Access denied'], 403);
+    }
+
     try {
       $errors = [];
 
@@ -830,6 +887,11 @@ class DashboardMediaController extends ControllerBase {
    */
 
   public function pageAddUploadDocuments() {
+    // Check if user has permission to create media.
+    if (!$this->currentUser->hasPermission('create file media') && !$this->currentUser->hasPermission('create file media')) {
+      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+    }
+
     $allowed_extensions = [];
 
     try {
@@ -870,6 +932,11 @@ class DashboardMediaController extends ControllerBase {
    *   The JSON response.
    */
   public function addUploadDocuments(Request $request) {
+    // Check if user has permission to create media.
+    if (!$this->currentUser->hasPermission('create file media') && !$this->currentUser->hasPermission('create file media')) {
+      return new JsonResponse(['error' => 'Access denied'], 403);
+    }
+
     try {
       $files = $request->files->get('documents');
       $errors = [];
@@ -992,6 +1059,19 @@ class DashboardMediaController extends ControllerBase {
       }
 
       $mediaStorage = $this->entityTypeManager->getStorage('media');
+
+      // Check permissions for each media before deletion
+      foreach ($ids as $id) {
+        $media = $mediaStorage->load($id);
+        if ($media) {
+          // Check if user has permission to delete this media
+          if (!$media->access('delete', $this->currentUser)) {
+            return new JsonResponse(['error' => 'Access denied for media ID: ' . $id], 403);
+          }
+        }
+      }
+
+      // If all permissions are valid, proceed with deletion
       foreach ($ids as $id) {
         $media = $mediaStorage->load($id);
         if ($media) {
@@ -1008,3 +1088,4 @@ class DashboardMediaController extends ControllerBase {
   }
 
 }
+
