@@ -8,9 +8,6 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\file\FileInterface;
 use Drupal\media\Entity\Media;
-use Drupal\media\MediaInterface;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,6 +20,7 @@ use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\File\FileUrlGeneratorInterface;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 define('UPLOAD_BASE_PATH_PRIVATE', 'private://uploads');
 define('UPLOAD_BASE_PATH_PUBLIC', 'public://');
@@ -128,7 +126,7 @@ class DashboardMediaController extends ControllerBase {
   public function content() {
     // Check if user has permission to view media.
     if (!$this->currentUser->hasPermission('view media')) {
-      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+      throw new AccessDeniedHttpException();
     }
 
     // Get all media types.
@@ -166,7 +164,7 @@ class DashboardMediaController extends ControllerBase {
 
     // Check if user has permission to view this media.
     if (!$media->access('view', $this->currentUser)) {
-      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+      throw new AccessDeniedHttpException();
     }
 
     // Get media type information.
@@ -489,7 +487,7 @@ class DashboardMediaController extends ControllerBase {
   public function add() {
     // Check if user has permission to create media.
     if (!$this->currentUser->hasPermission('create media')) {
-      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+      throw new AccessDeniedHttpException();
     }
 
     $media_types = $this->entityTypeManager->getStorage('media_type')
@@ -515,7 +513,7 @@ class DashboardMediaController extends ControllerBase {
   public function addFiles() {
     // Check if user has permission to create file media.
     if (!$this->currentUser->hasPermission('create file media')) {
-      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+      throw new AccessDeniedHttpException();
     }
 
     //Récupération des extensions autorisées depuis le champ "field_media_file"
@@ -546,7 +544,7 @@ class DashboardMediaController extends ControllerBase {
   public function pageAddImage() {
     // Check if user has permission to create image media.
     if (!$this->currentUser->hasPermission('create image media')) {
-      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+      throw new AccessDeniedHttpException();
     }
 
     $field_definitions = $this->entityFieldManager->getFieldDefinitions('media', 'image');
@@ -809,7 +807,7 @@ class DashboardMediaController extends ControllerBase {
   public function pageAddRemoteVideo() {
     // Check if user has permission to create remote video media.
     if (!$this->currentUser->hasPermission('create remote_video media')) {
-      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+      throw new AccessDeniedHttpException();
     }
 
     return [
@@ -889,7 +887,7 @@ class DashboardMediaController extends ControllerBase {
   public function pageAddUploadDocuments() {
     // Check if user has permission to create media.
     if (!$this->currentUser->hasPermission('create file media') && !$this->currentUser->hasPermission('create file media')) {
-      throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+      throw new AccessDeniedHttpException();
     }
 
     $allowed_extensions = [];
