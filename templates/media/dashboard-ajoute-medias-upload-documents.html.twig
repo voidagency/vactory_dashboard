@@ -357,9 +357,13 @@
               });
 
               if (!response.ok) {
-                this.errors = result.errors || {};
-                console.error('Upload failed:', result);
-                this.showNotification('error', '{{ "Veuillez vérifier les valeurs fournies."|t }}');
+                if (response.status === 403) {
+                  this.showNotification('error', '{{ "Vous n\'avez pas les permissions nécessaires pour créer des documents."|t }}');
+                } else {
+                  this.errors = result.errors || {};
+                  console.error('Upload failed:', result);
+                  this.showNotification('error', '{{ "Veuillez vérifier les valeurs fournies."|t }}');
+                }
               } else { // Redirection ou autre action après succès
                 console.log('Upload successful:', result);
                 this.showNotification('success', '{{ "Documents ajouté avec succes"|t }}');
