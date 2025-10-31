@@ -2,7 +2,7 @@ advanced_dashboard.settings:
   title: 'Dashboard config'
   description: 'Dashboard config settings.'
   parent: system.admin
-  route_name: advanced_dashboard.settings
+  route_name: <nolink>
   weight: 100
 
 advanced_dashboard.settings.help:
@@ -22,21 +22,21 @@ advanced_dashboard.settings.support:
 dashboard.redmine_settings:
   title: 'Redmine Config'
   description: 'Redmine config settings'
-  parent: advanced_dashboard.settings   
+  parent: advanced_dashboard.settings
   route_name: dashboard.redmine_settings
   weight: 100
 
 dashboard.ssl.domaine_settings:
   title: 'SSL Domaine Config'
   description: 'SSL Domaine config settings'
-  parent: advanced_dashboard.settings   
+  parent: advanced_dashboard.settings
   route_name: dashboard.ssl.domaine_settings
   weight: 100
 
 dashboard.content_types:
   title: 'Dashboard Content Types'
   description: 'Add taxonomoes to content types'
-  parent: advanced_dashboard.settings   
+  parent: advanced_dashboard.settings
   route_name: dashboard.content_types
   weight: 100
 

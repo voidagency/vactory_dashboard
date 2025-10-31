@@ -1035,7 +1035,8 @@ class NodeService {
             $field_info['options'] = $this->load_entity_reference_options($field_info);
           }
           if ($field_settings['target_type'] === 'media') {
-            $field_info['type'] = reset($field_settings['handler_settings']['target_bundles']);
+            $target_bundles = $field_settings['handler_settings']['target_bundles'] ?? [];
+            $field_info['type'] = reset($target_bundles);
           }
           break;
 
