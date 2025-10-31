@@ -1,53 +1,63 @@
 <div>
-    <div x-data="{ fieldName: 'node_banner_image' }">
-        <label class="block text-sm font-medium text-slate-700 mb-1">
-            <span>{{ "Banner Image"|t }}</span>
-        </label>
-        {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
-            'url': 'banner.node_banner_image.url',
-            'path': 'banner.node_banner_image.path',
-            'key': 'banner.node_banner_image.key',
-            'type': 'image',
-            'bannerFieldName': 'node_banner_image'
-        } %}
-    </div>
-    <div x-data="{ fieldName: 'node_banner_mobile_image' }">
-        <label class="block text-sm font-medium text-slate-700 mb-1">
-            <span>{{ "Banner Mobile Image"|t }}</span>
-        </label>
-        {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
-            'url': 'banner.node_banner_mobile_image.url',
-            'path': 'banner.node_banner_mobile_image.path',
-            'key': 'banner.node_banner_mobile_image.key',
-            'type': 'image',
-            'bannerFieldName': 'node_banner_mobile_image'
-        } %}
-    </div>
-    <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">
-            <span>{{ "Banner Title"|t }}</span>
-        </label>
-        <input type="text"
-               x-model="banner.node_banner_title"
-               class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
-    </div>
-    <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">
-            <span>{{ "Banner Description"|t }}</span>
-        </label>
-        <textarea type="text"
-                  x-model="banner.node_banner_description"
-                  rows="4"
-                  class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+    {% if banner.node_banner_image %}
+        <div x-data="{ fieldName: 'node_banner_image' }" class="mb-4">
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+                <span>{{ "Banner Image"|t }}</span>
+            </label>
+            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
+                'url': 'banner.node_banner_image.url',
+                'path': 'banner.node_banner_image.path',
+                'key': 'banner.node_banner_image.key',
+                'type': 'image',
+                'bannerFieldName': 'node_banner_image'
+            } %}
+        </div>
+    {% endif %}
+    {% if banner.node_banner_mobile_image %}
+        <div x-data="{ fieldName: 'node_banner_mobile_image' }" class="mb-4">
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+                <span>{{ "Banner Mobile Image"|t }}</span>
+            </label>
+            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
+                'url': 'banner.node_banner_mobile_image.url',
+                'path': 'banner.node_banner_mobile_image.path',
+                'key': 'banner.node_banner_mobile_image.key',
+                'type': 'image',
+                'bannerFieldName': 'node_banner_mobile_image'
+            } %}
+        </div>
+    {% endif %}
+    {% if banner.node_banner_title %}
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+                <span>{{ "Banner Title"|t }}</span>
+            </label>
+            <input type="text"
+                   x-model="banner.node_banner_title"
+                   class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+        </div>
+    {% endif %}
+    {% if banner.node_banner_description %}
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+                <span>{{ "Banner Description"|t }}</span>
+            </label>
+            <textarea type="text"
+                      x-model="banner.node_banner_description"
+                      rows="4"
+                      class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
         </textarea>
-    </div>
-    <div class="flex gap-2">
-        <input type="checkbox"
-               x-model="banner.node_banner_showbreadcrumb"
-               class="py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+        </div>
+    {% endif %}
+    {% if banner.node_banner_showbreadcrumb %}
+        <div class="flex gap-2 mb-4">
+            <input type="checkbox"
+                   x-model="banner.node_banner_showbreadcrumb"
+                   class="py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
 
-        <label class="block text-sm font-medium text-slate-700">
-            <span>{{ "Show Breadcrumbs"|t }}</span>
-        </label>
-    </div>
+            <label class="block text-sm font-medium text-slate-700">
+                <span>{{ "Show Breadcrumbs"|t }}</span>
+            </label>
+        </div>
+    {% endif %}
 </div>

@@ -127,6 +127,7 @@ class DashboardVactoryPageController extends ControllerBase {
       ...$paragraph_flags,
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
+      '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
     ];
   }
 
@@ -208,6 +209,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#meta_tags' => $meta_tags,
       ...$paragraph_flags,
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
+      '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
     ];
   }
 

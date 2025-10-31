@@ -257,6 +257,25 @@ class NodeService {
   }
 
   /**
+   * Check tha banner availability.
+   *
+   * @param $bundle
+   *
+   * @return array
+   */
+  public function getBannerConfiguration($bundle) {
+    $field_definitions = $this->entityFieldManager->getFieldDefinitions('node', $bundle) ?? [];
+    return [
+      'enabled' => $this->moduleHandler->moduleExists('vactory_banner'),
+      'node_banner_image' => isset($field_definitions['node_banner_image']),
+      'node_banner_mobile_image' => isset($field_definitions['node_banner_mobile_image']),
+      'node_banner_title' => isset($field_definitions['node_banner_title']),
+      'node_banner_description' => isset($field_definitions['node_banner_description']),
+      'node_banner_showbreadcrumb' => isset($field_definitions['node_banner_showbreadcrumb']),
+    ];
+  }
+
+  /**
    * Prepare media data.
    */
   private function prepareMediaData($entity, $field_name, $path, $bundle = 'image') {

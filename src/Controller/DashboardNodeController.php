@@ -408,6 +408,7 @@ class DashboardNodeController extends ControllerBase {
       '#bundle' => $bundle,
       '#bundle_label' => $bundle_label,
       '#fields' => $fields,
+      '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       ...$paragraph_flags,
     ];
   }
@@ -510,6 +511,7 @@ class DashboardNodeController extends ControllerBase {
       '#fields' => $fields,
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
+      '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       ...$paragraph_flags,
     ];
   }
@@ -606,6 +608,7 @@ class DashboardNodeController extends ControllerBase {
       '#bundle_label' => $bundle_label,
       '#fields' => $fields,
       '#has_translation' => FALSE,
+      '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       '#meta_tags' => $meta_tags,
     ];
   }
