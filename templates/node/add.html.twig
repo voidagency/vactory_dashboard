@@ -115,7 +115,22 @@
           showDeleteModalMultiple: false,
           removeBlockMultipleIndex: null,
           removeBlockMultipleTemplateIndex: null,
-
+          // Banner Settings.
+          banner: {
+            node_banner_image: {
+              url: null,
+              path: "banner.node_banner_image",
+              key: new Date().getTime(),
+            },
+            node_banner_mobile_image: {
+              url: null,
+              path: "banner.node_banner_mobile_image",
+              key: new Date().getTime(),
+            },
+            node_banner_title: "",
+            node_banner_description: "",
+            node_banner_showbreadcrumb: true,
+          },
           // node
           get contentFields() {
             return Object.fromEntries(
@@ -275,6 +290,7 @@
                   blocks: this.blocks,
                   fields: this.formData.fields,
                   status: this.formData.status,
+                  banner: this.banner,
                 }),
               });
 
@@ -1845,7 +1861,7 @@
               this.notification.show = false;
             }, 5000);
           },
-          async saveChanges() {
+          async saveVactoryPageNode() {
             if (this.isSaving) {
               return;
             }
@@ -1862,6 +1878,7 @@
                   seo: this.seo,
                   blocks: this.blocks,
                   status: this.settings.status,
+                  banner: this.banner,
                 }),
               });
 
@@ -1994,24 +2011,43 @@
             target[lastKey] = newValue;
           },
           selectMedia(media, paragraph = false) {
+            // Handle paragraph image update.
             if (this.appearanceBackgroundImage && paragraph) {
               paragraph.config.image = media.url;
               paragraph.config.imageID = media.id;
+              this.finalizeMediaSelection();
+              return;
+            }
+
+            if (!media || !this.currentField) {
+              return;
+            }
+
+            this.selectedMedia = media;
+
+            const imageData = {
+              id: media.id,
+              url: media.url,
+              name: media.name,
+              path: this.currentFieldPath,
+              key: this.currentFieldKey,
+            };
+
+            // Handle banner images separately.
+            const bannerMap = {
+              'banner.node_banner_image': 'node_banner_image',
+              'banner.node_banner_mobile_image': 'node_banner_mobile_image',
+            };
+            if (bannerMap[this.currentFieldPath]) {
+              this.banner[bannerMap[this.currentFieldPath]] = imageData;
             } else {
-              this.selectedMedia = media;
-              if (!this.selectedMedia || !this.currentField) {
-                return;
-              }
-              const imageData = {
-                id: media.id,
-                url: media.url,
-                name: media.name,
-                path: this.currentFieldPath,
-                key: this.currentFieldKey,
-              };
               this.setValueByPath(this.blockForm, this.currentFieldPath, imageData);
               this.formData.fields[this.currentFieldPath] = imageData;
             }
+
+            this.finalizeMediaSelection();
+          },
+          finalizeMediaSelection() {
             this.closeMediaLibrary();
             this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
           },
@@ -2031,23 +2067,25 @@
               return;
             }
 
-            // for vactory page.
-            this.setValueByPath(this.blockForm, path, {
-              id: null,
-              url: null,
-              name: null,
-              path: path,
-              key: key ?? new Date().getTime(),
-            });
-
-            // for node.
-            this.formData.fields[fieldName] = {
-              id: null,
-              url: null,
-              name: null,
-              path: fieldName,
-              key: new Date().getTime(),
+            const bannerMap = {
+              'banner.node_banner_image': 'node_banner_image',
+              'banner.node_banner_mobile_image': 'node_banner_mobile_image',
             };
+
+            const emptyImageData = (customPath = path, customKey = key ?? Date.now()) => ({
+              id: null,
+              url: null,
+              name: null,
+              path: customPath,
+              key: customKey,
+            });
+            if (bannerMap[path]) {
+              this.banner[bannerMap[path]] = emptyImageData();
+            } else {
+              const imageData = emptyImageData();
+              this.setValueByPath(this.blockForm, path, imageData);
+              this.formData.fields[fieldName] = emptyImageData(fieldName);
+            }
           },
           getFieldValue(fieldName, index = null) {
             if (index !== null) {

@@ -129,6 +129,22 @@
               enableParallax: false,
             },
           },
+          // Banner Settings.
+          banner: {
+            node_banner_image: {
+              url: null,
+              path: "banner.node_banner_image",
+              key: new Date().getTime(),
+            },
+            node_banner_mobile_image: {
+              url: null,
+              path: "banner.node_banner_mobile_image",
+              key: new Date().getTime(),
+            },
+            node_banner_title: "",
+            node_banner_description: "",
+            node_banner_showbreadcrumb: true,
+          },
           currentBlockIndex: null,
           dragStartIndex: null,
           dragStartItemIndex: null,
@@ -207,7 +223,7 @@
               // Show success notification
               this.showNotification('success', '{{ 'Block order updated'|t }}');
               if (!this.bundle) {
-                this.saveChanges();
+                this.saveVactoryPageNode();
               }
             }
           },
@@ -897,7 +913,7 @@
             this.isParagraphMultiple = false;
             this.showDynamicFieldModal = false;
             if (!this.bundle) {
-              this.saveChanges();
+              this.saveVactoryPageNode();
             }
           },
           selectTemplate(template, isParagraphMultiple) {
@@ -1305,7 +1321,7 @@
             this.showParagraphBlockForm = false;
             this.currentBlockIndex = null;
             if (!this.bundle) {
-              this.saveChanges();
+              this.saveVactoryPageNode();
             }
           },
 
@@ -1395,7 +1411,7 @@
             this.showParagraphViewForm = false;
             this.currentBlockIndex = null;
             if (!this.bundle) {
-              this.saveChanges();
+              this.saveVactoryPageNode();
             }
           },
 
@@ -1504,7 +1520,7 @@
             this.showParagraphViewForm = false;
             this.currentBlockIndex = null;
             if (!this.bundle) {
-              this.saveChanges();
+              this.saveVactoryPageNode();
             }
           },
           isSaving: false,
@@ -1813,11 +1829,44 @@
 
             };
 
+            this.initializeBannerData(node)
+
             // Fetch templates when component initializes
             this.fetchTemplates();
 
             // Setup intersection observer for first add block button
             this.setupFirstAddBlockObserver();
+          },
+          initializeBannerData(node = []) {
+            // Initialize banner data.
+            if (node['node_banner_image']) {
+              this.banner.node_banner_image = node['node_banner_image'] ?? {
+                id: null,
+                url: null,
+                name: null,
+                path: 'banner.node_banner_image',
+                key: new Date().getTime(),
+              };
+            }
+            if (node['node_banner_mobile_image']) {
+              this.banner.node_banner_mobile_image = node['node_banner_mobile_image'] ?? {
+                id: null,
+                url: null,
+                name: null,
+                path: 'banner.node_banner_mobile_image',
+                key: new Date().getTime(),
+              };
+            }
+            if (node['node_banner_title']) {
+              this.banner.node_banner_title = node['node_banner_title'] ?? "";
+            }
+            if (node['node_banner_description']) {
+              this.banner.node_banner_description = node['node_banner_description'] ?? "";
+            }
+            if (node['node_banner_showbreadcrumb']) {
+              this.banner.node_banner_showbreadcrumb = node['node_banner_showbreadcrumb'] === '1' ?? false;
+            }
+            console.log("this.banner", this.banner)
           },
           setupFirstAddBlockObserver() {
             // Wait for the next tick to ensure DOM is ready
@@ -1864,7 +1913,7 @@
               this.notification.show = false;
             }, 5000);
           },
-          async saveChanges() {
+          async saveVactoryPageNode() {
             if (this.isSaving) {
               return;
             }
@@ -1885,6 +1934,7 @@
                   blocks: this.blocks,
                   status: this.settings.status,
                   changed: this.changed,
+                  banner: this.banner,
                 }),
               });
               const data = await response.json();
@@ -1915,7 +1965,7 @@
             // Show success notification
             this.showNotification('success', '{{ 'Block removed successfully'|t }}');
             if (!this.bundle) {
-              this.saveChanges();
+              this.saveVactoryPageNode();
             }
           },
           removeTemplateMultiple() {
@@ -2046,6 +2096,7 @@
                   blocks: this.blocks,
                   has_translation: this.has_translation,
                   changed: this.changed,
+                  banner: this.banner,
                 }),
               });
 
@@ -2157,20 +2208,20 @@
             target[lastKey] = newValue;
           },
           selectMedia(media, paragraph = false) {
+            // Handle paragraph image update.
             if (this.appearanceBackgroundImage && paragraph) {
               paragraph.config.image = media.url;
               paragraph.config.imageID = media.id;
-
-              this.closeMediaLibrary();
-              this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
+              this.finalizeMediaSelection();
               return;
             }
+
+            if (!media || !this.currentField) {
+              return;
+            }
+
             this.selectedMedia = media;
-            if (!this.selectedMedia || !this.currentField) {
-              return;
-            }
 
-            // Create the image data structure
             const imageData = {
               id: media.id,
               url: media.url,
@@ -2178,11 +2229,23 @@
               path: this.currentFieldPath,
               key: this.currentFieldKey,
             };
-            if (this.bundle) {
+
+            console.log("imageData", imageData)
+            // Handle banner images separately.
+            const bannerMap = {
+              'banner.node_banner_image': 'node_banner_image',
+              'banner.node_banner_mobile_image': 'node_banner_mobile_image',
+            };
+            if (bannerMap[this.currentFieldPath]) {
+              this.banner[bannerMap[this.currentFieldPath]] = imageData;
+            } else {
+              this.setValueByPath(this.blockForm, this.currentFieldPath, imageData);
               this.formData.fields[this.currentFieldPath] = imageData;
             }
-            this.setValueByPath(this.blockForm, this.currentFieldPath, imageData);
 
+            this.finalizeMediaSelection();
+          },
+          finalizeMediaSelection() {
             this.closeMediaLibrary();
             this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
           },
@@ -2202,24 +2265,25 @@
               return;
             }
 
-            if (this.bundle) {
-              this.formData.fields[fieldName] = {
-                id: null,
-                url: null,
-                name: null,
-                path: fieldName,
-                key: new Date().getTime(),
-              };
-            }
-            this.setValueByPath(this.blockForm, path, {
+            const bannerMap = {
+              'banner.node_banner_image': 'node_banner_image',
+              'banner.node_banner_mobile_image': 'node_banner_mobile_image',
+            };
+
+            const emptyImageData = (customPath = path, customKey = key ?? Date.now()) => ({
               id: null,
               url: null,
               name: null,
-              path: path,
-              key: key ?? new Date().getTime(),
+              path: customPath,
+              key: customKey,
             });
-            // for node.
-
+            if (bannerMap[path]) {
+              this.banner[bannerMap[path]] = emptyImageData();
+            } else {
+              const imageData = emptyImageData();
+              this.setValueByPath(this.blockForm, path, imageData);
+              this.formData.fields[fieldName] = emptyImageData(fieldName);
+            }
           },
           getFieldValue(fieldName, index = null) {
             if (index !== null) {

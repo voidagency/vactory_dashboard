@@ -27,6 +27,17 @@
                 class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
             {{ 'SEO'|t }}
         </button>
+        {% if banner.enabled %}
+            <button
+                    @click="activeTab = 'banner'"
+                    :class="{
+                    'border-primary-500 text-primary-600 bg-primary-50/50': activeTab === 'banner',
+                    'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50': activeTab !== 'banner'
+                }"
+                    class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
+                {{ 'Banner Settings'|t }}
+            </button>
+        {% endif %}
     </div>
     {% if preview_url %}
         <div class="flex justify-end mr-1">

@@ -127,6 +127,7 @@ class DashboardVactoryPageController extends ControllerBase {
       ...$paragraph_flags,
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
+      '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
     ];
   }
 
@@ -208,6 +209,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#meta_tags' => $meta_tags,
       ...$paragraph_flags,
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
+      '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
     ];
   }
 
@@ -392,6 +394,7 @@ class DashboardVactoryPageController extends ControllerBase {
       $has_translation = $content['has_translation'] ?? TRUE;
       $status = $content['status'] ?? TRUE;
       $client_changed = $content['changed'] ?? NULL;
+      $banner = $content['banner'] ?? [];
 
       if (empty($settings['title'])) {
         return new JsonResponse([
@@ -479,6 +482,8 @@ class DashboardVactoryPageController extends ControllerBase {
       // Update blocks/paragraphs if they exist.
       $this->nodeService->updateParagraphsInNode($node, $blocks, $language, $node_default_lang);
 
+      $this->nodeService->saveBannerInNode($node->getTranslation($language), $banner);
+
       // Save the node.
       $node->save();
 
@@ -521,6 +526,7 @@ class DashboardVactoryPageController extends ControllerBase {
       $seo = $content['seo'] ?? [];
       $blocks = $content['blocks'] ?? [];
       $status = $content['status'] ?? TRUE;
+      $banner = $content['banner'] ?? [];
 
       if (empty($settings['title'])) {
         return new JsonResponse([
@@ -569,6 +575,8 @@ class DashboardVactoryPageController extends ControllerBase {
       if ($node->hasField('field_vactory_paragraphs')) {
         $this->nodeService->saveParagraphsInNode($node, $blocks, $language);
       }
+
+      $this->nodeService->saveBannerInNode($node, $banner);
 
       // Save the node.
       $node->isNew();
