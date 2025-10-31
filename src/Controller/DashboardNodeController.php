@@ -422,7 +422,6 @@ class DashboardNodeController extends ControllerBase {
    *   A render array for the node add form.
    */
   public function edit($bundle, $nid) {
-    $manager = \Drupal::service('content_translation.manager');
     $vid = $this->entityTypeManager
       ->getStorage('node')
       ->getLatestRevisionId($nid);
@@ -644,6 +643,8 @@ class DashboardNodeController extends ControllerBase {
 
       $blocks = $data['blocks'] ?? [];
 
+      $banner = $data['banner'] ?? [];
+
       if ($node->hasField('moderation_state')) {
         $node->set('moderation_state', $status ? 'published' : 'draft');
       }
@@ -691,6 +692,8 @@ class DashboardNodeController extends ControllerBase {
       if ($node->hasField('field_vactory_paragraphs')) {
         $this->nodeService->saveParagraphsInNode($node, $blocks, $language);
       }
+
+      $this->nodeService->saveBannerInNode($node, $banner);
 
       // Save SEO fields if they exist.
       if (!empty($seo) && $node->hasField('field_vactory_meta_tags')) {
@@ -749,6 +752,8 @@ class DashboardNodeController extends ControllerBase {
       $blocks = $content['blocks'] ?? [];
 
       $client_changed = $content['changed'] ?? NULL;
+
+      $banner = $content['banner'] ?? NULL;
 
       // Load node by nid.
       if ($nid) {
@@ -825,6 +830,8 @@ class DashboardNodeController extends ControllerBase {
         }
 
       }
+
+      $this->nodeService->saveBannerInNode($node->getTranslation($language), $banner);
 
       // Update SEO fields if they exist
       if (!empty($seo) && $node->hasField('field_vactory_meta_tags')) {

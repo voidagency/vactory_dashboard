@@ -137,6 +137,9 @@
                             </div>
                         </div>
                     {% endif %}
+                    <div x-show="activeTab === 'banner'">
+                        {% include "@vactory_dashboard/node/_components/banner-settings.html.twig" %}
+                    </div>
                 </form>
             </div>
         </div>

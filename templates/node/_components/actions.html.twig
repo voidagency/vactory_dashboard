@@ -23,7 +23,7 @@
 		<div class="flex items-center gap-2">
             {% include "@vactory_dashboard/node/_components/preview.html.twig" with { preview_url: preview_url } %}
 			<button
-				@click="saveChanges()" :disabled="isSaving" :class="{
+				@click="saveVactoryPageNode()" :disabled="isSaving" :class="{
 					                'opacity-50 cursor-not-allowed': isSaving,
 					                'bg-primary-500 hover:bg-primary-600': !isSaving,
 					                'bg-primary-400': isSaving

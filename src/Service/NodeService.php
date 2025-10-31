@@ -13,6 +13,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\file\FileInterface;
 use Drupal\media\MediaInterface;
 use Drupal\node\Entity\NodeType;
+use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\paragraphs\Entity\ParagraphsType;
 use Drupal\paragraphs\ParagraphInterface;
@@ -179,61 +180,13 @@ class NodeService {
         continue;
       }
 
-      if ($field['type'] == 'image') {
-        $media = $this->loadMediaFromEntityField($entity, $field['name']);
-        if ($media instanceof MediaInterface) {
-          if ($media->hasField('field_media_image') && !$media->get('field_media_image')
-              ->isEmpty()) {
-            $file = $media->get('field_media_image')->entity;
-            if ($file instanceof FileInterface) {
-              $node_data[$field['name']] = [
-                'id' => $entity->get($field['name'])->target_id,
-                'url' => $file->createFileUrl(),
-                'path' => $field['name'],
-                'key' => -1,
-              ];
-            }
-          }
-        }
-      }
-      elseif ($field['type'] == 'remote_video') {
-        $media = $this->loadMediaFromEntityField($entity, $field['name']);
-        if ($media instanceof MediaInterface) {
-          if ($media->hasField('field_media_oembed_video') && !$media->get('field_media_oembed_video')
-              ->isEmpty()) {
-            $remote_video = $media->get('field_media_oembed_video')->value;
-            if (!empty($remote_video)) {
-              $node_data[$field['name']] = [
-                'id' => $entity->get($field['name'])->target_id,
-                'url' => $remote_video,
-                'path' => $field['name'],
-                'key' => -1,
-                'name' => $media->get('field_media_oembed_video')
-                  ->getEntity()
-                  ->label(),
-              ];
-            }
-          }
-        }
-      }
-      elseif ($field['type'] == 'file' || $field['type'] == 'private_file') {
-        $field_name = $field['type'] === 'file' ? 'field_media_file' : 'field_media_file_1';
-        $media = $this->loadMediaFromEntityField($entity, $field['name']);
-        if ($media instanceof MediaInterface) {
-          if ($media->hasField($field_name) && !$media->get($field_name)
-              ->isEmpty()) {
-            $file = $media->get($field_name)->entity;
-            if ($file instanceof FileInterface) {
-              $node_data[$field['name']] = [
-                'id' => $entity->get($field['name'])->target_id,
-                'url' => $file->createFileUrl(),
-                'path' => $field['name'],
-                'key' => -1,
-                'name' => $media->label(),
-              ];
-            }
-          }
-        }
+      if (in_array($field['type'], [
+        'image',
+        'remote_video',
+        'file',
+        'private_file',
+      ])) {
+        $node_data[$field['name']] = $this->prepareMediaData($entity, $field['name'], $field['name'], $field['type']);
       }
       elseif ($field['type'] === "field_cross_content") {
         $node_data[$field['name']] = array_values(explode(" ", $entity->get($field['name'])->value ?? "") ?? []);
@@ -272,7 +225,96 @@ class NodeService {
 
     $this->prepareVactoryParagraphsData($entity, $node_data);
 
+    $this->prepareBannerData($entity, $node_data);
+
     return $node_data;
+  }
+
+  /**
+   * Prepare Banner Data.
+   *
+   * @param \Drupal\node\NodeInterface $entity
+   * @param $node_data
+   *
+   * @return void
+   */
+  private function prepareBannerData(NodeInterface $entity, &$node_data) {
+    if ($entity->hasField('node_banner_image')) {
+      $node_data['node_banner_image'] = $this->prepareMediaData($entity, 'node_banner_image', 'banner.node_banner_image');
+    }
+    if ($entity->hasField('node_banner_mobile_image')) {
+      $node_data['node_banner_mobile_image'] = $this->prepareMediaData($entity, 'node_banner_mobile_image', 'banner.node_banner_mobile_image');
+    }
+    if ($entity->hasField('node_banner_title')) {
+      $node_data['node_banner_title'] = $entity->get('node_banner_title')->value ?? "";
+    }
+    if ($entity->hasField('node_banner_description')) {
+      $node_data['node_banner_description'] = $entity->get('node_banner_description')->value ?? "";
+    }
+    if ($entity->hasField('node_banner_showbreadcrumb')) {
+      $node_data['node_banner_showbreadcrumb'] = $entity->get('node_banner_showbreadcrumb')->value ?? "";
+    }
+  }
+
+  /**
+   * Prepare media data.
+   */
+  private function prepareMediaData($entity, $field_name, $path, $bundle = 'image') {
+    $media_data = NULL;
+    $media = $this->loadMediaFromEntityField($entity, $field_name);
+    if (!$media instanceof MediaInterface) {
+      return $media_data;
+    }
+    if ($bundle === 'image') {
+      if ($media->hasField('field_media_image') && !$media->get('field_media_image')
+          ->isEmpty()) {
+        $file = $media->get('field_media_image')->entity;
+        if ($file instanceof FileInterface) {
+          $media_data = [
+            'id' => $entity->get($field_name)->target_id,
+            'url' => $file->createFileUrl(),
+            'path' => $path,
+            'key' => -1,
+          ];
+        }
+      }
+    }
+    if ($bundle === 'remote_video') {
+      if ($media->hasField('field_media_oembed_video') && !$media->get('field_media_oembed_video')
+          ->isEmpty()) {
+        $remote_video = $media->get('field_media_oembed_video')->value;
+        if (!empty($remote_video)) {
+          $media_data = [
+            'id' => $entity->get($field_name)->target_id,
+            'url' => $remote_video,
+            'path' => $path,
+            'key' => -1,
+            'name' => $media->get('field_media_oembed_video')
+              ->getEntity()
+              ->label(),
+          ];
+        }
+      }
+    }
+
+    if ($bundle == 'file' || $bundle == 'private_file') {
+      $field_name = $bundle === 'file' ? 'field_media_file' : 'field_media_file_1';
+      if ($media->hasField($field_name) && !$media->get($field_name)
+          ->isEmpty()) {
+        $file = $media->get($field_name)->entity;
+        if ($file instanceof FileInterface) {
+          $media_data = [
+            'id' => $entity->get($field_name)->target_id,
+            'url' => $file->createFileUrl(),
+            'path' => $path,
+            'key' => -1,
+            'name' => $media->label(),
+          ];
+        }
+      }
+    }
+
+    return $media_data;
   }
 
   /**
@@ -296,6 +338,7 @@ class NodeService {
     $node_data['body'] = $node->hasField('node_summary') ? $node->get('node_summary')->value ?? "" : "";
 
     $this->prepareVactoryParagraphsData($node, $node_data);
+    $this->prepareBannerData($node, $node_data);
 
     $alias = \Drupal::service('path_alias.manager')
       ->getAliasByPath('/node/' . $node->id());
@@ -1922,6 +1965,27 @@ class NodeService {
         ->set($field_name, $block[$block_key]);
     }
     $paragraph_entity->save();
+  }
+
+  /**
+   * Save banner in given node.
+   */
+  public function saveBannerInNode(NodeInterface $node, $banner = []) {
+    if ($node->hasField('node_banner_image')) {
+      $node->set('node_banner_image', $banner['node_banner_image']['id']);
+    }
+    if ($node->hasField('node_banner_mobile_image')) {
+      $node->set('node_banner_mobile_image', $banner['node_banner_mobile_image']['id']);
+    }
+    if ($node->hasField('node_banner_title')) {
+      $node->set('node_banner_title', $banner['node_banner_title']);
+    }
+    if ($node->hasField('node_banner_description')) {
+      $node->set('node_banner_description', $banner['node_banner_description']);
+    }
+    if ($node->hasField('node_banner_showbreadcrumb')) {
+      $node->set('node_banner_showbreadcrumb', $banner['node_banner_showbreadcrumb'] ?? FALSE);
+    }
   }
 
 }

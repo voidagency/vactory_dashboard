@@ -35,6 +35,10 @@
 
         {# SEO Tab #}
         {% include "@vactory_dashboard/node/_components/seo-form.html.twig" %}
+
+        <div x-show="activeTab === 'banner'">
+            {% include "@vactory_dashboard/node/_components/banner-settings.html.twig" %}
+        </div>
     </div>
 
     {# Block Form View #}
@@ -63,5 +67,8 @@
     {# Include the blocks modal #}
     <template x-if="!showParagraphMultipleForm">
         {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}
+    </template>
+    <template x-if="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
+        {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
     </template>
 </div>
