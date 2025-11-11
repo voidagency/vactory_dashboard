@@ -95,11 +95,14 @@ field_settings:
     property_path: slug
     type: text
 
-  term_id:
-    label: 'Term machine name'
+  tid:
+    label: 'Term ID'
     datasource_id: 'entity:taxonomy_term'
-    property_path: term_id
-    type: text
+    property_path: tid
+    type: integer
+    dependencies:
+      module:
+        - taxonomy
 
   title:
     label: Title
@@ -179,7 +182,7 @@ processor_settings:
       - name
       - name_2
       - slug
-      - term_id
+      - tid
       - title
       - vid
       - webform_id
@@ -198,7 +201,7 @@ processor_settings:
       - name
       - name_2
       - slug
-      - term_id
+      - tid
       - title
       - vid
       - webform_id
@@ -251,7 +254,7 @@ processor_settings:
       - name
       - name_2
       - slug
-      - term_id
+      - tid
       - title
       - vid
       - webform_id
