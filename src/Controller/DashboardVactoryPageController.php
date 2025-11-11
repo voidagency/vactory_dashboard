@@ -132,6 +132,10 @@ class DashboardVactoryPageController extends ControllerBase {
       ->getStorage('node')
       ->getLatestRevisionId($id);
 
+    if (!$vid) {
+      throw new NotFoundHttpException('Node revision not found');
+    }
+
     $node = $this->entityTypeManager->getStorage('node')->loadRevision($vid);
     if (!$node) {
       throw new NotFoundHttpException('Node not found');
@@ -193,6 +197,10 @@ class DashboardVactoryPageController extends ControllerBase {
     $vid = $this->entityTypeManager
       ->getStorage('node')
       ->getLatestRevisionId($id);
+
+    if (!$vid) {
+      throw new NotFoundHttpException('Node revision not found');
+    }
 
     $node = $this->entityTypeManager->getStorage('node')->loadRevision($vid);
     if (!$node) {
@@ -359,11 +367,15 @@ class DashboardVactoryPageController extends ControllerBase {
           ->getStorage('node')
           ->getLatestRevisionId($nid);
 
+        if (!$vid) {
+          throw new NotFoundHttpException('Node revision not found');
+        }
+
         /** @var \Drupal\node\NodeInterface $node */
         $node = $this->entityTypeManager->getStorage('node')
           ->loadRevision($vid);
         if (!$node) {
-          throw new \Exception('Node not found');
+          throw new NotFoundHttpException('Node not found');
         }
         $node_default_lang = $node->language()->getId();
       }
