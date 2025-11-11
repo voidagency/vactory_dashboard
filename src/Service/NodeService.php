@@ -81,6 +81,37 @@ class NodeService {
   }
 
   /**
+   * Find the paragraph field name for a given bundle.
+   *
+   * Searches for any field that:
+   * - Type: entity_reference_revisions
+   * - Target type: paragraph
+   *
+   * @param string $bundle
+   *   The bundle name.
+   * @param string $entity_type
+   *   The entity type (default: 'node').
+   *
+   * @return string|null
+   *   The field name or NULL if not found.
+   */
+  public function getParagraphFieldName($bundle, $entity_type = 'node') {
+    $fields = $this->entityFieldManager->getFieldDefinitions($entity_type, $bundle);
+
+    foreach ($fields as $field_name => $field_definition) {
+      // Check if it's entity_reference_revisions targeting paragraph
+      if ($field_definition->getType() === 'entity_reference_revisions') {
+        $settings = $field_definition->getSettings();
+        if (isset($settings['target_type']) && $settings['target_type'] === 'paragraph') {
+          return $field_name;
+        }
+      }
+    }
+
+    return NULL;
+  }
+
+  /**
    * Process node data.
    */
   public function processNode($entity, $fields) {
@@ -270,7 +301,11 @@ class NodeService {
       }
     }
 
-    $this->prepareVactoryParagraphsData($entity, $node_data);
+    $paragraph_field = $this->getParagraphFieldName($entity->bundle());
+  
+    if ($paragraph_field && $entity->hasField($paragraph_field)) {
+      $this->prepareVactoryParagraphsData($entity, $node_data, $paragraph_field);
+    }
 
     return $node_data;
   }
@@ -306,10 +341,10 @@ class NodeService {
   /**
    * Prepare vactory paragraphs data.
    */
-  private function prepareVactoryParagraphsData($node, &$node_data) {
+  private function prepareVactoryParagraphsData($node, &$node_data, $paragraph_field = 'field_vactory_paragraphs') {
     $paragraphs = [];
     $lang = \Drupal::languageManager()->getCurrentLanguage()->getId();
-    if ($node->hasField('field_vactory_paragraphs')) {
+    if ($node->hasField($paragraph_field)) {
       $paragraphsData = $node->get('field_vactory_paragraphs')->getValue();
       foreach ($paragraphsData as $paragraphData) {
         $paragraph = Paragraph::load($paragraphData['target_id']);
@@ -1102,14 +1137,17 @@ class NodeService {
   }
 
   /**
-   * If the bundle has a paragraphs field.
+   * Check if bundle has any paragraph field.
    */
   public function hasParagraphsField(array &$fields): bool {
-    if (!in_array('field_vactory_paragraphs', array_keys($fields))) {
-      return FALSE;
+    foreach ($fields as $field_name => $field) {
+      if ($field['type'] === 'entity_reference_revisions' &&
+          isset($field['settings']['target_type']) && 
+          $field['settings']['target_type'] === 'paragraph') {
+        return TRUE;
+      }
     }
-
-    return TRUE;
+    return FALSE;
   }
 
   /**
@@ -1141,6 +1179,7 @@ class NodeService {
    * Update paragraphs in given node.
    */
   public function updateParagraphsInNode(&$node, $blocks, $language, $node_default_lang) {
+    $paragraph_field = $this->getParagraphFieldName($node->bundle());
     if (!empty($blocks)) {
       $ordered_paragraphs = [];
       foreach ($blocks as $block) {
@@ -1162,11 +1201,11 @@ class NodeService {
         }
       }
       if (!empty($ordered_paragraphs)) {
-        $node->set('field_vactory_paragraphs', $ordered_paragraphs);
+        $node->set($paragraph_field, $ordered_paragraphs);
       }
     }
     else {
-      $node->set('field_vactory_paragraphs', []);
+      $node->set($paragraph_field, []);
     }
   }
 
@@ -1524,6 +1563,7 @@ class NodeService {
    *   The language code to assign to each created paragraph entity.
    */
   public function saveParagraphsInNode(&$node, $blocks, $language) {
+    $paragraph_field = $this->getParagraphFieldName($node->bundle());
     $ordered_paragraphs = [];
     if (!empty($blocks)) {
       foreach ($blocks as $block) {
@@ -1659,7 +1699,7 @@ class NodeService {
       }
     }
     if (!empty($ordered_paragraphs)) {
-      $node->set('field_vactory_paragraphs', $ordered_paragraphs);
+      $node->set($paragraph_field, $ordered_paragraphs);
     }
   }
 
@@ -1770,7 +1810,8 @@ class NodeService {
    *   types is enabled, or FALSE if the field or configuration is not found.
    */
   public function isParagraphTypeEnabled($bundle = "vactory_page"): array {
-    $field_config = FieldConfig::loadByName('node', $bundle, 'field_vactory_paragraphs');
+    $paragraph_field = $this->getParagraphFieldName($bundle);
+    $field_config = FieldConfig::loadByName('node', $bundle, $paragraph_field);
     if (!$field_config) {
       return [];
     }
