@@ -224,8 +224,10 @@ class NodeService {
     }
 
     $this->prepareVactoryParagraphsData($entity, $node_data);
-
-    $this->prepareBannerData($entity, $node_data);
+    // Only process banner for node entities.
+    if ($entity instanceof NodeInterface) {
+      $this->prepareBannerData($entity, $node_data);
+    }
 
     return $node_data;
   }
@@ -1992,16 +1994,22 @@ class NodeService {
    */
   public function saveBannerInNode(NodeInterface $node, $banner = []) {
     if ($node->hasField('node_banner_image')) {
-      $node->set('node_banner_image', $banner['node_banner_image']['id']);
+      $image_id = $banner['node_banner_image']['id'] ?? NULL;
+      if ($image_id !== NULL) {
+        $node->set('node_banner_image', $image_id);
+      }
     }
     if ($node->hasField('node_banner_mobile_image')) {
-      $node->set('node_banner_mobile_image', $banner['node_banner_mobile_image']['id']);
+      $mobile_image_id = $banner['node_banner_mobile_image']['id'] ?? NULL;
+      if ($mobile_image_id !== NULL) {
+        $node->set('node_banner_mobile_image', $mobile_image_id);
+      }
     }
     if ($node->hasField('node_banner_title')) {
-      $node->set('node_banner_title', $banner['node_banner_title']);
+      $node->set('node_banner_title', $banner['node_banner_title'] ?? '');
     }
     if ($node->hasField('node_banner_description')) {
-      $node->set('node_banner_description', $banner['node_banner_description']);
+      $node->set('node_banner_description', $banner['node_banner_description'] ?? '');
     }
     if ($node->hasField('node_banner_showbreadcrumb')) {
       $node->set('node_banner_showbreadcrumb', $banner['node_banner_showbreadcrumb'] ?? FALSE);
