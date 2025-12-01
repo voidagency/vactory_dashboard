@@ -163,17 +163,18 @@ class DashboardUsersController extends ControllerBase {
     // Load users.
     $users = $this->entityTypeManager->getStorage('user')->loadMultiple($uids);
 
+    // Get current user roles outside the loop.
+    $currentUser = $this->currentUser;
+    $user_roles = $currentUser->getRoles();
+
     $data = [];
     $date_formatter = \Drupal::service('date.formatter');
     foreach ($users as $user) {
       /** @var \Drupal\user\UserInterface $user */
       $roles = $user->getRoles(TRUE);
-      $role_names = array_map(function($role) {
+      $role_names = array_map(function ($role) {
         return $this->t($role);
-      }, $roles);      
-
-      $currentUser = $this->currentUser;
-      $user_roles = $currentUser->getRoles();
+      }, $roles);
 
       $last_access = $user->getLastAccessedTime();
       $last_access_formatted = $last_access ? $date_formatter->format($last_access, 'short') : $this->t('Never');

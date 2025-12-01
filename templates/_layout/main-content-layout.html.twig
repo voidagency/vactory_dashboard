@@ -89,16 +89,16 @@
                              class="max-lg:absolute max-lg:top-[63px] max-lg:z-[40] max-lg:bg-white max-lg:left-1/2 max-lg:-translate-x-1/2 max-lg:p-3 max-lg:border max-lg:border-slate-200 max-lg:shadow-xl relative w-full text-slate-400 focus-within:text-slate-600">
                             <!-- Search Input with integrated filter dropdown -->
                             <div class="relative w-full">
-                                <div class="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-5 pl-4">
+                              <div class="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-4">
                                     {% include '@twigComponents/icons/search.html.twig' %}
                                 </div>
                                 <input
                                         x-model="query" @input.debounce.300ms="globalSearch" id="search-field"
-                                        class="block w-full h-10 pl-12 pr-20 py-3 border text-slate-900 placeholder-slate-400 focus:outline-none focus:placeholder-slate-300 focus:ring-0 sm:text-sm bg-slate-50/50 rounded-lg transition-all duration-200 focus:bg-white focus:shadow-sm text-sm leading-6"
+                                        class="block w-full h-10 pl-10 pr-[110px] py-3 border text-slate-900 placeholder-slate-400 focus:outline-none focus:placeholder-slate-300 focus:ring-0 sm:text-sm bg-slate-50/50 rounded-lg transition-all duration-200 focus:bg-white focus:shadow-sm text-sm leading-6 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-cancel-button]:h-4 [&::-webkit-search-cancel-button]:w-4 [&::-webkit-search-cancel-button]:bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggc3Ryb2tlPSIjOTM5M2EzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMiIgZD0iTTYgMThMMTggNk02IDZsMTIgMTIiLz48L3N2Zz4=')] [&::-webkit-search-cancel-button]:bg-center [&::-webkit-search-cancel-button]:bg-no-repeat [&::-webkit-search-cancel-button]:cursor-pointer [&::-webkit-search-cancel-button]:mr-[75px]"
                                         placeholder="Rechercher..." type="search"/>
 
-                                <!-- Filter Dropdown - Positioned to allow clear button on its left -->
-                                <div class="absolute inset-y-0 right-0 flex items-center pr-2" x-data="{ filterOpen: false }">
+                                <!-- Filter Dropdown - Positioned to the right -->
+                                <div class="absolute inset-y-0 right-2 flex items-center pr-2" x-data="{ filterOpen: false }">
                                     <button
                                             @click="filterOpen = !filterOpen"
                                             @click.outside="filterOpen = false"
@@ -106,7 +106,7 @@
                                             class="text-gray-700 inline-flex justify-center rounded-md bg-white px-2 py-1 text-xs font-semibold shadow-sm ring-1 ring-inset ring-slate-200 hover:bg-slate-50 h-7 items-center"
                                             :aria-expanded="filterOpen"
                                             aria-haspopup="true">
-                                        <span class="max-w-16 truncate" x-text="selectedFilterLabel"></span>
+                                        <span x-text="selectedFilterLabel"></span>
                                         <svg class="-mr-1 ml-1 size-3 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" data-slot="icon">
                                             <path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/>
                                         </svg>
