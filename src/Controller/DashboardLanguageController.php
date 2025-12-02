@@ -73,16 +73,27 @@ class DashboardLanguageController extends ControllerBase {
     $languages = $this->listBuilder->load();
     $default_langcode = $this->languageManager->getDefaultLanguage()->getId();
 
+    // Get enabled languages from dashboard configuration.
+    $config = \Drupal::config('vactory_dashboard.global.settings');
+    $enabled_languages = $config->get('dashboard_languages') ?? [];
+    $enabled_languages = array_filter($enabled_languages);
+
     $data = [];
 
     foreach ($languages as $language) {
-      $data[] = [
-        'id' => $language->id(),
-        'name' => $language->label(),
-        'label' => $language->label(),
-        'default' => $language->id() === $default_langcode,
-        'direction' => $language->getDirection(),
-      ];
+      $lang_id = $language->id();
+      $is_enabled = empty($enabled_languages) || isset($enabled_languages[$lang_id]);
+
+      // Only include languages that are enabled in dashboard config.
+      if ($is_enabled) {
+        $data[] = [
+          'id' => $language->id(),
+          'name' => $language->label(),
+          'label' => $language->label(),
+          'default' => $language->id() === $default_langcode,
+          'direction' => $language->getDirection(),
+        ];
+      }
     }
 
     return new JsonResponse($data);

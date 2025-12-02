@@ -2,16 +2,24 @@
 
 namespace Drupal\vactory_dashboard\Controller;
 
+use Drupal\Core\Cache\Cache;
+use Drupal\Core\Cache\CacheableJsonResponse;
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Render\RenderContext;
 use Drupal\Core\Url;
 use Drupal\vactory_dashboard\Service\FormSearchService;
+use Drupal\vactory_dashboard\Service\WebformService;
+use Drupal\webform\Entity\WebformSubmission;
+use Drupal\webform\WebformInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\webform\Entity\Webform;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\file\Entity\File;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Controller for the webform dashboard.
@@ -42,15 +50,23 @@ class DashboardWebformController extends ControllerBase {
   protected $formSearchService;
 
   /**
+   * The webform service.
+   *
+   * @var \Drupal\vactory_dashboard\Service\WebformService
+   */
+  protected $webformService;
+
+  /**
    * Constructs a new DashboardMediaController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $database, FormSearchService $formSearchService) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $database, FormSearchService $formSearchService, WebformService $webformService) {
     $this->entityTypeManager = $entity_type_manager;
     $this->database = $database;
     $this->formSearchService = $formSearchService;
+    $this->webformService = $webformService;
   }
 
   /**
@@ -61,6 +77,7 @@ class DashboardWebformController extends ControllerBase {
       $container->get('entity_type.manager'),
       $container->get('database'),
       $container->get('vactory_dashboard.form_search'),
+      $container->get('vactory_dashboard.webform.service')
     );
   }
 
@@ -71,17 +88,31 @@ class DashboardWebformController extends ControllerBase {
    *   A render array for the webform dashboard.
    */
   public function content($id) {
+    $webform = Webform::load($id);
+    if (!$webform instanceof WebformInterface) {
+      throw new NotFoundHttpException();
+    }
 
+    $shouldHideExportButton = FALSE;
+    if ($this->moduleHandler()->moduleExists('vactory_webform_anonymize')) {
+      if (\Drupal::service('vactory_webform_anonymize.helper')->shouldAnonymize($webform)) {
+        $shouldHideExportButton = TRUE;
+      }
+    }
     return [
       '#theme' => 'vactory_dashboard_webform',
       '#id' => $id,
+      '#hideExportButton' => $shouldHideExportButton,
       '#attached' => [
         'library' => ['vactory_dashboard/alpine-webform'],
         'drupalSettings' => [
           'vactoryDashboard' => [
-            'deletePath' => Url::fromRoute('vactory_dashboard.webform.delete')->toString(),
-            'dataPath' => Url::fromRoute('vactory_dashboard.webform.data', ['id' => $id])->toString(),
-            'searchPath' => Url::fromRoute('vactory_dashboard.webform.search', ['id' => $id])->toString(),
+            'deletePath' => Url::fromRoute('vactory_dashboard.webform.delete')
+              ->toString(),
+            'dataPath' => Url::fromRoute('vactory_dashboard.webform.data', ['id' => $id])
+              ->toString(),
+            'searchPath' => Url::fromRoute('vactory_dashboard.webform.search', ['id' => $id])
+              ->toString(),
           ],
         ],
       ],
@@ -108,14 +139,15 @@ class DashboardWebformController extends ControllerBase {
     $data = [];
     $total = 0;
 
+    $cacheMetadata = new CacheableMetadata();
+    $cacheMetadata->addCacheableDependency($webform);
+
     if ($webform && $webform->hasSubmissions()) {
-      // Get total count
       $count_query = \Drupal::entityQuery('webform_submission')
         ->accessCheck(FALSE)
         ->condition('webform_id', $id);
       $total = $count_query->count()->execute();
 
-      // Get paginated submissions
       $query = \Drupal::entityQuery('webform_submission')
         ->accessCheck(FALSE)
         ->condition('webform_id', $id)
@@ -123,10 +155,16 @@ class DashboardWebformController extends ControllerBase {
         ->range($offset, $limit);
 
       $result = $query->execute();
+      $settings = $webform->getThirdPartySetting('vactory_webform_anonymize', 'settings', []);
+
+      $renderer = \Drupal::service('renderer');
 
       foreach ($result as $item) {
-        $submission = \Drupal\webform\Entity\WebformSubmission::load($item);
+        $submission = WebformSubmission::load($item);
         if ($submission) {
+          // Add submission to cache metadata
+          $cacheMetadata->addCacheableDependency($submission);
+
           $submission_data = $submission->getData();
 
           foreach ($submission_data as $field_name => $field_value) {
@@ -134,15 +172,30 @@ class DashboardWebformController extends ControllerBase {
             $type = $element['#type'] ?? 'textfield';
 
             if ($type === 'webform_file' || $type === 'webform_document_file') {
-              $urls = [];
               $files = [];
               $file_ids = is_array($field_value) ? $field_value : [$field_value];
+
               foreach ($file_ids as $fid) {
                 $file = File::load($fid);
                 if ($file) {
+                  // Add file to cache metadata
+                  $cacheMetadata->addCacheableDependency($file);
+
+                  // Execute file URL generation in a render context to capture metadata
+                  $context = new RenderContext();
+                  $file_url = $renderer->executeInRenderContext($context, function() use ($file) {
+                    return \Drupal::service('file_url_generator')
+                      ->generateAbsoluteString($file->getFileUri());
+                  });
+
+                  // Merge any captured metadata
+                  if (!$context->isEmpty()) {
+                    $cacheMetadata = $cacheMetadata->merge($context->pop());
+                  }
+
                   $files[] = [
-                    'url' => \Drupal::service('file_url_generator')->generateAbsoluteString($file->getFileUri()),
-                    'filename' => $file->getFilename(),
+                    'url' => $this->webformService->anonymizeData($webform, $settings, $file_url),
+                    'filename' => $this->webformService->anonymizeData($webform, $settings, $file->getFilename()),
                   ];
                 }
               }
@@ -152,7 +205,14 @@ class DashboardWebformController extends ControllerBase {
               ];
             }
             else {
-              $submission_data[$field_name] = is_array($field_value) ? implode(', ', $field_value) : $field_value;
+              if (is_array($field_value)) {
+                $field_value = array_map(function($item) use ($webform, $settings) {
+                  return $this->webformService->anonymizeData($webform, $settings, $item);
+                }, $field_value);
+              }
+              $submission_data[$field_name] = is_array($field_value)
+                ? implode(', ', $field_value)
+                : $this->webformService->anonymizeData($webform, $settings, $field_value);
             }
           }
 
@@ -168,7 +228,7 @@ class DashboardWebformController extends ControllerBase {
       }
     }
 
-    return new JsonResponse([
+    $response = new CacheableJsonResponse([
       'data' => $data,
       'form_id' => $id,
       'total' => $total,
@@ -176,6 +236,10 @@ class DashboardWebformController extends ControllerBase {
       'limit' => $limit,
       'pages' => ceil($total / $limit),
     ]);
+
+    $response->addCacheableDependency($cacheMetadata);
+
+    return $response;
   }
 
   /**

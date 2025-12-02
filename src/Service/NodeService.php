@@ -4,7 +4,6 @@ namespace Drupal\vactory_dashboard\Service;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
@@ -13,6 +12,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\file\FileInterface;
 use Drupal\media\MediaInterface;
 use Drupal\node\Entity\NodeType;
+use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\paragraphs\Entity\ParagraphsType;
 use Drupal\paragraphs\ParagraphInterface;
@@ -210,57 +210,78 @@ class NodeService {
         continue;
       }
 
-      if ($field['type'] == 'image') {
-        $media = $this->loadMediaFromEntityField($entity, $field['name']);
-        if ($media instanceof MediaInterface) {
-          if ($media->hasField('field_media_image') && !$media->get('field_media_image')
-              ->isEmpty()) {
-            $file = $media->get('field_media_image')->entity;
-            if ($file instanceof FileInterface) {
-              $node_data[$field['name']] = [
-                'id' => $entity->get($field['name'])->target_id,
-                'url' => $file->createFileUrl(),
-                'path' => $field['name'],
-                'key' => -1,
-              ];
-            }
+      if ($field['type'] === 'vactory_quiz_question' || $field['name'] === 'field_quiz_questions') {
+        // Récupérer les valeurs Quiz Questions
+        $quiz_values = $entity->get($field['name'])->getValue();
+
+        $formatted_quiz = [];
+        foreach ($quiz_values as $item) {
+          if (!empty($item['question_text_value'])) {
+            $quiz_item = [
+              'question_number' => $item['question_number'] ?? '',
+              'question_text_value' => $item['question_text_value'] ?? '',
+              'question_text_format' => $item['question_text_format'] ?? 'basic_html',
+              'question_type' => $item['question_type'] ?? 'multiple',
+              'question_answers' => $item['question_answers'] ?? '[]',
+              'question_reward' => $item['question_reward'] ?? 1,
+              'question_penalty' => $item['question_penalty'] ?? 0,
+            ];
+
+            $formatted_quiz[] = $quiz_item;
           }
         }
+
+        $node_data[$field['name']] = $formatted_quiz;
+        continue;
       }
-      elseif ($field['type'] == 'remote_video') {
-        $media = $this->loadMediaFromEntityField($entity, $field['name']);
-        if ($media instanceof MediaInterface) {
-          if ($media->hasField('field_media_oembed_video') && !$media->get('field_media_oembed_video')
-              ->isEmpty()) {
-            $remote_video = $media->get('field_media_oembed_video')->value;
-            if (!empty($remote_video)) {
-              $node_data[$field['name']] = [
-                'id' => $entity->get($field['name'])->target_id,
-                'url' => $remote_video,
-                'path' => $field['name'],
-                'key' => -1,
-                'name' => $media->get('field_media_oembed_video')
-                  ->getEntity()
-                  ->label(),
-              ];
-            }
-          }
+
+      // Handle Google Map field type
+      if ($field['type'] === 'vactory_google_map_field') {
+        $map_value = $entity->get($field['name'])->getValue();
+        if (!empty($map_value)) {
+          $map_item = reset($map_value);
+          $node_data[$field['name']] = [
+            'lat' => $map_item['lat'] ?? '',
+            'lng' => $map_item['lon'] ?? '', // Database uses 'lon', we use 'lng' in frontend
+            'zoom' => $map_item['zoom'] ?? 10,
+            'type' => $map_item['type'] ?? 'roadmap',
+            'address' => '',
+          ];
         }
+        else {
+          $node_data[$field['name']] = [
+            'lat' => '',
+            'lng' => '',
+            'zoom' => 10,
+            'type' => 'roadmap',
+            'address' => '',
+          ];
+        }
+        continue;
       }
-      elseif ($field['type'] == 'file' || $field['type'] == 'private_file') {
-        $field_name = $field['type'] === 'file' ? 'field_media_file' : 'field_media_file_1';
-        $media = $this->loadMediaFromEntityField($entity, $field['name']);
-        if ($media instanceof MediaInterface) {
-          if ($media->hasField($field_name) && !$media->get($field_name)
-              ->isEmpty()) {
-            $file = $media->get($field_name)->entity;
+
+      if (in_array($field['type'], [
+        'remote_video',
+        'file',
+        'private_file',
+      ])) {
+        $node_data[$field['name']] = $this->prepareMediaData($entity, $field['name'], $field['name'], $field['type']);
+      }
+      elseif ($field['type'] === 'image') {
+        // Handle image field type (stores files directly with alt/title)
+        $image_value = $entity->get($field['name'])->getValue();
+        if (!empty($image_value)) {
+          $image_item = reset($image_value);
+          if (!empty($image_item['target_id'])) {
+            $file = $this->entityTypeManager->getStorage('file')->load($image_item['target_id']);
             if ($file instanceof FileInterface) {
               $node_data[$field['name']] = [
-                'id' => $entity->get($field['name'])->target_id,
-                'url' => $file->createFileUrl(),
-                'path' => $field['name'],
-                'key' => -1,
-                'name' => $media->label(),
+                'id' => $image_item['target_id'],
+                'url' => $this->fileUrlGenerator->generateAbsoluteString($file->getFileUri()),
+                'alt' => $image_item['alt'] ?? '',
+                'title' => $image_item['title'] ?? '',
+                'width' => $image_item['width'] ?? NULL,
+                'height' => $image_item['height'] ?? NULL,
               ];
             }
           }
@@ -311,6 +332,112 @@ class NodeService {
   }
 
   /**
+   * Prepare Banner Data.
+   *
+   * @param \Drupal\node\NodeInterface $entity
+   * @param $node_data
+   *
+   * @return void
+   */
+  private function prepareBannerData(NodeInterface $entity, &$node_data) {
+    if ($entity->hasField('node_banner_image')) {
+      $node_data['node_banner_image'] = $this->prepareMediaData($entity, 'node_banner_image', 'banner.node_banner_image');
+    }
+    if ($entity->hasField('node_banner_mobile_image')) {
+      $node_data['node_banner_mobile_image'] = $this->prepareMediaData($entity, 'node_banner_mobile_image', 'banner.node_banner_mobile_image');
+    }
+    if ($entity->hasField('node_banner_title')) {
+      $node_data['node_banner_title'] = $entity->get('node_banner_title')->value ?? "";
+    }
+    if ($entity->hasField('node_banner_description')) {
+      $node_data['node_banner_description'] = $entity->get('node_banner_description')->value ?? "";
+    }
+    if ($entity->hasField('node_banner_showbreadcrumb')) {
+      $node_data['node_banner_showbreadcrumb'] = $entity->get('node_banner_showbreadcrumb')->value ?? "";
+    }
+  }
+
+  /**
+   * Check tha banner availability.
+   *
+   * @param $bundle
+   *
+   * @return array
+   */
+  public function getBannerConfiguration($bundle) {
+    $field_definitions = $this->entityFieldManager->getFieldDefinitions('node', $bundle) ?? [];
+    return [
+      'enabled' => $this->moduleHandler->moduleExists('vactory_banner'),
+      'node_banner_image' => isset($field_definitions['node_banner_image']),
+      'node_banner_mobile_image' => isset($field_definitions['node_banner_mobile_image']),
+      'node_banner_title' => isset($field_definitions['node_banner_title']),
+      'node_banner_description' => isset($field_definitions['node_banner_description']),
+      'node_banner_showbreadcrumb' => isset($field_definitions['node_banner_showbreadcrumb']),
+    ];
+  }
+
+  /**
+   * Prepare media data.
+   */
+  private function prepareMediaData($entity, $field_name, $path, $bundle = 'image') {
+    $media_data = NULL;
+    $media = $this->loadMediaFromEntityField($entity, $field_name);
+    if (!$media instanceof MediaInterface) {
+      return $media_data;
+    }
+    if ($bundle === 'image') {
+      if ($media->hasField('field_media_image') && !$media->get('field_media_image')
+          ->isEmpty()) {
+        $file = $media->get('field_media_image')->entity;
+        if ($file instanceof FileInterface) {
+          $media_data = [
+            'id' => $entity->get($field_name)->target_id,
+            'url' => $file->createFileUrl(),
+            'path' => $path,
+            'key' => -1,
+          ];
+        }
+      }
+    }
+    if ($bundle === 'remote_video') {
+      if ($media->hasField('field_media_oembed_video') && !$media->get('field_media_oembed_video')
+          ->isEmpty()) {
+        $remote_video = $media->get('field_media_oembed_video')->value;
+        if (!empty($remote_video)) {
+          $media_data = [
+            'id' => $entity->get($field_name)->target_id,
+            'url' => $remote_video,
+            'path' => $path,
+            'key' => -1,
+            'name' => $media->get('field_media_oembed_video')
+              ->getEntity()
+              ->label(),
+          ];
+        }
+      }
+    }
+
+    if ($bundle == 'file' || $bundle == 'private_file') {
+      $field_name = $bundle === 'file' ? 'field_media_file' : 'field_media_file_1';
+      if ($media->hasField($field_name) && !$media->get($field_name)
+          ->isEmpty()) {
+        $file = $media->get($field_name)->entity;
+        if ($file instanceof FileInterface) {
+          $media_data = [
+            'id' => $entity->get($field_name)->target_id,
+            'url' => $file->createFileUrl(),
+            'path' => $path,
+            'key' => -1,
+            'name' => $media->label(),
+          ];
+        }
+      }
+    }
+
+    return $media_data;
+  }
+
+  /**
    * Load media from entity field.
    */
   private function loadMediaFromEntityField(EntityInterface $entity, string $fieldName): ?MediaInterface {
@@ -327,9 +454,11 @@ class NodeService {
 
     // Get node fields.
     $node_data['title'] = $node->getTitle();
+    $node_data['summary'] = $node->hasField('node_summary') ? $node->get('node_summary')->value ?? "" : "";
     $node_data['body'] = $node->hasField('node_summary') ? $node->get('node_summary')->value ?? "" : "";
 
     $this->prepareVactoryParagraphsData($node, $node_data);
+    $this->prepareBannerData($node, $node_data);
 
     $alias = \Drupal::service('path_alias.manager')
       ->getAliasByPath('/node/' . $node->id());
@@ -550,6 +679,7 @@ class NodeService {
 
         $tabs[] = [
           'title' => $tab_paragraph->get('field_vactory_title')->value ?? NULL,
+          'tab_id' => $tab_paragraph->get('paragraph_identifier')->value ?? NULL,
           'widgets' => $widgets,
           'id' => $tab_paragraph->id() ?? NULL,
         ];
@@ -982,7 +1112,7 @@ class NodeService {
       switch ($field_type) {
         case 'entity_reference':
           $field_info['target_type'] = $field_settings['target_type'];
-          if ($field_settings['target_type'] === 'taxonomy_term' || $field_settings['target_type'] === 'user') {
+          if ($field_settings['target_type'] === 'taxonomy_term' || $field_settings['target_type'] === 'user' || $field_settings['target_type'] === 'node') {
             $component = $form_display->getComponent($field_name);
             if ($component) {
               $widget_type = $component['type'];
@@ -1006,7 +1136,8 @@ class NodeService {
             $field_info['options'] = $this->load_entity_reference_options($field_info);
           }
           if ($field_settings['target_type'] === 'media') {
-            $field_info['type'] = reset($field_settings['handler_settings']['target_bundles']);
+            $target_bundles = $field_settings['handler_settings']['target_bundles'] ?? [];
+            $field_info['type'] = reset($target_bundles);
           }
           break;
 
@@ -1034,6 +1165,31 @@ class NodeService {
         case 'daterange':
           $field_info['type'] = 'daterange';
           $field_info['multiple'] = FALSE;
+          break;
+
+        case 'vactory_quiz_question':
+          $field_info['type'] = 'vactory_quiz_question';
+          $field_info['multiple'] = $cardinality == -1;
+          break;
+
+        case 'integer':
+          $field_info['type'] = 'integer';
+          $field_info['multiple'] = FALSE;
+          $field_info['min'] = $field_settings['min'] ?? NULL;
+          $field_info['max'] = $field_settings['max'] ?? NULL;
+          break;
+
+        case 'image':
+          $field_info['type'] = 'image';
+          $field_info['multiple'] = $cardinality == -1;
+          $field_info['max_filesize'] = $field_settings['max_filesize'] ?? '';
+          $field_info['max_resolution'] = $field_settings['max_resolution'] ?? '';
+          $field_info['min_resolution'] = $field_settings['min_resolution'] ?? '';
+          $field_info['file_extensions'] = $field_settings['file_extensions'] ?? 'png gif jpg jpeg';
+          $field_info['alt_field'] = $field_settings['alt_field'] ?? TRUE;
+          $field_info['alt_field_required'] = $field_settings['alt_field_required'] ?? TRUE;
+          $field_info['title_field'] = $field_settings['title_field'] ?? FALSE;
+          $field_info['title_field_required'] = $field_settings['title_field_required'] ?? FALSE;
           break;
       }
 
@@ -1108,14 +1264,22 @@ class NodeService {
     // Handle target bundles (e.g. specific vocabularies or content types)
     if (!empty($handler_settings['target_bundles'])) {
       $bundle_keys = array_keys($handler_settings['target_bundles']);
+
+      // Get the entity type definition
+      $entity_type_definition = $this->entityTypeManager->getDefinition($target_type);
+      $bundle_key = $entity_type_definition->getKey('bundle');
+
       if ($target_type === 'taxonomy_term') {
+        // Taxonomy terms use 'vid' as the bundle key
         $query->condition('vid', $bundle_keys, 'IN');
       }
-      elseif ($this->entityTypeManager
-        ->getDefinition($target_type)
-        ->getKey('bundle')
-      ) {
-        $query->condition('bundle', $bundle_keys, 'IN');
+      elseif ($target_type === 'node') {
+        // Nodes use 'type' as the bundle key
+        $query->condition('type', $bundle_keys, 'IN');
+      }
+      elseif ($bundle_key) {
+        // Other entity types with a bundle key
+        $query->condition($bundle_key, $bundle_keys, 'IN');
       }
     }
 
@@ -1437,6 +1601,11 @@ class NodeService {
               $paragraph_entity->set('field_vactory_title', $item['title']);
             }
 
+            // Update tab_id if provided
+            if (isset($item['tab_id'])) {
+              $paragraph_entity->set('paragraph_identifier', $item['tab_id']);
+            }
+
             // Save widgets if provided
             if (!empty($item['widgets']) && is_array($item['widgets'])) {
               $components = [];
@@ -1464,6 +1633,7 @@ class NodeService {
           $tab_paragraph = Paragraph::create([
             'type' => 'vactory_paragraph_tab',
             'field_vactory_title' => $item['title'] ?? '',
+            'paragraph_identifier' => $item['tab_id'] ?? '',
           ]);
 
           // Save widgets if provided
@@ -1629,6 +1799,11 @@ class NodeService {
                           $paragraph_entity->set('field_vactory_title', $item['title']);
                         }
 
+                        // Update tab_id if provided
+                        if (isset($item['tab_id'])) {
+                          $paragraph_entity->set('paragraph_identifier', $item['tab_id']);
+                        }
+
                         // Save widgets if provided
                         if (!empty($item['widgets']) && is_array($item['widgets'])) {
                           $components = [];
@@ -1656,6 +1831,7 @@ class NodeService {
                       $tab_paragraph = Paragraph::create([
                         'type' => 'vactory_paragraph_tab',
                         'field_vactory_title' => $item['title'] ?? '',
+                        'paragraph_identifier' => $item['tab_id'] ?? '',
                       ]);
 
                       // Save widgets if provided
@@ -1949,6 +2125,33 @@ class NodeService {
         ->set($field_name, $block[$block_key]);
     }
     $paragraph_entity->save();
+  }
+
+  /**
+   * Save banner in given node.
+   */
+  public function saveBannerInNode(NodeInterface $node, $banner = []) {
+    if ($node->hasField('node_banner_image')) {
+      $image_id = $banner['node_banner_image']['id'] ?? NULL;
+      if ($image_id !== NULL) {
+        $node->set('node_banner_image', $image_id);
+      }
+    }
+    if ($node->hasField('node_banner_mobile_image')) {
+      $mobile_image_id = $banner['node_banner_mobile_image']['id'] ?? NULL;
+      if ($mobile_image_id !== NULL) {
+        $node->set('node_banner_mobile_image', $mobile_image_id);
+      }
+    }
+    if ($node->hasField('node_banner_title')) {
+      $node->set('node_banner_title', $banner['node_banner_title'] ?? '');
+    }
+    if ($node->hasField('node_banner_description')) {
+      $node->set('node_banner_description', $banner['node_banner_description'] ?? '');
+    }
+    if ($node->hasField('node_banner_showbreadcrumb')) {
+      $node->set('node_banner_showbreadcrumb', $banner['node_banner_showbreadcrumb'] ?? FALSE);
+    }
   }
 
 }

@@ -60,9 +60,8 @@
 
                                                 {# extra fields - non group #}
                                                 <template x-if="!fieldName.startsWith('group_')">
-                                                    <div>
-                                                        <label :class="{'required': field.options?.['#required']}"
-                                                               class="block text-sm font-medium text-slate-700 mb-1">
+                                                    <div id="wrapper-extra-fields" :class="field.type === 'checkbox' ? 'flex flex-row-reverse justify-end items-center gap-3' : ''">
+                                                        <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700 whitespace-nowrap min-w-0 flex-shrink-0' : 'block text-sm font-medium text-slate-700 mb-1'">
                                                             <span x-text="field.label"></span>
                                                             <span x-show="field.options?.['#required']"
                                                                   class="text-red-500">*</span>
@@ -224,8 +223,7 @@
                                                                         :key="index">
                                                                     <template x-if="itemName != 'g_title'">
                                                                         <div :class="{'flex flex-row-reverse justify-end items-center gap-2': item.type === 'checkbox'}">
-                                                                            <label :class="{'required': field.options?.['#required']}"
-                                                                                   class="block text-sm font-medium text-slate-700 mb-1">
+                                                                            <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700 whitespace-nowrap min-w-0 flex-shrink-0' : 'block text-sm font-medium text-slate-700 mb-1'">
                                                                                 <span x-text="item.label"></span>
                                                                                 <span x-show="item.options?.['#required']"
                                                                                       class="text-red-500">*</span>
@@ -237,6 +235,7 @@
                                                                                 <input type="text"
                                                                                        :required="item.options?.['#required'] ?? false"
                                                                                        x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                       x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}"
                                                                                        class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                                                             </template>
 
@@ -245,6 +244,7 @@
                                                                                 <input type="number"
                                                                                        :required="item.options?.['#required'] ?? false"
                                                                                        x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                       x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}"
                                                                                        class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                                                             </template>
 
@@ -254,6 +254,7 @@
                                                                                     <input type="checkbox"
                                                                                            :required="item.options?.['#required'] ?? false"
                                                                                            x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                           x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}"
                                                                                     >
                                                                                 </div>
                                                                             </template>
@@ -262,6 +263,7 @@
                                                                             <template x-if="item.type === 'select'">
                                                                                 <select :required="item.options?.['#required'] ?? false"
                                                                                         x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                        x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}"
                                                                                         class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                                                                     <option value="">{{ 'Select...'|t }}</option>
                                                                                     <template
@@ -279,6 +281,7 @@
                                                                                 <textarea
                                                                                         :required="item.options?.['#required'] ?? false"
                                                                                         x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                        x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}"
                                                                                         rows="4"
                                                                                         class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"></textarea>
                                                                             </template>
@@ -840,9 +843,8 @@
                                                                                     x-for="([itemName, field], index) in Object.entries(field_)"
                                                                                     :key="index">
                                                                                 <template x-if="itemName != 'g_title'">
-                                                                                    <div>
-                                                                                        <label :class="{'required': field.options?.['#required']}"
-                                                                                               class="block text-sm font-medium text-slate-700 mb-1">
+                                                                                    <div :class="{'flex flex-row-reverse justify-end items-center gap-2': field.type === 'checkbox'}">
+                                                                                        <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700 mb-0' : 'block text-sm font-medium text-slate-700 mb-1'">
                                                                                             <span x-text="field.label"></span>
                                                                                             <span x-show="field.options?.['#required']"
                                                                                                   class="text-red-500">*</span>
@@ -868,7 +870,8 @@
                                                                                                 x-if="field.type === 'checkbox'">
                                                                                             <input type="checkbox"
                                                                                                    :required="field.options?.['#required'] ?? false"
-                                                                                                   x-model="item[fieldName][itemName]">
+                                                                                                   x-model="item[fieldName][itemName]"
+                                                                                                   class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2">
                                                                                         </template>
 
 
@@ -1015,9 +1018,8 @@
                                                             <template
                                                                     x-for="(field, fieldName) in selectedTemplate.fields"
                                                                     :key="fieldName">
-                                                                <div>
-                                                                    <label :class="{'required': field.options?.['#required']}"
-                                                                           class="block text-sm font-medium text-slate-700 mb-1">
+                                                                    <div :class="{'flex flex-row-reverse justify-end items-center gap-2': field.type === 'checkbox'}">
+                                                                    <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700 mb-0' : 'block text-sm font-medium text-slate-700 mb-1'">
                                                                         <span x-text="field.label"></span>
                                                                         <span x-show="field.options?.['#required']"
                                                                               class="text-red-500">*</span>

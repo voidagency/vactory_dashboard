@@ -44,6 +44,9 @@
             {% include "@vactory_dashboard/node/_components/settings-form.html.twig" %}
             {# SEO Tab #}
             {% include "@vactory_dashboard/node/_components/seo-form.html.twig" %}
+            <div x-show="activeTab === 'banner'">
+                {% include "@vactory_dashboard/node/_components/banner-settings.html.twig" %}
+            </div>
         </div>
         {# Template Form View #}
         <div x-show="showBlockForm" class="h-full">
@@ -72,5 +75,13 @@
         <template x-if="!showParagraphMultipleForm">
             {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}
         </template>
+
+        {# Include the quiz answers modal #}
+        {% include "@vactory_dashboard/_components/fields/quiz-answers-modal.html.twig" %}
+        <template x-if="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
+            {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
+        </template>
+        {# File Library for image field type #}
+        {% include "@vactory_dashboard/_components/media/file-library.html.twig" %}
     </div>
 </div>

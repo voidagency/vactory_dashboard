@@ -34,6 +34,21 @@ Usage:
                 {% endif %}>
     </template>
 
+    {# Integer Input #}
+    <template x-if="field.type === 'integer'">
+        <input type="number"
+               :required="field.required"
+               x-model.number="formData.fields[field.name]"
+               :min="field.min"
+               :max="field.max"
+               @invalid="$el.classList.add('border-red-500')"
+               @input="$el.classList.remove('border-red-500')"
+               class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+                {% if isEdit and language != node_default_lang %}
+            :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                {% endif %}>
+    </template>
+
     {# Text with Summary #}
     <template x-if="field.type === 'text_with_summary'">
         <div :required="field.required" class="summary" x-html="field.textFormatField"></div>
@@ -68,22 +83,64 @@ Usage:
         </div>
     </template>
 
-    {# Image Upload #}
+    {# Image Upload (uses File Library - not Media Library) #}
     <template x-if="field.type === 'image'">
         <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
-            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
+            {% include "@vactory_dashboard/_components/media/file-selector.html.twig" with {
                 'required': 'field.required',
                 'url': 'formData.fields[field.name].url',
-                'path': 'formData.fields[field.name].path',
+                'name': 'formData.fields[field.name].name',
+                'path': 'field.name',
                 'key': 'formData.fields[field.name].key',
-                'type': 'image'
+                'isMultiple': 'false'
             } %}
+            {# Alt Text Field #}
+            <template x-if="field.alt_field">
+                <div class="mt-3">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        <span>{{ 'Alternative text'|t }}</span>
+                        <span x-show="field.alt_field_required" class="text-red-500">*</span>
+                    </label>
+                    <input type="text"
+                           x-model="formData.fields[field.name].alt"
+                           :required="field.alt_field_required"
+                           placeholder="{{ 'Short description of the image used by screen readers'|t }}"
+                           class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"/>
+                    <p class="mt-1 text-xs text-gray-500">{{ 'Alternative text is used by screen readers, search engines, and when the image cannot be loaded.'|t }}</p>
+                </div>
+            </template>
+
+            {# Title Text Field #}
+            <template x-if="field.title_field">
+                <div class="mt-3">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        <span>{{ 'Title'|t }}</span>
+                        <span x-show="field.title_field_required" class="text-red-500">*</span>
+                    </label>
+                    <input type="text"
+                           x-model="formData.fields[field.name].title"
+                           :required="field.title_field_required"
+                           placeholder="{{ 'Title text'|t }}"
+                           class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"/>
+                    <p class="mt-1 text-xs text-gray-500">{{ 'Title text is used in the tool tip when a user hovers their mouse over the image.'|t }}</p>
+                </div>
+            </template>
         </div>
+    </template>
+
+    {# Google Map Field #}
+    <template x-if="field.type === 'vactory_google_map_field'">
+        {% include "@vactory_dashboard/_components/fields/google-map-field.html.twig" %}
     </template>
 
     {# Field FAQ #}
     <template x-if="field.type === 'faqfield'">
         {% include "@vactory_dashboard/_components/fields/faq.html.twig" %}
+    </template>
+
+    {# Field Quiz Questions #}
+    <template x-if="field.type === 'vactory_quiz_question'">
+        {% include "@vactory_dashboard/_components/fields/quiz-questions.html.twig" %}
     </template>
 
     {# Remote video #}
@@ -248,5 +305,5 @@ Usage:
     </template>
 
     {# Field Description #}
-    <p class="mb-1 text-xs text-gray-500" x-text="field.description"></p>
+    <p class="mb-1 text-xs text-gray-500" x-html="field.description"></p>
 </div> 

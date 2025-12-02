@@ -57,6 +57,14 @@ class DashboardUsersController extends ControllerBase {
   }
 
   /**
+   * @return bool
+   *   TRUE if the user is an admin, FALSE otherwise.
+   */
+  protected function isCurrentUserAdmin() {
+    return in_array('administrator', $this->currentUser->getRoles());
+  }
+
+  /**
    * Returns the users dashboard page.
    *
    * @return array
@@ -155,25 +163,18 @@ class DashboardUsersController extends ControllerBase {
     // Load users.
     $users = $this->entityTypeManager->getStorage('user')->loadMultiple($uids);
 
+    // Get current user roles outside the loop.
+    $currentUser = $this->currentUser;
+    $user_roles = $currentUser->getRoles();
+
     $data = [];
     $date_formatter = \Drupal::service('date.formatter');
     foreach ($users as $user) {
       /** @var \Drupal\user\UserInterface $user */
       $roles = $user->getRoles(TRUE);
-      $role_names = array_map(function($role) {
+      $role_names = array_map(function ($role) {
         return $this->t($role);
       }, $roles);
-
-      $roles = Role::loadMultiple();
-      $role_options = [];
-      foreach ($roles as $role_id => $role) {
-        if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
-          $role_options[$role_id] = $role->label();
-        }
-      }
-
-      $currentUser = $this->currentUser;
-      $user_roles = $currentUser->getRoles();
 
       $last_access = $user->getLastAccessedTime();
       $last_access_formatted = $last_access ? $date_formatter->format($last_access, 'short') : $this->t('Never');
@@ -187,6 +188,17 @@ class DashboardUsersController extends ControllerBase {
         'status_label' => $user->isActive() ? $this->t('Active') : $this->t('Inactive'),
         'last_access' => $last_access_formatted,
       ];
+    }
+
+    // Only load roles if user is admin
+    $role_options = [];
+    if ($this->isCurrentUserAdmin()) {
+      $roles = Role::loadMultiple();
+      foreach ($roles as $role_id => $role) {
+        if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
+          $role_options[$role_id] = $role->label();
+        }
+      }
     }
 
     return new JsonResponse([
@@ -214,6 +226,10 @@ class DashboardUsersController extends ControllerBase {
     $content = json_decode($request->getContent(), TRUE);
     $userIds = $content['userIds'] ?? [];
 
+    if (in_array(1, $userIds)) {
+      return new JsonResponse(['message' => 'Action not permitted', 401]);
+    }
+
     if (empty($userIds)) {
       return new JsonResponse(['message' => 'No users specified'], Response::HTTP_BAD_REQUEST);
     }
@@ -240,11 +256,14 @@ class DashboardUsersController extends ControllerBase {
    *   A render array for the user update page.
    */
   public function pageUpdate($userId) {
-    $roles = Role::loadMultiple();
+    // Only load roles if user is admin
     $role_options = [];
-    foreach ($roles as $role_id => $role) {
-      if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
-        $role_options[$role_id] = $role->label();
+    if ($this->isCurrentUserAdmin()) {
+      $roles = Role::loadMultiple();
+      foreach ($roles as $role_id => $role) {
+        if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
+          $role_options[$role_id] = $role->label();
+        }
       }
     }
     // Check if the user exists
@@ -278,7 +297,8 @@ class DashboardUsersController extends ControllerBase {
         'library' => ['vactory_dashboard/alpine-users-edit'],
         'drupalSettings' => [
           'vactoryDashboard' => [
-            'editPath' => Url::fromRoute('vactory_dashboard.settings.user.edit', ['userId' => $userId])->toString(),
+            'editPath' => Url::fromRoute('vactory_dashboard.settings.user.edit', ['userId' => $userId])
+              ->toString(),
             'listPath' => Url::fromRoute('vactory_dashboard.users')
               ->toString(),
           ],
@@ -303,11 +323,14 @@ class DashboardUsersController extends ControllerBase {
       throw new NotFoundHttpException('Utilisateur non trouvé.');
     }
 
-    $roles = Role::loadMultiple();
+    // Only load roles if user is admin
     $role_options = [];
-    foreach ($roles as $role_id => $role) {
-      if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
-        $role_options[$role_id] = $role->label();
+    if ($this->isCurrentUserAdmin()) {
+      $roles = Role::loadMultiple();
+      foreach ($roles as $role_id => $role) {
+        if ($role_id !== 'anonymous' && $role_id !== 'authenticated') {
+          $role_options[$role_id] = $role->label();
+        }
       }
     }
 
@@ -399,6 +422,14 @@ class DashboardUsersController extends ControllerBase {
     }
 
     if (isset($data['roles'])) {
+      // Security check: prevent non-admin users from modifying roles at all
+      if (!$this->isCurrentUserAdmin()) {
+        return new JsonResponse([
+          'message' => 'Access denied: You cannot modify user roles',
+          'errors' => ['roles' => 'You do not have permission to modify user roles']
+        ], Response::HTTP_FORBIDDEN);
+      }
+
       $user->set('roles', $data['roles']);
     }
 

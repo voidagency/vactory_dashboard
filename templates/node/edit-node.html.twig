@@ -23,7 +23,10 @@
                                   d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
                         </svg>
                     </a>
-                    <h1 class="flex flex-wrap items-center text-lg font-medium">{{ "Edit"|t }} {{ bundle_label }}&nbsp;-&nbsp;<span class="inline-block capitalize max-w-60 truncate">{{ node.title }}</span></h1>
+                    <h1 class="flex flex-wrap items-center text-lg font-medium">
+                        {{ "Edit"|t }} {{ bundle_label }}
+                        <span class="inline-block capitalize max-w-60 truncate ml-1">{{ node.title }}</span>
+                    </h1>
                 </div>
                 <div class="flex max-lg:w-full max-lg:flex-wrap max-lg:gap-3 max-lg:[&>*]:w-full max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:px-3 max-lg:py-4 lg:items-center lg:space-x-4">
                     {# Publish checkbox #}
@@ -134,17 +137,25 @@
                             </div>
                         </div>
                     {% endif %}
+                    <div x-show="activeTab === 'banner'">
+                        {% include "@vactory_dashboard/node/_components/banner-settings.html.twig" %}
+                    </div>
                 </form>
             </div>
         </div>
         <template x-if="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
             {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
         </template>
+        {# File Library for image field type #}
+        {% include "@vactory_dashboard/_components/media/file-library.html.twig" %}
         {# SEO Tab #}
         {% include "@vactory_dashboard/node/_components/seo-form.html.twig" %}
 
         {# Include the blocks modal #}
         {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}
+
+        {# Include the quiz answers modal #}
+        {% include "@vactory_dashboard/_components/fields/quiz-answers-modal.html.twig" %}
 
         {# Dynamic Field Modal - Single modal for all WYSIWYG dynamic fields #}
         <div x-show="showDynamicFieldModal" 

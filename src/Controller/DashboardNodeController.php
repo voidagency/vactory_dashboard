@@ -4,6 +4,7 @@ namespace Drupal\vactory_dashboard\Controller;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Url;
@@ -78,12 +79,29 @@ class DashboardNodeController extends ControllerBase {
   protected $nodeService;
 
   /**
+   * The config factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
+
+  /**
    * Constructs a new DashboardUsersController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
-   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
-   *   The entity field manager.
+   * @param \Drupal\vactory_dashboard\Service\MetatagService $metatag_service
+   *   The metatag service.
+   * @param \Drupal\token\Token $tokenService
+   *   The token service.
+   * @param \Drupal\vactory_dashboard\Service\PreviewUrlService $previewUrlService
+   *   The preview URL service.
+   * @param \Drupal\path_alias\AliasManagerInterface $alias_manager
+   *   The alias manager.
+   * @param \Drupal\vactory_dashboard\Service\NodeService $node_service
+   *   The node service.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The config factory.
    */
   public function __construct(
     EntityTypeManagerInterface $entity_type_manager,
@@ -92,7 +110,8 @@ class DashboardNodeController extends ControllerBase {
     Token $tokenService,
     PreviewUrlService $previewUrlService,
     AliasManagerInterface $alias_manager,
-    NodeService $node_service
+    NodeService $node_service,
+    ConfigFactoryInterface $config_factory
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
@@ -101,6 +120,7 @@ class DashboardNodeController extends ControllerBase {
     $this->previewUrlService = $previewUrlService;
     $this->aliasManager = $alias_manager;
     $this->nodeService = $node_service;
+    $this->configFactory = $config_factory;
   }
 
   /**
@@ -115,6 +135,7 @@ class DashboardNodeController extends ControllerBase {
       $container->get('vactory_dashboard.preview_url'),
       $container->get('path_alias.manager'),
       $container->get('vactory_dashboard.node_service'),
+      $container->get('config.factory')
     );
   }
 
@@ -179,6 +200,11 @@ class DashboardNodeController extends ControllerBase {
       $langs[$lang->getId()] = $lang->getName();
     }
 
+    // Get configured limit for the content type
+    $config = $this->configFactory->get('vactory_dashboard.advanced.content_types');
+    $content_type_limits = $config->get('content_type_limits') ?? [];
+    $configured_limit = $content_type_limits[$bundle] ?? 50;
+
     return [
       '#theme' => 'vactory_dashboard_content_types',
       '#id' => $bundle,
@@ -188,6 +214,7 @@ class DashboardNodeController extends ControllerBase {
       '#taxonomies' => $this->nodeService->getReferencedTaxonomies($bundle),
       '#langs' => $langs,
       '#has_metatag' => array_key_exists('field_vactory_meta_tags', $this->entityFieldManager->getFieldDefinitions('node', $bundle)),
+      '#configured_limit' => $configured_limit,
     ];
   }
 
@@ -203,8 +230,14 @@ class DashboardNodeController extends ControllerBase {
    *   A JSON response containing the data.
    */
   public function getData($bundle, Request $request) {
+    // Get configured limit for the content type
+    $config = $this->configFactory->get('vactory_dashboard.advanced.content_types');
+    $content_type_limits = $config->get('content_type_limits') ?? [];
+    $default_limit = $content_type_limits[$bundle] ?? 50;
+
     // Get pagination parameters.
     $page = max(1, (int) $request->query->get('page', 1));
+    $limit = max(1, (int) $request->query->get('limit', $default_limit));
     $limit = max(1, (int) $request->query->get('limit', 10));
     $search = $request->query->get('search', '');
     $offset = ($page - 1) * $limit;
@@ -214,7 +247,8 @@ class DashboardNodeController extends ControllerBase {
       ->condition('type', $bundle)
       ->accessCheck(TRUE)
       ->sort('created', 'DESC')
-      ->sort('nid', 'DESC');
+      ->sort('nid', 'DESC')
+      ->latestRevision();
 
     // Add search condition if search term is provided.
     if (!empty($search)) {
@@ -238,13 +272,6 @@ class DashboardNodeController extends ControllerBase {
     // Format the data
     $data = [];
     foreach ($nodes as $node) {
-      $vid = $this->entityTypeManager
-        ->getStorage('node')
-        ->getLatestRevisionId($node->id());
-
-      /** @var \Drupal\node\Entity\Node $node */
-      $node = $this->entityTypeManager->getStorage('node')->loadRevision($vid);
-
       $metatags = [];
       $raw_metatags = $this->metatagService->prepareMetatags($node);
 
@@ -288,6 +315,7 @@ class DashboardNodeController extends ControllerBase {
       $data[] = [
         'id' => $node->id(),
         'title' => $node->label(),
+        'summary' => $node->hasField('node_summary') ? $node->get('node_summary')->value ?? '' : '',
         'author' => $node->getOwner() ? $node->getOwner()
           ->getDisplayName() : '',
         'created' => $node->getCreatedTime(),
@@ -335,14 +363,26 @@ class DashboardNodeController extends ControllerBase {
       ->getCurrentLanguage()
       ->getId();
 
-    // Get node available languages
+    // Get enabled languages from our custom configuration.
+    $config = \Drupal::config('vactory_dashboard.global.settings');
+    $enabled_languages = $config->get('dashboard_languages') ?? [];
+    $enabled_languages = array_filter($enabled_languages);
+
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
+
     foreach ($languages as $language) {
-      $available_languages_list[] = [
-        'id' => $language->getId(),
-        'url' => Url::fromRoute('vactory_dashboard.node.add', ['bundle' => $bundle], ['language' => $language]),
-      ];
+      $lang_id = $language->getId();
+
+      // Only show languages that are enabled in our custom configuration.
+      if (empty($enabled_languages) || isset($enabled_languages[$lang_id])) {
+        $available_languages_list[] = [
+          'id' => $lang_id,
+          'url' => Url::fromRoute('vactory_dashboard.node.add', 
+                  ['bundle' => $bundle], 
+                  ['language' => $language])->toString(),
+        ];
+      }
     }
 
     // Get bundle fields.
@@ -357,7 +397,17 @@ class DashboardNodeController extends ControllerBase {
     $bundle_label = $bundle_info['label'];
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled($bundle);
-    return [
+
+    // Check if any field is a Google Map field
+    $has_google_map_field = FALSE;
+    foreach ($fields as $field) {
+      if (isset($field['type']) && $field['type'] === 'vactory_google_map_field') {
+        $has_google_map_field = TRUE;
+        break;
+      }
+    }
+
+    $render_array = [
       //'#theme' => 'vactory_dashboard_node_add',
       '#theme' => 'vactory_dashboard_node_add',
       '#type' => 'not_page',
@@ -368,8 +418,16 @@ class DashboardNodeController extends ControllerBase {
       '#bundle' => $bundle,
       '#bundle_label' => $bundle_label,
       '#fields' => $fields,
+      '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       ...$paragraph_flags,
     ];
+
+    // Attach Google Maps API library if needed
+    if ($has_google_map_field) {
+      $render_array['#attached']['library'][] = 'vactory_dashboard/google-maps-api';
+    }
+
+    return $render_array;
   }
 
   /**
@@ -382,7 +440,6 @@ class DashboardNodeController extends ControllerBase {
    *   A render array for the node add form.
    */
   public function edit($bundle, $nid) {
-    $manager = \Drupal::service('content_translation.manager');
     $vid = $this->entityTypeManager
       ->getStorage('node')
       ->getLatestRevisionId($nid);
@@ -410,15 +467,31 @@ class DashboardNodeController extends ControllerBase {
     $node_translation = $node->getTranslation($current_language);
     $meta_tags = $this->metatagService->prepareMetatags($node_translation ?? $node);
 
-    // Get node available languages.
+    // Get enabled languages from our custom configuration.
+    $config = \Drupal::config('vactory_dashboard.global.settings');
+    $enabled_languages = $config->get('dashboard_languages') ?? [];
+    $enabled_languages = array_filter($enabled_languages);
+
+    // Get existing translations.
+    $existing_translations = $node->getTranslationLanguages();
+
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
-    if ($manager->isEnabled('node', $bundle)) {
-      $available_languages = $node->getTranslationLanguages();
-      foreach ($languages as $language) {
+
+    foreach ($languages as $language) {
+      $lang_id = $language->getId();
+      $has_existing_translation = array_key_exists($lang_id, $existing_translations);
+
+      // Show language if: enabled in config OR has existing translation.
+      $is_enabled = empty($enabled_languages) || isset($enabled_languages[$lang_id]);
+
+      if ($is_enabled || $has_existing_translation) {
         $available_languages_list[] = [
-          'id' => $language->getId(),
-          'url' => in_array($language->getId(), array_keys($available_languages)) ? '/' . $language->getId() . '/admin/dashboard/' . $bundle . '/edit/' . $nid : '/' . $language->getId() . '/admin/dashboard/' . $bundle . '/edit/' . $nid . '/add/translation',
+          'id' => $lang_id,
+          'url' => $has_existing_translation 
+            ? '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid 
+            : '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid . '/add/translation',
+          'has_translation' => $has_existing_translation,
         ];
       }
     }
@@ -435,7 +508,17 @@ class DashboardNodeController extends ControllerBase {
     $bundle_label = $bundle_info['label'];
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled($bundle);
-    return [
+
+    // Check if any field is a Google Map field
+    $has_google_map_field = FALSE;
+    foreach ($fields as $field) {
+      if (isset($field['type']) && $field['type'] === 'vactory_google_map_field') {
+        $has_google_map_field = TRUE;
+        break;
+      }
+    }
+
+    $render_array = [
       // '#theme' => 'vactory_dashboard_node_edit',
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'not_page',
@@ -455,8 +538,16 @@ class DashboardNodeController extends ControllerBase {
       '#fields' => $fields,
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
+      '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       ...$paragraph_flags,
     ];
+
+    // Attach Google Maps API library if needed
+    if ($has_google_map_field) {
+      $render_array['#attached']['library'][] = 'vactory_dashboard/google-maps-api';
+    }
+
+    return $render_array;
   }
 
   /**
@@ -495,15 +586,33 @@ class DashboardNodeController extends ControllerBase {
     catch (\Exception $e) {
     }
 
-    // Get node available languages.
+    // Get enabled languages from our configuration.
+    $config = \Drupal::config('vactory_dashboard.global.settings');
+    $enabled_languages = $config->get('dashboard_languages') ?? [];
+    $enabled_languages = array_filter($enabled_languages);
+
+    // Get existing translations.
+    $existing_translations = $node->getTranslationLanguages();
+
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
-    $available_languages = $node->getTranslationLanguages();
+
     foreach ($languages as $language) {
-      $available_languages_list[] = [
-        'id' => $language->getId(),
-        'url' => in_array($language->getId(), array_keys($available_languages)) ? '/' . $language->getId() . '/admin/dashboard/' . $bundle . '/edit/' . $nid : '/' . $language->getId() . '/admin/dashboard/' . $bundle . '/edit/' . $nid . '/add/translation',
-      ];
+      $lang_id = $language->getId();
+      $has_existing_translation = array_key_exists($lang_id, $existing_translations);
+
+      // Show language if: enabled in config OR has existing translation.
+      $is_enabled = empty($enabled_languages) || isset($enabled_languages[$lang_id]);
+
+      if ($is_enabled || $has_existing_translation) {
+        $available_languages_list[] = [
+          'id' => $lang_id,
+          'url' => $has_existing_translation 
+            ? '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid 
+            : '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid . '/add/translation',
+          'has_translation' => $has_existing_translation,
+        ];
+      }
     }
 
     // Get bundle fields.
@@ -533,6 +642,7 @@ class DashboardNodeController extends ControllerBase {
       '#bundle_label' => $bundle_label,
       '#fields' => $fields,
       '#has_translation' => FALSE,
+      '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       '#meta_tags' => $meta_tags,
     ];
   }
@@ -570,13 +680,41 @@ class DashboardNodeController extends ControllerBase {
 
       $blocks = $data['blocks'] ?? [];
 
+      $banner = $data['banner'] ?? [];
+
       if ($node->hasField('moderation_state')) {
         $node->set('moderation_state', $status ? 'published' : 'draft');
       }
 
+      // Get field definitions for type checking
+      $field_definitions = $node->getFieldDefinitions();
+
       // Set field values
       foreach ($data['fields'] as $field_name => $field_value) {
         if (!$node->hasField($field_name)) {
+          continue;
+        }
+
+        // Handle Google Map field type
+        if (isset($field_definitions[$field_name]) &&
+            $field_definitions[$field_name]->getType() === 'vactory_google_map_field') {
+          // Check if lat and lng are valid numbers (including 0 and negative values)
+          $has_lat = isset($field_value['lat']) && (is_numeric($field_value['lat']) || $field_value['lat'] === 0);
+          $has_lng = isset($field_value['lng']) && (is_numeric($field_value['lng']) || $field_value['lng'] === 0);
+
+          if (is_array($field_value) && $has_lat && $has_lng) {
+            // Note: Frontend uses 'lng' but database column is 'lon'
+            $map_data = [
+              'lat' => (float) $field_value['lat'],
+              'lon' => (float) $field_value['lng'],  // Convert lng to lon for database
+              'zoom' => (int) ($field_value['zoom'] ?? 10),
+              'type' => $field_value['type'] ?? 'roadmap',
+            ];
+            $node->set($field_name, $map_data);
+          } else {
+            // Clear the field if coordinates are empty
+            $node->set($field_name, NULL);
+          }
           continue;
         }
 
@@ -586,7 +724,24 @@ class DashboardNodeController extends ControllerBase {
         }
 
         if (is_array($field_value) && isset($field_value['url'], $field_value['id'])) {
-          $node->set($field_name, $field_value['id']);
+          // Check if this is an image field with alt/title
+          if (isset($field_value['alt']) || isset($field_value['title'])) {
+            // Image field type - save with alt and title
+            $image_data = [
+              'target_id' => $field_value['id'],
+            ];
+            if (isset($field_value['alt'])) {
+              $image_data['alt'] = $field_value['alt'];
+            }
+            if (isset($field_value['title'])) {
+              $image_data['title'] = $field_value['title'];
+            }
+            $node->set($field_name, $image_data);
+          }
+          else {
+            // Media entity field - just save the ID
+            $node->set($field_name, $field_value['id']);
+          }
           continue;
         }
 
@@ -609,6 +764,19 @@ class DashboardNodeController extends ControllerBase {
           }
         }
 
+        // Handle autocomplete fields (entity references) - array of {id, label}
+        if (is_array($field_value) && !empty($field_value)) {
+          $first_item = reset($field_value);
+          if (is_array($first_item) && isset($first_item['id']) && isset($first_item['label'])) {
+            // Extract just the IDs
+            $ids = array_map(function($item) {
+              return $item['id'];
+            }, $field_value);
+            $node->set($field_name, $ids);
+            continue;
+          }
+        }
+
         if ($field_value) {
           $node->set($field_name, $field_value);
         }
@@ -617,6 +785,8 @@ class DashboardNodeController extends ControllerBase {
       if ($node->hasField('field_vactory_paragraphs')) {
         $this->nodeService->saveParagraphsInNode($node, $blocks, $language);
       }
+
+      $this->nodeService->saveBannerInNode($node, $banner);
 
       // Save SEO fields if they exist.
       if (!empty($seo) && $node->hasField('field_vactory_meta_tags')) {
@@ -676,6 +846,8 @@ class DashboardNodeController extends ControllerBase {
 
       $client_changed = $content['changed'] ?? NULL;
 
+      $banner = $content['banner'] ?? NULL;
+
       // Load node by nid.
       if ($nid) {
         $vid = $this->entityTypeManager
@@ -710,8 +882,34 @@ class DashboardNodeController extends ControllerBase {
 
       $node->getTranslation($language)->set('status', $status);
 
+      // Get field definitions for type checking
+      $field_definitions = $node->getFieldDefinitions();
+
       foreach ($content['fields'] as $field_name => $field_value) {
         if (!$node->hasField($field_name)) {
+          continue;
+        }
+
+        // Handle Google Map field type
+        if (isset($field_definitions[$field_name]) &&
+            $field_definitions[$field_name]->getType() === 'vactory_google_map_field') {
+          // Check if lat and lng are valid numbers (including 0 and negative values)
+          $has_lat = isset($field_value['lat']) && (is_numeric($field_value['lat']) || $field_value['lat'] === 0);
+          $has_lng = isset($field_value['lng']) && (is_numeric($field_value['lng']) || $field_value['lng'] === 0);
+
+          if (is_array($field_value) && $has_lat && $has_lng) {
+            // Note: Frontend uses 'lng' but database column is 'lon'
+            $map_data = [
+              'lat' => (float) $field_value['lat'],
+              'lon' => (float) $field_value['lng'],  // Convert lng to lon for database
+              'zoom' => (int) ($field_value['zoom'] ?? 10),
+              'type' => $field_value['type'] ?? 'roadmap',
+            ];
+            $node->getTranslation($language)->set($field_name, $map_data);
+          } else {
+            // Clear the field if coordinates are empty
+            $node->getTranslation($language)->set($field_name, NULL);
+          }
           continue;
         }
 
@@ -722,8 +920,26 @@ class DashboardNodeController extends ControllerBase {
         }
 
         if (is_array($field_value) && isset($field_value['url'], $field_value['id'])) {
-          $node->getTranslation($language)
-            ->set($field_name, $field_value['id']);
+          // Check if this is an image field with alt/title
+          if (isset($field_value['alt']) || isset($field_value['title'])) {
+            // Image field type - save with alt and title
+            $image_data = [
+              'target_id' => $field_value['id'],
+            ];
+            if (isset($field_value['alt'])) {
+              $image_data['alt'] = $field_value['alt'];
+            }
+            if (isset($field_value['title'])) {
+              $image_data['title'] = $field_value['title'];
+            }
+            $node->getTranslation($language)
+              ->set($field_name, $image_data);
+          }
+          else {
+            // Media entity field - just save the ID
+            $node->getTranslation($language)
+              ->set($field_name, $field_value['id']);
+          }
           continue;
         }
 
@@ -746,11 +962,26 @@ class DashboardNodeController extends ControllerBase {
           }
         }
 
+        // Handle autocomplete fields (entity references) - array of {id, label}
+        if (is_array($field_value) && !empty($field_value)) {
+          $first_item = reset($field_value);
+          if (is_array($first_item) && isset($first_item['id']) && isset($first_item['label'])) {
+            // Extract just the IDs
+            $ids = array_map(function($item) {
+              return $item['id'];
+            }, $field_value);
+            $node->getTranslation($language)->set($field_name, $ids);
+            continue;
+          }
+        }
+
         if ($field_value || is_array($field_value) || is_bool($field_value)) {
           $node->getTranslation($language)->set($field_name, $field_value);
         }
 
       }
+
+      $this->nodeService->saveBannerInNode($node->getTranslation($language), $banner);
 
       // Update SEO fields if they exist
       if (!empty($seo) && $node->hasField('field_vactory_meta_tags')) {
