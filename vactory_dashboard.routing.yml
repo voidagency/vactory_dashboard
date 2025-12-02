@@ -212,6 +212,24 @@ vactory_dashboard.media.data:
   requirements:
     _permission: "access media overview"
 
+vactory_dashboard.files.data:
+  path: "/api/vactory-dashboard/files"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::getFilesData'
+    _title: "Get Files Data"
+  methods: [GET]
+  requirements:
+    _permission: "access content"
+
+vactory_dashboard.files.upload:
+  path: "/api/vactory-dashboard/files/upload"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardMediaController::uploadFile'
+    _title: "Upload File"
+  methods: [POST]
+  requirements:
+    _permission: "access content"
+
 vactory_dashboard.media.detail:
   path: "/admin/dashboard/media/{media_id}"
   defaults:

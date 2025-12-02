@@ -431,6 +431,162 @@ class DashboardMediaController extends ControllerBase {
   }
 
   /**
+   * Get files data (for image field type that stores files directly).
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request object.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   JSON response with files data.
+   */
+  public function getFilesData(Request $request) {
+    // Check if user has permission to view files.
+    if (!$this->currentUser->hasPermission('access content')) {
+      return new JsonResponse(['error' => 'Access denied'], 403);
+    }
+
+    $page = $request->query->get('page', 1);
+    $limit = $request->query->get('limit', 12);
+    $search = $request->query->get('search', '');
+    $type = $request->query->get('type', 'image'); // Default to image
+
+    // Define valid file types and their MIME patterns
+    $type_mime_patterns = [
+      'image' => ['image/%'],
+      'document' => ['application/pdf', 'application/msword', 'application/vnd.%', 'text/%'],
+      'all' => ['%'],
+    ];
+
+    $mime_patterns = $type_mime_patterns[$type] ?? $type_mime_patterns['image'];
+
+    // Create query for counting
+    $count_query = $this->database->select('file_managed', 'f');
+    $count_query->addExpression('COUNT(f.fid)', 'count');
+    $count_query->condition('f.status', 1); // Only permanent files
+
+    // Create main query
+    $query = $this->database->select('file_managed', 'f');
+    $query->fields('f', ['fid', 'filename', 'uri', 'filemime', 'filesize', 'created', 'changed']);
+    $query->condition('f.status', 1); // Only permanent files
+    $query->orderBy('f.created', 'DESC');
+
+    // Apply MIME type filter
+    $or_group = $query->orConditionGroup();
+    $count_or_group = $count_query->orConditionGroup();
+    foreach ($mime_patterns as $pattern) {
+      $or_group->condition('f.filemime', $pattern, 'LIKE');
+      $count_or_group->condition('f.filemime', $pattern, 'LIKE');
+    }
+    $query->condition($or_group);
+    $count_query->condition($count_or_group);
+
+    // Apply search filter
+    if (!empty($search)) {
+      $query->condition('f.filename', '%' . $this->database->escapeLike($search) . '%', 'LIKE');
+      $count_query->condition('f.filename', '%' . $this->database->escapeLike($search) . '%', 'LIKE');
+    }
+
+    // Get total count
+    $total = $count_query->execute()->fetchField();
+
+    // Add pagination
+    $query->range(($page - 1) * $limit, $limit);
+
+    // Execute query
+    $results = $query->execute()->fetchAll();
+
+    $data = [];
+    foreach ($results as $row) {
+      $file = File::load($row->fid);
+      if ($file) {
+        $url = $this->fileUrlGenerator->generateAbsoluteString($file->getFileUri());
+        $data[] = [
+          'id' => $file->id(),
+          'name' => $file->getFilename(),
+          'url' => $url,
+          'mime' => $file->getMimeType(),
+          'size' => $file->getSize(),
+          'created' => $file->getCreatedTime(),
+        ];
+      }
+    }
+
+    return new JsonResponse([
+      'data' => $data,
+      'total' => (int) $total,
+      'page' => (int) $page,
+      'limit' => (int) $limit,
+      'pages' => ceil($total / $limit),
+      'filters' => [
+        'search' => $search,
+        'type' => $type,
+      ],
+    ]);
+  }
+
+  /**
+   * Upload a file directly (for image field type).
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request object.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   JSON response with uploaded file data.
+   */
+  public function uploadFile(Request $request) {
+    // Check if user has permission to create content.
+    if (!$this->currentUser->hasPermission('access content')) {
+      return new JsonResponse(['error' => 'Access denied'], 403);
+    }
+
+    $uploaded_file = $request->files->get('file');
+    if (!$uploaded_file instanceof UploadedFile) {
+      return new JsonResponse(['error' => 'No file uploaded'], 400);
+    }
+
+    // Validate file type (only images for now)
+    $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+    $extension = strtolower($uploaded_file->getClientOriginalExtension());
+    if (!in_array($extension, $allowed_extensions)) {
+      return new JsonResponse(['error' => 'Invalid file type. Allowed: ' . implode(', ', $allowed_extensions)], 400);
+    }
+
+    // Generate unique filename
+    $filename = $uploaded_file->getClientOriginalName();
+    $destination = 'public://images/' . date('Y-m') . '/' . $filename;
+
+    // Ensure directory exists
+    $directory = dirname($destination);
+    $this->fileSystem->prepareDirectory($directory, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
+
+    // Save file
+    $file_content = file_get_contents($uploaded_file->getPathname());
+    $file = $this->fileSystem->saveData($file_content, $destination, FileSystemInterface::EXISTS_RENAME);
+
+    if (!$file) {
+      return new JsonResponse(['error' => 'Failed to save file'], 500);
+    }
+
+    // Create file entity
+    $file_entity = File::create([
+      'uri' => $file,
+      'filename' => basename($file),
+      'status' => 1, // Permanent
+    ]);
+    $file_entity->save();
+
+    $url = $this->fileUrlGenerator->generateAbsoluteString($file_entity->getFileUri());
+
+    return new JsonResponse([
+      'id' => $file_entity->id(),
+      'name' => $file_entity->getFilename(),
+      'url' => $url,
+      'mime' => $file_entity->getMimeType(),
+      'size' => $file_entity->getSize(),
+    ]);
+  }
+
+  /**
    * Get the thumbnail URL for a remote video media entity.
    *
    * @param \Drupal\media\Entity\Media $media
