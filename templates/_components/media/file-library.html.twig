@@ -1,0 +1,165 @@
+{# File Library Modal Component - For image field type (not media) #}
+<div
+    x-show="showFileLibrary"
+    @click.outside="showFileLibrary = false"
+    class="fixed inset-y-0 right-0 w-96 bg-white shadow-xl z-50 flex flex-col"
+    x-data="{
+        isUploading: false,
+        async handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                this.isUploading = true;
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/api/vactory-dashboard/files/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '{{ 'Upload failed'|t }}');
+                }
+
+                // Refresh file list
+                await loadFiles(1);
+                
+                // Show success notification
+                showNotification('success', '{{ 'Image uploaded successfully'|t }}');
+            } catch (error) {
+                console.error('Upload error:', error);
+                showNotification('error', error.message);
+            } finally {
+                this.isUploading = false;
+                // Reset file input
+                event.target.value = '';
+            }
+        }
+    }">
+
+    {# Loading Overlay #}
+    <div
+        x-show="isUploading"
+        class="absolute inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center"
+        style="backdrop-filter: blur(2px);">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mb-3"></div>
+            <p class="text-sm text-gray-600">{{ "Uploading..."|t }}</p>
+        </div>
+    </div>
+
+    {# Hidden file input for upload #}
+    <input
+        type="file"
+        id="file-library-input"
+        class="hidden"
+        @change="handleFileUpload($event)"
+        accept="image/*"
+    >
+
+    {# Header #}
+    <div class="p-4 border-b flex justify-between items-center">
+        <h3 class="font-medium">{{ 'Image Library'|t }}</h3>
+        <button
+            @click="closeFileLibrary()"
+            class="text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="h-5 w-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+
+    {# Search #}
+    <div class="p-4 border-b">
+        <input
+            type="search"
+            x-model="fileFilters.search"
+            @input.debounce.300ms="loadFiles()"
+            placeholder="{{ 'Search images...'|t }}"
+            class="w-full p-2 border border-gray-300 rounded-md">
+    </div>
+
+    {# File Content #}
+    <div class="flex-1 overflow-y-auto">
+        {# Loading State #}
+        <template x-if="fileLoading">
+            <div class="flex justify-center items-center py-12">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+            </div>
+        </template>
+
+        {# Error State #}
+        <template x-if="fileError">
+            <div class="p-4">
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <span x-text="fileError"></span>
+                </div>
+            </div>
+        </template>
+
+        {# Empty State #}
+        <template x-if="!fileLoading && !fileError && fileItems.length === 0">
+            <div class="text-center py-12">
+                <h3 class="mt-2 text-sm font-medium text-gray-900">{{ "No images found"|t }}</h3>
+                <p class="mt-1 text-sm text-gray-500">{{ "Upload an image to get started"|t }}</p>
+            </div>
+        </template>
+
+        {# File Grid #}
+        <template x-if="!fileLoading && !fileError && fileItems.length > 0">
+            <div class="p-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <template x-for="file in fileItems" :key="file.id">
+                        <button
+                            @click="selectFile(file)"
+                            class="border border-gray-200 rounded-md p-2 hover:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            :class="{'ring-2 ring-primary-500': selectedFile?.id === file.id}">
+                            <img
+                                :src="file.url"
+                                :alt="file.name"
+                                class="w-full h-32 object-cover rounded">
+                            <p class="mt-1 text-xs text-gray-600 truncate" x-text="file.name"></p>
+                        </button>
+                    </template>
+                </div>
+
+                {# Pagination #}
+                <div class="mt-6 flex items-center justify-between">
+                    <div class="flex flex-1 justify-between">
+                        <button
+                            @click="loadFiles(currentFilePage - 1)"
+                            :disabled="currentFilePage === 1"
+                            class="relative inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            :class="{'opacity-50 cursor-not-allowed': currentFilePage === 1}">
+                            {{ 'Previous'|t }}
+                        </button>
+                        <span class="text-sm text-gray-500" x-text="'Page ' + currentFilePage + ' / ' + totalFilePages"></span>
+                        <button
+                            @click="loadFiles(currentFilePage + 1)"
+                            :disabled="currentFilePage === totalFilePages"
+                            class="relative inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            :class="{'opacity-50 cursor-not-allowed': currentFilePage === totalFilePages}">
+                            {{ 'Next'|t }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    {# Footer #}
+    <div class="p-4 border-t">
+        <button
+            type="button"
+            @click="document.getElementById('file-library-input').click()"
+            class="w-full px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            {{ 'Upload new image'|t }}
+        </button>
+    </div>
+</div>
+

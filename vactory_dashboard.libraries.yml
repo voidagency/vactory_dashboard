@@ -33,3 +33,6 @@ alpine-icon-picker:
     assets/js/icon-picker.js: {}
   dependencies:
     - vactory_admin/alpinejs
+google-maps-api:
+  dependencies:
+    - vactory_google_map_field/google-map-apis

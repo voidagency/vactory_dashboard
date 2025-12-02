@@ -180,13 +180,82 @@ class NodeService {
         continue;
       }
 
+      if ($field['type'] === 'vactory_quiz_question' || $field['name'] === 'field_quiz_questions') {
+        // Récupérer les valeurs Quiz Questions
+        $quiz_values = $entity->get($field['name'])->getValue();
+
+        $formatted_quiz = [];
+        foreach ($quiz_values as $item) {
+          if (!empty($item['question_text_value'])) {
+            $quiz_item = [
+              'question_number' => $item['question_number'] ?? '',
+              'question_text_value' => $item['question_text_value'] ?? '',
+              'question_text_format' => $item['question_text_format'] ?? 'basic_html',
+              'question_type' => $item['question_type'] ?? 'multiple',
+              'question_answers' => $item['question_answers'] ?? '[]',
+              'question_reward' => $item['question_reward'] ?? 1,
+              'question_penalty' => $item['question_penalty'] ?? 0,
+            ];
+
+            $formatted_quiz[] = $quiz_item;
+          }
+        }
+
+        $node_data[$field['name']] = $formatted_quiz;
+        continue;
+      }
+
+      // Handle Google Map field type
+      if ($field['type'] === 'vactory_google_map_field') {
+        $map_value = $entity->get($field['name'])->getValue();
+        if (!empty($map_value)) {
+          $map_item = reset($map_value);
+          $node_data[$field['name']] = [
+            'lat' => $map_item['lat'] ?? '',
+            'lng' => $map_item['lon'] ?? '', // Database uses 'lon', we use 'lng' in frontend
+            'zoom' => $map_item['zoom'] ?? 10,
+            'type' => $map_item['type'] ?? 'roadmap',
+            'address' => '',
+          ];
+        }
+        else {
+          $node_data[$field['name']] = [
+            'lat' => '',
+            'lng' => '',
+            'zoom' => 10,
+            'type' => 'roadmap',
+            'address' => '',
+          ];
+        }
+        continue;
+      }
+
       if (in_array($field['type'], [
-        'image',
         'remote_video',
         'file',
         'private_file',
       ])) {
         $node_data[$field['name']] = $this->prepareMediaData($entity, $field['name'], $field['name'], $field['type']);
+      }
+      elseif ($field['type'] === 'image') {
+        // Handle image field type (stores files directly with alt/title)
+        $image_value = $entity->get($field['name'])->getValue();
+        if (!empty($image_value)) {
+          $image_item = reset($image_value);
+          if (!empty($image_item['target_id'])) {
+            $file = $this->entityTypeManager->getStorage('file')->load($image_item['target_id']);
+            if ($file instanceof FileInterface) {
+              $node_data[$field['name']] = [
+                'id' => $image_item['target_id'],
+                'url' => $this->fileUrlGenerator->generateAbsoluteString($file->getFileUri()),
+                'alt' => $image_item['alt'] ?? '',
+                'title' => $image_item['title'] ?? '',
+                'width' => $image_item['width'] ?? NULL,
+                'height' => $image_item['height'] ?? NULL,
+              ];
+            }
+          }
+        }
       }
       elseif ($field['type'] === "field_cross_content") {
         $node_data[$field['name']] = array_values(explode(" ", $entity->get($field['name'])->value ?? "") ?? []);
@@ -1013,7 +1082,7 @@ class NodeService {
       switch ($field_type) {
         case 'entity_reference':
           $field_info['target_type'] = $field_settings['target_type'];
-          if ($field_settings['target_type'] === 'taxonomy_term' || $field_settings['target_type'] === 'user') {
+          if ($field_settings['target_type'] === 'taxonomy_term' || $field_settings['target_type'] === 'user' || $field_settings['target_type'] === 'node') {
             $component = $form_display->getComponent($field_name);
             if ($component) {
               $widget_type = $component['type'];
@@ -1066,6 +1135,31 @@ class NodeService {
         case 'daterange':
           $field_info['type'] = 'daterange';
           $field_info['multiple'] = FALSE;
+          break;
+
+        case 'vactory_quiz_question':
+          $field_info['type'] = 'vactory_quiz_question';
+          $field_info['multiple'] = $cardinality == -1;
+          break;
+
+        case 'integer':
+          $field_info['type'] = 'integer';
+          $field_info['multiple'] = FALSE;
+          $field_info['min'] = $field_settings['min'] ?? NULL;
+          $field_info['max'] = $field_settings['max'] ?? NULL;
+          break;
+
+        case 'image':
+          $field_info['type'] = 'image';
+          $field_info['multiple'] = $cardinality == -1;
+          $field_info['max_filesize'] = $field_settings['max_filesize'] ?? '';
+          $field_info['max_resolution'] = $field_settings['max_resolution'] ?? '';
+          $field_info['min_resolution'] = $field_settings['min_resolution'] ?? '';
+          $field_info['file_extensions'] = $field_settings['file_extensions'] ?? 'png gif jpg jpeg';
+          $field_info['alt_field'] = $field_settings['alt_field'] ?? TRUE;
+          $field_info['alt_field_required'] = $field_settings['alt_field_required'] ?? TRUE;
+          $field_info['title_field'] = $field_settings['title_field'] ?? FALSE;
+          $field_info['title_field_required'] = $field_settings['title_field_required'] ?? FALSE;
           break;
       }
 
@@ -1140,14 +1234,22 @@ class NodeService {
     // Handle target bundles (e.g. specific vocabularies or content types)
     if (!empty($handler_settings['target_bundles'])) {
       $bundle_keys = array_keys($handler_settings['target_bundles']);
+
+      // Get the entity type definition
+      $entity_type_definition = $this->entityTypeManager->getDefinition($target_type);
+      $bundle_key = $entity_type_definition->getKey('bundle');
+
       if ($target_type === 'taxonomy_term') {
+        // Taxonomy terms use 'vid' as the bundle key
         $query->condition('vid', $bundle_keys, 'IN');
       }
-      elseif ($this->entityTypeManager
-        ->getDefinition($target_type)
-        ->getKey('bundle')
-      ) {
-        $query->condition('bundle', $bundle_keys, 'IN');
+      elseif ($target_type === 'node') {
+        // Nodes use 'type' as the bundle key
+        $query->condition('type', $bundle_keys, 'IN');
+      }
+      elseif ($bundle_key) {
+        // Other entity types with a bundle key
+        $query->condition($bundle_key, $bundle_keys, 'IN');
       }
     }
 

@@ -130,12 +130,17 @@
     <template x-if="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
         {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
     </template>
+    {# File Library for image field type #}
+    {% include "@vactory_dashboard/_components/media/file-library.html.twig" %}
 
     {# SEO Tab #}
     {% include "@vactory_dashboard/node/_components/seo-form.html.twig" %}
 
     {# Include the blocks modal #}
     {% include "@vactory_dashboard/_components/paragraph/blocks-modal.html.twig" %}
+
+    {# Include the quiz answers modal #}
+    {% include "@vactory_dashboard/_components/fields/quiz-answers-modal.html.twig" %}
 
     {# Dynamic Field Modal - Single modal for all WYSIWYG dynamic fields #}
     <div x-show="showDynamicFieldModal"

@@ -1,0 +1,337 @@
+{# Quiz Answers Modal #}
+<div
+  x-show="showQuizAnswersModal"
+  x-data="{
+        validationMessage: '',
+        addNewAnswer() {
+            const hasEmptyAnswer = this.currentQuizAnswers.some(ans => !ans.answer || ans.answer.trim() === '');
+            
+            if (hasEmptyAnswer) {
+                this.validationMessage = 'Please fill in the response for the current answer before adding a new one.';
+                setTimeout(() => { this.validationMessage = ''; }, 5000);
+                return;
+            }
+            
+            this.validationMessage = '';
+            const alphabets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+            const newAnswer = {
+                answer_id: alphabets[this.currentQuizAnswers.length] || 'Z',
+                answer: '',
+                is_correct: '0'
+            };
+            this.currentQuizAnswers.push(newAnswer);
+        },
+        saveAnswers() {
+            if (this.currentQuizAnswers.length === 0) {
+                this.validationMessage = 'Please add at least one answer before saving.';
+                setTimeout(() => { this.validationMessage = ''; }, 5000);
+                return;
+            }
+            
+            const hasEmptyAnswers = this.currentQuizAnswers.some(ans => !ans.answer || ans.answer.trim() === '');
+            if (hasEmptyAnswers) {
+                this.validationMessage = 'Please fill in all answer responses before saving.';
+                setTimeout(() => { this.validationMessage = ''; }, 5000);
+                return;
+            }
+            
+            const hasCorrectAnswer = this.currentQuizAnswers.some(ans => ans.is_correct === '1' || ans.is_correct === 1);
+            if (!hasCorrectAnswer) {
+                this.validationMessage = 'Please mark at least one answer as correct before saving.';
+                setTimeout(() => { this.validationMessage = ''; }, 5000);
+                return;
+            }
+            
+            this.validationMessage = '';
+            if (this.currentQuizQuestionIndex !== null) {
+                const quizField = Object.keys(this.formData.fields).find(key => 
+                    this.formData.fields[key] && 
+                    Array.isArray(this.formData.fields[key]) && 
+                    this.formData.fields[key][this.currentQuizQuestionIndex] &&
+                    this.formData.fields[key][this.currentQuizQuestionIndex].hasOwnProperty('question_text_value')
+                );
+                
+                if (quizField) {
+                    const question = this.formData.fields[quizField][this.currentQuizQuestionIndex];
+                    question.parsed_answers = [...this.currentQuizAnswers];
+                    question.question_answers = JSON.stringify(this.currentQuizAnswers);
+                    question.question_number = (this.currentQuizQuestionIndex + 1).toString();
+                }
+            }
+            this.showQuizAnswersModal = false;
+        }
+    }"
+  x-init="validationMessage = ''"
+  class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+  x-transition:enter="transition ease-out duration-300"
+  x-transition:enter-start="opacity-0"
+  x-transition:enter-end="opacity-100"
+  x-transition:leave="transition ease-in duration-200"
+  x-transition:leave-start="opacity-100"
+  x-transition:leave-end="opacity-0"
+  style="display: none"
+>
+  <div
+    class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col"
+    x-transition:enter="transition ease-out duration-300"
+    x-transition:enter-start="opacity-0 transform scale-95"
+    x-transition:enter-end="opacity-100 transform scale-100"
+    x-transition:leave="transition ease-in duration-200"
+    x-transition:leave-start="opacity-100 transform scale-100"
+    x-transition:leave-end="opacity-0 transform scale-95"
+    @click.away="showQuizAnswersModal = false"
+  >
+    {# Modal Header #}
+    <div
+      class="flex items-center justify-between p-6 border-b border-slate-200"
+    >
+      <h2
+        class="text-xl font-semibold text-slate-900"
+        x-text="'Question ' + (currentQuizQuestionIndex + 1) + ' answers'"
+      ></h2>
+      <button
+        @click="showQuizAnswersModal = false; validationMessage = ''"
+        class="text-slate-400 hover:text-slate-600 transition-colors"
+      >
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+    </div>
+
+    {# Validation Message #}
+    <div
+      x-show="validationMessage"
+      x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="opacity-0 transform -translate-y-2"
+      x-transition:enter-end="opacity-100 transform translate-y-0"
+      x-transition:leave="transition ease-in duration-200"
+      x-transition:leave-start="opacity-100"
+      x-transition:leave-end="opacity-0"
+      class="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3"
+    >
+      <svg
+        class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      <div class="flex-1">
+        <p
+          class="text-sm font-medium text-red-800"
+          x-text="validationMessage"
+        ></p>
+      </div>
+      <button
+        @click="validationMessage = ''"
+        class="text-red-400 hover:text-red-600"
+      >
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fill-rule="evenodd"
+            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+            clip-rule="evenodd"
+          />
+        </svg>
+      </button>
+    </div>
+
+    {# Modal Body - Scrollable #}
+    <div class="flex-1 overflow-y-auto p-6">
+      {# Add Answer Button #}
+      <div class="mb-6">
+        <button
+          type="button"
+          @click="addNewAnswer()"
+          class="inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors bg-primary-600 hover:bg-primary-700"
+        >
+          <svg
+            class="w-5 h-5 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Add answer
+        </button>
+      </div>
+
+      {# Answers List - Vertical with Cards #}
+      <div class="space-y-4">
+        <template x-for="(answer, index) in currentQuizAnswers" :key="index">
+          <div
+            class="bg-slate-50 border border-slate-200 rounded-lg p-6 relative"
+          >
+            {# Answer Header #}
+            <div class="flex items-center justify-between mb-4">
+              <h3
+                class="text-base font-semibold text-slate-900"
+                x-text="'Answer ' + (index + 1)"
+              ></h3>
+              {# Remove Button #}
+              <button
+                type="button"
+                x-show="currentQuizAnswers.length > 1"
+                @click="
+                                      if (currentQuizAnswers.length > 1) {
+                                        currentQuizAnswers.splice(index, 1);
+                                        const alphabets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+                                        currentQuizAnswers.forEach((answer, idx) => {
+                                          answer.answer_id = alphabets[idx] || 'Z';
+                                        });
+                                        if (activeQuizAnswerTab >= currentQuizAnswers.length) {
+                                          activeQuizAnswerTab = currentQuizAnswers.length - 1;
+                                        }
+                                      }
+                                    "
+                class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+              >
+                <svg
+                  class="w-4 h-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                Remove answer
+              </button>
+            </div>
+
+            <div class="space-y-4">
+              {# Answer ID #}
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1"
+                  >Answer ID *</label
+                >
+                <input
+                  type="text"
+                  :value="['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'][index] || 'Z'"
+                  disabled
+                  class="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-slate-100 text-slate-500 cursor-not-allowed"
+                />
+              </div>
+
+              {# Answer Text #}
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1"
+                  >Réponse *</label
+                >
+                <input
+                  type="text"
+                  x-model="currentQuizAnswers[index].answer"
+                  placeholder="Enter answer text"
+                  class="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                  required
+                />
+              </div>
+
+              {# Correct Answer #}
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2"
+                  >Correct *</label
+                >
+                <div class="space-y-2">
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      :name="'correct_answer_' + currentQuizQuestionIndex + '_' + index"
+                      value="0"
+                      x-model="currentQuizAnswers[index].is_correct"
+                      class="w-4 h-4 text-primary-600 border-slate-300 focus:ring-primary-500"
+                    />
+                    <span class="ml-2 text-sm text-slate-700"
+                      >Wrong answer</span
+                    >
+                  </label>
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      :name="'correct_answer_' + currentQuizQuestionIndex + '_' + index"
+                      value="1"
+                      x-model="currentQuizAnswers[index].is_correct"
+                      class="w-4 h-4 text-primary-600 border-slate-300 focus:ring-primary-500"
+                    />
+                    <span class="ml-2 text-sm text-slate-700"
+                      >Correct answer</span
+                    >
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        {# No answers message #}
+        <template x-if="currentQuizAnswers.length === 0">
+          <div
+            class="text-center py-12 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300"
+          >
+            <svg
+              class="w-12 h-12 mx-auto text-slate-400 mb-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <p class="text-sm text-slate-500">
+              No answers added yet. Click "Add answer" to get started.
+            </p>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    {# Modal Footer #}
+    <div
+      class="flex justify-end items-center gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50"
+    >
+      <button
+        type="button"
+        @click="showQuizAnswersModal = false; validationMessage = ''"
+        class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        @click="saveAnswers()"
+        class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+      >
+        Save answers
+      </button>
+    </div>
+  </div>
+</div>
