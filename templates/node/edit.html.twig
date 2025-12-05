@@ -60,6 +60,11 @@
           showParagraphViewForm: false,
           showParagraphMultipleForm: false,
           isParagraphMultiple: false,
+          showQuizAnswersModal: false,
+          currentQuizQuestionIndex: null,
+          currentQuizAnswers: [],
+          activeQuizAnswerTab: 0,
+          googleMapFields: {},
           selectedMultipleParagraphTemplate: null,
           currentMultipleParagraphTemplateIndex: null,
           currentParagraphMultipleItem: 0,
@@ -1650,6 +1655,66 @@
                   return;
                 }
 
+                if (field.type === 'vactory_quiz_question') {
+                  if (Array.isArray(field.value) && field.value.length) {
+                    // Process existing quiz questions and parse answers
+                    this.formData.fields[fieldKey] = field.value.map((item, index) => {
+                      let parsedAnswers = [];
+                      try {
+                        parsedAnswers = JSON.parse(item.question_answers || '[]');
+                      } catch (e) {
+                        parsedAnswers = [];
+                      }
+
+                      return {
+                        question_number: (index + 1).toString(),
+                        question_text_value: item.question_text_value || '',
+                        question_text_format: item.question_text_format || 'basic_html',
+                        question_type: item.question_type || 'multiple',
+                        question_answers: item.question_answers || '[]',
+                        question_reward: item.question_reward || 1,
+                        question_penalty: item.question_penalty || 0,
+                        parsed_answers: parsedAnswers
+                      };
+                    });
+                  } else if (Array.isArray(node[fieldKey]) && node[fieldKey].length) {
+                    // Process node data
+                    this.formData.fields[fieldKey] = node[fieldKey].map((item, index) => {
+                      let parsedAnswers = [];
+                      try {
+                        parsedAnswers = JSON.parse(item.question_answers || '[]');
+                      } catch (e) {
+                        parsedAnswers = [];
+                      }
+                      
+                      return {
+                        question_number: (index + 1).toString(),
+                        question_text_value: item.question_text_value || '',
+                        question_text_format: item.question_text_format || 'basic_html',
+                        question_type: item.question_type || 'multiple',
+                        question_answers: item.question_answers || '[]',
+                        question_reward: item.question_reward || 1,
+                        question_penalty: item.question_penalty || 0,
+                        parsed_answers: parsedAnswers
+                      };
+                    });
+                  } else {
+                    // Default empty quiz question
+                    this.formData.fields[fieldKey] = [{
+                      question_number: '1',
+                      question_text_value: '',
+                      question_text_format: 'basic_html',
+                      question_type: 'multiple',
+                      question_answers: '[]',
+                      question_reward: 1,
+                      question_penalty: 0,
+                      parsed_answers: []
+                    }];
+                  }
+
+                  return;
+                }
+
                 if (field?.textFormatField) {
                   setTimeout(() => {
                     const label = document.getElementById(`edit-${field.name.replaceAll('_', '-')}-format-help`);
@@ -2145,6 +2210,22 @@
             type: 'image',
             limit: Alpine.store('limit'),
           },
+          // File Library States (for image field type - not media)
+          showFileLibrary: false,
+          fileLoading: false,
+          fileError: null,
+          fileItems: [],
+          currentFilePage: 1,
+          totalFilePages: 1,
+          totalFiles: 0,
+          fileFilters: {
+            search: '',
+            limit: 50,
+          },
+          selectedFile: null,
+          currentFileField: null,
+          currentFileFieldPath: null,
+          isImageFieldType: false,
           // Media Library Methods and states (@todo: must be shared across multiple files)
           async loadMedia(page = 1) {
             this.mediaLoading = true;
@@ -2248,6 +2329,86 @@
           finalizeMediaSelection() {
             this.closeMediaLibrary();
             this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
+          },
+          // File Library Methods (for image field type - not media)
+          async loadFiles(page = 1) {
+            this.fileLoading = true;
+            this.fileError = null;
+            this.currentFilePage = page;
+
+            try {
+              const params = new URLSearchParams({
+                page: this.currentFilePage.toString(),
+                limit: this.fileFilters.limit.toString(),
+                search: this.fileFilters.search,
+                type: 'image',
+              });
+
+              const response = await fetch(`/api/vactory-dashboard/files?${params.toString()}`);
+
+              if (!response.ok) {
+                throw new Error('{{ "Error loading images"|t }}');
+              }
+
+              const data = await response.json();
+
+              this.fileItems = data.data.map(item => ({
+                id: item.id,
+                url: item.url,
+                name: item.name,
+                mime: item.mime,
+                size: item.size,
+              }));
+              this.totalFiles = data.total;
+              this.totalFilePages = data.pages || 1;
+            } catch (error) {
+              console.error('Error loading files:', error);
+              this.fileError = error.message;
+              this.fileItems = [];
+            } finally {
+              this.fileLoading = false;
+            }
+          },
+          openFileLibrary(fieldName, path, key = null) {
+            this.currentFileField = fieldName;
+            this.currentFileFieldPath = path;
+            this.currentFieldKey = key;
+            this.showFileLibrary = true;
+            this.isImageFieldType = true;
+            this.loadFiles(1);
+          },
+          closeFileLibrary() {
+            this.showFileLibrary = false;
+            this.selectedFile = null;
+            this.currentFileField = null;
+            this.fileItems = [];
+            this.currentFilePage = 1;
+            this.fileFilters.search = '';
+            this.isImageFieldType = false;
+          },
+          selectFile(file) {
+            if (!file || !this.currentFileField) {
+              return;
+            }
+
+            this.selectedFile = file;
+
+            const imageData = {
+              id: file.id,
+              url: file.url,
+              name: file.name,
+              path: this.currentFileFieldPath,
+              key: this.currentFieldKey,
+            };
+
+            // Update formData for image field type
+            this.formData.fields[this.currentFileField] = imageData;
+
+            this.finalizeFileSelection();
+          },
+          finalizeFileSelection() {
+            this.closeFileLibrary();
+            this.showNotification('success', '{{ "Image selected successfully"|t }}');
           },
           clearImage(fieldName, path, key, isParagraphMultiple) {
             if (isParagraphMultiple) {
