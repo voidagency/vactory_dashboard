@@ -148,24 +148,23 @@ variables: * - field: The field definition and data (Alpine.js variable). */ #}
         createMarker(lat, lng) {
             const self = this;
             
-            // Remove existing marker
+            // If marker already exists, just update its position
             if (this.modalMarker) {
-                this.modalMarker.setMap(null);
-                this.modalMarker = null;
+                this.modalMarker.setPosition({ lat, lng });
+            } else {
+                // Create new marker only if it doesn't exist
+                this.modalMarker = new google.maps.Marker({
+                    map: this.modalMap,
+                    draggable: true,
+                    position: { lat, lng },
+                });
+                
+                // Add drag listener (only needs to be added once)
+                this.modalMarker.addListener('dragend', () => {
+                    const position = self.modalMarker.getPosition();
+                    self.modalMap.panTo(position);
+                });
             }
-            
-            // Create new marker
-            this.modalMarker = new google.maps.Marker({
-                map: this.modalMap,
-                draggable: true,
-                position: { lat, lng },
-            });
-            
-            // Add drag listener
-            this.modalMarker.addListener('dragend', () => {
-                const position = self.modalMarker.getPosition();
-                self.modalMap.panTo(position);
-            });
         },
         
         searchLocation() {
