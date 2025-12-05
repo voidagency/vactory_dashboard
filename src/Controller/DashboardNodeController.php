@@ -628,7 +628,18 @@ class DashboardNodeController extends ControllerBase {
 
     $meta_tags = $this->metatagService->prepareMetatags($node);
 
-    return [
+    $paragraph_flags = $this->nodeService->isParagraphTypeEnabled($bundle);
+
+    // Check if any field is a Google Map field
+    $has_google_map_field = FALSE;
+    foreach ($fields as $field) {
+      if (isset($field['type']) && $field['type'] === 'vactory_google_map_field') {
+        $has_google_map_field = TRUE;
+        break;
+      }
+    }
+
+    $render_array = [
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'not_page',
       '#has_paragraphs_field' => $has_paragraphs_field,
@@ -644,7 +655,15 @@ class DashboardNodeController extends ControllerBase {
       '#has_translation' => FALSE,
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       '#meta_tags' => $meta_tags,
+      ...$paragraph_flags,
     ];
+
+    // Attach Google Maps API library if needed
+    if ($has_google_map_field) {
+      $render_array['#attached']['library'][] = 'vactory_dashboard/google-maps-api';
+    }
+
+    return $render_array;
   }
 
   /**

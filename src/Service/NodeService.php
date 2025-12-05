@@ -474,7 +474,7 @@ class NodeService {
     $paragraphs = [];
     $lang = \Drupal::languageManager()->getCurrentLanguage()->getId();
     if ($node->hasField($paragraph_field)) {
-      $paragraphsData = $node->get('field_vactory_paragraphs')->getValue();
+      $paragraphsData = $node->get($paragraph_field)->getValue();
       foreach ($paragraphsData as $paragraphData) {
         $paragraph = Paragraph::load($paragraphData['target_id']);
         if ($paragraph->hasTranslation($lang)) {
@@ -1177,6 +1177,8 @@ class NodeService {
           $field_info['multiple'] = FALSE;
           $field_info['min'] = $field_settings['min'] ?? NULL;
           $field_info['max'] = $field_settings['max'] ?? NULL;
+          $field_info['prefix'] = $field_settings['prefix'] ?? '';
+          $field_info['suffix'] = $field_settings['suffix'] ?? '';
           break;
 
         case 'image':
@@ -1187,7 +1189,7 @@ class NodeService {
           $field_info['min_resolution'] = $field_settings['min_resolution'] ?? '';
           $field_info['file_extensions'] = $field_settings['file_extensions'] ?? 'png gif jpg jpeg';
           $field_info['alt_field'] = $field_settings['alt_field'] ?? TRUE;
-          $field_info['alt_field_required'] = $field_settings['alt_field_required'] ?? TRUE;
+          $field_info['alt_field_required'] = ($field_settings['alt_field_required'] ?? TRUE) && $field_required;
           $field_info['title_field'] = $field_settings['title_field'] ?? FALSE;
           $field_info['title_field_required'] = $field_settings['title_field_required'] ?? FALSE;
           break;
