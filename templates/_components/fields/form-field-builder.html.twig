@@ -90,7 +90,7 @@ Usage:
     </template>
 
     {# Image Upload (for both media and image) #}
-    <template x-if="field.type === 'image'">
+    <template x-if="field.type === 'image' && field?.target_type !== 'media'">
         <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
             {% include "@vactory_dashboard/_components/media/file-selector.html.twig" with {
                 'required': 'field.required',
@@ -131,6 +131,19 @@ Usage:
                     <p class="mt-1 text-xs text-gray-500">{{ 'Title text is used in the tool tip when a user hovers their mouse over the image.'|t }}</p>
                 </div>
             </template>
+        </div>
+    </template>
+
+    {# Image Upload #}
+    <template x-if="field.type === 'image' && field?.target_type === 'media'">
+        <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
+            {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
+                'required': 'field.required',
+                'url': 'formData.fields[field.name].url',
+                'path': 'formData.fields[field.name].path',
+                'key': 'formData.fields[field.name].key',
+                'type': 'image'
+            } %}
         </div>
     </template>
 
@@ -312,4 +325,4 @@ Usage:
 
     {# Field Description #}
     <p class="mb-1 text-xs text-gray-500" x-html="field.description"></p>
-</div> 
+</div>
