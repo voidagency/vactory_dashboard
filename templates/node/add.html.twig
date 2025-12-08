@@ -270,8 +270,17 @@
 
             Object.keys(this.fields).forEach((field) => {
               if (this.fields[field]?.type === 'text_with_summary' && typeof this.formData.fields[field] === 'string') {
+                // Get the latest value of wysiwyg fields.
+                const textareaId = `edit-${field.replaceAll('_', '-')}-value`;
+                let ckInstance = null;
+                for (const [key, instance] of Drupal.CKEditor5Instances.entries()) {
+                  if (instance.sourceElement && instance.sourceElement.id === textareaId) {
+                    ckInstance = instance;
+                    break;
+                  }
+                }
                 this.formData.fields[field] = {
-                  value: this.formData.fields[field],
+                  value: ckInstance ? ckInstance.getData() : this.formData.fields[field],
                   format: 'full_html',
                 };
               }
@@ -1873,7 +1882,8 @@
                 return;
               }
 
-              if (field.type === 'image' || field.type === 'file' || field.type === 'remote_video' || field.type === 'private_file') {
+              // Handle both native image field and media entity references
+              if (field.type === 'image' || field.type === 'media_image' || field.type === 'media_file' || field.type === 'media_remote_video' || field.type === 'media_private_file') {
                 this.formData.fields[fieldKey] = {
                   id: null,
                   url: null,

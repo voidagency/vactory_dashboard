@@ -195,8 +195,8 @@
                 }, '3000');
               }
 
-              // Media fields.
-              if (field.type === 'image' || field.type === 'file' || field.type === 'remote_video' || field.type === 'private_file') {
+              // Media fields (with media_ prefix) and native image field.
+              if (field.type === 'image' || field.type === 'media_image' || field.type === 'media_file' || field.type === 'media_remote_video' || field.type === 'media_private_file') {
                 this.formData.fields[fieldKey] = existingValue || {
                   id: null,
                   url: null,

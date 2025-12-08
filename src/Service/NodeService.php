@@ -261,11 +261,14 @@ class NodeService {
       }
 
       if (in_array($field['type'], [
-        'remote_video',
-        'file',
-        'private_file',
+        'media_image',
+        'media_remote_video',
+        'media_file',
+        'media_private_file',
       ])) {
-        $node_data[$field['name']] = $this->prepareMediaData($entity, $field['name'], $field['name'], $field['type']);
+        // Remove 'media_' prefix to get the actual media bundle name
+        $media_bundle = str_replace('media_', '', $field['type']);
+        $node_data[$field['name']] = $this->prepareMediaData($entity, $field['name'], $field['name'], $media_bundle);
       }
       elseif ($field['type'] === 'image') {
         // Handle image field type (stores files directly with alt/title)
@@ -418,10 +421,11 @@ class NodeService {
     }
 
     if ($bundle == 'file' || $bundle == 'private_file') {
-      $field_name = $bundle === 'file' ? 'field_media_file' : 'field_media_file_1';
-      if ($media->hasField($field_name) && !$media->get($field_name)
+      // Use a separate variable for media file field to avoid overwriting $field_name
+      $media_file_field = $bundle === 'file' ? 'field_media_file' : 'field_media_file_1';
+      if ($media->hasField($media_file_field) && !$media->get($media_file_field)
           ->isEmpty()) {
-        $file = $media->get($field_name)->entity;
+        $file = $media->get($media_file_field)->entity;
         if ($file instanceof FileInterface) {
           $media_data = [
             'id' => $entity->get($field_name)->target_id,
@@ -474,7 +478,7 @@ class NodeService {
     $paragraphs = [];
     $lang = \Drupal::languageManager()->getCurrentLanguage()->getId();
     if ($node->hasField($paragraph_field)) {
-      $paragraphsData = $node->get($paragraph_field)->getValue();
+      $paragraphsData = $node->get('field_vactory_paragraphs')->getValue();
       foreach ($paragraphsData as $paragraphData) {
         $paragraph = Paragraph::load($paragraphData['target_id']);
         if ($paragraph->hasTranslation($lang)) {
@@ -1137,7 +1141,10 @@ class NodeService {
           }
           if ($field_settings['target_type'] === 'media') {
             $target_bundles = $field_settings['handler_settings']['target_bundles'] ?? [];
-            $field_info['type'] = reset($target_bundles);
+            $media_bundle = reset($target_bundles);
+            // Prefix media bundles with 'media_' to distinguish from native field types
+            // e.g., 'image' media bundle becomes 'media_image' to differentiate from native image field
+            $field_info['type'] = 'media_' . $media_bundle;
           }
           break;
 
@@ -1177,8 +1184,6 @@ class NodeService {
           $field_info['multiple'] = FALSE;
           $field_info['min'] = $field_settings['min'] ?? NULL;
           $field_info['max'] = $field_settings['max'] ?? NULL;
-          $field_info['prefix'] = $field_settings['prefix'] ?? '';
-          $field_info['suffix'] = $field_settings['suffix'] ?? '';
           break;
 
         case 'image':
