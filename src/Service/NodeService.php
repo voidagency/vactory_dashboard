@@ -169,6 +169,7 @@ class NodeService {
         }
         continue;
       }
+
       if ($field['type'] === 'field_wysiwyg_dynamic') {
         $this->prepareWysiwygDynamic($entity, $node_data, $field['name']);
         continue;
@@ -327,7 +328,6 @@ class NodeService {
     if ($paragraph_field && $entity->hasField($paragraph_field)) {
       $this->prepareVactoryParagraphsData($entity, $node_data, $paragraph_field);
     }
-
     return $node_data;
   }
 
@@ -418,10 +418,10 @@ class NodeService {
     }
 
     if ($bundle == 'file' || $bundle == 'private_file') {
-      $field_name = $bundle === 'file' ? 'field_media_file' : 'field_media_file_1';
-      if ($media->hasField($field_name) && !$media->get($field_name)
+      $file_field_name = $bundle === 'file' ? 'field_media_file' : 'field_media_file_1';
+      if ($media->hasField($file_field_name) && !$media->get($file_field_name)
           ->isEmpty()) {
-        $file = $media->get($field_name)->entity;
+        $file = $media->get($file_field_name)->entity;
         if ($file instanceof FileInterface) {
           $media_data = [
             'id' => $entity->get($field_name)->target_id,
