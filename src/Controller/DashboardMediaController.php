@@ -716,8 +716,9 @@ class DashboardMediaController extends ControllerBase {
     // Récupérer la taille maximale depuis les paramètres.
     $max_size_bytes = $settings['max_filesize'];
     if (empty($max_size_bytes)) {
-      $max_size_bytes = Bytes::toNumber(Environment::getUploadMaxSize());
+      $max_size_bytes = Environment::getUploadMaxSize();
     }
+    $max_size_bytes = Bytes::toNumber($max_size_bytes);
 
     return [
       '#theme' => 'vactory_dashboard_ajoute_medias_files',
@@ -803,8 +804,9 @@ class DashboardMediaController extends ControllerBase {
       // Récupérer la taille maximale depuis les paramètres.
       $max_size_bytes = $max_size_bytes = $settings['max_filesize'];
       if (empty($max_size_bytes)) {
-        $max_size_bytes = Bytes::toNumber(Environment::getUploadMaxSize());
+        $max_size_bytes = Environment::getUploadMaxSize();
       }
+      $max_size_bytes = Bytes::toNumber($max_size_bytes);
 
       //  Vérification de l’extension.
       $allowed_extensions = explode(' ', $settings['file_extensions']);
@@ -914,14 +916,14 @@ class DashboardMediaController extends ControllerBase {
         $max_size_bytes = $settings['max_filesize'];
 
         if (empty($max_size_bytes)) {
-          $max_size_bytes = Bytes::toNumber(Environment::getUploadMaxSize());
+          $max_size_bytes = Environment::getUploadMaxSize();
         }
+        $max_size_bytes = Bytes::toNumber($max_size_bytes);
 
         // Vérification de l’extension
         if (!in_array($extension, $allowed_extensions)) {
           $errors['image'] = "Extension non autorisée : .$extension";
         }
-
         // Vérification de la taille
         if ($uploaded_image->getSize() > $max_size_bytes) {
           $message = "Le fichier dépasse la taille maximale autorisée : {$max_size_bytes} .";
@@ -1277,4 +1279,3 @@ class DashboardMediaController extends ControllerBase {
   }
 
 }
-
