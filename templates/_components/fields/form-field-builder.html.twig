@@ -89,7 +89,7 @@ Usage:
         </div>
     </template>
 
-    {# Image Upload (uses File Library - not Media Library) #}
+    {# Image Upload (for both media and image) #}
     <template x-if="field.type === 'image'">
         <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
             {% include "@vactory_dashboard/_components/media/file-selector.html.twig" with {
