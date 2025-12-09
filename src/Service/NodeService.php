@@ -262,13 +262,16 @@ class NodeService {
       }
 
       if (in_array($field['type'], [
-        'remote_video',
-        'file',
-        'private_file',
-      ])) {
+          'remote_video',
+          'file',
+          'private_file',
+          'image',
+        ]) && $field['target_type'] === 'media') {
         $node_data[$field['name']] = $this->prepareMediaData($entity, $field['name'], $field['name'], $field['type']);
+        continue;
       }
-      elseif ($field['type'] === 'image') {
+
+      if ($field['type'] === 'image') {
         // Handle image field type (stores files directly with alt/title)
         $image_value = $entity->get($field['name'])->getValue();
         if (!empty($image_value)) {
@@ -324,7 +327,7 @@ class NodeService {
     }
 
     $paragraph_field = $this->getParagraphFieldName($entity->bundle());
-  
+
     if ($paragraph_field && $entity->hasField($paragraph_field)) {
       $this->prepareVactoryParagraphsData($entity, $node_data, $paragraph_field);
     }
@@ -1308,8 +1311,8 @@ class NodeService {
   public function hasParagraphsField(array &$fields): bool {
     foreach ($fields as $field_name => $field) {
       if ($field['type'] === 'entity_reference_revisions' &&
-          isset($field['settings']['target_type']) && 
-          $field['settings']['target_type'] === 'paragraph') {
+        isset($field['settings']['target_type']) &&
+        $field['settings']['target_type'] === 'paragraph') {
         return TRUE;
       }
     }
