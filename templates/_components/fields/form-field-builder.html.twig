@@ -21,8 +21,8 @@ Usage:
         {% endif %}
     </label>
 
-    {# Text Input #}
-    <template x-if="field.type === 'string'">
+    {# Text Input - Simple #}
+    <template x-if="field.type === 'string' && !field.multiple">
         <input type="text"
                :required="field.required"
                x-model="formData.fields[field.name]"
@@ -32,6 +32,65 @@ Usage:
                 {% if isEdit and language != node_default_lang %}
             :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
                 {% endif %}>
+    </template>
+
+    {# Text Input - Multiple #}
+    <template x-if="field.type === 'string' && field.multiple">
+        <div class="space-y-2" {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
+            {# Toggle weight display button #}
+            <div class="flex justify-end mb-2">
+                <button type="button"
+                        @click="showMultipleFieldWeights = !showMultipleFieldWeights"
+                        class="text-xs text-primary-600 hover:text-primary-800 flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                    </svg>
+                    <span x-text="showMultipleFieldWeights ? '{{ 'Masquer le poids des lignes'|t }}' : '{{ 'Afficher le poids des lignes'|t }}'"></span>
+                </button>
+            </div>
+
+            {# List of items #}
+            <template x-for="(item, idx) in formData.fields[field.name]" :key="idx">
+                <div class="flex items-center gap-2 bg-gray-50 p-3 rounded-md border border-gray-200">
+                    {# Drag handle #}
+                    <div x-show="showMultipleFieldWeights" class="cursor-move text-gray-400 hover:text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+                        </svg>
+                    </div>
+
+                    {# Text input #}
+                    <div class="flex-1">
+                        <input type="text"
+                               x-model="formData.fields[field.name][idx]"
+                               :maxlength="field.maxlength || 255"
+                               @invalid="$el.classList.add('border-red-500')"
+                               @input="$el.classList.remove('border-red-500')"
+                               class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+                        {# Character counter #}
+                        <div class="text-xs text-gray-500 mt-1">
+                            <span x-text="(formData.fields[field.name][idx] || '').length"></span>/<span x-text="field.maxlength || 255"></span>
+                        </div>
+                    </div>
+
+                    {# Remove button #}
+                    <button type="button"
+                            @click="formData.fields[field.name].splice(idx, 1)"
+                            :disabled="formData.fields[field.name].length <= 1"
+                            :class="formData.fields[field.name].length <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'"
+                            class="px-3 py-1.5 text-sm text-gray-700 bg-gray-100 border border-gray-300 rounded-md transition-colors">
+                        {{ 'Retirer'|t }}
+                    </button>
+                </div>
+            </template>
+
+            {# Add another element button #}
+            <button type="button"
+                    @click="formData.fields[field.name].push('')"
+                    class="inline-flex items-center justify-center gap-x-2 rounded-md transition-colors px-4 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600">
+                {{ 'Ajouter un autre élément'|t }}
+            </button>
+        </div>
     </template>
 
     {# Integer Input #}

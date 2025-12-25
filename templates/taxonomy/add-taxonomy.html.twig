@@ -100,6 +100,7 @@
             status: true,
           },
           dynamicFields: {},
+          showMultipleFieldWeights: false,
           isSaving: false,
           notification: {
             show: false,
@@ -205,9 +206,16 @@
                   path: fieldKey,
                   key: new Date().getTime(),
                 };
-              } else {
-                this.formData.fields[fieldKey] = '';
+                return;
               }
+
+              // String multiple
+              if (field.type === 'string' && field.multiple) {
+                this.formData.fields[fieldKey] = [''];
+                return;
+              }
+
+              this.formData.fields[fieldKey] = '';
             });
 
             this.fetchTemplates();
