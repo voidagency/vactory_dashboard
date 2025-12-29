@@ -261,12 +261,14 @@ class NodeService {
         continue;
       }
 
+      $media_target_type = $field['target_type'] ?? "";
+
       if (in_array($field['type'], [
           'remote_video',
           'file',
           'private_file',
           'image',
-        ]) && $field['target_type'] === 'media') {
+        ]) && $media_target_type === 'media') {
         $node_data[$field['name']] = $this->prepareMediaData($entity, $field['name'], $field['name'], $field['type']);
         continue;
       }
@@ -306,6 +308,16 @@ class NodeService {
         }
         else {
           $node_data[$field['name']] = $entity->get($field['name'])->target_id ?? NULL;
+        }
+      }
+      elseif ($field['type'] === 'string' && !empty($field['multiple'])) {
+        // Handle string fields with multiple values
+        $values = $entity->get($field['name'])->getValue() ?? [];
+        $node_data[$field['name']] = array_values(array_map(function($item) {
+          return $item['value'] ?? '';
+        }, $values));
+        if (empty($node_data[$field['name']])) {
+          $node_data[$field['name']] = [''];
         }
       }
       else {
@@ -1195,6 +1207,12 @@ class NodeService {
           $field_info['alt_field_required'] = ($field_settings['alt_field_required'] ?? TRUE) && $field_required;
           $field_info['title_field'] = $field_settings['title_field'] ?? FALSE;
           $field_info['title_field_required'] = $field_settings['title_field_required'] ?? FALSE;
+          break;
+
+        case 'string':
+          $field_info['type'] = 'string';
+          $field_info['multiple'] = $cardinality == -1 || $cardinality > 1;
+          $field_info['maxlength'] = $field_settings['max_length'] ?? 255;
           break;
       }
 

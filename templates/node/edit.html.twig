@@ -61,6 +61,7 @@
           showParagraphMultipleForm: false,
           isParagraphMultiple: false,
           showQuizAnswersModal: false,
+          showMultipleFieldWeights: false,
           currentQuizQuestionIndex: null,
           currentQuizAnswers: [],
           activeQuizAnswerTab: 0,
@@ -1777,6 +1778,18 @@
 
                 if (field.type === 'boolean') {
                   this.formData.fields[fieldKey] = node[fieldKey] === '1' ?? false;
+                  return;
+                }
+
+                // String multiple
+                if (field.type === 'string' && field.multiple) {
+                  if (Array.isArray(value) && value.length) {
+                    this.formData.fields[fieldKey] = value;
+                  } else if (typeof value === 'string' && value) {
+                    this.formData.fields[fieldKey] = [value];
+                  } else {
+                    this.formData.fields[fieldKey] = [''];
+                  }
                   return;
                 }
 

@@ -113,6 +113,7 @@
           term: config.term ? JSON.parse(config.term) : {},
           has_translation: config.has_translation,
           dynamicFields: {},
+          showMultipleFieldWeights: false,
           changed: config.changed,
           status: config.status,
           formData: {
@@ -239,6 +240,18 @@
               // Radios
               if (field.type === 'radios') {
                 this.formData.fields[fieldKey] = existingValue || '';
+                return;
+              }
+
+              // String multiple
+              if (field.type === 'string' && field.multiple) {
+                if (Array.isArray(existingValue) && existingValue.length) {
+                  this.formData.fields[fieldKey] = existingValue;
+                } else if (typeof existingValue === 'string' && existingValue) {
+                  this.formData.fields[fieldKey] = [existingValue];
+                } else {
+                  this.formData.fields[fieldKey] = [''];
+                }
                 return;
               }
 
