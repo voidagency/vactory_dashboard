@@ -261,12 +261,14 @@ class NodeService {
         continue;
       }
 
+      $media_target_type = $field['target_type'] ?? "";
+
       if (in_array($field['type'], [
           'remote_video',
           'file',
           'private_file',
           'image',
-        ]) && $field['target_type'] === 'media') {
+        ]) && $media_target_type === 'media') {
         $node_data[$field['name']] = $this->prepareMediaData($entity, $field['name'], $field['name'], $field['type']);
         continue;
       }
