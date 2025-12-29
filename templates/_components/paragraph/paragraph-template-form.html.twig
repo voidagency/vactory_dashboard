@@ -185,6 +185,14 @@
                                                             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'blockForm.extra_fields[fieldName].name', 'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'remote_video'} %}
                                                         </template>
 
+                                                        {# Date Input #}
+                                                        <template x-if="field.type === 'date'">
+                                                            <input type="date"
+                                                                   :required="field.options?.['#required'] ?? false"
+                                                                   x-model="blockForm.extra_fields[fieldName]"
+                                                                   class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                        </template>
+
                                                         {# JSON API Collection #}
                                                         <template x-if="field.type === 'json_api_collection'">
                                                             <span>[JSON API COLLECTION] You are not allowed to modify or add new items to this field</span>
@@ -377,6 +385,15 @@
                                                                                 {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'item.options?.["#required"] ?? false', 'name': 'blockForm.extra_fields[fieldName][itemName].name', 'url': 'blockForm.extra_fields[fieldName][itemName].url', 'path': 'blockForm.extra_fields[fieldName][itemName].path', 'key': 'blockForm.extra_fields[fieldName][itemName].key', 'type': 'remote_video'} %}
                                                                             </template>
 
+                                                                            {# Date Input #}
+                                                                            <template x-if="item.type === 'date'">
+                                                                                <input type="date"
+                                                                                       :required="item.options?.['#required'] ?? false"
+                                                                                       x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                       x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}"
+                                                                                       class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                                            </template>
+
                                                                             {# JSON API Collection #}
                                                                             <template
                                                                                     x-if="item.type === 'json_api_collection'">
@@ -539,6 +556,14 @@
                                                         {# File Input #}
                                                         <template x-if="field.type === 'remote_video'">
                                                             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'remote_video'} %}
+                                                        </template>
+
+                                                        {# Date Input #}
+                                                        <template x-if="field.type === 'date'">
+                                                            <input type="date"
+                                                                   :required="field.options?.['#required'] ?? false"
+                                                                   x-model="blockForm.fields[fieldName]"
+                                                                   class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                                         </template>
 
                                                         {# JSON API Collection #}
@@ -725,6 +750,14 @@
                                                                             <template
                                                                                     x-if="item.type === 'remote_video'">
                                                                                 {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'item.options?.["#required"] ?? false', 'name': 'blockForm.fields[fieldName][itemName].name', 'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'remote_video'} %}
+                                                                            </template>
+
+                                                                            {# Date Input #}
+                                                                            <template x-if="item.type === 'date'">
+                                                                                <input type="date"
+                                                                                       :required="item.options?.['#required'] ?? false"
+                                                                                       x-model="blockForm.fields[fieldName][itemName]"
+                                                                                       class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                                                             </template>
 
                                                                             {# JSON API Collection #}
@@ -994,6 +1027,14 @@
                                                                                             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'item[fieldName][itemName].name', 'url': 'item[fieldName][itemName].url', 'path': 'item[fieldName][itemName].path', 'key': 'item[fieldName][itemName].key', 'type': 'remote_video'} %}
                                                                                         </template>
 
+                                                                                        {# Date Input #}
+                                                                                        <template x-if="field.type === 'date'">
+                                                                                            <input type="date"
+                                                                                                   :required="field.options?.['#required'] ?? false"
+                                                                                                   x-model="item[fieldName][itemName]"
+                                                                                                   class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
+                                                                                        </template>
+
                                                                                         {# JSON API Collection #}
                                                                                         <template
                                                                                                 x-if="field.type === 'json_api_collection'">
@@ -1151,6 +1192,14 @@
                                                                     {# File Input #}
                                                                     <template x-if="field.type === 'remote_video'">
                                                                         {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'item[fieldName].name', 'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'remote_video'} %}
+                                                                    </template>
+
+                                                                    {# Date Input #}
+                                                                    <template x-if="field.type === 'date'">
+                                                                        <input type="date"
+                                                                               :required="field.options?.['#required'] ?? false"
+                                                                               x-model="item[fieldName]"
+                                                                               class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
                                                                     </template>
 
                                                                     {# JSON API Collection #}
