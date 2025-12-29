@@ -382,6 +382,22 @@ Usage:
                 {% endif %}/>
     </template>
 
+    {# Color Picker #}
+    <template x-if="field.type === 'colorapi_color_field'">
+        <div {% if isEdit and language != node_default_lang %}
+                :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+            {% endif %}>
+            <input type="color"
+                   :required="field.required"
+                   x-model="formData.fields[field.name]"
+                   class="block w-10 h-10 border rounded cursor-pointer">
+            <span @click="formData.fields[field.name] = ''"
+                  class="text-primary-500 text-sm cursor-pointer hover:underline">
+                Clear
+            </span>
+        </div>
+    </template>
+
     {# Field Description #}
     <p class="mb-1 text-xs text-gray-500" x-html="field.description"></p>
 </div>
