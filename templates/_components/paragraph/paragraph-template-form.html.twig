@@ -399,7 +399,7 @@
                                                                             </template>
 
                                                                             {# Color Input #}
-                                                                            <template x-if="item.type === 'color'">
+                                                                            <template x-if="item.type === 'colorapi_color_field'">
                                                                                 <div x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}">
                                                                                     <input type="color"
                                                                                            :required="item.options?.['#required'] ?? false"
@@ -792,7 +792,7 @@
                                                                             </template>
 
                                                                             {# Color Input #}
-                                                                            <template x-if="item.type === 'color'">
+                                                                            <template x-if="item.type === 'colorapi_color_field'">
                                                                                 <div>
                                                                                     <input type="color"
                                                                                            :required="item.options?.['#required'] ?? false"
