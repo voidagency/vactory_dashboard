@@ -421,7 +421,7 @@ function vactory_dashboard_toolbar() {
     ],
     '#attached' => [
       'library' => [
-        'vactory_dashboard/dashboard.icons.admin',
+        'vactory_admin/dashboard.icons.admin',
       ],
     ],
   ];
@@ -431,7 +431,7 @@ function vactory_dashboard_toolbar() {
     $items['dashboard']['#type'] = 'toolbar_item';
     $items['dashboard']['tab'] = [
       '#type' => 'inline_template',
-      '#template' => '<a class="toolbar-icon toolbar-icon-dashboard trigger toolbar-item" href="{{ path("vactory_dashboard.home") }}">Dashboard <span style="display: inline-block; background-color: #ff4444; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 5px; font-weight: bold;">BETA</span></a>',
+      '#template' => '<a class="toolbar-icon toolbar-icon-dashboard trigger toolbar-item" href="{{ path("vactory_dashboard.home") }}">Dashboard</a>',
     ];
   }
   return $items;
