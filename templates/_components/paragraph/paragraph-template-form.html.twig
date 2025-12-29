@@ -198,6 +198,13 @@
                                                                 </span>
                                                             </div>
                                                         </template>
+                                                        {# Date Input #}
+                                                        <template x-if="field.type === 'date'">
+                                                            <input type="date"
+                                                                   :required="field.options?.['#required'] ?? false"
+                                                                   x-model="blockForm.extra_fields[fieldName]"
+                                                                   class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                        </template>
 
                                                         {# JSON API Collection #}
                                                         <template x-if="field.type === 'json_api_collection'">
@@ -404,6 +411,14 @@
                                                                                     </span>
                                                                                 </div>
                                                                             </template>
+                                                                            {# Date Input #}
+                                                                            <template x-if="item.type === 'date'">
+                                                                                <input type="date"
+                                                                                       :required="item.options?.['#required'] ?? false"
+                                                                                       x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                       x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}"
+                                                                                       class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                                                            </template>
 
                                                                             {# JSON API Collection #}
                                                                             <template
@@ -581,6 +596,13 @@
                                                                     Clear
                                                                 </span>
                                                             </div>
+                                                        </template>
+                                                        {# Date Input #}
+                                                        <template x-if="field.type === 'date'">
+                                                            <input type="date"
+                                                                   :required="field.options?.['#required'] ?? false"
+                                                                   x-model="blockForm.fields[fieldName]"
+                                                                   class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                                         </template>
 
                                                         {# JSON API Collection #}
@@ -781,6 +803,13 @@
                                                                                         Clear
                                                                                     </span>
                                                                                 </div>
+                                                                            </template>
+                                                                            {# Date Input #}
+                                                                            <template x-if="item.type === 'date'">
+                                                                                <input type="date"
+                                                                                       :required="item.options?.['#required'] ?? false"
+                                                                                       x-model="blockForm.fields[fieldName][itemName]"
+                                                                                       class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
                                                                             </template>
 
                                                                             {# JSON API Collection #}
@@ -1063,6 +1092,13 @@
                                                                                                 </span>
                                                                                             </div>
                                                                                         </template>
+                                                                                        {# Date Input #}
+                                                                                        <template x-if="field.type === 'date'">
+                                                                                            <input type="date"
+                                                                                                   :required="field.options?.['#required'] ?? false"
+                                                                                                   x-model="item[fieldName][itemName]"
+                                                                                                   class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
+                                                                                        </template>
 
                                                                                         {# JSON API Collection #}
                                                                                         <template
@@ -1235,6 +1271,13 @@
                                                                                 Clear
                                                                             </span>
                                                                         </div>
+                                                                    </template>
+                                                                    {# Date Input #}
+                                                                    <template x-if="field.type === 'date'">
+                                                                        <input type="date"
+                                                                               :required="field.options?.['#required'] ?? false"
+                                                                               x-model="item[fieldName]"
+                                                                               class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150">
                                                                     </template>
 
                                                                     {# JSON API Collection #}
