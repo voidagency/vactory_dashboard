@@ -383,15 +383,16 @@ Usage:
     </template>
 
     {# Color Picker #}
-    <template x-if="field.type === 'colorapi_color_field'">
+    <template x-if="field.type === 'colorapi_color_field' || field.type === 'jquery_colorpicker'">
         <div {% if isEdit and language != node_default_lang %}
                 :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
             {% endif %}>
             <input type="color"
                    :required="field.required"
-                   x-model="formData.fields[field.name]"
+                   x-model="formData.fields[field.name].color.hexadecimal"
+                   @change="if (!formData.fields[field.name]) formData.fields[field.name] = { color: { hexadecimal: '' } }"
                    class="block w-10 h-10 border rounded cursor-pointer">
-            <span @click="formData.fields[field.name] = ''"
+            <span @click="formData.fields[field.name] = { color: { hexadecimal: '' } }"
                   class="text-primary-500 text-sm cursor-pointer hover:underline">
                 Clear
             </span>

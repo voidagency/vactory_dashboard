@@ -170,6 +170,16 @@ class NodeService {
         continue;
       }
 
+      if ($field['type'] === 'colorapi_color_field') {
+        $color_value = $entity->get($field['name'])->getValue();
+        if (!empty($color_value) && isset($color_value[0]['color'])) {
+          $node_data[$field['name']] = $color_value[0]['color'];
+        } else {
+          $node_data[$field['name']] = '';
+        }
+        continue;
+      }
+
       if ($field['type'] === 'field_wysiwyg_dynamic') {
         $this->prepareWysiwygDynamic($entity, $node_data, $field['name']);
         continue;
