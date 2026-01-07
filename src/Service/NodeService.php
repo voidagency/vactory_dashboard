@@ -180,6 +180,23 @@ class NodeService {
         continue;
       }
 
+      if ($field['type'] === 'link') {
+        $link_value = $entity->get($field['name'])->getValue();
+        if (!empty($link_value)) {
+          $link_item = reset($link_value);
+          $node_data[$field['name']] = [
+            'uri' => $link_item['uri'] ?? '',
+            'title' => $link_item['title'] ?? '',
+          ];
+        } else {
+          $node_data[$field['name']] = [
+            'uri' => '',
+            'title' => '',
+          ];
+        }
+        continue;
+      }
+
       if ($field['type'] === 'field_wysiwyg_dynamic') {
         $this->prepareWysiwygDynamic($entity, $node_data, $field['name']);
         continue;
