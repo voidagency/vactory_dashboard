@@ -185,6 +185,19 @@
                                                             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'blockForm.extra_fields[fieldName].name', 'url': 'blockForm.extra_fields[fieldName].url', 'path': 'blockForm.extra_fields[fieldName].path', 'key': 'blockForm.extra_fields[fieldName].key', 'type': 'remote_video'} %}
                                                         </template>
 
+                                                        {# Color Input #}
+                                                        <template x-if="field.type === 'colorapi_color_field' || field.type === 'jquery_colorpicker'">
+                                                            <div>
+                                                                <input type="color"
+                                                                       :required="field.options?.['#required'] ?? false"
+                                                                       x-model="blockForm.extra_fields[fieldName]"
+                                                                       class="block w-10 h-10 border rounded cursor-pointer">
+                                                                <span @click="blockForm.extra_fields[fieldName] = ''"
+                                                                      class="text-primary-500 text-sm cursor-pointer hover:underline">
+                                                                    Clear
+                                                                </span>
+                                                            </div>
+                                                        </template>
                                                         {# Date Input #}
                                                         <template x-if="field.type === 'date'">
                                                             <input type="date"
@@ -385,6 +398,19 @@
                                                                                 {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'item.options?.["#required"] ?? false', 'name': 'blockForm.extra_fields[fieldName][itemName].name', 'url': 'blockForm.extra_fields[fieldName][itemName].url', 'path': 'blockForm.extra_fields[fieldName][itemName].path', 'key': 'blockForm.extra_fields[fieldName][itemName].key', 'type': 'remote_video'} %}
                                                                             </template>
 
+                                                                            {# Color Input #}
+                                                                            <template x-if="item.type === 'colorapi_color_field' || item.type === 'jquery_colorpicker'">
+                                                                                <div x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}">
+                                                                                    <input type="color"
+                                                                                           :required="item.options?.['#required'] ?? false"
+                                                                                           x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                           class="block w-10 h-10 border rounded cursor-pointer">
+                                                                                    <span @click="blockForm.extra_fields[fieldName][itemName] = ''"
+                                                                                          class="text-primary-500 text-sm cursor-pointer hover:underline">
+                                                                                        Clear
+                                                                                    </span>
+                                                                                </div>
+                                                                            </template>
                                                                             {# Date Input #}
                                                                             <template x-if="item.type === 'date'">
                                                                                 <input type="date"
@@ -558,6 +584,19 @@
                                                             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'blockForm.fields[fieldName].name', 'url': 'blockForm.fields[fieldName].url', 'path': 'blockForm.fields[fieldName].path', 'key': 'blockForm.fields[fieldName].key', 'type': 'remote_video'} %}
                                                         </template>
 
+                                                        {# Color Input #}
+                                                        <template x-if="field.type === 'colorapi_color_field' || field.type === 'jquery_colorpicker'">
+                                                            <div>
+                                                                <input type="color"
+                                                                       :required="field.options?.['#required'] ?? false"
+                                                                       x-model="blockForm.fields[fieldName]"
+                                                                       class="block w-10 h-10 border rounded cursor-pointer">
+                                                                <span @click="blockForm.fields[fieldName] = ''"
+                                                                      class="text-primary-500 text-sm cursor-pointer hover:underline">
+                                                                    Clear
+                                                                </span>
+                                                            </div>
+                                                        </template>
                                                         {# Date Input #}
                                                         <template x-if="field.type === 'date'">
                                                             <input type="date"
@@ -752,6 +791,19 @@
                                                                                 {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'item.options?.["#required"] ?? false', 'name': 'blockForm.fields[fieldName][itemName].name', 'url': 'blockForm.fields[fieldName][itemName].url', 'path': 'blockForm.fields[fieldName][itemName].path', 'key': 'blockForm.fields[fieldName][itemName].key', 'type': 'remote_video'} %}
                                                                             </template>
 
+                                                                            {# Color Input #}
+                                                                            <template x-if="item.type === 'colorapi_color_field' || item.type === 'jquery_colorpicker'">
+                                                                                <div>
+                                                                                    <input type="color"
+                                                                                           :required="item.options?.['#required'] ?? false"
+                                                                                           x-model="blockForm.fields[fieldName][itemName]"
+                                                                                           class="block w-10 h-10 border rounded cursor-pointer">
+                                                                                    <span @click="blockForm.fields[fieldName][itemName] = ''"
+                                                                                          class="text-primary-500 text-sm cursor-pointer hover:underline">
+                                                                                        Clear
+                                                                                    </span>
+                                                                                </div>
+                                                                            </template>
                                                                             {# Date Input #}
                                                                             <template x-if="item.type === 'date'">
                                                                                 <input type="date"
@@ -1027,6 +1079,19 @@
                                                                                             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'item[fieldName][itemName].name', 'url': 'item[fieldName][itemName].url', 'path': 'item[fieldName][itemName].path', 'key': 'item[fieldName][itemName].key', 'type': 'remote_video'} %}
                                                                                         </template>
 
+                                                                                        {# Color Input #}
+                                                                                        <template x-if="field.type === 'colorapi_color_field' || field.type === 'jquery_colorpicker'">
+                                                                                            <div>
+                                                                                                <input type="color"
+                                                                                                       :required="field.options?.['#required'] ?? false"
+                                                                                                       x-model="item[fieldName][itemName]"
+                                                                                                       class="block w-10 h-10 border rounded cursor-pointer">
+                                                                                                <span @click="item[fieldName][itemName] = ''"
+                                                                                                      class="text-primary-500 text-sm cursor-pointer hover:underline">
+                                                                                                    Clear
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        </template>
                                                                                         {# Date Input #}
                                                                                         <template x-if="field.type === 'date'">
                                                                                             <input type="date"
@@ -1194,6 +1259,19 @@
                                                                         {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'name': 'item[fieldName].name', 'url': 'item[fieldName].url', 'path': 'item[fieldName].path', 'key': 'item[fieldName].key', 'type': 'remote_video'} %}
                                                                     </template>
 
+                                                                    {# Color Input #}
+                                                                    <template x-if="field.type === 'colorapi_color_field' || field.type === 'jquery_colorpicker'">
+                                                                        <div>
+                                                                            <input type="color"
+                                                                                   :required="field.options?.['#required'] ?? false"
+                                                                                   x-model="item[fieldName]"
+                                                                                   class="block w-10 h-10 border rounded cursor-pointer">
+                                                                            <span @click="item[fieldName] = ''"
+                                                                                  class="text-primary-500 text-sm cursor-pointer hover:underline">
+                                                                                Clear
+                                                                            </span>
+                                                                        </div>
+                                                                    </template>
                                                                     {# Date Input #}
                                                                     <template x-if="field.type === 'date'">
                                                                         <input type="date"
