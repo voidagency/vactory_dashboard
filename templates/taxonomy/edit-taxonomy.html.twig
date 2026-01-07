@@ -208,6 +208,16 @@
                 return;
               }
 
+              // Color field - initialize nested structure
+              if (field.type === 'colorapi_color_field') {
+                this.formData.fields[fieldKey] = {
+                  color: {
+                    hexadecimal: existingValue || ''
+                  }
+                };
+                return;
+              }
+
               // Checkboxes
               if (field.type === 'checkboxes') {
                 this.formData.fields[fieldKey] = existingValue || [];

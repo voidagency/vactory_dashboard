@@ -185,6 +185,16 @@
                 return;
               }
 
+              // Color field - initialize nested structure
+              if (field.type === 'colorapi_color_field') {
+                this.formData.fields[fieldKey] = {
+                  color: {
+                    hexadecimal: existingValue || ''
+                  }
+                };
+                return;
+              }
+
               // Radios
               if (field.type === 'radios') {
                 this.formData.fields[fieldKey] = '';
