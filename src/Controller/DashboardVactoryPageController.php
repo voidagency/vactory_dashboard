@@ -197,12 +197,16 @@ class DashboardVactoryPageController extends ControllerBase {
     $meta_tags = $this->metatagService->prepareMetatags($node_translation ?? $node);
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
+
+    // Get bundle fields for domain access settings.
+    $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+
     return [
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'page',
       '#language' => $node_translation ? $node_translation->language()
         ->getId() : $node->language()->getId(),
-      '#node' => $this->nodeService->processVactoryPageData($node_translation ?? $node),
+      '#node' => $this->nodeService->processVactoryPageData($node_translation ?? $node, $fields),
       '#changed' => $node_translation ? $node_translation->get('changed')->value : $node->get('changed')->value,
       '#label' => $node_translation ? $node_translation->label() : $node->label(),
       '#nid' => $id,
@@ -211,6 +215,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
+      '#fields' => $fields,
       ...$paragraph_flags,
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
@@ -597,6 +602,16 @@ class DashboardVactoryPageController extends ControllerBase {
         }
         $node->getTranslation($language)
           ->set('field_vactory_meta_tags', serialize($meta_tags));
+      }
+
+      // Update domain access and other fields if they exist.
+      $fields = $content['fields'] ?? [];
+      foreach ($fields as $field_name => $field_value) {
+        if ($node->hasField($field_name)) {
+          if ($field_value || is_array($field_value) || is_bool($field_value)) {
+            $node->getTranslation($language)->set($field_name, $field_value);
+          }
+        }
       }
 
       // Update blocks/paragraphs if they exist.

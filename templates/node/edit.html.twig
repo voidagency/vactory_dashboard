@@ -31,6 +31,11 @@
               Object.entries(this.fields).filter(([key, field]) => field.type === 'field_cross_content'),
             );
           },
+          get domainFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => key.startsWith('field_domain_')),
+            );
+          },
           // End other bundle specific vars.
           selectedDynamicField: null,
           showDynamicFieldModal: false,
@@ -1605,8 +1610,13 @@
           init() {
             const node = JSON.parse(this.node);
             // Node specific process.
-            if (this.bundle) {
-              this.fields = JSON.parse(this?.fields);
+            // Parse fields if available (for both bundle-specific content types and vactory_page)
+            if (this.fields && typeof this.fields === 'string') {
+              this.fields = JSON.parse(this.fields);
+            } else if (!this.fields) {
+              this.fields = {};
+            }
+            if (this.bundle || Object.keys(this.fields).length > 0) {
               // Initialize form data based on fields
               Object.keys(this.fields).forEach((fieldKey) => {
                 const field = this.fields[fieldKey];
@@ -2013,6 +2023,7 @@
                   status: this.settings.status,
                   changed: this.changed,
                   banner: this.banner,
+                  fields: this.formData.fields,
                 }),
               });
               const data = await response.json();

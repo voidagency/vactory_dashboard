@@ -148,6 +148,11 @@
               Object.entries(this.fields).filter(([key, field]) => field.type === 'field_cross_content'),
             );
           },
+          get domainFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => key.startsWith('field_domain_')),
+            );
+          },
           async fetchSuggestions(fieldName, query) {
             if (!query || query.length < 1) {
               this.suggestions[fieldName] = [];
