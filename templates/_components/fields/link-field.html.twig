@@ -25,9 +25,7 @@
       }, 300);
     },
 
-    select(item) {
-      {{ xmodel }}.url = item.url;
-      {{ xmodel }}.title = {{ xmodel }}.title || item.title;
+    hideResults() {
       this.results = [];
       this.showList = false;
     }
@@ -78,7 +76,7 @@
         >
           <template x-for="item in results" :key="item.url">
             <li
-              @mousedown.prevent="select(item)"
+              @mousedown.prevent="{{ xmodel }}.url = item.url; if (!{{ xmodel }}.title) {{ xmodel }}.title = item.title; hideResults();"
               class="px-3 py-2 cursor-pointer hover:bg-slate-100"
             >
               <div class="font-semibold" x-text="item.title"></div>
