@@ -345,11 +345,30 @@
                           };
                         }
                       } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
-                        mappedItem[fieldName][itemName] = item[fieldName][itemName];
+                        mappedItem[fieldName][itemName] = item?.[fieldName]?.[itemName] ?? null;
                       } else if (template.fields[fieldName][itemName].type === 'checkbox') {
-                        mappedItem[fieldName][itemName] = item[fieldName][itemName] == 1;
+                        mappedItem[fieldName][itemName] = item?.[fieldName]?.[itemName] == 1;
+                      } else if (template.fields[fieldName][itemName].type === 'url_extended') {
+                        // url_extended: ensure proper structure { url, title, attributes }
+                        const urlData = item?.[fieldName]?.[itemName];
+                        mappedItem[fieldName][itemName] = {
+                          url: urlData?.url ?? '',
+                          title: urlData?.title ?? '',
+                          attributes: urlData?.attributes ?? {}
+                        };
+                      } else if (template.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                        // entity_autocomplete: { target_id, title } or null
+                        const entityData = item?.[fieldName]?.[itemName];
+                        if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                          mappedItem[fieldName][itemName] = {
+                            target_id: entityData.target_id ?? entityData,
+                            title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                          };
+                        } else {
+                          mappedItem[fieldName][itemName] = null;
+                        }
                       } else {
-                        mappedItem[fieldName][itemName] = item[fieldName][itemName];
+                        mappedItem[fieldName][itemName] = item?.[fieldName]?.[itemName] ?? '';
                       }
                     });
                   }
@@ -382,11 +401,30 @@
                         };
                       }
                     } else if (template.fields[fieldName].type === 'json_api_collection') {
-                      mappedItem[fieldName] = item[fieldName];
+                      mappedItem[fieldName] = item?.[fieldName] ?? null;
                     } else if (template.fields[fieldName].type === 'checkbox') {
-                      mappedItem[fieldName] = item[fieldName] == 1;
+                      mappedItem[fieldName] = item?.[fieldName] == 1;
+                    } else if (template.fields[fieldName].type === 'url_extended') {
+                      // url_extended: ensure proper structure { url, title, attributes }
+                      const urlData = item?.[fieldName];
+                      mappedItem[fieldName] = {
+                        url: urlData?.url ?? '',
+                        title: urlData?.title ?? '',
+                        attributes: urlData?.attributes ?? {}
+                      };
+                    } else if (template.fields[fieldName].type === 'entity_autocomplete') {
+                      // entity_autocomplete: { target_id, title } or null
+                      const entityData = item?.[fieldName];
+                      if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                        mappedItem[fieldName] = {
+                          target_id: entityData.target_id ?? entityData,
+                          title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                        };
+                      } else {
+                        mappedItem[fieldName] = null;
+                      }
                     } else {
-                      mappedItem[fieldName] = item[fieldName];
+                      mappedItem[fieldName] = item?.[fieldName] ?? '';
                     }
                   }
                   // END - multiple field
@@ -438,11 +476,30 @@
                             };
                           }
                         } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
-                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName];
+                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0]?.[fieldName]?.[itemName] ?? null;
                         } else if (template.fields[fieldName][itemName].type === 'checkbox') {
-                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName] == 1;
+                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0]?.[fieldName]?.[itemName] == 1;
+                        } else if (template.fields[fieldName][itemName].type === 'url_extended') {
+                          // url_extended: ensure proper structure { url, title, attributes }
+                          const urlData = block.widget_data[0]?.[fieldName]?.[itemName];
+                          this.blockForm.fields[fieldName][itemName] = {
+                            url: urlData?.url ?? '',
+                            title: urlData?.title ?? '',
+                            attributes: urlData?.attributes ?? {}
+                          };
+                        } else if (template.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                          // entity_autocomplete: { target_id, title } or null
+                          const entityData = block.widget_data[0]?.[fieldName]?.[itemName];
+                          if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                            this.blockForm.fields[fieldName][itemName] = {
+                              target_id: entityData.target_id ?? entityData,
+                              title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                            };
+                          } else {
+                            this.blockForm.fields[fieldName][itemName] = null;
+                          }
                         } else {
-                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName];
+                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0]?.[fieldName]?.[itemName] ?? '';
                         }
                       });
 
@@ -474,11 +531,30 @@
                         }
 
                       } else if (template.fields[fieldName].type === 'json_api_collection') {
-                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
+                        this.blockForm.fields[fieldName] = block.widget_data[0]?.[fieldName] ?? null;
                       } else if (template.fields[fieldName].type === 'checkbox') {
-                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName] == 1;
+                        this.blockForm.fields[fieldName] = block.widget_data[0]?.[fieldName] == 1;
+                      } else if (template.fields[fieldName].type === 'url_extended') {
+                        // url_extended: ensure proper structure { url, title, attributes }
+                        const urlData = block.widget_data[0]?.[fieldName];
+                        this.blockForm.fields[fieldName] = {
+                          url: urlData?.url ?? '',
+                          title: urlData?.title ?? '',
+                          attributes: urlData?.attributes ?? {}
+                        };
+                      } else if (template.fields[fieldName].type === 'entity_autocomplete') {
+                        // entity_autocomplete: { target_id, title } or null
+                        const entityData = block.widget_data[0]?.[fieldName];
+                        if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                          this.blockForm.fields[fieldName] = {
+                            target_id: entityData.target_id ?? entityData,
+                            title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                          };
+                        } else {
+                          this.blockForm.fields[fieldName] = null;
+                        }
                       } else {
-                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
+                        this.blockForm.fields[fieldName] = block.widget_data[0]?.[fieldName] ?? '';
                       }
                     }
                   }
@@ -524,11 +600,30 @@
                             };
                           }
                         } else if (template.extra_fields[fieldName][itemName].type === 'json_api_collection') {
-                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName];
+                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field?.[fieldName]?.[itemName] ?? null;
                         } else if (template.extra_fields[fieldName][itemName].type === 'checkbox') {
-                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName] == 1;
+                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field?.[fieldName]?.[itemName] == 1;
+                        } else if (template.extra_fields[fieldName][itemName].type === 'url_extended') {
+                          // url_extended: ensure proper structure { url, title, attributes }
+                          const urlData = block.widget_data.extra_field?.[fieldName]?.[itemName];
+                          this.blockForm.extra_fields[fieldName][itemName] = {
+                            url: urlData?.url ?? '',
+                            title: urlData?.title ?? '',
+                            attributes: urlData?.attributes ?? {}
+                          };
+                        } else if (template.extra_fields[fieldName][itemName].type === 'entity_autocomplete') {
+                          // entity_autocomplete: { target_id, title } or null
+                          const entityData = block.widget_data.extra_field?.[fieldName]?.[itemName];
+                          if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                            this.blockForm.extra_fields[fieldName][itemName] = {
+                              target_id: entityData.target_id ?? entityData,
+                              title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                            };
+                          } else {
+                            this.blockForm.extra_fields[fieldName][itemName] = null;
+                          }
                         } else {
-                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName];
+                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field?.[fieldName]?.[itemName] ?? '';
                         }
                       }
                     });
@@ -559,11 +654,30 @@
                         };
                       }
                     } else if (template.extra_fields[fieldName].type === 'json_api_collection') {
-                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field?.[fieldName] ?? null;
                     } else if (template.extra_fields[fieldName].type === 'checkbox') {
-                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName] == 1;
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field?.[fieldName] == 1;
+                    } else if (template.extra_fields[fieldName].type === 'url_extended') {
+                      // url_extended: ensure proper structure { url, title, attributes }
+                      const urlData = block.widget_data.extra_field?.[fieldName];
+                      this.blockForm.extra_fields[fieldName] = {
+                        url: urlData?.url ?? '',
+                        title: urlData?.title ?? '',
+                        attributes: urlData?.attributes ?? {}
+                      };
+                    } else if (template.extra_fields[fieldName].type === 'entity_autocomplete') {
+                      // entity_autocomplete: { target_id, title } or null
+                      const entityData = block.widget_data.extra_field?.[fieldName];
+                      if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                        this.blockForm.extra_fields[fieldName] = {
+                          target_id: entityData.target_id ?? entityData,
+                          title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                        };
+                      } else {
+                        this.blockForm.extra_fields[fieldName] = null;
+                      }
                     } else {
-                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field?.[fieldName] ?? '';
                     }
                   }
                 }

@@ -812,16 +812,36 @@ class NodeService {
     $fileFields = array_keys($fileFields);
     $extraFieldsFileFields = array_keys($fileRemoteVideoFields);
 
+    // Get fields with type url_extended.
+    $urlExtendedFields = $this->findMediaFieldsInDynamicField($widgetConfig, 'url_extended');
+    $extraFieldsUrlExtendedFields = array_filter($widgetConfig['extra_fields'] ?? [], function($field) {
+      return ($field['type'] ?? "") === 'url_extended';
+    });
+    $urlExtendedFields = array_keys($urlExtendedFields);
+    $extraFieldsUrlExtendedFields = array_keys($extraFieldsUrlExtendedFields);
+
+    // Get fields with type entity_autocomplete.
+    $entityAutocompleteFields = $this->findMediaFieldsInDynamicField($widgetConfig, 'entity_autocomplete');
+    $extraFieldsEntityAutocompleteFields = array_filter($widgetConfig['extra_fields'] ?? [], function($field) {
+      return ($field['type'] ?? "") === 'entity_autocomplete';
+    });
+    $entityAutocompleteFields = array_keys($entityAutocompleteFields);
+    $extraFieldsEntityAutocompleteFields = array_keys($extraFieldsEntityAutocompleteFields);
+
     // Process extra fields image fields.
     if (array_key_exists('extra_field', $widgetData ?? []) && $widgetData['extra_field']) {
       $this->handleExtraFieldsImageType($widgetData, $extraFieldsImageFields);
       $this->handleExtraFieldsRemoteVideoType($widgetData, $extraFieldsRemoteVideoFields);
       $this->handleExtraFieldsFileType($widgetData, $extraFieldsFileFields);
+      $this->handleExtraFieldsUrlExtendedType($widgetData, $extraFieldsUrlExtendedFields);
+      $this->handleExtraFieldsEntityAutocompleteType($widgetData, $extraFieldsEntityAutocompleteFields);
     }
     // Process each numeric key (0, 1, etc.) in widgetData.
     $this->handleNonExtraFieldsImageType($widgetData, $imageFields);
     $this->handleNonExtraFieldsRemoteVideoType($widgetData, $remoteVideoFields);
     $this->handleNonExtraFieldsFileType($widgetData, $fileFields);
+    $this->handleNonExtraFieldsUrlExtendedType($widgetData, $urlExtendedFields);
+    $this->handleNonExtraFieldsEntityAutocompleteType($widgetData, $entityAutocompleteFields);
   }
 
   /**
@@ -1098,6 +1118,237 @@ class NodeService {
                 }
               }
             }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle extra fields for url_extended type.
+   * url_extended is stored directly as { url: '...', title: '...', attributes: {...} }
+   */
+  private function handleExtraFieldsUrlExtendedType(&$widgetData, $extraFieldsUrlExtendedFields) {
+    if (!isset($widgetData['extra_field']) || !is_array($widgetData['extra_field'])) {
+      return;
+    }
+    $extra_fields = &$widgetData['extra_field'];
+    foreach ($extra_fields as $key => &$item) {
+      // Non-group extra fields
+      if (in_array($key, $extraFieldsUrlExtendedFields) && is_array($item)) {
+        // Data is already in the right format { url, title, attributes }
+        $extra_fields[$key] = [
+          'url' => $item['url'] ?? '',
+          'title' => $item['title'] ?? '',
+          'attributes' => $item['attributes'] ?? [],
+        ];
+      }
+      // Group extra fields
+      elseif (str_starts_with($key, 'group_') && is_array($item)) {
+        foreach ($item as $subKey => &$subItem) {
+          if (in_array($subKey, $extraFieldsUrlExtendedFields) && is_array($subItem)) {
+            $extra_fields[$key][$subKey] = [
+              'url' => $subItem['url'] ?? '',
+              'title' => $subItem['title'] ?? '',
+              'attributes' => $subItem['attributes'] ?? [],
+            ];
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle non extra fields for url_extended type.
+   * url_extended is stored directly as { url: '...', title: '...', attributes: {...} }
+   */
+  private function handleNonExtraFieldsUrlExtendedType(&$widgetData, $urlExtendedFields) {
+    foreach ($widgetData ?? [] as $key => &$item) {
+      // Skip non-numeric keys like 'extra_field' and 'pending_content'.
+      if (!is_numeric($key) || !is_array($item)) {
+        continue;
+      }
+
+      foreach ($item as $fieldName => &$fieldValue) {
+        // Handle grouped fields
+        if (str_starts_with($fieldName, 'group_') && is_array($fieldValue)) {
+          foreach ($fieldValue as $subFieldName => &$subFieldValue) {
+            if (in_array($subFieldName, $urlExtendedFields) && is_array($subFieldValue)) {
+              $widgetData[$key][$fieldName][$subFieldName] = [
+                'url' => $subFieldValue['url'] ?? '',
+                'title' => $subFieldValue['title'] ?? '',
+                'attributes' => $subFieldValue['attributes'] ?? [],
+              ];
+            }
+          }
+        }
+        // Handle non-grouped fields
+        elseif (in_array($fieldName, $urlExtendedFields) && is_array($fieldValue)) {
+          $widgetData[$key][$fieldName] = [
+            'url' => $fieldValue['url'] ?? '',
+            'title' => $fieldValue['title'] ?? '',
+            'attributes' => $fieldValue['attributes'] ?? [],
+          ];
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle extra fields for entity_autocomplete type.
+   * entity_autocomplete is stored as just the entity ID (number or string).
+   */
+  private function handleExtraFieldsEntityAutocompleteType(&$widgetData, $extraFieldsEntityAutocompleteFields) {
+    if (!isset($widgetData['extra_field']) || !is_array($widgetData['extra_field'])) {
+      return;
+    }
+    $extra_fields = &$widgetData['extra_field'];
+    
+    foreach ($extra_fields as $key => &$item) {
+      // Non-group extra fields
+      if (in_array($key, $extraFieldsEntityAutocompleteFields)) {
+        // Value is just the entity ID
+        $targetId = is_array($item) ? ($item['target_id'] ?? NULL) : $item;
+        if ($targetId) {
+          $entity = $this->entityTypeManager->getStorage('node')->load($targetId);
+          $extra_fields[$key] = [
+            'target_id' => (string) $targetId,
+            'title' => $entity ? $entity->label() : 'Node #' . $targetId,
+          ];
+        }
+      }
+      // Group extra fields
+      elseif (str_starts_with($key, 'group_') && is_array($item)) {
+        foreach ($item as $subKey => &$subItem) {
+          if (in_array($subKey, $extraFieldsEntityAutocompleteFields)) {
+            $targetId = is_array($subItem) ? ($subItem['target_id'] ?? NULL) : $subItem;
+            if ($targetId) {
+              $entity = $this->entityTypeManager->getStorage('node')->load($targetId);
+              $extra_fields[$key][$subKey] = [
+                'target_id' => (string) $targetId,
+                'title' => $entity ? $entity->label() : 'Node #' . $targetId,
+              ];
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Prepare widget data for saving by converting dashboard format to Drupal format.
+   *
+   * @param array $widgetData
+   *   The widget data from the dashboard.
+   * @param string $widgetId
+   *   The widget ID.
+   *
+   * @return array
+   *   The prepared widget data.
+   */
+  private function prepareWidgetDataForSave($widgetData, $widgetId) {
+    $widgetConfig = \Drupal::service('vactory_dynamic_field.vactory_provider_manager')
+      ->loadSettings($widgetId);
+
+    // Get fields with type url_extended (stored directly, no conversion needed for url_extended).
+    // url_extended is stored as { url, title, attributes } - same format as dashboard.
+
+    // Get fields with type entity_autocomplete (need to convert { target_id, title } back to just target_id).
+    $entityAutocompleteFields = $this->findMediaFieldsInDynamicField($widgetConfig, 'entity_autocomplete');
+    $extraFieldsEntityAutocompleteFields = array_filter($widgetConfig['extra_fields'] ?? [], function($field) {
+      return ($field['type'] ?? "") === 'entity_autocomplete';
+    });
+    $entityAutocompleteFields = array_keys($entityAutocompleteFields);
+    $extraFieldsEntityAutocompleteFields = array_keys($extraFieldsEntityAutocompleteFields);
+
+    // Process extra fields
+    if (isset($widgetData['extra_field']) && is_array($widgetData['extra_field'])) {
+      foreach ($widgetData['extra_field'] as $key => &$value) {
+        // Convert entity_autocomplete from dashboard format { target_id, title } to Drupal format (just target_id)
+        if (in_array($key, $extraFieldsEntityAutocompleteFields) && is_array($value) && isset($value['target_id'])) {
+          $value = $value['target_id'];
+        }
+        // Handle group extra fields
+        elseif (str_starts_with($key, 'group_') && is_array($value)) {
+          foreach ($value as $subKey => &$subValue) {
+            if (in_array($subKey, $extraFieldsEntityAutocompleteFields) && is_array($subValue) && isset($subValue['target_id'])) {
+              $widgetData['extra_field'][$key][$subKey] = $subValue['target_id'];
+            }
+          }
+        }
+      }
+    }
+
+    // Process items (numeric keys)
+    foreach ($widgetData as $key => &$item) {
+      if (!is_numeric($key) || !is_array($item)) {
+        continue;
+      }
+
+      foreach ($item as $fieldName => &$fieldValue) {
+        // Handle grouped fields
+        if (str_starts_with($fieldName, 'group_') && is_array($fieldValue)) {
+          foreach ($fieldValue as $subFieldName => &$subFieldValue) {
+            $this->convertFieldForSave($subFieldValue, $subFieldName, $entityAutocompleteFields);
+          }
+        }
+        else {
+          $this->convertFieldForSave($fieldValue, $fieldName, $entityAutocompleteFields);
+        }
+      }
+    }
+
+    return $widgetData;
+  }
+
+  /**
+   * Convert a single field value for saving.
+   */
+  private function convertFieldForSave(&$fieldValue, $fieldName, $entityAutocompleteFields) {
+    // Convert entity_autocomplete from dashboard format { target_id, title } to Drupal format (just target_id)
+    if (in_array($fieldName, $entityAutocompleteFields) && is_array($fieldValue) && isset($fieldValue['target_id'])) {
+      $fieldValue = $fieldValue['target_id'];
+    }
+  }
+
+  /**
+   * Handle non extra fields for entity_autocomplete type.
+   * entity_autocomplete is stored as just the entity ID (number or string).
+   */
+  private function handleNonExtraFieldsEntityAutocompleteType(&$widgetData, $entityAutocompleteFields) {
+    foreach ($widgetData ?? [] as $key => &$item) {
+      // Skip non-numeric keys like 'extra_field' and 'pending_content'.
+      if (!is_numeric($key) || !is_array($item)) {
+        continue;
+      }
+
+      foreach ($item as $fieldName => &$fieldValue) {
+        // Handle grouped fields
+        if (str_starts_with($fieldName, 'group_') && is_array($fieldValue)) {
+          foreach ($fieldValue as $subFieldName => &$subFieldValue) {
+            if (in_array($subFieldName, $entityAutocompleteFields)) {
+              // Value is just the entity ID
+              $targetId = is_array($subFieldValue) ? ($subFieldValue['target_id'] ?? NULL) : $subFieldValue;
+              if ($targetId) {
+                $entity = $this->entityTypeManager->getStorage('node')->load($targetId);
+                $widgetData[$key][$fieldName][$subFieldName] = [
+                  'target_id' => (string) $targetId,
+                  'title' => $entity ? $entity->label() : 'Node #' . $targetId,
+                ];
+              }
+            }
+          }
+        }
+        // Handle non-grouped fields
+        elseif (in_array($fieldName, $entityAutocompleteFields)) {
+          // Value is just the entity ID
+          $targetId = is_array($fieldValue) ? ($fieldValue['target_id'] ?? NULL) : $fieldValue;
+          if ($targetId) {
+            $entity = $this->entityTypeManager->getStorage('node')->load($targetId);
+            $widgetData[$key][$fieldName] = [
+              'target_id' => (string) $targetId,
+              'title' => $entity ? $entity->label() : 'Node #' . $targetId,
+            ];
           }
         }
       }
@@ -1438,7 +1689,7 @@ class NodeService {
       "container_spacing" => $block['spacing'],
       "field_vactory_component" => [
         "widget_id" => $block['widget_id'],
-        "widget_data" => json_encode($block['widget_data']),
+        "widget_data" => json_encode($this->prepareWidgetDataForSave($block['widget_data'], $block['widget_id'])),
       ],
       "paragraph_identifier" => $block['paragraph_id'] ?? '',
       "paragraph_container" => $block['width'],
@@ -1819,7 +2070,7 @@ class NodeService {
         if ($bundle === 'vactory_component') {
           $paragraph['field_vactory_component'] = [
             "widget_id" => $block['widget_id'],
-            "widget_data" => json_encode($block['widget_data']),
+            "widget_data" => json_encode($this->prepareWidgetDataForSave($block['widget_data'], $block['widget_id'])),
           ];
         }
         else {
@@ -2091,7 +2342,7 @@ class NodeService {
         $paragraph_entity->getTranslation($language)
           ->set('field_vactory_component', [
             "widget_id" => $block['widget_id'],
-            "widget_data" => json_encode($block['widget_data']),
+            "widget_data" => json_encode($this->prepareWidgetDataForSave($block['widget_data'], $block['widget_id'])),
           ]);
         break;
       case 'block':
