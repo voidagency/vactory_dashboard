@@ -568,6 +568,7 @@ class NodeService {
               'widget_data' => $widgetData,
               'widget_config' => $widgetConfig,
               /* start configuration */
+              'paragraph_id' => $paragraph->hasField('paragraph_identifier') ? $paragraph->get('paragraph_identifier')->value : "",
               'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
               'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
               'color' => $hex,
@@ -599,6 +600,7 @@ class NodeService {
             'block_id' => $paragraph->get('field_vactory_block')->plugin_id ?? "",
             'block_settings' => $paragraph->get('field_vactory_block')->settings ?? [],
             /* start configuration */
+            'paragraph_id' => $paragraph->hasField('paragraph_identifier') ? $paragraph->get('paragraph_identifier')->value : "",
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
             'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
             'color' => $hex,
@@ -630,6 +632,7 @@ class NodeService {
             'displays' => $this->getViewDisplays($blockID),
             'bundle' => $paragraph->bundle(),
             /* start configuration */
+            'paragraph_id' => $paragraph->hasField('paragraph_identifier') ? $paragraph->get('paragraph_identifier')->value : "",
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
             'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
             'color' => $hex,
@@ -665,6 +668,7 @@ class NodeService {
             'items' => $this->getReferencedTabs($paragraph),
             'bundle' => $paragraph->bundle(),
             /* start configuration */
+            'paragraph_id' => $paragraph->hasField('paragraph_identifier') ? $paragraph->get('paragraph_identifier')->value : "",
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
             'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
             'color' => $hex,
@@ -1436,6 +1440,7 @@ class NodeService {
         "widget_id" => $block['widget_id'],
         "widget_data" => json_encode($block['widget_data']),
       ],
+      "paragraph_identifier" => $block['paragraph_id'] ?? '',
       "paragraph_container" => $block['width'],
       "paragraph_css_class" => $block['css_classes'],
       "field_background_color" => !empty($block['color']) ? ['color' => $block['color']] : NULL,
@@ -1497,6 +1502,7 @@ class NodeService {
         'value' => $block['content'] ?? '',
         'format' => 'full_html',
       ],
+      "paragraph_identifier" => $block['paragraph_id'] ?? '',
       "paragraph_container" => $block['width'],
       "paragraph_css_class" => $block['css_classes'],
       "field_background_color" => !empty($block['color']) ? ['color' => $block['color']] : NULL,
@@ -1575,6 +1581,7 @@ class NodeService {
       ],
 
       /* start configuration */
+      "paragraph_identifier" => $block['paragraph_id'] ?? '',
       "paragraph_container" => $block['width'],
       "paragraph_css_class" => $block['css_classes'],
       "field_background_color" => !empty($block['color']) ? ['color' => $block['color']] : NULL,
@@ -1716,6 +1723,7 @@ class NodeService {
       "field_multi_paragraph_type" => $block['display'],
       "field_paragraph_introduction" => $block['introduction'],
       "field_vactory_paragraph_tab" => $field_vactory_paragraph_tab,
+      "paragraph_identifier" => $block['paragraph_id'] ?? '',
       "paragraph_container" => $block['width'],
       "paragraph_css_class" => $block['css_classes'],
       "field_background_color" => !empty($block['color']) ? ['color' => $block['color']] : NULL,
@@ -1795,6 +1803,7 @@ class NodeService {
           "container_spacing" => $block['spacing'],
 
           /* start configuration */
+          "paragraph_identifier" => $block['paragraph_id'] ?? '',
           "paragraph_container" => $block['width'],
           "paragraph_css_class" => $block['css_classes'],
           "field_background_color" => !empty($block['color']) ? ['color' => $block['color']] : NULL,
@@ -2146,6 +2155,11 @@ class NodeService {
     if ($paragraph_entity->hasField('css_classes') && isset($block['css_classes'])) {
       $paragraph_entity->getTranslation($language)
         ->set('paragraph_css_class', $block['css_classes']);
+    }
+
+    if ($paragraph_entity->hasField('paragraph_identifier') && isset($block['paragraph_id'])) {
+      $paragraph_entity->getTranslation($language)
+        ->set('paragraph_identifier', $block['paragraph_id']);
     }
     foreach (DashboardConstants::PARAGARAPH_APPARENCE_FIELDS as $block_key => $field_name) {
       if (!$paragraph_entity->hasField($field_name)) {

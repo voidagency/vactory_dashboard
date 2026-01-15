@@ -1544,6 +1544,7 @@
           initializeAppearance(block) {
             return {
               title: block?.title || '',
+              paragraph_id: block?.config?.paragraph_id || block?.paragraph_id || '',
               width: block?.config?.width || block.width || 'narrow_width',
               spacing: block?.config?.spacing || block?.spacing || 'small_space',
               css_classes: block?.config?.css_classes || block?.css_classes || '',
@@ -1562,6 +1563,7 @@
           prepareConfigurationData(form) {
             return {
               title: form?.title || form?.config?.title,
+              paragraph_id: form?.paragraph_id || form?.config?.paragraph_id,
               show_title: form?.show_title || form?.config?.show_title,
               blockType: form?.blockType,
               displayID: form?.displayID,
@@ -1814,6 +1816,7 @@
                 title: paragraph.title,
                 bundle: paragraph.bundle,
                 // start configuration
+                paragraph_id: paragraph.paragraph_id ?? '',
                 show_title: paragraph.show_title ?? false,
                 width: paragraph.width ?? '',
                 css_classes: paragraph.css_classes ?? '',

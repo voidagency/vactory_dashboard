@@ -1,42 +1,131 @@
 {{ attach_library('vactory_dashboard/alpine-icon-picker') }}
 
 {#
-Simple Icon Picker Field Component
-Fetches icons from API and populates a select dropdown
+Icon Picker Field Component - Grid Style like Drupal theme
+Uses CSS icon font classes (icon-{name})
 #}
 
-{% set field_name = element['#name'] | default('icon') %}
-{% set field_value = element['#default_value'] | default('') %}
-{% set field_id = element['#id'] | default('icon-picker') %}
-
 <div class="icon-picker-field"
-     x-data="iconSelectData()"
+     x-data="iconPickerGrid('{{ x_model }}')"
+     x-init="init()"
 >
-
-    <!-- Loading State -->
-    <div x-show="isLoading" class="mb-4">
-        <span class="text-gray-500">Loading icons...</span>
-    </div>
-
-    <!-- Error State -->
-    <div x-show="hasError && !isLoading" class="mb-4">
-        <span class="text-red-500">Failed to load icons</span>
-        <button @click="loadIcons()" class="ml-2 text-blue-500 underline">Retry</button>
-    </div>
-
-    <!-- Simple Select Dropdown -->
-    <div x-show="!isLoading && !hasError">
-        <select
-                x-model="{{ x_model }}"
-                :required="{{ required }}"
-                :id="fieldId"
-                x-model="selectedIcon"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-            <option value="">Select an icon...</option>
-            <template x-for="icon in icons" :key="icon.name">
-                <option :selected="icon.name === {{ x_model }}" :value="icon.name" x-text="icon.label"></option>
+    {# Selected Icon Preview & Toggle Button #}
+    <div class="flex items-center gap-2 mb-2">
+        {# Preview Box #}
+        <div class="w-16 h-16 border border-gray-300 rounded flex items-center justify-center bg-white">
+            <template x-if="selectedIcon">
+                <i :class="'icon-' + selectedIcon" class="text-2xl text-gray-700"></i>
             </template>
-        </select>
+            <template x-if="!selectedIcon">
+                <span class="text-gray-400 text-xs">{{ 'No icon'|t }}</span>
+            </template>
+        </div>
+
+        {# Toggle Button #}
+        <button type="button"
+                @click="showPicker = !showPicker"
+                class="w-10 h-10 border border-gray-300 rounded flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors">
+            <svg x-show="!showPicker" class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+            </svg>
+            <svg x-show="showPicker" class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+        </button>
+    </div>
+
+    {# Hidden input to store the selected value #}
+    <input type="hidden"
+           x-model="{{ x_model }}"
+           :required="{{ required }}"
+           x-ref="hiddenInput"
+           x-effect="selectedIcon = {{ x_model }} || selectedIcon">
+
+    {# Icon Picker Panel #}
+    <div x-show="showPicker"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 transform -translate-y-2"
+         x-transition:enter-end="opacity-100 transform translate-y-0"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 transform translate-y-0"
+         x-transition:leave-end="opacity-0 transform -translate-y-2"
+         class="border border-gray-300 rounded-lg bg-white shadow-lg p-4 mt-2">
+
+        {# Search Input #}
+        <div style="margin-bottom: 16px; position: relative; display: flex; align-items: center;">
+            <svg style="position: absolute; left: 12px; width: 18px; height: 18px; color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input type="text"
+                   x-model="searchQuery"
+                   @input="filterIcons()"
+                   placeholder="{{ 'Search icons...'|t }}"
+                   style="width: 100%; padding: 10px 12px 10px 40px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important; color: #4b5563; outline: none;">
+        </div>
+
+        {# Loading State #}
+        <div x-show="isLoading" class="flex justify-center items-center py-8">
+            <svg class="animate-spin h-8 w-8 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+
+        {# Error State #}
+        <div x-show="hasError && !isLoading" class="text-center py-8">
+            <span class="text-red-500">{{ 'Failed to load icons'|t }}</span>
+            <button type="button" @click="loadIcons()" class="ml-2 text-primary-500 underline">{{ 'Retry'|t }}</button>
+        </div>
+
+        {# Icons Grid #}
+        <div x-show="!isLoading && !hasError">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 8px; max-height: 300px; overflow-y: auto; padding: 4px;">
+                <template x-for="icon in paginatedIcons" :key="icon.name">
+                    <button type="button"
+                            @click="selectIcon(icon.name)"
+                            :class="{
+                                'bg-primary-500 text-white border-primary-500': selectedIcon === icon.name,
+                                'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:border-gray-300': selectedIcon !== icon.name
+                            }"
+                            style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;"
+                            :title="icon.label">
+                        <i :class="'icon-' + icon.name" style="font-size: 20px;"></i>
+                    </button>
+                </template>
+            </div>
+
+            {# No results #}
+            <div x-show="filteredIcons.length === 0 && searchQuery.length > 0" class="text-center py-4 text-gray-500 text-sm">
+                {{ 'No icons found'|t }}
+            </div>
+
+            {# Pagination #}
+            <div x-show="totalPages > 1" class="flex items-center justify-between mt-4 pt-3 border-t border-gray-200">
+                <span class="text-sm text-gray-500">
+                    <span x-text="currentPage"></span>/<span x-text="totalPages"></span>
+                    (<span x-text="filteredIcons.length"></span>)
+                </span>
+                <div class="flex gap-1">
+                    <button type="button"
+                            @click="prevPage()"
+                            :disabled="currentPage === 1"
+                            :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
+                            class="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                    </button>
+                    <button type="button"
+                            @click="nextPage()"
+                            :disabled="currentPage === totalPages"
+                            :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
+                            class="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
