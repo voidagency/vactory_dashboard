@@ -725,7 +725,7 @@
                                                                             <template
                                                                                     x-if="item.type === 'text_format'">
                                                                                 <div x-show="!loaderCK">
-                                                                                    <div :id="`wysi-group-${index}-${item.label.toLowerCase()}`"
+                                                                                    <div :id="`wysi-group-${index}-${itemName}`"
                                                                                          x-init="
                                                                                     (() => {
                                                                                         $nextTick(() => {
