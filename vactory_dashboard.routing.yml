@@ -953,14 +953,3 @@ vactory_dashboard.languages_config:
   requirements:
     _permission: 'administer dashboard configuration'
 
-vactory_dashboard.icons.search:
-  path: '/admin/vactory-dashboard/api/icons/search/{query}'
-  defaults:
-    _controller: '\Drupal\vactory_dashboard\Controller\DashboardIconController::searchIcons'
-    _title: 'Search Icons'
-    query: ''
-  methods: [GET]
-  requirements:
-    _permission: 'access dashboard'
-  options:
-    no_cache: TRUE

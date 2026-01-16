@@ -128,6 +128,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
     ];
   }
 
@@ -219,6 +220,7 @@ class DashboardVactoryPageController extends ControllerBase {
       ...$paragraph_flags,
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
     ];
   }
 
@@ -296,6 +298,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => FALSE,
       '#meta_tags' => $meta_tags,
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
     ];
   }
 

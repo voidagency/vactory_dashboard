@@ -86,6 +86,7 @@
                 </div>
 
                 {# Settings Tab - Domain Access and other settings #}
+                {% if domain_access_enabled %}
                 <div x-show="activeTab === 'settings'" class="flex gap-y-6 flex-col">
                     <div class="space-y-6 bg-white px-6 py-8 rounded-xl shadow-sm">
                         <h3 class="text-lg font-semibold text-slate-900 border-b border-slate-200 pb-3">{{ 'Domain Settings'|t }}</h3>
@@ -103,6 +104,7 @@
                         </template>
                     </div>
                 </div>
+                {% endif %}
 
                 {% if has_paragraphs_field %}
                     <div x-show="activeTab === 'templates'">

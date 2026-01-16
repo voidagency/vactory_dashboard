@@ -1,4 +1,4 @@
-// Load icon font CSS once
+// Load icon font CSS once (for font icons)
 (function() {
   if (!document.querySelector('link[href*="vactory_icon/style.css"]')) {
     const link = document.createElement('link');
@@ -18,7 +18,9 @@ function iconPickerGrid(xModelPath) {
     searchQuery: '',
     selectedIcon: '',
     currentPage: 1,
-    iconsPerPage: 40,
+    iconsPerPage: 45,
+    providerType: 'font',
+    svgPathsD: {},
 
     init() {
       this.loadIcons();
@@ -40,6 +42,20 @@ function iconPickerGrid(xModelPath) {
       return Math.ceil(this.filteredIcons.length / this.iconsPerPage) || 1;
     },
 
+    get isSvgProvider() {
+      return this.providerType === 'svg';
+    },
+
+    getSvgHtml(iconName, size = 20) {
+      const pathData = this.svgPathsD[iconName];
+      if (!pathData) return '';
+
+      const paths = Array.isArray(pathData) ? pathData : [pathData];
+      const pathsHtml = paths.map(d => `<path d="${d}"/>`).join('');
+
+      return `<svg style="width:${size}px;height:${size}px;" fill="currentColor" viewBox="0 0 32 32">${pathsHtml}</svg>`;
+    },
+
     async loadIcons() {
       this.isLoading = true;
       this.hasError = false;
@@ -53,6 +69,8 @@ function iconPickerGrid(xModelPath) {
         
         this.icons = data.icons || [];
         this.filteredIcons = [...this.icons];
+        this.providerType = data.provider_type || 'font';
+        this.svgPathsD = data.svg_paths_d || {};
       } catch (error) {
         console.error('Error loading icons:', error);
         this.hasError = true;
