@@ -1,6 +1,6 @@
 {#
 Entity Autocomplete Field Component
-Allows searching and selecting entities (nodes) via autocomplete
+Uses $dispatch to communicate with parent Alpine.js scope
 #}
 <div class="entity-autocomplete-field"
      x-data="{
@@ -10,17 +10,6 @@ Allows searching and selecting entities (nodes) via autocomplete
         showResults: false,
         selectedEntity: null,
         searchTimeout: null,
-
-        setInitialValue(value) {
-            if (value && typeof value === 'object' && value.target_id) {
-                this.selectedEntity = {
-                    id: value.target_id,
-                    title: value.title || 'Node #' + value.target_id
-                };
-            } else if (value && (typeof value === 'string' || typeof value === 'number')) {
-                this.selectedEntity = { id: value, title: 'Node #' + value };
-            }
-        },
 
         async search(query) {
             clearTimeout(this.searchTimeout);
@@ -47,8 +36,8 @@ Allows searching and selecting entities (nodes) via autocomplete
         },
 
         selectItem(item) {
-            this.selectedEntity = { id: item.id, title: item.title };
-            {{ x_model }} = { target_id: item.id, title: item.title };
+            // Use target_id format for the model value
+            this.selectedEntity = { target_id: item.id, title: item.title };
             this.searchQuery = '';
             this.results = [];
             this.showResults = false;
@@ -56,11 +45,21 @@ Allows searching and selecting entities (nodes) via autocomplete
 
         clearSelection() {
             this.selectedEntity = null;
-            {{ x_model }} = null;
             this.searchQuery = '';
+        },
+
+        // Helper to get display data from model value
+        getDisplayId() {
+            if (!this.selectedEntity) return null;
+            return this.selectedEntity.target_id || this.selectedEntity.id;
+        },
+        getDisplayTitle() {
+            if (!this.selectedEntity) return null;
+            return this.selectedEntity.title || 'Node #' + this.getDisplayId();
         }
      }"
-     x-init="$nextTick(() => setInitialValue({{ x_model }}))"
+     x-modelable="selectedEntity"
+     x-model="{{ x_model }}"
 >
     {# Selected Entity Display #}
     <template x-if="selectedEntity">
@@ -68,8 +67,8 @@ Allows searching and selecting entities (nodes) via autocomplete
             <svg class="w-5 h-5 text-primary-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
-            <span class="flex-1 text-sm text-slate-700" x-text="selectedEntity.title"></span>
-            <span class="text-xs text-slate-500" x-text="'ID: ' + selectedEntity.id"></span>
+            <span class="flex-1 text-sm text-slate-700" x-text="getDisplayTitle()"></span>
+            <span class="text-xs text-slate-500" x-text="'ID: ' + getDisplayId()"></span>
             <button type="button" @click="clearSelection()" class="text-slate-400 hover:text-red-500 transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -77,6 +76,11 @@ Allows searching and selecting entities (nodes) via autocomplete
             </button>
         </div>
     </template>
+
+    {# Hidden input for validation - has value when entity is selected #}
+    <input type="hidden"
+           :value="selectedEntity ? getDisplayId() : ''"
+           :required="{{ required }}">
 
     {# Search Input #}
     <div class="relative">
@@ -90,7 +94,6 @@ Allows searching and selecting entities (nodes) via autocomplete
                    @focus="showResults = results.length > 0"
                    @blur="setTimeout(() => showResults = false, 200)"
                    :placeholder="selectedEntity ? '{{ 'Search to change...'|t }}' : '{{ 'Search for content...'|t }}'"
-                   :required="{{ required }}"
                    style="width: 100%; padding: 8px 12px 8px 38px; font-family: inherit; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none;"
                    class="focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
             <svg x-show="isLoading" style="position: absolute; right: 12px; width: 16px; height: 16px;" class="text-primary-500 animate-spin" fill="none" viewBox="0 0 24 24">

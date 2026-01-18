@@ -1271,6 +1271,8 @@
                       this.blockForm.extra_fields[fieldName][itemName] = template.extra_fields[fieldName][itemName]['options']['#default_value'];
                     } else if (template.extra_fields[fieldName][itemName].type === 'text_format') {
                       this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, true);
+                    } else if (template.extra_fields[fieldName][itemName].type === 'entity_autocomplete') {
+                      this.blockForm.extra_fields[fieldName][itemName] = null;
                     } else {
                       this.blockForm.extra_fields[fieldName][itemName] = '';
                     }
@@ -1307,6 +1309,8 @@
                     this.blockForm.extra_fields[fieldName] = template.extra_fields[fieldName]['options']['#default_value'];
                   } else if (template.extra_fields[fieldName].type === 'text_format') {
                     this.getForm(`wysi-extra-${index}`, -1, false, false, true, false);
+                  } else if (template.extra_fields[fieldName].type === 'entity_autocomplete') {
+                    this.blockForm.extra_fields[fieldName] = null;
                   } else {
                     this.blockForm.extra_fields[fieldName] = '';
                   }
@@ -1353,6 +1357,8 @@
                       this.blockForm.fields[fieldName][itemName] = template.fields[fieldName][itemName]['options']['#default_value'];
                     } else if (template.fields[fieldName][itemName].type === 'text_format') {
                       this.getForm(`wysi-group-${index}-${itemName}`, -1, false, true, false, true);
+                    } else if (template.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                      this.blockForm.fields[fieldName][itemName] = null;
                     } else {
                       this.blockForm.fields[fieldName][itemName] = '';
                     }
@@ -1387,6 +1393,8 @@
                     this.blockForm.fields[fieldName] = template.fields[fieldName]['options']['#default_value'];
                   } else if (template.fields[fieldName].type === 'text_format') {
                     this.getForm(`wysi-single-${index}`, -1, false, true, false, false);
+                  } else if (template.fields[fieldName].type === 'entity_autocomplete') {
+                    this.blockForm.fields[fieldName] = null;
                   } else {
                     this.blockForm.fields[fieldName] = '';
                   }
@@ -1821,6 +1829,8 @@
                   } else if (this.selectedTemplate.fields[fieldName][itemName].type === 'json_api_collection') {
                     // Nothing to change here
                     newItem[fieldName][itemName] = this.selectedTemplate.fields[fieldName][itemName]['options']['#default_value'];
+                  } else if (this.selectedTemplate.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                    newItem[fieldName][itemName] = null;
                   } else {
                     newItem[fieldName][itemName] = '';
                   }
@@ -1853,6 +1863,8 @@
                 } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
                   // Nothing to change here
                   newItem[fieldName] = this.selectedTemplate.fields[fieldName]['options']['#default_value'];
+                } else if (this.selectedTemplate.fields[fieldName].type === 'entity_autocomplete') {
+                  newItem[fieldName] = null;
                 } else {
                   newItem[fieldName] = '';
                 }

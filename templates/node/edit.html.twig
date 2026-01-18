@@ -443,9 +443,9 @@
               // widget_data[0] contains the fields
               if (block.widget_data && block.widget_data[0]) {
                 Object.keys(template?.fields ?? {}).forEach((fieldName, index) => {
-                  if (block.widget_data[0][fieldName]) {
-                    // single field - group
-                    if (fieldName.startsWith('group_')) {
+                  // Process all fields from template, even if they don't have existing data
+                  // single field - group
+                  if (fieldName.startsWith('group_')) {
                       Object.keys(template.fields[fieldName]).forEach((itemName, index) => {
 
                         if (!this.blockForm.fields[fieldName]) {
@@ -506,8 +506,8 @@
                     } else {
                       // single field - non group
                       if (template.fields[fieldName].type === 'text_format') {
-                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName].value || '';
-                        this.getForm(`wysi-single-${index}`, -1, false, true, false, false, block.widget_data[0][fieldName].value);
+                        this.blockForm.fields[fieldName] = block.widget_data[0]?.[fieldName]?.value || '';
+                        this.getForm(`wysi-single-${index}`, -1, false, true, false, false, block.widget_data[0]?.[fieldName]?.value);
                       } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
                         const imageKey = Object.keys(block?.widget_data?.[0]?.[fieldName] ?? {})?.[0] ?? null;
                         const imageData = block?.widget_data?.[0]?.[fieldName]?.[imageKey] ?? {};
@@ -557,7 +557,6 @@
                         this.blockForm.fields[fieldName] = block.widget_data[0]?.[fieldName] ?? '';
                       }
                     }
-                  }
                 });
               }
             }
@@ -1093,6 +1092,8 @@
                       this.blockForm.extra_fields[fieldName][itemName] = template.extra_fields[fieldName][itemName]['options']['#default_value'];
                     } else if (template.extra_fields[fieldName][itemName].type === 'text_format') {
                       this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, true);
+                    } else if (template.extra_fields[fieldName][itemName].type === 'entity_autocomplete') {
+                      this.blockForm.extra_fields[fieldName][itemName] = null;
                     } else {
                       this.blockForm.extra_fields[fieldName][itemName] = '';
                     }
@@ -1124,6 +1125,8 @@
                     this.blockForm.extra_fields[fieldName] = template.extra_fields[fieldName]['options']['#default_value'];
                   } else if (template.extra_fields[fieldName].type === 'text_format') {
                     this.getForm(`wysi-extra-${index}`, -1, false, false, true, false);
+                  } else if (template.extra_fields[fieldName].type === 'entity_autocomplete') {
+                    this.blockForm.extra_fields[fieldName] = null;
                   } else {
                     this.blockForm.extra_fields[fieldName] = '';
                   }
@@ -1166,6 +1169,8 @@
                       this.blockForm.fields[fieldName][itemName] = template.fields[fieldName][itemName]['options']['#default_value'];
                     } else if (template.fields[fieldName][itemName].type === 'text_format') {
                       this.getForm(`wysi-group-${index}-${itemName}`, -1, false, true, false, true);
+                    } else if (template.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                      this.blockForm.fields[fieldName][itemName] = null;
                     } else {
                       this.blockForm.fields[fieldName][itemName] = '';
                     }
@@ -1196,6 +1201,8 @@
                     this.blockForm.fields[fieldName] = template.fields[fieldName]['options']['#default_value'];
                   } else if (template.fields[fieldName].type === 'text_format') {
                     this.getForm(`wysi-single-${index}`, -1, false, true, false, false);
+                  } else if (template.fields[fieldName].type === 'entity_autocomplete') {
+                    this.blockForm.fields[fieldName] = null;
                   } else {
                     this.blockForm.fields[fieldName] = '';
                   }
@@ -1297,6 +1304,8 @@
                   } else if (this.selectedTemplate.fields[fieldName][itemName].type === 'json_api_collection') {
                     // Nothing to change here
                     newItem[fieldName][itemName] = this.selectedTemplate.fields[fieldName][itemName]['options']['#default_value'];
+                  } else if (this.selectedTemplate.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                    newItem[fieldName][itemName] = null;
                   } else {
                     newItem[fieldName][itemName] = '';
                   }
@@ -1329,6 +1338,8 @@
                 } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
                   // Nothing to change here
                   newItem[fieldName] = this.selectedTemplate.fields[fieldName]['options']['#default_value'];
+                } else if (this.selectedTemplate.fields[fieldName].type === 'entity_autocomplete') {
+                  newItem[fieldName] = null;
                 } else {
                   newItem[fieldName] = '';
                 }
