@@ -2398,7 +2398,7 @@ class NodeService {
         ->set('paragraph_container', $block['width']);
     }
 
-    if ($paragraph_entity->hasField('spacing') && isset($block['spacing'])) {
+    if ($paragraph_entity->hasField('container_spacing') && isset($block['spacing'])) {
       $paragraph_entity->getTranslation($language)
         ->set('container_spacing', $block['spacing']);
     }
