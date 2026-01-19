@@ -25,6 +25,29 @@
             {% endif %}
         </div>
 
+        {# Ancre #}
+        {% if anchor %}
+            <div class="space-y-4">
+                <div class="flex items-center">
+                    <input type="checkbox"
+                        x-model="{{ paragraph }}.config.show_in_anchor_menu"
+                        class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
+                    <label class="ms-2 block text-sm text-slate-700">
+                        {{ 'Afficher au niveau du menu ancre'|t }}
+                    </label>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        {{ 'Titre de l\'ancre'|t }}
+                    </label>
+                    <input type="text"
+                        x-model="{{ paragraph }}.config.anchor_title"
+                        class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                </div>
+            </div>
+        {% endif %}
+
         {# Section Appearance #}
         <div x-data="{ isOpen: false }"
              class="border border-slate-200 rounded-xl shadow bg-white">
@@ -48,6 +71,21 @@
                  x-transition:leave-end="transform opacity-0 scale-95" class="space-y-4 p-3">
 
                 <div class="flex flex-col gap-3">
+                    {# Paragraph ID #}
+                    <div class="flex-1" x-data="{ charCount: 0, maxLength: 255 }">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            {{ 'Paragraph ID'|t }}
+                        </label>
+                        <input type="text"
+                               x-model="{{ paragraph }}.config.paragraph_id"
+                               x-init="charCount = ({{ paragraph }}.config.paragraph_id || '').length"
+                               @input="charCount = $el.value.length"
+                               :maxlength="maxLength"
+                               class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                               placeholder="{{ 'Enter paragraph ID'|t }}">
+                        <span class="text-xs text-slate-500" x-text="charCount + '/' + maxLength"></span>
+                    </div>
+
                     {# Width #}
                     <div class="flex-1">
                         <label class="view text-sm font-medium text-slate-700 mb-1">
