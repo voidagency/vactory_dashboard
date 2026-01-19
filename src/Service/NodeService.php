@@ -563,6 +563,8 @@ class NodeService {
               'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
               'bundle' => $paragraph->bundle(),
               'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
+              'show_in_anchor_menu' => $paragraph->hasField('field_vactory_flag_2') && $paragraph->get('field_vactory_flag_2')->value === "1",
+              'anchor_title' => $paragraph->hasField('field_titre_ancre') ? $paragraph->get('field_titre_ancre')->value : "",
               'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
               'pid' => $paragraphData['target_id'],
               'revision_id' => $paragraph->getRevisionId(),
@@ -592,6 +594,8 @@ class NodeService {
             'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
             'bundle' => $paragraph->bundle(),
             'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
+            'show_in_anchor_menu' => $paragraph->hasField('field_vactory_flag_2') && $paragraph->get('field_vactory_flag_2')->value === "1",
+            'anchor_title' => $paragraph->hasField('field_titre_ancre') ? $paragraph->get('field_titre_ancre')->value : "",
             'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
             'pid' => $paragraphData['target_id'],
             'revision_id' => $paragraph->getRevisionId(),
@@ -648,6 +652,8 @@ class NodeService {
             'enabel_parallax' => $paragraph->hasField('paragraph_background_parallax') ? $paragraph->get('paragraph_background_parallax')->value : "",
             /* end configuration */
             'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
+            'show_in_anchor_menu' => $paragraph->hasField('field_vactory_flag_2') && $paragraph->get('field_vactory_flag_2')->value === "1",
+            'anchor_title' => $paragraph->hasField('field_titre_ancre') ? $paragraph->get('field_titre_ancre')->value : "",
             'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
             'pid' => $paragraphData['target_id'],
             'revision_id' => $paragraph->getRevisionId(),
@@ -664,6 +670,8 @@ class NodeService {
             'id' => $node->id(),
             'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
             'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
+            'show_in_anchor_menu' => $paragraph->hasField('field_vactory_flag_2') && $paragraph->get('field_vactory_flag_2')->value === "1",
+            'anchor_title' => $paragraph->hasField('field_titre_ancre') ? $paragraph->get('field_titre_ancre')->value : "",
             'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
             'display' => $paragraph->hasField('field_multi_paragraph_type') ? $paragraph->get('field_multi_paragraph_type')->value : "",
             'introduction' => $paragraph->hasField('field_paragraph_introduction') ? $paragraph->get('field_paragraph_introduction')->value : "",
@@ -1688,6 +1696,8 @@ class NodeService {
       "type" => "vactory_component",
       "field_vactory_title" => $block['title'],
       "field_vactory_flag" => $block['show_title'],
+      "field_vactory_flag_2" => $block['show_in_anchor_menu'],
+      "field_titre_ancre" => $block['anchor_title'],
       "container_spacing" => $block['spacing'],
       "field_vactory_component" => [
         "widget_id" => $block['widget_id'],
@@ -1746,6 +1756,8 @@ class NodeService {
       "type" => "vactory_paragraph_block",
       "field_vactory_title" => $block['title'],
       "field_vactory_flag" => $block['show_title'],
+      "field_vactory_flag_2" => $block['show_in_anchor_menu'],
+      "field_titre_ancre" => $block['anchor_title'],
       "container_spacing" => $block['spacing'],
       "field_vactory_block" => [
         "plugin_id" => $block['blockType'],
@@ -1826,6 +1838,8 @@ class NodeService {
     $paragraph = [
       "type" => "views_reference",
       "field_vactory_title" => $block['title'],
+      "field_vactory_flag_2" => $block['show_in_anchor_menu'],
+      "field_titre_ancre" => $block['anchor_title'],
       "container_spacing" => $block['spacing'],
       "field_views_reference" => [
         "target_id" => $block['blockType'],
@@ -1972,6 +1986,8 @@ class NodeService {
       "type" => "vactory_paragraph_multi_template",
       "field_vactory_title" => $block['title'],
       "field_vactory_flag" => $block['show_title'],
+      "field_vactory_flag_2" => $block['show_in_anchor_menu'],
+      "field_titre_ancre" => $block['anchor_title'],
       "container_spacing" => $block['spacing'],
       "field_multi_paragraph_type" => $block['display'],
       "field_paragraph_introduction" => $block['introduction'],
@@ -2053,6 +2069,8 @@ class NodeService {
           "type" => $bundle,
           "field_vactory_title" => $block['title'],
           "field_vactory_flag" => $block['show_title'],
+          "field_vactory_flag_2" => $block['show_in_anchor_menu'],
+          "field_titre_ancre" => $block['anchor_title'],
           "container_spacing" => $block['spacing'],
 
           /* start configuration */
@@ -2403,6 +2421,16 @@ class NodeService {
     if ($paragraph_entity->hasField('container_spacing') && isset($block['spacing'])) {
       $paragraph_entity->getTranslation($language)
         ->set('container_spacing', $block['spacing']);
+    }
+
+    if ($paragraph_entity->hasField('field_titre_ancre') && isset($block['anchor_title'])) {
+      $paragraph_entity->getTranslation($language)
+        ->set('field_titre_ancre', $block['anchor_title']);
+    }
+
+    if ($paragraph_entity->hasField('field_vactory_flag_2')) {
+      $paragraph_entity->getTranslation($language)
+        ->set('field_vactory_flag_2', $block['show_in_anchor_menu']);
     }
 
     if ($paragraph_entity->hasField('css_classes') && isset($block['css_classes'])) {

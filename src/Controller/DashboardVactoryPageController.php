@@ -129,6 +129,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#available_languages' => $available_languages_list,
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
     ];
   }
 
@@ -221,6 +222,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
     ];
   }
 
