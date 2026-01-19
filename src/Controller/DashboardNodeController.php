@@ -618,7 +618,7 @@ class DashboardNodeController extends ControllerBase {
     }
 
     // Get bundle fields.
-    $fields = $this->nodeService->getBundleFields($bundle);
+    $fields = $this->nodeService->getBundleFields($bundle, count($available_languages_list));
 
     // Check bundle if has a paragraphs field (field_vactory_paragraphs) with a dynamic field.
     $has_paragraphs_field = $this->nodeService->hasParagraphsField($fields);
