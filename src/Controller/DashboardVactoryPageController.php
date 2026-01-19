@@ -128,6 +128,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
     ];
   }
 
@@ -197,6 +198,10 @@ class DashboardVactoryPageController extends ControllerBase {
     $meta_tags = $this->metatagService->prepareMetatags($node_translation ?? $node);
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
+
+    // Get bundle fields for domain access settings.
+    $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+
     return [
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'page',
@@ -211,9 +216,11 @@ class DashboardVactoryPageController extends ControllerBase {
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
+      '#fields' => $fields,
       ...$paragraph_flags,
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
     ];
   }
 
@@ -279,6 +286,8 @@ class DashboardVactoryPageController extends ControllerBase {
 
     $meta_tags = $this->metatagService->prepareMetatags($node);
 
+    $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+
     return [
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'page',
@@ -290,7 +299,10 @@ class DashboardVactoryPageController extends ControllerBase {
       '#available_languages' => $available_languages_list,
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => FALSE,
+      '#fields' => $fields,
       '#meta_tags' => $meta_tags,
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
     ];
   }
 
@@ -597,6 +609,16 @@ class DashboardVactoryPageController extends ControllerBase {
         }
         $node->getTranslation($language)
           ->set('field_vactory_meta_tags', serialize($meta_tags));
+      }
+
+      // Update domain access and other fields if they exist.
+      $fields = $content['fields'] ?? [];
+      foreach ($fields as $field_name => $field_value) {
+        if ($node->hasField($field_name)) {
+          if ($field_value || is_array($field_value) || is_bool($field_value)) {
+            $node->getTranslation($language)->set($field_name, $field_value);
+          }
+        }
       }
 
       // Update blocks/paragraphs if they exist.

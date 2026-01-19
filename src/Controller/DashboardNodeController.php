@@ -419,6 +419,7 @@ class DashboardNodeController extends ControllerBase {
       '#bundle_label' => $bundle_label,
       '#fields' => $fields,
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       ...$paragraph_flags,
     ];
 
@@ -539,6 +540,7 @@ class DashboardNodeController extends ControllerBase {
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       ...$paragraph_flags,
     ];
 
@@ -616,7 +618,7 @@ class DashboardNodeController extends ControllerBase {
     }
 
     // Get bundle fields.
-    $fields = $this->nodeService->getBundleFields($bundle);
+    $fields = $this->nodeService->getBundleFields($bundle, count($available_languages_list));
 
     // Check bundle if has a paragraphs field (field_vactory_paragraphs) with a dynamic field.
     $has_paragraphs_field = $this->nodeService->hasParagraphsField($fields);
@@ -655,6 +657,7 @@ class DashboardNodeController extends ControllerBase {
       '#has_translation' => FALSE,
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       '#meta_tags' => $meta_tags,
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       ...$paragraph_flags,
     ];
 

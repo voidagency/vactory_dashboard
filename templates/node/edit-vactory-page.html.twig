@@ -1,6 +1,6 @@
 <div x-data="{ isRTL: document.dir === 'rtl' }" :dir="isRTL ? 'rtl' : 'ltr'">
     <div class="h-full flex flex-col"
-         x-data="pageEditor({nid: '{{ nid }}', language: '{{ language }}', node: '{{ node|json_encode|e('js') }}', has_translation: '{{ has_translation }}', changed: '{{ changed }}', status: '{{ status }}'})">
+         x-data="pageEditor({nid: '{{ nid }}', language: '{{ language }}', node: '{{ node|json_encode|e('js') }}', has_translation: '{{ has_translation }}', changed: '{{ changed }}', status: '{{ status }}', fields: '{{ fields|json_encode|e('js') }}'})">
         <div class="sticky top-0 z-10 bg-slate-50">
             <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
                 {# Header with back button, title and actions #}
