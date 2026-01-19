@@ -102,6 +102,27 @@
                         </template>
                     </div>
 
+                    {# Settings Tab - Domain Access and other settings #}
+                    {% if domain_access_enabled %}
+                    <div x-show="activeTab === 'settings'" class="flex gap-y-6 flex-col">
+                        <div class="space-y-6 bg-white px-6 py-8 rounded-xl shadow-sm">
+                            <h3 class="text-lg font-semibold text-slate-900 border-b border-slate-200 pb-3">{{ 'Domain Settings'|t }}</h3>
+                            <template x-for="(field, fieldName) in domainFields" :key="field.name">
+                                {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
+                                    field: 'field',
+                                    formData: 'formData',
+                                    isEdit: true,
+                                    language: language,
+                                    node_default_lang: node_default_lang
+                                } %}
+                            </template>
+                            <template x-if="Object.keys(domainFields).length === 0">
+                                <p class="text-slate-500 text-sm">{{ 'No domain settings available for this content type.'|t }}</p>
+                            </template>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     {% if has_paragraphs_field %}
                         <div x-show="activeTab === 'templates'">
                             <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">

@@ -151,57 +151,59 @@
     </div>
 
     {# Items Table #}
-    <table class="min-w-full divide-y divide-gray-300 border border-gray-200 bg-white">
-        <thead class="bg-gray-100">
-        <tr>
-            <th scope="col"
-                class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">{{ "PRIORITÉ"|t }}</th>
-            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">{{ "TITRE"|t }}</th>
-            <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                <span class="sr-only">{{ "Actions"|t }}</span>
-            </th>
-        </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200"
-               @dragover.prevent
-               @drop.prevent="handleDrop($event)">
-        <template x-for="(item, index) in items" :key="item.id">
-            <tr draggable="true"
-                :data-index="index"
-                :data-id="item.id"
-                @dragstart="handleDragStart($event, index)"
-                @dragend="handleDragEnd"
-                class="hover:bg-gray-50 cursor-move">
-                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                    <div class="flex items-center">
-                        <span x-text="index + 1" class="mr-2"></span>
-                        <div class="flex flex-col gap-1">
-                            <button type="button" @click="moveItem(index, 'up')" :disabled="index === 0"
-                                    class="text-primary-400 hover:primary-gray-600 disabled:text-gray-400">
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M5 15l7-7 7 7"/>
-                                </svg>
-                            </button>
-                            <button type="button" @click="moveItem(index, 'down')"
-                                    :disabled="index === items.length - 1"
-                                    class="text-primary-400 hover:primary-gray-600 disabled:text-gray-400">
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </td>
-                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500" x-text="item.title"></td>
-                <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                    <button type="button" @click="removeItem(index)" class="text-red-600 hover:text-red-900">
-                        {{ "Retirer"|t }}
-                    </button>
-                </td>
+    <div class="overflow-x-auto">
+        <table class="w-full table-fixed divide-y divide-gray-300 border border-gray-200 bg-white">
+            <thead class="bg-gray-100">
+            <tr>
+                <th scope="col"
+                    class="w-24 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">{{ "PRIORITÉ"|t }}</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">{{ "TITRE"|t }}</th>
+                <th scope="col" class="w-20 relative py-3.5 pl-3 pr-4 sm:pr-6">
+                    <span class="sr-only">{{ "Actions"|t }}</span>
+                </th>
             </tr>
-        </template>
-        </tbody>
-    </table>
+            </thead>
+            <tbody class="divide-y divide-gray-200"
+                   @dragover.prevent
+                   @drop.prevent="handleDrop($event)">
+            <template x-for="(item, index) in items" :key="item.id">
+                <tr draggable="true"
+                    :data-index="index"
+                    :data-id="item.id"
+                    @dragstart="handleDragStart($event, index)"
+                    @dragend="handleDragEnd"
+                    class="hover:bg-gray-50 cursor-move">
+                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                        <div class="flex items-center">
+                            <span x-text="index + 1" class="mr-2"></span>
+                            <div class="flex flex-col gap-1">
+                                <button type="button" @click="moveItem(index, 'up')" :disabled="index === 0"
+                                        class="text-primary-400 hover:primary-gray-600 disabled:text-gray-400">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M5 15l7-7 7 7"/>
+                                    </svg>
+                                </button>
+                                <button type="button" @click="moveItem(index, 'down')"
+                                        :disabled="index === items.length - 1"
+                                        class="text-primary-400 hover:primary-gray-600 disabled:text-gray-400">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-3 py-4 text-sm text-gray-500 break-words" x-text="item.title"></td>
+                    <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                        <button type="button" @click="removeItem(index)" class="text-red-600 hover:text-red-900">
+                            {{ "Retirer"|t }}
+                        </button>
+                    </td>
+                </tr>
+            </template>
+            </tbody>
+        </table>
+    </div>
 </div>
