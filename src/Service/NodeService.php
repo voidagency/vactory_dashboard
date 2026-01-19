@@ -370,6 +370,8 @@ class NodeService {
     if ($paragraph_field && $entity->hasField($paragraph_field)) {
       $this->prepareVactoryParagraphsData($entity, $node_data, $paragraph_field);
     }
+
+    $this->prepareBannerData($entity, $node_data);
     return $node_data;
   }
 
