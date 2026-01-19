@@ -2033,6 +2033,15 @@
                 return;
               }
 
+              // Link field
+              if (field.type === 'link') {
+                this.formData.fields[fieldKey] = {
+                  uri: '',
+                  title: ''
+                };
+                return;
+              }
+
               this.formData.fields[fieldKey] = '';
             });
 

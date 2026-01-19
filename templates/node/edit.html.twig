@@ -1930,6 +1930,16 @@
                   return;
                 }
 
+                // Link field
+                if (field.type === 'link') {
+                  const linkValue = node[fieldKey];
+                  this.formData.fields[fieldKey] = {
+                    uri: linkValue?.uri ?? '',
+                    title: linkValue?.title ?? ''
+                  };
+                  return;
+                }
+
                 this.formData.fields[fieldKey] = node[fieldKey] ?? '';
 
               });
