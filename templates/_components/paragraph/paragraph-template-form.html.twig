@@ -78,7 +78,8 @@
                                                         <template x-if="field.type === 'checkbox'">
                                                             <input type="checkbox"
                                                                    :required="field.options?.['#required'] ?? false"
-                                                                   x-model="blockForm.extra_fields[fieldName]">
+                                                                   x-model="blockForm.extra_fields[fieldName]"
+                                                                   class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
                                                         </template>
 
                                                         {# Entity Autocomplete #}
@@ -248,8 +249,8 @@
                                                                         x-for="([itemName, item], index) in Object.entries(field)"
                                                                         :key="index">
                                                                     <template x-if="itemName != 'g_title'">
-                                                                        <div :class="{'flex flex-row-reverse justify-end items-center gap-2': item.type === 'checkbox'}">
-                                                                            <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700 whitespace-nowrap min-w-0 flex-shrink-0' : 'block text-sm font-medium text-slate-700 mb-1'">
+                                                                        <div :class="{'flex flex-row-reverse justify-end items-center gap-3': item.type === 'checkbox'}">
+                                                                            <label :class="item.type === 'checkbox' ? 'text-sm font-medium text-slate-700' : 'block text-sm font-medium text-slate-700 mb-1'">
                                                                                 <span x-text="item.label"></span>
                                                                                 <span x-show="item.options?.['#required']"
                                                                                       class="text-red-500">*</span>
@@ -276,13 +277,11 @@
 
                                                                             {# Checkbox #}
                                                                             <template x-if="item.type === 'checkbox'">
-                                                                                <div>
-                                                                                    <input type="checkbox"
-                                                                                           :required="item.options?.['#required'] ?? false"
-                                                                                           x-model="blockForm.extra_fields[fieldName][itemName]"
-                                                                                           x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}"
-                                                                                    >
-                                                                                </div>
+                                                                                <input type="checkbox"
+                                                                                       :required="item.options?.['#required'] ?? false"
+                                                                                       x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                       x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}"
+                                                                                       class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
                                                                             </template>
 
                                                                             {# Entity Autocomplete #}
@@ -464,9 +463,9 @@
                                                     x-for="([fieldName, field], index) in Object.entries(selectedTemplate.fields)"
                                                     :key="fieldName">
                                                 <template x-if="!fieldName.startsWith('group_')">
-                                                    <div>
-                                                        <label :class="{'required': field.options?.['#required']}"
-                                                               class="block text-sm font-medium text-slate-700 mb-1">
+                                                    <div :class="field.type === 'checkbox' ? 'flex flex-row-reverse justify-end items-center gap-3' : ''">
+                                                        <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700' : 'block text-sm font-medium text-slate-700 mb-1'"
+                                                               x-show="field.type !== 'checkbox' || true">
                                                             <span x-text="field.label"></span>
                                                             <span x-show="field.options?.['#required']"
                                                                   class="text-red-500">*</span>
@@ -493,7 +492,8 @@
                                                         <template x-if="field.type === 'checkbox'">
                                                             <input type="checkbox"
                                                                    :required="field.options?.['#required'] ?? false"
-                                                                   x-model="blockForm.fields[fieldName]">
+                                                                   x-model="blockForm.fields[fieldName]"
+                                                                   class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
                                                         </template>
 
                                                         {# Select Input #}
@@ -948,8 +948,8 @@
                                                                                     x-for="([itemName, field], index) in Object.entries(field_)"
                                                                                     :key="index">
                                                                                 <template x-if="itemName != 'g_title'">
-                                                                                    <div :class="{'flex flex-row-reverse justify-end items-center gap-2': field.type === 'checkbox'}">
-                                                                                        <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700 mb-0' : 'block text-sm font-medium text-slate-700 mb-1'">
+                                                                                    <div :class="{'flex flex-row-reverse justify-end items-center gap-3': field.type === 'checkbox'}">
+                                                                                        <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700' : 'block text-sm font-medium text-slate-700 mb-1'"
                                                                                             <span x-text="field.label"></span>
                                                                                             <span x-show="field.options?.['#required']"
                                                                                                   class="text-red-500">*</span>
@@ -1149,8 +1149,8 @@
                                                             <template
                                                                     x-for="(field, fieldName) in selectedTemplate.fields"
                                                                     :key="fieldName">
-                                                                    <div :class="{'flex flex-row-reverse justify-end items-center gap-2': field.type === 'checkbox'}">
-                                                                    <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700 mb-0' : 'block text-sm font-medium text-slate-700 mb-1'">
+                                                                    <div :class="{'flex flex-row-reverse justify-end items-center gap-3': field.type === 'checkbox'}">
+                                                                    <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700' : 'block text-sm font-medium text-slate-700 mb-1'">
                                                                         <span x-text="field.label"></span>
                                                                         <span x-show="field.options?.['#required']"
                                                                               class="text-red-500">*</span>
@@ -1179,7 +1179,8 @@
                                                                     <template x-if="field.type === 'checkbox'">
                                                                         <input type="checkbox"
                                                                                :required="field.options?.['#required'] ?? false"
-                                                                               x-model="item[fieldName]">
+                                                                               x-model="item[fieldName]"
+                                                                               class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
                                                                     </template>
 
 
