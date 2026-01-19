@@ -207,7 +207,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#type' => 'page',
       '#language' => $node_translation ? $node_translation->language()
         ->getId() : $node->language()->getId(),
-      '#node' => $this->nodeService->processVactoryPageData($node_translation ?? $node, $fields),
+      '#node' => $this->nodeService->processVactoryPageData($node_translation ?? $node),
       '#changed' => $node_translation ? $node_translation->get('changed')->value : $node->get('changed')->value,
       '#label' => $node_translation ? $node_translation->label() : $node->label(),
       '#nid' => $id,
@@ -286,6 +286,8 @@ class DashboardVactoryPageController extends ControllerBase {
 
     $meta_tags = $this->metatagService->prepareMetatags($node);
 
+    $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+
     return [
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'page',
@@ -297,6 +299,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#available_languages' => $available_languages_list,
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => FALSE,
+      '#fields' => $fields,
       '#meta_tags' => $meta_tags,
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
     ];
