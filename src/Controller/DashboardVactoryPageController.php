@@ -302,6 +302,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#fields' => $fields,
       '#meta_tags' => $meta_tags,
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
     ];
   }
 
