@@ -203,6 +203,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'preview_url' => NULL,
         'banner' => NULL,
         'domain_access_enabled' => FALSE,
+        'anchor' => NULL,
       ],
     ],
     'vactory_dashboard_node_add' => [
@@ -222,6 +223,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'bundle_label' => NULL,
         'banner' => NULL,
         'domain_access_enabled' => FALSE,
+        'anchor' => NULL,
       ],
     ],
     'vactory_dashboard_taxonomy_add' => [

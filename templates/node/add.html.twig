@@ -59,6 +59,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -73,6 +75,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -88,6 +92,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -103,6 +109,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -1202,6 +1210,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1227,6 +1237,8 @@
               config: {
                 title: template.name || '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1461,6 +1473,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1569,6 +1583,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1628,6 +1644,8 @@
                 hideDesktop: block.hideDesktop == '1' ? true : false,
                 enableParallax: block.enableParallax == '1' ? true : false,
                 show_title: block.show_title || false,
+                show_in_anchor_menu: block.show_in_anchor_menu || false,
+                anchor_title: block.anchor_title || '',
                 width: block.width || 'narrow_width',
                 spacing: block.spacing || 'small_space',
                 css_classes: block.css_classes || '',
@@ -1688,6 +1706,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1712,6 +1732,8 @@
               spacing: block?.config?.spacing || block?.spacing || 'small_space',
               css_classes: block?.config?.css_classes || block?.css_classes || '',
               show_title: block?.config?.show_title || block?.show_title || false,
+              show_in_anchor_menu: block?.config?.show_in_anchor_menu || block?.show_in_anchor_menu || false,
+              anchor_title: block?.anchor_title || block?.config?.anchor_title || '',
               image: block?.config?.image || block?.image,
               imageID: block?.config?.imageID || block?.imageID,
               color: block?.config?.color || block?.color,
@@ -1731,6 +1753,8 @@
               display: form?.config?.display || form?.display,
               content: form?.content,
               show_title: form?.config?.show_title,
+              show_in_anchor_menu: form?.config?.show_in_anchor_menu,
+              anchor_title: form?.config?.anchor_title || form?.anchor_title,
               spacing: form?.config?.spacing || form?.spacing,
               displayID: form?.displayID,
               width: form?.config?.width,

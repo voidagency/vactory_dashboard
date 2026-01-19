@@ -420,6 +420,7 @@ class DashboardNodeController extends ControllerBase {
       '#fields' => $fields,
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
       ...$paragraph_flags,
     ];
 
@@ -541,6 +542,7 @@ class DashboardNodeController extends ControllerBase {
       '#meta_tags' => $meta_tags,
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
       ...$paragraph_flags,
     ];
 
@@ -658,6 +660,7 @@ class DashboardNodeController extends ControllerBase {
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       '#meta_tags' => $meta_tags,
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
       ...$paragraph_flags,
     ];
 
