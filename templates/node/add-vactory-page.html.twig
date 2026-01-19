@@ -1,5 +1,5 @@
 <div class="h-full flex flex-col"
-     x-data="pageEditor({language: '{{ language }}'})">
+     x-data="pageEditor({language: '{{ language }}', fields: '{{ fields|json_encode|e('js') }}'})">
     <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
         {# Header with back button, title and actions #}
         {% include "@vactory_dashboard/node/_components/actions.html.twig" with {

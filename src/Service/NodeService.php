@@ -508,6 +508,21 @@ class NodeService {
       ->getAliasByPath('/node/' . $node->id());
     $node_data['alias'] = $alias;
     $node_data['status'] = $node->isPublished();
+
+    // Include domain access field values if they exist.
+    if ($node->hasField('field_domain_access')) {
+      $domain_access = [];
+      foreach ($node->get('field_domain_access')->referencedEntities() as $domain) {
+        $domain_access[] = $domain->id();
+      }
+      $node_data['field_domain_access'] = $domain_access;
+    }
+
+    if ($node->hasField('field_domain_all_affiliates')) {
+      // Return as string '1' or '0' for JavaScript compatibility
+      $node_data['field_domain_all_affiliates'] = $node->get('field_domain_all_affiliates')->value ? '1' : '0';
+    }
+
     return $node_data;
   }
 
@@ -1419,7 +1434,7 @@ class NodeService {
       switch ($field_type) {
         case 'entity_reference':
           $field_info['target_type'] = $field_settings['target_type'];
-          if ($field_settings['target_type'] === 'taxonomy_term' || $field_settings['target_type'] === 'user' || $field_settings['target_type'] === 'node') {
+          if ($field_settings['target_type'] === 'taxonomy_term' || $field_settings['target_type'] === 'user' || $field_settings['target_type'] === 'node' || $field_settings['target_type'] === 'domain') {
             $component = $form_display->getComponent($field_name);
             if ($component) {
               $widget_type = $component['type'];

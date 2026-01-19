@@ -23,7 +23,7 @@
           },
           get contentFields() {
             return Object.fromEntries(
-              Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content'),
+              Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content' && !key.startsWith('field_domain_')),
             );
           },
           get crossContentFields() {
@@ -1803,6 +1803,15 @@
                   return;
                 }
 
+                if (field.type === 'select') {
+                  if (field.multiple) {
+                    this.formData.fields[fieldKey] = Array.isArray(value) ? value.map(v => String(v)) : [];
+                  } else {
+                    this.formData.fields[fieldKey] = value ? String(value) : '';
+                  }
+                  return;
+                }
+
                 if (field.type === 'faqfield') {
                   if (Array.isArray(field.value) && field.value.length) {
                     this.formData.fields[fieldKey] = field.value;
@@ -2185,7 +2194,9 @@
                   status: this.settings.status,
                   changed: this.changed,
                   banner: this.banner,
-                  fields: this.formData.fields,
+                  fields: Object.fromEntries(
+                    Object.entries(this.formData.fields).filter(([key]) => key.startsWith('field_domain_'))
+                  ),
                 }),
               });
               const data = await response.json();
@@ -2350,7 +2361,9 @@
                 },
                 body: JSON.stringify({
                   language: this.language,
-                  fields: this.formData.fields,
+                  fields: Object.fromEntries(
+                    Object.entries(this.formData.fields).filter(([key]) => key.startsWith('field_domain_'))
+                  ),
                   status: this.formData.status,
                   seo: this.seo,
                   blocks: this.blocks,
