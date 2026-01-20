@@ -74,17 +74,17 @@
                  bg-white border border-slate-300 rounded shadow-lg overscroll-auto"
           @wheel.stop
         >
-          <template x-for="item in results" :key="item.url">
+          <template x-for="result in results" :key="result.url">
             <li
-              @mousedown.prevent="{{ xmodel }}.url = item.url; if (!{{ xmodel }}.title) {{ xmodel }}.title = item.title; hideResults();"
+              @mousedown.prevent="{{ xmodel }}.url = result.url; if (!{{ xmodel }}.title) {{ xmodel }}.title = result.title; hideResults();"
               class="px-3 py-2 cursor-pointer hover:bg-slate-100"
             >
-              <div class="font-semibold" x-text="item.title"></div>
+            <div class="font-semibold" x-text="result.title"></div>
               <div class="text-xs text-slate-500">
-                <span x-text="item.type"></span> |
-                <span x-text="new Date(item.created * 1000).toLocaleDateString()"></span> |
-                ID: <span x-text="item.id"></span> |
-                Auteur: <span x-text="item.author"></span>
+                <span x-text="result.type"></span> |
+                <span x-text="new Date(result.created * 1000).toLocaleDateString()"></span> |
+                ID: <span x-text="result.id"></span> |
+                Auteur: <span x-text="result.author"></span>
               </div>
             </li>
           </template>
