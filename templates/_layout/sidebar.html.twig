@@ -64,31 +64,60 @@ Macro to render menu items recursively with proper depth and active state handli
         <div class="w-full"
                 {% if has_children %}
             x-data="{ subOpen: {{ should_expand ? 'true' : 'false' }} }"
+            @mouseenter="subOpen = true"
+            @mouseleave="subOpen = {{ should_expand ? 'true' : 'false' }}"
                 {% endif %}>
 
             {# Render the item #}
             {% if has_children %}
-                {# Parent item with children - clickable to expand/collapse #}
-                <div class="{{ item_classes|join(' ') }}"
-                     @click="subOpen = !subOpen"
-                     {% if padding_left %}style="{{ padding_left }}"{% endif %}>
+                {# Parent item with children - shows submenu on hover #}
+                {% set parent_href = item.url ?? '#' %}
+                {% set has_url = item.url is defined and item.url and item.url != '#' %}
 
-                    {% if depth == 2 %}
-                        <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
-                    {% endif %}
+                {% if has_url %}
+                    {# Parent has URL - make it a clickable link #}
+                    <a href="{{ parent_href }}"
+                       class="{{ item_classes|join(' ') }}"
+                       {% if padding_left %}style="{{ padding_left }}"{% endif %}>
 
-                    <span class="flex-1 truncate">{{ item.title }}</span>
+                        {% if depth == 2 %}
+                            <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
+                        {% endif %}
 
-                    <span class="text-gray-400 transition-transform"
-                          :class="{ 'rotate-180': subOpen }">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                 viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                 class="w-4 h-4 text-gray-900">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                    d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
-            </svg>
-          </span>
-                </div>
+                        <span class="flex-1 truncate">{{ item.title }}</span>
+
+                        <span class="text-gray-600 transition-transform"
+                              :class="{ 'rotate-180': subOpen }">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                 viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                 class="w-4 h-4 text-gray-900">
+                              <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
+                            </svg>
+                        </span>
+                    </a>
+                {% else %}
+                    {# Parent has no URL - greyed out/disabled appearance #}
+                    <div class="{{ item_classes|join(' ') }} opacity-75 cursor-not-allowed !text-gray-600"
+                         {% if padding_left %}style="{{ padding_left }}"{% endif %}>
+
+                        {% if depth == 2 %}
+                            <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
+                        {% endif %}
+
+                        <span class="flex-1 truncate text-gray-600">{{ item.title }}</span>
+
+                        <span class="text-gray-300 transition-transform"
+                              :class="{ 'rotate-180': subOpen }">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                 viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                 class="w-4 h-4 text-gray-600">
+                              <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
+                            </svg>
+                        </span>
+                    </div>
+                {% endif %}
             {% else %}
                 {# Leaf item - link #}
                 {% set href = item.url ?? '#.' %}
@@ -156,11 +185,14 @@ Macro to render menu items recursively with proper depth and active state handli
             <h2 class="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3">{{ "Contenu"|t }}</h2>
             {% if user.hasPermission('access content overview') %}
             <div class="flex flex-col gap-1">
-                <div class="pages w-full">
-                    <button @click="openDropdowns.pages = !openDropdowns.pages"
-                            class="flex items-center w-full rounded-lg transition-all duration-200 text-slate-700 px-3 hover:bg-primary-50 hover:text-primary-700 group h-8 font-semibold">
+                {% set pages_has_active = 'vactory_page' in current_path %}
+                <div class="pages w-full"
+                     @mouseenter="openDropdowns.pages = true"
+                     @mouseleave="openDropdowns.pages = {{ pages_has_active ? 'true' : 'false' }}"
+                     x-init="openDropdowns.pages = {{ pages_has_active ? 'true' : 'false' }}">
+                    <div class="flex items-center w-full rounded-lg transition-all duration-200 px-3 group h-8 font-semibold opacity-75 cursor-not-allowed text-gray-600">
               
-                        <span class="text-slate-500 mr-3 group-hover:text-primary-600 transition-colors">
+                        <span class="text-gray-600 mr-3">
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
                                stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
                             <path stroke-linecap="round" stroke-linejoin="round"
@@ -168,18 +200,18 @@ Macro to render menu items recursively with proper depth and active state handli
                           </svg>
                         </span>
 
-                        <span class="flex-1 text-left truncate">{{ "Pages"|t }}</span>
-                        <span class="inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 mr-2">
+                        <span class="flex-1 text-left truncate text-gray-600">{{ "Pages"|t }}</span>
+                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 mr-2">
                           {{ sidebar.pages.total_pages }}
                         </span>
-                        <span class="text-slate-400 transition-transform group-hover:text-primary-500"
+                        <span class="text-gray-300 transition-transform"
                               :class="{ 'rotate-180': openDropdowns.pages }">
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
-                               stroke="currentColor" aria-hidden="true" data-slot="icon" class="w-4 h-4 text-gray-900">
+                               stroke="currentColor" aria-hidden="true" data-slot="icon" class="w-4 h-4 text-gray-600">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
                           </svg>
                         </span>
-                    </button>
+                    </div>
                     <div class="ml-5 border-l-2 border-primary-100 overflow-hidden transition-all duration-200 bg-slate-50/30 rounded-r-lg"
                          :class="{ 'max-h-0': !openDropdowns.pages, 'pb-2': openDropdowns.pages }">
 
@@ -200,7 +232,7 @@ Macro to render menu items recursively with proper depth and active state handli
                                    flex text-sm items-center justify-between w-full rounded-md rounded-tl-none
                                    rounded-bl-none transition-colors duration-150 text-gray-600 py-1 px-3 font-medium">
                                 <span class="truncate">{{ homepage.title|striptags|default('Home page') }}</span>
-                                <span class="text-gray-400 transition-transform">
+                                <span class="text-gray-600 transition-transform">
                                     <span class="inline-flex items-center rounded-full bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-700/10">{{ "Home" | t }}</span>
                                     </span>
                                 </a>
@@ -213,13 +245,16 @@ Macro to render menu items recursively with proper depth and active state handli
                 {% endif %}
 
                 {# Categories #}
+                {% set taxonomies_has_active = '/admin/dashboard/taxonomy/' in current_path %}
                 <div class="w-full">
-                    <div class="categories w-full">
+                    <div class="categories w-full"
+                         @mouseenter="openDropdowns.taxonomies = true"
+                         @mouseleave="openDropdowns.taxonomies = {{ taxonomies_has_active ? 'true' : 'false' }}"
+                         x-init="openDropdowns.taxonomies = {{ taxonomies_has_active ? 'true' : 'false' }}">
                         {% if user.hasPermission('access taxonomy overview') %}
-                            <button @click="openDropdowns.taxonomies = !openDropdowns.taxonomies"
-                                    class="flex items-center w-full rounded-lg transition-all duration-200 text-slate-700 px-3 hover:bg-primary-50 hover:text-primary-700 group h-8 font-semibold">
+                            <div class="flex items-center w-full rounded-lg transition-all duration-200 px-3 group h-8 font-semibold opacity-75 cursor-not-allowed text-gray-600">
                               
-                              <span class="text-slate-500 mr-3 group-hover:text-primary-600 transition-colors">
+                              <span class="text-gray-600 mr-3">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24"
                                      stroke-width="1.5"
                                      stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
@@ -228,23 +263,23 @@ Macro to render menu items recursively with proper depth and active state handli
                                 </svg>
                               </span>
 
-                                <span class="flex-1 text-left truncate">{{ "Catégories"|t }}</span>
+                                <span class="flex-1 text-left truncate text-gray-600">{{ "Catégories"|t }}</span>
 
-                                <span class="inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 mr-2">
+                                <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 mr-2">
                                 {{ sidebar.vocabularies|length }}
                               </span>
 
-                                <span class="text-slate-400 transition-transform group-hover:text-primary-500"
+                                <span class="text-gray-300 transition-transform"
                                       :class="{ 'rotate-180': openDropdowns.taxonomies }">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24"
                                      stroke-width="1.5"
                                      stroke="currentColor" aria-hidden="true" data-slot="icon"
-                                     class="w-4 h-4 text-gray-900">
+                                     class="w-4 h-4 text-gray-600">
                                   <path stroke-linecap="round" stroke-linejoin="round"
                                         d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
                                 </svg>
                               </span>
-                            </button>
+                            </div>
                         {% endif %}
 
                         <div class="ml-5 border-l-2 border-primary-100 overflow-hidden transition-all duration-200 bg-slate-50/30 rounded-r-lg"
@@ -276,10 +311,18 @@ Macro to render menu items recursively with proper depth and active state handli
 
                     {# Types de contenues #}
                     {% if user.hasPermission('access content overview') %}
-                        <div class="content-types w-full">
-                            <button @click="openDropdowns.contentTypes = !openDropdowns.contentTypes"
-                                    class="flex items-center w-full rounded-lg transition-all duration-200 text-slate-700 px-3 hover:bg-primary-50 hover:text-primary-700 group h-8 font-semibold">
-                                    <span class="text-slate-500 mr-3 group-hover:text-primary-600 transition-colors">
+                        {% set content_types_has_active = false %}
+                        {% for type in sidebar.content_types.items %}
+                            {% if type.id in current_path %}
+                                {% set content_types_has_active = true %}
+                            {% endif %}
+                        {% endfor %}
+                        <div class="content-types w-full"
+                             @mouseenter="openDropdowns.contentTypes = true"
+                             @mouseleave="openDropdowns.contentTypes = {{ content_types_has_active ? 'true' : 'false' }}"
+                             x-init="openDropdowns.contentTypes = {{ content_types_has_active ? 'true' : 'false' }}">
+                            <div class="flex items-center w-full rounded-lg transition-all duration-200 px-3 group h-8 font-semibold opacity-75 cursor-not-allowed text-gray-600">
+                                    <span class="text-gray-600 mr-3">
                                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24"
                                            stroke-width="1.5"
                                            stroke="currentColor" aria-hidden="true" data-slot="icon" class="h-5 w-5">
@@ -288,22 +331,22 @@ Macro to render menu items recursively with proper depth and active state handli
                                       </svg>
                                     </span>
 
-                                <span class="flex-1 text-left truncate">{{ "Types de contenus"|t }}</span>
+                                <span class="flex-1 text-left truncate text-gray-600">{{ "Types de contenus"|t }}</span>
 
-                                <span class="inline-flex items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 mr-2">
+                                <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 mr-2">
                                       {{ sidebar.content_types.items|length }}
                                     </span>
-                                <span class="text-slate-400 transition-transform group-hover:text-primary-500"
+                                <span class="text-gray-300 transition-transform"
                                       :class="{ 'rotate-180': openDropdowns.contentTypes }">
                                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24"
                                            stroke-width="1.5"
                                            stroke="currentColor" aria-hidden="true" data-slot="icon"
-                                           class="w-4 h-4 text-gray-900">
+                                           class="w-4 h-4 text-gray-600">
                                         <path stroke-linecap="round" stroke-linejoin="round"
                                               d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
                                       </svg>
                                     </span>
-                            </button>
+                            </div>
 
                             <div class="ml-5 border-l-2 border-primary-100 overflow-hidden transition-all duration-200 bg-slate-50/30 rounded-r-lg"
                                  :class="{ 'max-h-0': !openDropdowns.contentTypes, 'pb-2': openDropdowns.contentTypes }">
@@ -571,7 +614,7 @@ Macro to render menu items recursively with proper depth and active state handli
                 <a href="{{ sidebar.advancedDashboard.video_url ?: '#.' }}"
                    target="_blank" rel="noopener noreferrer"
                    title="{{ sidebar.advancedDashboard.video_url ? '' : 'Vidéo non disponible' }}"
-                   class="flex items-center text-sm rounded-lg px-3 transition-all duration-200 group h-8 font-semibold {{ sidebar.advancedDashboard.video_url ? ' hover:bg-white' : ' opacity-50 cursor-not-allowed pointer-events-none' }}">
+                   class="flex items-center text-sm rounded-lg px-3 transition-all duration-200 group h-8 font-semibold {{ sidebar.advancedDashboard.video_url ? ' hover:bg-white' : ' opacity-75 cursor-not-allowed pointer-events-none' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                          stroke-width="1.5" stroke="currentColor" aria-hidden="true" data-slot="icon"
                          class="h-4 w-4 mr-3 text-slate-500 group-hover:text-primary-600 transition-colors">
@@ -589,7 +632,7 @@ Macro to render menu items recursively with proper depth and active state handli
                 <a href="{{ sidebar.advancedDashboard.file_url ?: '#.' }}"
                    {% if sidebar.advancedDashboard.file_url %}download{% endif %}
                    title="{{ sidebar.advancedDashboard.file_url ? '' : 'Fichier non disponible' }}"
-                   class="flex items-center text-sm rounded-lg px-3 transition-all duration-200 group h-8 font-semibold{{ sidebar.advancedDashboard.file_url ? ' hover:bg-white' : ' opacity-50 cursor-not-allowed pointer-events-none' }}">
+                   class="flex items-center text-sm rounded-lg px-3 transition-all duration-200 group h-8 font-semibold{{ sidebar.advancedDashboard.file_url ? ' hover:bg-white' : ' opacity-75 cursor-not-allowed pointer-events-none' }}">
                     <svg xmlns="http://www.w3.org/2000/svg"
                          class="h-4 w-4 mr-3 text-slate-500 group-hover:text-primary-600 transition-colors"
                          fill="none" viewBox="0 0 24 24" stroke="currentColor">
