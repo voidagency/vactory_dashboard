@@ -57,7 +57,7 @@ Macro to render menu items recursively with proper depth and active state handli
 
         {# Apply greyed out style if no URL, otherwise normal color with hover #}
         {% if not has_url %}
-            {% set item_classes = item_classes|merge(['text-gray-400', 'opacity-75', 'pointer-events-none']) %}
+            {% set item_classes = item_classes|merge(['text-gray-400', 'pointer-events-none']) %}
         {% else %}
             {% set item_classes = item_classes|merge(['text-gray-600', 'hover:bg-gray-50']) %}
         {% endif %}
@@ -80,25 +80,50 @@ Macro to render menu items recursively with proper depth and active state handli
             {# Render the item #}
             {% if has_children %}
                 {# Parent item with children - shows submenu on hover #}
-                <div class="{{ item_classes|join(' ') }}"
+                {% if has_url %}
+                    {# Parent has URL - make it a clickable link #}
+                    <a href="{{ item.url }}"
+                        class="{{ item_classes|join(' ') }}"
                         {% if padding_left %}style="{{ padding_left }}"{% endif %}>
 
-                    {% if depth == 2 %}
-                        <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
-                    {% endif %}
+                        {% if depth == 2 %}
+                            <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
+                        {% endif %}
 
-                    <span class="flex-1 truncate">{{ item.title }}</span>
+                        <span class="flex-1 truncate">{{ item.title }}</span>
 
-                    <span class="text-gray-400 transition-transform"
-                            :class="{ 'rotate-180': subOpen }">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                    class="w-4 h-4 text-gray-900">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
-            </svg>
-            </span>
-                </div>
+                        <span class="text-gray-400 transition-transform"
+                                :class="{ 'rotate-180': subOpen }">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                    class="w-4 h-4 text-gray-900">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
+                            </svg>
+                        </span>
+                    </a>
+                {% else %}
+                    {# Parent has no URL - just a div (greyed out) #}
+                    <div class="{{ item_classes|join(' ') }}"
+                            {% if padding_left %}style="{{ padding_left }}"{% endif %}>
+
+                        {% if depth == 2 %}
+                            <span class="w-1.5 h-1.5 rounded-full bg-gray-300 mr-2 ml-1"></span>
+                        {% endif %}
+
+                        <span class="flex-1 truncate">{{ item.title }}</span>
+
+                        <span class="text-gray-400 transition-transform"
+                                :class="{ 'rotate-180': subOpen }">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                    class="w-4 h-4 text-gray-900">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
+                            </svg>
+                        </span>
+                    </div>
+                {% endif %}
             {% else %}
                 {# Leaf item - link or disabled #}
                 {% set href = item.url ?? '#.' %}
@@ -181,10 +206,9 @@ Macro to render menu items recursively with proper depth and active state handli
             {% set pages_has_active = 'vactory_page' in current_path %}
             <div class="flex flex-col gap-1">
                 <div class="pages w-full"
-                     @mouseenter="openDropdowns.pages = true"
-                     @mouseleave="openDropdowns.pages = {{ pages_has_active ? 'true' : 'false' }}"
                      x-init="openDropdowns.pages = {{ pages_has_active ? 'true' : 'false' }}">
-                    <div class="flex items-center w-full rounded-lg transition-all duration-200 text-slate-700 px-3 hover:bg-primary-50 hover:text-primary-700 group h-8 font-semibold cursor-pointer">
+                    <button @click="openDropdowns.pages = !openDropdowns.pages"
+                            class="flex items-center w-full rounded-lg transition-all duration-200 text-slate-700 px-3 hover:bg-primary-50 hover:text-primary-700 group h-8 font-semibold">
 
                         <span class="text-slate-500 mr-3 group-hover:text-primary-600 transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke-width="1.5"
@@ -205,7 +229,7 @@ Macro to render menu items recursively with proper depth and active state handli
                             <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"></path>
                             </svg>
                         </span>
-                    </div>
+                    </button>
                     <div class="ml-5 border-l-2 border-primary-100 overflow-hidden transition-all duration-200 bg-slate-50/30 rounded-r-lg"
                             :class="{ 'max-h-0': !openDropdowns.pages, 'pb-2': openDropdowns.pages }">
 
