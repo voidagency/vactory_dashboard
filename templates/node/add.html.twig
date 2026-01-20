@@ -20,6 +20,10 @@
           formData: {
             fields: {},
             status: true,
+            scheduler: {
+              publish_on: '',
+              unpublish_on: '',
+            },
           },
           language: config.language,
           activeTab: 'content',
@@ -32,6 +36,8 @@
             tab_id: '',
             alias: '',
             status: true,
+            publish_on: '',
+            unpublish_on: '',
           },
           seo: {},
           showBlocksModal: false,
@@ -316,11 +322,10 @@
                   language: this.language,
                   seo: this.seo,
                   blocks: this.blocks,
-                  fields: Object.fromEntries(
-                    Object.entries(this.formData.fields).filter(([key]) => key.startsWith('field_domain_'))
-                  ),
+                  fields: this.formData.fields,
                   status: this.formData.status,
                   banner: this.banner,
+                  scheduler: this.formData.scheduler,
                 }),
               });
 

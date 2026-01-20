@@ -372,6 +372,18 @@ class NodeService {
     }
 
     $this->prepareBannerData($entity, $node_data);
+
+    // Include scheduler fields if they exist.
+    if ($entity->hasField('publish_on')) {
+      $publish_on = $entity->get('publish_on')->value;
+      $node_data['publish_on'] = $publish_on ? date('Y-m-d\TH:i', $publish_on) : '';
+    }
+
+    if ($entity->hasField('unpublish_on')) {
+      $unpublish_on = $entity->get('unpublish_on')->value;
+      $node_data['unpublish_on'] = $unpublish_on ? date('Y-m-d\TH:i', $unpublish_on) : '';
+    }
+
     return $node_data;
   }
 
@@ -521,6 +533,17 @@ class NodeService {
     if ($node->hasField('field_domain_all_affiliates')) {
       // Return as string '1' or '0' for JavaScript compatibility
       $node_data['field_domain_all_affiliates'] = $node->get('field_domain_all_affiliates')->value ? '1' : '0';
+    }
+
+    // Include scheduler fields if they exist.
+    if ($node->hasField('publish_on')) {
+      $publish_on = $node->get('publish_on')->value;
+      $node_data['publish_on'] = $publish_on ? date('Y-m-d\TH:i', $publish_on) : '';
+    }
+
+    if ($node->hasField('unpublish_on')) {
+      $unpublish_on = $node->get('unpublish_on')->value;
+      $node_data['unpublish_on'] = $unpublish_on ? date('Y-m-d\TH:i', $unpublish_on) : '';
     }
 
     return $node_data;

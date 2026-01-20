@@ -421,6 +421,7 @@ class DashboardNodeController extends ControllerBase {
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
       ...$paragraph_flags,
     ];
 
@@ -543,6 +544,7 @@ class DashboardNodeController extends ControllerBase {
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
       ...$paragraph_flags,
     ];
 
@@ -661,6 +663,7 @@ class DashboardNodeController extends ControllerBase {
       '#meta_tags' => $meta_tags,
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
       ...$paragraph_flags,
     ];
 
@@ -823,6 +826,16 @@ class DashboardNodeController extends ControllerBase {
         }
         // Remplace 'field_meta_tags' par le nom exact du champ metatag sur ton nœud.
         $node->set('field_vactory_meta_tags', serialize($meta_tags));
+      }
+
+      // Save scheduler fields if they exist and have values.
+      $scheduler = $data['scheduler'] ?? [];
+      if (!empty($scheduler['publish_on']) && $node->hasField('publish_on')) {
+        $node->set('publish_on', strtotime($scheduler['publish_on']));
+      }
+
+      if (!empty($scheduler['unpublish_on']) && $node->hasField('unpublish_on')) {
+        $node->set('unpublish_on', strtotime($scheduler['unpublish_on']));
       }
 
       $node->isNew();
@@ -1023,6 +1036,22 @@ class DashboardNodeController extends ControllerBase {
       // Update blocks/paragraphs if they exist.
       if ($node->hasField('field_vactory_paragraphs')) {
         $this->nodeService->updateParagraphsInNode($node, $blocks, $language, $node_default_lang);
+      }
+
+      // Save scheduler fields if they exist and have values.
+      $scheduler = $content['scheduler'] ?? [];
+      if (!empty($scheduler['publish_on']) && $node->hasField('publish_on')) {
+        $node->getTranslation($language)->set('publish_on', strtotime($scheduler['publish_on']));
+      }
+      elseif ($node->hasField('publish_on') && isset($scheduler['publish_on']) && $scheduler['publish_on'] === '') {
+        $node->getTranslation($language)->set('publish_on', NULL);
+      }
+
+      if (!empty($scheduler['unpublish_on']) && $node->hasField('unpublish_on')) {
+        $node->getTranslation($language)->set('unpublish_on', strtotime($scheduler['unpublish_on']));
+      }
+      elseif ($node->hasField('unpublish_on') && isset($scheduler['unpublish_on']) && $scheduler['unpublish_on'] === '') {
+        $node->getTranslation($language)->set('unpublish_on', NULL);
       }
 
       // Save the node

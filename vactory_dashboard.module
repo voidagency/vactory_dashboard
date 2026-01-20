@@ -204,6 +204,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'banner' => NULL,
         'domain_access_enabled' => FALSE,
         'anchor' => NULL,
+        'scheduler_enabled' => FALSE,
       ],
     ],
     'vactory_dashboard_node_add' => [
@@ -224,6 +225,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'banner' => NULL,
         'domain_access_enabled' => FALSE,
         'anchor' => NULL,
+        'scheduler_enabled' => FALSE,
       ],
     ],
     'vactory_dashboard_taxonomy_add' => [

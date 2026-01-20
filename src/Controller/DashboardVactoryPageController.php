@@ -135,6 +135,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
     ];
   }
 
@@ -228,6 +229,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
     ];
   }
 
@@ -311,6 +313,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
     ];
   }
 
@@ -607,6 +610,21 @@ class DashboardVactoryPageController extends ControllerBase {
         }
       }
 
+      // Update scheduler fields if they exist and have values.
+      if (!empty($settings['publish_on']) && $node->hasField('publish_on')) {
+        $node->getTranslation($language)->set('publish_on', strtotime($settings['publish_on']));
+      }
+      elseif ($node->hasField('publish_on') && isset($settings['publish_on']) && $settings['publish_on'] === '') {
+        $node->getTranslation($language)->set('publish_on', NULL);
+      }
+
+      if (!empty($settings['unpublish_on']) && $node->hasField('unpublish_on')) {
+        $node->getTranslation($language)->set('unpublish_on', strtotime($settings['unpublish_on']));
+      }
+      elseif ($node->hasField('unpublish_on') && isset($settings['unpublish_on']) && $settings['unpublish_on'] === '') {
+        $node->getTranslation($language)->set('unpublish_on', NULL);
+      }
+
       // Update SEO fields if they exist.
       if (!empty($seo) && $node->hasField('field_vactory_meta_tags')) {
         // Mettre à jour les meta tags avec les valeurs fournies dans $seo.
@@ -708,6 +726,15 @@ class DashboardVactoryPageController extends ControllerBase {
 
       if (isset($settings['summary'])) {
         $node->set('node_summary', $settings['summary']);
+      }
+
+      // Update scheduler fields if they exist and have values.
+      if (!empty($settings['publish_on']) && $node->hasField('publish_on')) {
+        $node->set('publish_on', strtotime($settings['publish_on']));
+      }
+
+      if (!empty($settings['unpublish_on']) && $node->hasField('unpublish_on')) {
+        $node->set('unpublish_on', strtotime($settings['unpublish_on']));
       }
 
       // Update SEO fields if they exist.

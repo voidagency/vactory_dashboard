@@ -20,6 +20,10 @@
           formData: {
             fields: {},
             status: config.status === '1',
+            scheduler: {
+              publish_on: '',
+              unpublish_on: '',
+            },
           },
           get contentFields() {
             return Object.fromEntries(
@@ -53,6 +57,8 @@
             summary: '',
             alias: '',
             status: config.status === '1',
+            publish_on: '',
+            unpublish_on: '',
           },
           seo: {},
           inputLabelsList: {},
@@ -1976,6 +1982,10 @@
               });
             }
 
+            // Initialize scheduler data from node
+            this.formData.scheduler.publish_on = node?.publish_on || '';
+            this.formData.scheduler.unpublish_on = node?.unpublish_on || '';
+
             // End Node specific process.
             if (node?.paragraphs && node?.paragraphs?.length > 0) {
               this.blocks = node.paragraphs.map((paragraph) => ({
@@ -2019,6 +2029,8 @@
             this.settings.summary = node?.summary || '';
             this.settings.alias = node?.alias || '';
             // this.settings.status = node.status || false;
+            this.settings.publish_on = node?.publish_on || '';
+            this.settings.unpublish_on = node?.unpublish_on || '';
 
             window.seoData = {{ meta_tags|json_encode|raw }};
             this.seo = {
@@ -2361,15 +2373,14 @@
                 },
                 body: JSON.stringify({
                   language: this.language,
-                  fields: Object.fromEntries(
-                    Object.entries(this.formData.fields).filter(([key]) => key.startsWith('field_domain_'))
-                  ),
+                  fields: this.formData.fields,
                   status: this.formData.status,
                   seo: this.seo,
                   blocks: this.blocks,
                   has_translation: this.has_translation,
                   changed: this.changed,
                   banner: this.banner,
+                  scheduler: this.formData.scheduler,
                 }),
               });
 

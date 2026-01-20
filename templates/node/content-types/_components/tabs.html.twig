@@ -9,7 +9,7 @@
                 class="px-4 py-3 font-medium text-sm border-b-2 transition-all duration-200">
             {{ 'Content'|t }}
         </button>
-        {% if domain_access_enabled %}
+        {% if domain_access_enabled or scheduler_enabled %}
             <button
                     @click="activeTab = 'settings'"
                     :class="{
