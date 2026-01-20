@@ -120,6 +120,10 @@ class DashboardVactoryPageController extends ControllerBase {
     }
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
+
+    // Get bundle fields for domain access settings.
+    $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+
     return [
       '#theme' => 'vactory_dashboard_node_add',
       '#type' => 'page',
@@ -127,8 +131,10 @@ class DashboardVactoryPageController extends ControllerBase {
       ...$paragraph_flags,
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
+      '#fields' => $fields,
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
     ];
   }
 
@@ -221,6 +227,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
     ];
   }
 
@@ -303,6 +310,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#meta_tags' => $meta_tags,
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
     ];
   }
 
@@ -669,6 +677,7 @@ class DashboardVactoryPageController extends ControllerBase {
       $blocks = $content['blocks'] ?? [];
       $status = $content['status'] ?? TRUE;
       $banner = $content['banner'] ?? [];
+      $fields = $content['fields'] ?? [];
 
       if (empty($settings['title'])) {
         return new JsonResponse([
@@ -719,6 +728,15 @@ class DashboardVactoryPageController extends ControllerBase {
       }
 
       $this->nodeService->saveBannerInNode($node, $banner);
+
+      // Save domain access fields if they exist.
+      if (!empty($fields)) {
+        foreach ($fields as $field_name => $field_value) {
+          if ($node->hasField($field_name)) {
+            $node->set($field_name, $field_value);
+          }
+        }
+      }
 
       // Save the node.
       $node->isNew();

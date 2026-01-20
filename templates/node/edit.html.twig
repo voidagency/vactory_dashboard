@@ -23,7 +23,7 @@
           },
           get contentFields() {
             return Object.fromEntries(
-              Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content'),
+              Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content' && !key.startsWith('field_domain_')),
             );
           },
           get crossContentFields() {
@@ -87,6 +87,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -102,6 +104,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -117,6 +121,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -132,6 +138,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -1023,6 +1031,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1051,6 +1061,8 @@
               config: {
                 title: template.name || '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1444,6 +1456,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1534,6 +1548,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1641,6 +1657,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1674,6 +1692,8 @@
               spacing: block?.config?.spacing || block?.spacing || 'small_space',
               css_classes: block?.config?.css_classes || block?.css_classes || '',
               show_title: block?.config?.show_title || block?.show_title || false,
+              show_in_anchor_menu: block?.config?.show_in_anchor_menu || block?.show_in_anchor_menu || false,
+              anchor_title: block?.config?.anchor_title || block.anchor_title || '',
               image: block?.config?.image || block?.image,
               imageID: block?.config?.imageID || block?.imageID,
               color: block?.config?.color || block?.color,
@@ -1690,6 +1710,8 @@
               title: form?.title || form?.config?.title,
               paragraph_id: form?.paragraph_id || form?.config?.paragraph_id,
               show_title: form?.show_title || form?.config?.show_title,
+              show_in_anchor_menu: form?.show_in_anchor_menu || form?.config?.show_in_anchor_menu,
+              anchor_title: form.anchor_title || form?.config?.anchor_title,
               blockType: form?.blockType,
               displayID: form?.displayID,
               content: form?.content,
@@ -1778,6 +1800,15 @@
 
                 if (field.type === 'radios') {
                   this.formData.fields[fieldKey] = value ? String(value) : '';
+                  return;
+                }
+
+                if (field.type === 'select') {
+                  if (field.multiple) {
+                    this.formData.fields[fieldKey] = Array.isArray(value) ? value.map(v => String(v)) : [];
+                  } else {
+                    this.formData.fields[fieldKey] = value ? String(value) : '';
+                  }
                   return;
                 }
 
@@ -1953,6 +1984,8 @@
                 // start configuration
                 paragraph_id: paragraph.paragraph_id ?? '',
                 show_title: paragraph.show_title ?? false,
+                show_in_anchor_menu: paragraph.show_in_anchor_menu ?? false,
+                anchor_title: paragraph.anchor_title ?? '',
                 width: paragraph.width ?? '',
                 css_classes: paragraph.css_classes ?? '',
                 color: paragraph.color ?? '#f00',
@@ -2161,7 +2194,9 @@
                   status: this.settings.status,
                   changed: this.changed,
                   banner: this.banner,
-                  fields: this.formData.fields,
+                  fields: Object.fromEntries(
+                    Object.entries(this.formData.fields).filter(([key]) => key.startsWith('field_domain_'))
+                  ),
                 }),
               });
               const data = await response.json();
@@ -2326,7 +2361,9 @@
                 },
                 body: JSON.stringify({
                   language: this.language,
-                  fields: this.formData.fields,
+                  fields: Object.fromEntries(
+                    Object.entries(this.formData.fields).filter(([key]) => key.startsWith('field_domain_'))
+                  ),
                   status: this.formData.status,
                   seo: this.seo,
                   blocks: this.blocks,
