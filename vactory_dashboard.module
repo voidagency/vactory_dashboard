@@ -1233,3 +1233,68 @@ function get_advanced_dashboard_support() {
     'isPopulated' => $is_populated,
   ];
 }
+
+/**
+ * Implements hook_preprocess_item_list__media_library_add_form_media_list().
+ *
+ * This targets each new, unsaved media item added to the media library, before
+ * they are saved. Adds Claro's CSS classes for proper styling.
+ */
+function vactory_dashboard_preprocess_item_list__media_library_add_form_media_list(array &$variables) {
+  foreach ($variables['items'] as &$item) {
+    $item['value']['preview']['#attributes']['class'][] = 'media-library-add-form__preview';
+    $item['value']['fields']['#attributes']['class'][] = 'media-library-add-form__fields';
+    $item['value']['remove_button']['#attributes']['class'][] = 'media-library-add-form__remove-button';
+    $item['value']['remove_button']['#attributes']['class'][] = 'button--extrasmall';
+
+    // #source_field_name is set by AddFormBase::buildEntityFormElement()
+    // to help themes and form_alter hooks identify the source field.
+    $fields = &$item['value']['fields'];
+    if (isset($fields['#source_field_name'])) {
+      $source_field_name = $fields['#source_field_name'];
+
+      // Set this flag so we can remove the details element.
+      if (isset($fields[$source_field_name]['widget'][0])) {
+        $fields[$source_field_name]['widget'][0]['#do_not_wrap_in_details'] = TRUE;
+      }
+
+      if (isset($fields[$source_field_name])) {
+        $fields[$source_field_name]['#attributes']['class'][] = 'media-library-add-form__source-field';
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_media_library_item__widget().
+ *
+ * This targets each media item selected in an entity reference field.
+ */
+function vactory_dashboard_preprocess_media_library_item__widget(array &$variables) {
+  $variables['content']['remove_button']['#attributes']['class'][] = 'media-library-item__remove';
+  $variables['content']['remove_button']['#attributes']['class'][] = 'icon-link';
+}
+
+/**
+ * Implements hook_preprocess_media_library_item__small().
+ *
+ * This targets each pre-selected media item selected when adding new media in
+ * the modal media library dialog.
+ */
+function vactory_dashboard_preprocess_media_library_item__small(array &$variables) {
+  $variables['content']['select']['#attributes']['class'][] = 'media-library-item__click-to-select-checkbox';
+}
+
+/**
+ * Implements hook_preprocess_links__media_library_menu().
+ *
+ * This targets the menu of available media types in the media library's modal
+ * dialog. Adds Claro's BEM classes for proper styling.
+ */
+function vactory_dashboard_preprocess_links__media_library_menu(array &$variables) {
+  foreach ($variables['links'] as &$link) {
+    // Add a class to the Media Library menu items.
+    $link['attributes']->addClass('media-library-menu__item');
+    $link['link']['#options']['attributes']['class'][] = 'media-library-menu__link';
+  }
+}
