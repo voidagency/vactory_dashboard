@@ -1,7 +1,7 @@
 {% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
 
 {% block content %}
-    <div class="flex-1 overflow-y-auto" x-data="documentsUploader()">
+    <div class="flex-1 overflow-y-auto" x-data="documentsUploader">
         {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
         <div>
             <!-- Titre -->
@@ -51,18 +51,12 @@
                                     <p class="text-xs text-gray-500">{{ allowed_extensions | join(', ') }}
                                         (max. 20 Mo)</p>
                                 </div>
-
-
-                                <p class="text-sm text-gray-700 truncate" x-text="file"></p>
+                            </label>
                         </div>
-                        </template>
+                        <input name="documents[]" id="documents" type="file" class="hidden" x-ref="fileInput"
+                               @change="handleFile" accept="{{ allowed_extensions | map(ext => '.' ~ ext) | join(',') }}"
+                               multiple/>
                     </div>
-                    </template>
-
-                    <input name="documents[]" id="documents" type="file" class="hidden" x-ref="fileInput"
-                           @change="handleFile" accept="{{ allowed_extensions | map(ext => '.' ~ ext) | join(',') }}"
-                           multiple/>
-                    </label>
                     <div>
 
                         <template x-if="fileNames.length > 0">
@@ -151,8 +145,8 @@
 
 {% block javascripts %}
     <script>
-      function documentsUploader() {
-        return {
+      document.addEventListener('alpine:init', () => {
+        Alpine.data('documentsUploader', () => ({
           loading: false,
           errors: {},
           fileNames: [],
@@ -196,12 +190,12 @@
               const ext = file.name.split('.').pop().toLowerCase();
 
               if (!validTypes.includes(ext)) {
-                this.errors.file = "{{ 'Extension non autorisée.' | t }}";
+                this.errors.file = "{{ 'Extension non autorisée.' | t | e('js') }}";
                 continue;
               }
 
               if (file.size > 20 * 1024 * 1024) {
-                this.errors.file = "{{ 'Le fichier dépasse la taille maximale de 20 Mo.' | t }}";
+                this.errors.file = "{{ 'Le fichier dépasse la taille maximale de 20 Mo.' | t | e('js') }}";
                 continue;
               }
 
@@ -229,7 +223,7 @@
               }
             }
             if (this.fileNames.length === 0) {
-              this.errors.file = "{{ 'Aucun fichier valide sélectionné.' | t }}";
+              this.errors.file = "{{ 'Aucun fichier valide sélectionné.' | t | e('js') }}";
             } else {
               this.errors.file = null;
             }
@@ -254,13 +248,13 @@
 
                 // Validate file extension
                 if (!validTypes.includes(ext)) {
-                  this.errors.file = "{{ 'Extension non autorisée.' | t }}";
+                  this.errors.file = "{{ 'Extension non autorisée.' | t | e('js') }}";
                   continue;
                 }
 
                 // Validate file size (20MB max)
                 if (file.size > 20 * 1024 * 1024) {
-                  this.errors.file = "{{ 'Le fichier dépasse la taille maximale de 20 Mo.' | t }}";
+                  this.errors.file = "{{ 'Le fichier dépasse la taille maximale de 20 Mo.' | t | e('js') }}";
                   continue;
                 }
 
@@ -308,7 +302,7 @@
             this.errors = {};
 
             if (this.files.length === 0) {
-              this.errors.file = "{{ 'Veuillez sélectionner un document.' | t }}";
+              this.errors.file = "{{ 'Veuillez sélectionner un document.' | t | e('js') }}";
               this.loading = false;
               this.showNotification('error', '{{ "Veuillez vérifier les valeurs fournies."|t }}');
               return;
@@ -358,25 +352,25 @@
 
               if (!response.ok) {
                 if (response.status === 403) {
-                  this.showNotification('error', '{{ "Vous n\'avez pas les permissions nécessaires pour créer des documents."|t }}');
+                  this.showNotification('error', '{{ "Vous n\'avez pas les permissions nécessaires pour créer des documents."|t|e('js') }}');
                 } else {
                   this.errors = result.errors || {};
                   console.error('Upload failed:', result);
-                  this.showNotification('error', '{{ "Veuillez vérifier les valeurs fournies."|t }}');
+                  this.showNotification('error', '{{ "Veuillez vérifier les valeurs fournies."|t|e('js') }}');
                 }
               } else { // Redirection ou autre action après succès
                 console.log('Upload successful:', result);
-                this.showNotification('success', '{{ "Documents ajouté avec succes"|t }}');
+                this.showNotification('success', '{{ "Documents ajouté avec succes"|t|e('js') }}');
                 window.location.href = '{{ path("vactory_dashboard.media") }}';
               }
             } catch (error) {
               console.error('Erreur :', error);
-              this.showNotification('error', '{{ "Une erreur est survenue"|t }}');
+              this.showNotification('error', '{{ "Une erreur est survenue"|t|e('js') }}');
             } finally {
               this.loading = false;
             }
           },
-        };
-      }
+        }));
+      });
     </script>
 {% endblock %}
