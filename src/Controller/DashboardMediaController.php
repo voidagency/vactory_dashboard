@@ -830,10 +830,10 @@ class DashboardMediaController extends ControllerBase {
 
       // Choisir le chemin selon la visibilité (public ou privé).
       $isPublic = $request->get('isPublic') === '1';
-      $destinationPath = $isPublic ? UPLOAD_BASE_PATH_PUBLIC . '/uploads/' : UPLOAD_BASE_PATH_PRIVATE;
+      $destinationPath = $isPublic ? UPLOAD_BASE_PATH_PUBLIC : UPLOAD_BASE_PATH_PRIVATE;
 
       // Générer le chemin avec la date du jour
-      $date_folder = date('Y-m-d');
+      $date_folder = date('Y-m');
       $destinationPath .= '/' . $date_folder . '/';
 
       // Lire et enregistrer le fichier
