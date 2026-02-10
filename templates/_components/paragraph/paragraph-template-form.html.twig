@@ -1223,7 +1223,7 @@
                                                                     </template>
                                                                     <template x-if="field.type === 'text_format'">
                                                                         <div x-show="!loaderCK">
-                                                                            <div class="wysiwyg-container" x-init="
+                                                                            <div class="wysiwyg-container" :id="`wysi-multi-${index}-${fieldName}`" x-init="
                                                                                 (() => {
                                                                                     $nextTick(() => {
                                                                                     new MutationObserver((records, observer) => {
