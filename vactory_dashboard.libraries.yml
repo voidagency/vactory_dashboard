@@ -63,7 +63,6 @@ claro-media-library:
       /core/themes/claro/css/components/views-exposed-form.css: {}
       /core/themes/claro/css/components/media-library.ui.css: {}
       /core/themes/claro/css/components/ckeditor5.css: {}
-      /core/themes/claro/css/base/elements.css: {}
       /core/modules/ckeditor5/css/editor.css: {}
     theme:
       /core/themes/claro/css/theme/media-library.css: {}

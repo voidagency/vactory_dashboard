@@ -1298,3 +1298,61 @@ function vactory_dashboard_preprocess_links__media_library_menu(array &$variable
     $link['link']['#options']['attributes']['class'][] = 'media-library-menu__link';
   }
 }
+
+/**
+ * Implements hook_theme_registry_alter().
+ *
+ * Override media library wrapper template and add module path for template discovery.
+ */
+function vactory_dashboard_theme_registry_alter(&$theme_registry) {
+  $module_path = \Drupal::service('extension.list.module')->getPath('vactory_dashboard');
+
+  // Override media library wrapper template.
+  if (isset($theme_registry['media_library_wrapper'])) {
+    $theme_registry['media_library_wrapper']['path'] = $module_path . '/templates';
+    $theme_registry['media_library_wrapper']['template'] = 'media-library/media-library-wrapper';
+  }
+
+  // Register template suggestions directly in theme registry to ensure they're found.
+  $module_template_path = $module_path . '/templates';
+
+  // Register views_view_unformatted__media_library
+  if (isset($theme_registry['views_view_unformatted'])) {
+    $suggestion = 'views_view_unformatted__media_library';
+    $theme_registry[$suggestion] = $theme_registry['views_view_unformatted'];
+    $theme_registry[$suggestion]['path'] = $module_template_path;
+    $theme_registry[$suggestion]['template'] = 'media-library/views-view-unformatted--media-library';
+  }
+
+  // Register views_view__media_library
+  if (isset($theme_registry['views_view'])) {
+    $suggestion = 'views_view__media_library';
+    $theme_registry[$suggestion] = $theme_registry['views_view'];
+    $theme_registry[$suggestion]['path'] = $module_template_path;
+    $theme_registry[$suggestion]['template'] = 'media-library/views-view--media-library';
+  }
+
+  // Register details__media_library_add_form_selected_media
+  if (isset($theme_registry['details'])) {
+    $suggestion = 'details__media_library_add_form_selected_media';
+    $theme_registry[$suggestion] = $theme_registry['details'];
+    $theme_registry[$suggestion]['path'] = $module_template_path;
+    $theme_registry[$suggestion]['template'] = 'media-library/details--media-library-add-form-selected-media';
+  }
+
+  // Register item_list__media_library_add_form_media_list
+  if (isset($theme_registry['item_list'])) {
+    $suggestion = 'item_list__media_library_add_form_media_list';
+    $theme_registry[$suggestion] = $theme_registry['item_list'];
+    $theme_registry[$suggestion]['path'] = $module_template_path;
+    $theme_registry[$suggestion]['template'] = 'media-library/item-list--media-library-add-form-media-list';
+  }
+
+  // Register media__media_library
+  if (isset($theme_registry['media'])) {
+    $suggestion = 'media__media_library';
+    $theme_registry[$suggestion] = $theme_registry['media'];
+    $theme_registry[$suggestion]['path'] = $module_template_path;
+    $theme_registry[$suggestion]['template'] = 'media-library/media--media-library';
+  }
+}

@@ -458,3 +458,281 @@ nav[aria-label="Pagination"] h4 {
 .media-library-add-form__fields .form-autocomplete {
   width: 100%;
 }
+
+/* ==========================================================================
+   Scoped Elements CSS - Only apply within media library modal
+   ========================================================================== */
+
+/* Scope all elements.css styles to only apply within the media library modal */
+.ui-dialog .ui-dialog-content,
+.media-library-wrapper {
+  /* Generic elements - scoped to media library */
+  font-family: var(--font-family);
+  font-size: 100%;
+  font-weight: normal;
+  font-style: normal;
+  line-height: var(--line-height);
+  word-wrap: break-word;
+  hyphens: auto;
+  color: var(--color-fg);
+  background: var(--color-bg);
+}
+
+.ui-dialog .ui-dialog-content a,
+.ui-dialog .ui-dialog-content .link,
+.media-library-wrapper a,
+.media-library-wrapper .link {
+  color: var(--color-link);
+}
+
+.ui-dialog .ui-dialog-content a:hover,
+.ui-dialog .ui-dialog-content a:focus,
+.ui-dialog .ui-dialog-content .link:hover,
+.ui-dialog .ui-dialog-content .link:focus,
+.media-library-wrapper a:hover,
+.media-library-wrapper a:focus,
+.media-library-wrapper .link:hover,
+.media-library-wrapper .link:focus {
+  -webkit-text-decoration: none;
+  text-decoration: none;
+  outline: 0;
+}
+
+.ui-dialog .ui-dialog-content a:hover,
+.ui-dialog .ui-dialog-content .link:hover,
+.media-library-wrapper a:hover,
+.media-library-wrapper .link:hover {
+  color: var(--color-link-hover);
+}
+
+.ui-dialog .ui-dialog-content a:active,
+.ui-dialog .ui-dialog-content .link:active,
+.media-library-wrapper a:active,
+.media-library-wrapper .link:active {
+  color: var(--color-link-active);
+}
+
+.ui-dialog .ui-dialog-content hr,
+.media-library-wrapper hr {
+  height: 1px;
+  margin: var(--space-m) 0;
+  padding: 0;
+  border: none;
+  background: var(--color-divider);
+}
+
+.ui-dialog .ui-dialog-content summary,
+.media-library-wrapper summary {
+  font-weight: bold;
+}
+
+.ui-dialog .ui-dialog-content h1,
+.ui-dialog .ui-dialog-content .heading-a,
+.media-library-wrapper h1,
+.media-library-wrapper .heading-a {
+  margin: var(--space-m) 0 var(--space-s);
+  font-size: var(--font-size-h1);
+  font-weight: bold;
+  line-height: var(--line-height-heading);
+}
+
+.ui-dialog .ui-dialog-content h2,
+.ui-dialog .ui-dialog-content .heading-b,
+.media-library-wrapper h2,
+.media-library-wrapper .heading-b {
+  margin: var(--space-m) 0 var(--space-s);
+  font-size: var(--font-size-h2);
+  font-weight: bold;
+  line-height: var(--line-height-heading);
+}
+
+.ui-dialog .ui-dialog-content h3,
+.ui-dialog .ui-dialog-content .heading-c,
+.media-library-wrapper h3,
+.media-library-wrapper .heading-c {
+  margin: var(--space-m) 0 var(--space-s);
+  font-size: var(--font-size-h3);
+  font-weight: bold;
+  line-height: var(--line-height-heading);
+}
+
+.ui-dialog .ui-dialog-content h4,
+.ui-dialog .ui-dialog-content .heading-d,
+.media-library-wrapper h4,
+.media-library-wrapper .heading-d {
+  margin: var(--space-m) 0 var(--space-s);
+  font-size: var(--font-size-h4);
+  font-weight: bold;
+  line-height: var(--line-height-heading);
+}
+
+.ui-dialog .ui-dialog-content h5,
+.ui-dialog .ui-dialog-content .heading-e,
+.media-library-wrapper h5,
+.media-library-wrapper .heading-e {
+  margin: var(--space-m) 0 var(--space-s);
+  font-size: var(--font-size-h5);
+  font-weight: bold;
+  line-height: var(--line-height-heading);
+}
+
+.ui-dialog .ui-dialog-content h6,
+.ui-dialog .ui-dialog-content .heading-f,
+.media-library-wrapper h6,
+.media-library-wrapper .heading-f {
+  margin: var(--space-m) 0 var(--space-s);
+  font-size: var(--font-size-h6);
+  font-weight: bold;
+  line-height: var(--line-height-heading);
+}
+
+.ui-dialog .ui-dialog-content p,
+.media-library-wrapper p {
+  margin: 1em 0;
+}
+
+.ui-dialog .ui-dialog-content dl,
+.media-library-wrapper dl {
+  margin: 0 0 1.25rem;
+}
+
+.ui-dialog .ui-dialog-content dl dd,
+.ui-dialog .ui-dialog-content dl dl,
+.media-library-wrapper dl dd,
+.media-library-wrapper dl dl {
+  margin-block-end: 0.625rem;
+  margin-inline-start: 1.25rem;
+}
+
+.ui-dialog .ui-dialog-content blockquote,
+.media-library-wrapper blockquote {
+  position: relative;
+  margin-block: var(--space-l);
+  margin-inline: 2.5rem var(--space-l);
+  font-size: var(--font-size-h6);
+}
+
+.ui-dialog .ui-dialog-content blockquote::before,
+.media-library-wrapper blockquote::before {
+  position: absolute;
+  inset-inline-start: -2.5rem;
+  content: open-quote;
+  color: var(--color-absolutezero);
+  font-family: var(--font-family-serif);
+  font-size: var(--space-xl);
+  line-height: 1em;
+}
+
+.ui-dialog .ui-dialog-content blockquote::after,
+.media-library-wrapper blockquote::after {
+  content: no-close-quote;
+}
+
+.ui-dialog .ui-dialog-content address,
+.media-library-wrapper address {
+  font-style: italic;
+}
+
+.ui-dialog .ui-dialog-content u,
+.ui-dialog .ui-dialog-content ins,
+.media-library-wrapper u,
+.media-library-wrapper ins {
+  -webkit-text-decoration: underline;
+  text-decoration: underline;
+}
+
+.ui-dialog .ui-dialog-content s,
+.ui-dialog .ui-dialog-content strike,
+.ui-dialog .ui-dialog-content del,
+.media-library-wrapper s,
+.media-library-wrapper strike,
+.media-library-wrapper del {
+  -webkit-text-decoration: line-through;
+  text-decoration: line-through;
+}
+
+.ui-dialog .ui-dialog-content big,
+.media-library-wrapper big {
+  font-size: larger;
+}
+
+.ui-dialog .ui-dialog-content small,
+.media-library-wrapper small {
+  font-size: smaller;
+}
+
+.ui-dialog .ui-dialog-content sub,
+.media-library-wrapper sub {
+  vertical-align: sub;
+  font-size: smaller;
+  line-height: normal;
+}
+
+.ui-dialog .ui-dialog-content sup,
+.media-library-wrapper sup {
+  vertical-align: super;
+  font-size: smaller;
+  line-height: normal;
+}
+
+.ui-dialog .ui-dialog-content abbr,
+.ui-dialog .ui-dialog-content acronym,
+.media-library-wrapper abbr,
+.media-library-wrapper acronym {
+  border-bottom: dotted 1px;
+}
+
+.ui-dialog .ui-dialog-content ul,
+.media-library-wrapper ul {
+  margin-block: 0.25em;
+  margin-inline: 1.5em 0;
+  padding-inline-start: 0;
+  list-style-type: disc;
+  list-style-image: none;
+}
+
+.ui-dialog .ui-dialog-content ol,
+.media-library-wrapper ol {
+  margin-block: 0.25em;
+  margin-inline: 2em 0;
+  padding: 0;
+}
+
+.ui-dialog .ui-dialog-content code,
+.media-library-wrapper code {
+  margin: 0.5em 0;
+}
+
+.ui-dialog .ui-dialog-content pre,
+.media-library-wrapper pre {
+  margin: 0.5em 0;
+  white-space: pre-wrap;
+}
+
+.ui-dialog .ui-dialog-content details,
+.media-library-wrapper details {
+  line-height: var(--details-line-height);
+}
+
+.ui-dialog .ui-dialog-content details summary,
+.media-library-wrapper details summary {
+  padding: 0.95em 1.45em;
+}
+
+.ui-dialog .ui-dialog-content details summary:focus,
+.media-library-wrapper details summary:focus {
+  outline: none;
+}
+
+.ui-dialog .ui-dialog-content img,
+.media-library-wrapper img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Default focus styles for focused elements - scoped to media library */
+.ui-dialog .ui-dialog-content *:focus,
+.media-library-wrapper *:focus {
+  outline: var(--focus-outline);
+  box-shadow: var(--focus-box-shadow);
+}
