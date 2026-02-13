@@ -1526,6 +1526,17 @@ class NodeService {
           $field_info['suffix'] = $field_settings['suffix'] ?? '';
           break;
 
+        case 'float':
+        case 'decimal':
+          $field_info['type'] = 'float';
+          $field_info['multiple'] = FALSE;
+          $field_info['min'] = $field_settings['min'] ?? NULL;
+          $field_info['max'] = $field_settings['max'] ?? NULL;
+          $field_info['prefix'] = $field_settings['prefix'] ?? '';
+          $field_info['suffix'] = $field_settings['suffix'] ?? '';
+          $field_info['scale'] = $field_settings['scale'] ?? 2;
+          break;
+
         case 'image':
           $field_info['type'] = 'image';
           $field_info['multiple'] = $cardinality == -1;
