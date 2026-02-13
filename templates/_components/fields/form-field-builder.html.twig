@@ -97,7 +97,7 @@ Usage:
 
     {# Integer Input #}
     <template x-if="field.type === 'integer'">
-        <div class="flex items-center">
+        <div class="flex items-center" x-init="if ((formData.fields[field.name] === undefined || formData.fields[field.name] === null || formData.fields[field.name] === '') && field.default_value !== undefined && field.default_value !== null) { formData.fields[field.name] = parseInt(field.default_value); }">
             <span x-show="field.prefix" x-text="field.prefix" class="px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-700"></span>
             <input type="number"
                    :required="field.required"
@@ -118,7 +118,7 @@ Usage:
 
     {# Float Input #}
     <template x-if="field.type === 'float'">
-        <div class="flex items-center">
+        <div class="flex items-center" x-init="if ((formData.fields[field.name] === undefined || formData.fields[field.name] === null || formData.fields[field.name] === '') && field.default_value !== undefined && field.default_value !== null) { formData.fields[field.name] = parseFloat(field.default_value); }">
             <span x-show="field.prefix" x-text="field.prefix" class="px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-700"></span>
             <input type="number"
                    :required="field.required"
