@@ -1524,6 +1524,27 @@ class NodeService {
           $field_info['max'] = $field_settings['max'] ?? NULL;
           $field_info['prefix'] = $field_settings['prefix'] ?? '';
           $field_info['suffix'] = $field_settings['suffix'] ?? '';
+          // Get default value if exists
+          $default_value = $field_definition->getDefaultValueLiteral();
+          if (!empty($default_value) && isset($default_value[0]['value'])) {
+            $field_info['default_value'] = $default_value[0]['value'];
+          }
+          break;
+
+        case 'float':
+        case 'decimal':
+          $field_info['type'] = 'float';
+          $field_info['multiple'] = FALSE;
+          $field_info['min'] = $field_settings['min'] ?? NULL;
+          $field_info['max'] = $field_settings['max'] ?? NULL;
+          $field_info['prefix'] = $field_settings['prefix'] ?? '';
+          $field_info['suffix'] = $field_settings['suffix'] ?? '';
+          $field_info['scale'] = $field_settings['scale'] ?? 2;
+          // Get default value if exists
+          $default_value = $field_definition->getDefaultValueLiteral();
+          if (!empty($default_value) && isset($default_value[0]['value'])) {
+            $field_info['default_value'] = $default_value[0]['value'];
+          }
           break;
 
         case 'image':
