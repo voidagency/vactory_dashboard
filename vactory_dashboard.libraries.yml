@@ -37,3 +37,43 @@ alpine-icon-picker:
 google-maps-api:
   dependencies:
     - vactory_google_map_field/google-map-apis
+claro-media-library:
+  css:
+    base:
+      /core/themes/claro/css/base/variables.css: {}
+    component:
+      /core/assets/vendor/jquery.ui/themes/base/button.css: {}
+      /core/themes/claro/css/classy/components/ui-dialog.css: {}
+      /core/themes/claro/css/classy/components/exposed-filters.css: {}
+      /core/themes/claro/css/classy/components/tablesort.css: {}
+      /core/themes/claro/css/components/jquery.ui/theme.css: {}
+      /core/themes/claro/css/components/dialog.css: {}
+      /core/themes/claro/css/components/details.css: {}
+      /core/themes/claro/css/components/icon-link.css: {}
+      /core/themes/claro/css/components/button.css: {}
+      /core/themes/claro/css/components/form.css: {}
+      /core/themes/claro/css/components/form--checkbox-radio.css: {}
+      /core/themes/claro/css/components/form--managed-file.css: {}
+      /core/themes/claro/css/components/form--text.css: {}
+      /core/themes/claro/css/components/form--select.css: {}
+      /core/themes/claro/css/components/pager.css: {}
+      /core/themes/claro/css/components/tables.css: {}
+      /core/themes/claro/css/components/tableselect.css: {}
+      /core/themes/claro/css/components/tablesort-indicator.css: {}
+      /core/themes/claro/css/components/views-exposed-form.css: {}
+      /core/themes/claro/css/components/media-library.ui.css: {}
+      /core/themes/claro/css/components/ckeditor5.css: {}
+      /core/modules/ckeditor5/css/editor.css: {}
+    theme:
+      /core/themes/claro/css/theme/media-library.css: {}
+      assets/css/media-library-overrides.css: {}
+  js:
+    /core/themes/claro/js/media-library.ui.js: {}
+  dependencies:
+    - core/drupal
+    - core/jquery
+    - core/once
+    - core/drupal.ajax
+    - views/views.ajax
+    - media_library/ui
+    - claro/icon-link
