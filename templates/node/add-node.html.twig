@@ -63,7 +63,7 @@
     <div class="flex-1">
         <div class="mx-auto">
             <form id="node-form" @submit.prevent="saveNode()" class="bg-white rounded-lg shadow-sm p-6">
-                <div x-show="activeTab === 'content'" class="flex gap-y-6 flex-col">
+                <div x-show="activeTab === 'content'" class="flex gap-y-4 flex-col">
                     <template x-for="(field, fieldName) in contentFields" :key="field.name">
                         {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
                             field: 'field',
@@ -87,7 +87,7 @@
 
                 {# Settings Tab - Domain Access and Scheduler settings #}
                 {% if domain_access_enabled or scheduler_enabled %}
-                <div x-show="activeTab === 'settings'" class="flex gap-y-6 flex-col">
+                <div x-show="activeTab === 'settings'" class="flex gap-y-4 flex-col">
                     {% if domain_access_enabled %}
                     <div class="space-y-6 bg-white px-6 py-8 rounded-xl shadow-sm">
                         <h3 class="text-lg font-semibold text-slate-900 border-b border-slate-200 pb-3">{{ 'Domain Settings'|t }}</h3>

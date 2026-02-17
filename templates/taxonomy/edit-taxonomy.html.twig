@@ -75,7 +75,7 @@
                 <div class="mx-auto">
                     <form id="taxonomy-form" @submit.prevent="saveTerm()"
                           class="bg-white rounded-lg shadow-sm p-2 space-y-6">
-                        <div class="flex gap-y-6 flex-col">
+                        <div class="flex gap-y-4 flex-col">
                             <template x-for="(field, fieldName) in fields" :key="field.name">
                                 {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
                                     field: 'field',

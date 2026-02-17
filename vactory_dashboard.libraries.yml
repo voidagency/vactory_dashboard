@@ -41,6 +41,7 @@ claro-media-library:
   css:
     base:
       /core/themes/claro/css/base/variables.css: {}
+      /core/themes/claro/css/base/elements.css: {}
     component:
       /core/assets/vendor/jquery.ui/themes/base/button.css: {}
       /core/themes/claro/css/classy/components/ui-dialog.css: {}
@@ -64,9 +65,16 @@ claro-media-library:
       /core/themes/claro/css/components/media-library.ui.css: {}
       /core/themes/claro/css/components/ckeditor5.css: {}
       /core/modules/ckeditor5/css/editor.css: {}
+      # CKEditor plugin CSS files
+      /core/modules/ckeditor5/css/image.css: {}
+      /core/modules/ckeditor5/css/media-alignment.css: {}
+      /core/modules/ckeditor5/css/table.css: {}
+      # Module CSS files
+      /core/themes/claro/css/components/file.css: {}
+      /core/themes/claro/css/theme/filter.theme.css: {}
+      /core/modules/views/css/views.module.css: {}
     theme:
       /core/themes/claro/css/theme/media-library.css: {}
-      assets/css/media-library-overrides.css: {}
   js:
     /core/themes/claro/js/media-library.ui.js: {}
   dependencies:
@@ -77,3 +85,4 @@ claro-media-library:
     - views/views.ajax
     - media_library/ui
     - claro/icon-link
+    - dropzonejs/dropzonejs.widget

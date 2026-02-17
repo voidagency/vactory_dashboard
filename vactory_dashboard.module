@@ -12,6 +12,8 @@ use Drupal\block\Entity\Block;
 use Drupal\Core\Menu\MenuLinkInterface;
 use Drupal\Core\Menu\MenuTreeParameters;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\views\Form\ViewsForm;
+use Drupal\views\ViewExecutable;
 
 /**
  * @file
@@ -662,6 +664,25 @@ function vactory_dashboard_form_alter(&$form, FormStateInterface $form_state, $f
     }
     $form['actions']['submit']['#submit'][] = 'save_block_content_as_block_with_visibility';
   }
+
+  // Add media library BEM classes to the views bulk form.
+  $form_object = $form_state->getFormObject();
+  if ($form_object instanceof ViewsForm && strpos($form_object->getBaseFormId(), 'views_form_media_library') === 0) {
+    if (isset($form['header'])) {
+      $form['header']['#attributes']['class'][] = 'media-library-views-form__header';
+      $form['header']['media_bulk_form']['#attributes']['class'][] = 'media-library-views-form__bulk_form';
+    }
+    $form['actions']['submit']['#attributes']['class'] = ['media-library-select'];
+
+    if (!isset($form['#attributes']['class']) || !in_array('media-library-views-form', $form['#attributes']['class'])) {
+      $form['#attributes']['class'][] = 'media-library-views-form';
+    }
+  }
+
+  // Add media library exposed form action classes.
+  if ($form_id === 'views_exposed_form' && strpos($form['#id'], 'views-exposed-form-media-library-widget') === 0) {
+    $form['actions']['#attributes']['class'][] = 'media-library-view--form-actions';
+  }
 }
 
 /**
@@ -1235,32 +1256,84 @@ function get_advanced_dashboard_support() {
 }
 
 /**
+ * Implements hook_form_BASE_FORM_ID_alter() for media_library_add_form.
+ *
+ * Adds BEM classes and attaches the media library styles.
+ */
+function vactory_dashboard_form_media_library_add_form_alter(array &$form, FormStateInterface $form_state) {
+  $form['#attributes']['class'][] = 'media-library-add-form';
+  $form['#attached']['library'][] = 'vactory_dashboard/claro-media-library';
+
+  // If there are unsaved media items, apply styling classes to various parts
+  // of the form.
+  if (isset($form['media'])) {
+    $form['#attributes']['class'][] = 'media-library-add-form--with-input';
+
+    // Put a wrapper around the informational message above the unsaved media
+    // items.
+    $form['description']['#template'] = '<p class="media-library-add-form__description">{{ text }}</p>';
+  }
+  else {
+    $form['#attributes']['class'][] = 'media-library-add-form--without-input';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for media_library_add_form_upload.
+ */
+function vactory_dashboard_form_media_library_add_form_upload_alter(array &$form, FormStateInterface $form_state) {
+  $form['#attributes']['class'][] = 'media-library-add-form--upload';
+
+  if (isset($form['container'])) {
+    $form['container']['#attributes']['class'][] = 'media-library-add-form__input-wrapper';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for media_library_add_form_oembed.
+ */
+function vactory_dashboard_form_media_library_add_form_oembed_alter(array &$form, FormStateInterface $form_state) {
+  $form['#attributes']['class'][] = 'media-library-add-form--oembed';
+
+  // If no media items have been added yet, add styling classes to the initial
+  // URL form.
+  if (isset($form['container'])) {
+    $form['container']['#attributes']['class'][] = 'media-library-add-form__input-wrapper';
+    $form['container']['url']['#attributes']['class'][] = 'media-library-add-form-oembed-url';
+    $form['container']['submit']['#attributes']['class'][] = 'media-library-add-form-oembed-submit';
+  }
+}
+
+/**
+ * Implements hook_preprocess_fieldset__media_library_widget().
+ */
+function vactory_dashboard_preprocess_fieldset__media_library_widget(array &$variables) {
+  if (isset($variables['prefix']['weight_toggle'])) {
+    $variables['prefix']['weight_toggle']['#attributes']['class'][] = 'media-library-widget__toggle-weight';
+  }
+  if (isset($variables['suffix']['open_button'])) {
+    $variables['suffix']['open_button']['#attributes']['class'][] = 'media-library-open-button';
+  }
+}
+
+/**
  * Implements hook_preprocess_item_list__media_library_add_form_media_list().
  *
  * This targets each new, unsaved media item added to the media library, before
- * they are saved. Adds Claro's CSS classes for proper styling.
+ * they are saved.
  */
 function vactory_dashboard_preprocess_item_list__media_library_add_form_media_list(array &$variables) {
   foreach ($variables['items'] as &$item) {
     $item['value']['preview']['#attributes']['class'][] = 'media-library-add-form__preview';
     $item['value']['fields']['#attributes']['class'][] = 'media-library-add-form__fields';
     $item['value']['remove_button']['#attributes']['class'][] = 'media-library-add-form__remove-button';
-    $item['value']['remove_button']['#attributes']['class'][] = 'button--extrasmall';
 
     // #source_field_name is set by AddFormBase::buildEntityFormElement()
     // to help themes and form_alter hooks identify the source field.
     $fields = &$item['value']['fields'];
-    if (isset($fields['#source_field_name'])) {
-      $source_field_name = $fields['#source_field_name'];
-
-      // Set this flag so we can remove the details element.
-      if (isset($fields[$source_field_name]['widget'][0])) {
-        $fields[$source_field_name]['widget'][0]['#do_not_wrap_in_details'] = TRUE;
-      }
-
-      if (isset($fields[$source_field_name])) {
-        $fields[$source_field_name]['#attributes']['class'][] = 'media-library-add-form__source-field';
-      }
+    $source_field_name = $fields['#source_field_name'];
+    if (isset($fields[$source_field_name])) {
+      $fields[$source_field_name]['#attributes']['class'][] = 'media-library-add-form__source-field';
     }
   }
 }
@@ -1304,17 +1377,15 @@ function vactory_dashboard_preprocess_links__media_library_menu(array &$variable
  *
  * Override media library wrapper template and add module path for template discovery.
  */
-function vactory_dashboard_theme_registry_alter(&$theme_registry) {
+function vactory_dashboard_theme_registry_alter(&$theme_registry): void {
   $module_path = \Drupal::service('extension.list.module')->getPath('vactory_dashboard');
+  $module_template_path = $module_path . '/templates';
 
   // Override media library wrapper template.
   if (isset($theme_registry['media_library_wrapper'])) {
-    $theme_registry['media_library_wrapper']['path'] = $module_path . '/templates';
+    $theme_registry['media_library_wrapper']['path'] = $module_template_path;
     $theme_registry['media_library_wrapper']['template'] = 'media-library/media-library-wrapper';
   }
-
-  // Register template suggestions directly in theme registry to ensure they're found.
-  $module_template_path = $module_path . '/templates';
 
   // Register views_view_unformatted__media_library
   if (isset($theme_registry['views_view_unformatted'])) {
@@ -1340,12 +1411,15 @@ function vactory_dashboard_theme_registry_alter(&$theme_registry) {
     $theme_registry[$suggestion]['template'] = 'media-library/details--media-library-add-form-selected-media';
   }
 
-  // Register item_list__media_library_add_form_media_list
+  // Register item_list__media_library_add_form_media_list and add its
+  // preprocess function explicitly, since Drupal discovers preprocess
+  // functions before hook_theme_registry_alter() runs.
   if (isset($theme_registry['item_list'])) {
     $suggestion = 'item_list__media_library_add_form_media_list';
     $theme_registry[$suggestion] = $theme_registry['item_list'];
     $theme_registry[$suggestion]['path'] = $module_template_path;
     $theme_registry[$suggestion]['template'] = 'media-library/item-list--media-library-add-form-media-list';
+    $theme_registry[$suggestion]['preprocess functions'][] = 'vactory_dashboard_preprocess_item_list__media_library_add_form_media_list';
   }
 
   // Register media__media_library
@@ -1355,4 +1429,99 @@ function vactory_dashboard_theme_registry_alter(&$theme_registry) {
     $theme_registry[$suggestion]['path'] = $module_template_path;
     $theme_registry[$suggestion]['template'] = 'media-library/media--media-library';
   }
+
+  // Register form element overrides.
+  $form_elements = [
+    'input',
+    'form_element',
+    'form_element_label',
+    'textarea',
+    'checkboxes',
+    'radios',
+    'field_multiple_value_form',
+  ];
+  foreach ($form_elements as $element) {
+    if (isset($theme_registry[$element])) {
+      $theme_registry[$element]['path'] = $module_template_path . '/form';
+      $theme_registry[$element]['template'] = str_replace('_', '-', $element);
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for input.
+ */
+function vactory_dashboard_preprocess_input(&$variables) {
+  $type_api = $variables['element']['#type'] ?? '';
+  $type_html = $variables['attributes']['type'] ?? '';
+  $text_types_html = [
+    'text',
+    'email',
+    'tel',
+    'number',
+    'search',
+    'password',
+    'date',
+    'time',
+    'file',
+    'color',
+    'datetime-local',
+    'url',
+    'month',
+    'week',
+  ];
+
+  if (in_array($type_html, $text_types_html)) {
+    $variables['attributes']['class'][] = 'form-element';
+    $variables['attributes']['class'][] = \Drupal\Component\Utility\Html::getClass('form-element--type-' . $type_html);
+    $variables['attributes']['class'][] = \Drupal\Component\Utility\Html::getClass('form-element--api-' . $type_api);
+  }
+
+  if (in_array($type_html, ['checkbox', 'radio'])) {
+    $variables['attributes']['class'][] = 'form-boolean';
+    $variables['attributes']['class'][] = \Drupal\Component\Utility\Html::getClass('form-boolean--type-' . $type_html);
+  }
+}
+
+/**
+ * Implements hook_preprocess_form_element().
+ */
+function vactory_dashboard_preprocess_form_element(&$variables) {
+  if (!empty($variables['element']['#errors'])) {
+    $variables['label']['#attributes']['class'][] = 'has-error';
+  }
+
+  if (!empty($variables['disabled'])) {
+    $variables['label']['#attributes']['class'][] = 'is-disabled';
+
+    if (!empty($variables['description']['attributes'])) {
+      $variables['description']['attributes']->addClass('is-disabled');
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for select.
+ */
+function vactory_dashboard_preprocess_select(&$variables) {
+  $variables['attributes']['class'][] = 'form-element';
+  $variables['attributes']['class'][] = (isset($variables['element']['#multiple']) && $variables['element']['#multiple']) ?
+    'form-element--type-select-multiple' :
+    'form-element--type-select';
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for textarea.
+ */
+function vactory_dashboard_preprocess_textarea(&$variables) {
+  $variables['attributes']['class'][] = 'form-element';
+  $variables['attributes']['class'][] = 'form-element--type-textarea';
+  $variables['attributes']['class'][] = 'form-element--api-textarea';
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for field_multiple_value_form.
+ */
+function vactory_dashboard_preprocess_field_multiple_value_form(&$variables) {
+  $variables['disabled'] = !empty($variables['element']['#disabled']);
 }
