@@ -517,7 +517,7 @@ class NodeService {
     $this->prepareBannerData($node, $node_data);
 
     $alias = \Drupal::service('path_alias.manager')
-      ->getAliasByPath('/node/' . $node->id());
+      ->getAliasByPath('/node/' . $node->id(), $node->get('langcode')->value);
     $node_data['alias'] = $alias;
     $node_data['status'] = $node->isPublished();
 
