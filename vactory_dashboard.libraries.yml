@@ -73,8 +73,6 @@ claro-media-library:
       /core/themes/claro/css/components/file.css: {}
       /core/themes/claro/css/theme/filter.theme.css: {}
       /core/modules/views/css/views.module.css: {}
-      # Dropzone CSS
-      /libraries/dropzone/dist/min/dropzone.min.css: {}
     theme:
       /core/themes/claro/css/theme/media-library.css: {}
   js:
