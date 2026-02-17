@@ -120,6 +120,10 @@ class DashboardVactoryPageController extends ControllerBase {
     }
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
+
+    // Get bundle fields for domain access settings.
+    $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+
     return [
       '#theme' => 'vactory_dashboard_node_add',
       '#type' => 'page',
@@ -127,7 +131,11 @@ class DashboardVactoryPageController extends ControllerBase {
       ...$paragraph_flags,
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
+      '#fields' => $fields,
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
     ];
   }
 
@@ -197,6 +205,10 @@ class DashboardVactoryPageController extends ControllerBase {
     $meta_tags = $this->metatagService->prepareMetatags($node_translation ?? $node);
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
+
+    // Get bundle fields for domain access settings.
+    $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+
     return [
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'page',
@@ -211,9 +223,13 @@ class DashboardVactoryPageController extends ControllerBase {
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
+      '#fields' => $fields,
       ...$paragraph_flags,
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
     ];
   }
 
@@ -279,6 +295,8 @@ class DashboardVactoryPageController extends ControllerBase {
 
     $meta_tags = $this->metatagService->prepareMetatags($node);
 
+    $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+
     return [
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'page',
@@ -290,7 +308,12 @@ class DashboardVactoryPageController extends ControllerBase {
       '#available_languages' => $available_languages_list,
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => FALSE,
+      '#fields' => $fields,
       '#meta_tags' => $meta_tags,
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
     ];
   }
 
@@ -587,6 +610,21 @@ class DashboardVactoryPageController extends ControllerBase {
         }
       }
 
+      // Update scheduler fields if they exist and have values.
+      if (!empty($settings['publish_on']) && $node->hasField('publish_on')) {
+        $node->getTranslation($language)->set('publish_on', strtotime($settings['publish_on']));
+      }
+      elseif ($node->hasField('publish_on') && isset($settings['publish_on']) && $settings['publish_on'] === '') {
+        $node->getTranslation($language)->set('publish_on', NULL);
+      }
+
+      if (!empty($settings['unpublish_on']) && $node->hasField('unpublish_on')) {
+        $node->getTranslation($language)->set('unpublish_on', strtotime($settings['unpublish_on']));
+      }
+      elseif ($node->hasField('unpublish_on') && isset($settings['unpublish_on']) && $settings['unpublish_on'] === '') {
+        $node->getTranslation($language)->set('unpublish_on', NULL);
+      }
+
       // Update SEO fields if they exist.
       if (!empty($seo) && $node->hasField('field_vactory_meta_tags')) {
         // Mettre à jour les meta tags avec les valeurs fournies dans $seo.
@@ -597,6 +635,16 @@ class DashboardVactoryPageController extends ControllerBase {
         }
         $node->getTranslation($language)
           ->set('field_vactory_meta_tags', serialize($meta_tags));
+      }
+
+      // Update domain access and other fields if they exist.
+      $fields = $content['fields'] ?? [];
+      foreach ($fields as $field_name => $field_value) {
+        if ($node->hasField($field_name)) {
+          if ($field_value || is_array($field_value) || is_bool($field_value)) {
+            $node->getTranslation($language)->set($field_name, $field_value);
+          }
+        }
       }
 
       // Update blocks/paragraphs if they exist.
@@ -647,6 +695,7 @@ class DashboardVactoryPageController extends ControllerBase {
       $blocks = $content['blocks'] ?? [];
       $status = $content['status'] ?? TRUE;
       $banner = $content['banner'] ?? [];
+      $fields = $content['fields'] ?? [];
 
       if (empty($settings['title'])) {
         return new JsonResponse([
@@ -679,6 +728,15 @@ class DashboardVactoryPageController extends ControllerBase {
         $node->set('node_summary', $settings['summary']);
       }
 
+      // Update scheduler fields if they exist and have values.
+      if (!empty($settings['publish_on']) && $node->hasField('publish_on')) {
+        $node->set('publish_on', strtotime($settings['publish_on']));
+      }
+
+      if (!empty($settings['unpublish_on']) && $node->hasField('unpublish_on')) {
+        $node->set('unpublish_on', strtotime($settings['unpublish_on']));
+      }
+
       // Update SEO fields if they exist.
       if (!empty($seo) && $node->hasField('field_vactory_meta_tags')) {
         // Mettre à jour les meta tags avec les valeurs fournies dans $seo.
@@ -697,6 +755,15 @@ class DashboardVactoryPageController extends ControllerBase {
       }
 
       $this->nodeService->saveBannerInNode($node, $banner);
+
+      // Save domain access fields if they exist.
+      if (!empty($fields)) {
+        foreach ($fields as $field_name => $field_value) {
+          if ($node->hasField($field_name)) {
+            $node->set($field_name, $field_value);
+          }
+        }
+      }
 
       // Save the node.
       $node->isNew();

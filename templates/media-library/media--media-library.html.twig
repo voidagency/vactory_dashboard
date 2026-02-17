@@ -1,0 +1,40 @@
+{#
+/**
+ * @file
+ * Theme override of a media item in the media library.
+ *
+ * This is used for media that the user can select from the grid of media
+ * items. It is not used for items that have already been selected in the
+ * corresponding field widget, or for items that have been previously selected
+ * before adding new media to the library.
+ *
+ * Available variables:
+ * - media: The entity with limited access to object properties and methods.
+ *   Only method names starting with "get", "has", or "is" and a few common
+ *   methods such as "id", "label", and "bundle" are available. For example:
+ *   - entity.getEntityTypeId() will return the entity type ID.
+ *   - entity.hasField('field_example') returns TRUE if the entity includes
+ *     field_example. (This does not indicate the presence of a value in this
+ *     field.)
+ *   - entity.id() will return the media ID.
+ *   - entity.label() will return the media label.
+ *   - entity.bundle() will return the media bundle.
+ * - content: The media content.
+ *
+ * @see template_preprocess_media()
+ *
+ * @ingroup themeable
+ */
+#}
+<article{{ attributes.addClass('media-library-item__content') }}>
+  <div class="media-library-item__preview-wrapper">
+    {% if content.thumbnail %}
+      <div class="media-library-item__preview">
+        {{ content.thumbnail }}
+      </div>
+    {% endif %}
+  </div>
+  <div class="media-library-item__name" id="media-library-item--{{ media.id() }}">
+    {{ media.label() }}
+  </div>
+</article>

@@ -78,7 +78,13 @@
                                                         <template x-if="field.type === 'checkbox'">
                                                             <input type="checkbox"
                                                                    :required="field.options?.['#required'] ?? false"
-                                                                   x-model="blockForm.extra_fields[fieldName]">
+                                                                   x-model="blockForm.extra_fields[fieldName]"
+                                                                   class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
+                                                        </template>
+
+                                                        {# Entity Autocomplete #}
+                                                        <template x-if="field.type === 'entity_autocomplete'">
+                                                            {% include "@vactory_dashboard/_components/fields/entity-autocomplete-field.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'x_model': 'blockForm.extra_fields[fieldName]'} %}
                                                         </template>
 
                                                         {# Select Input #}
@@ -102,6 +108,11 @@
                                                                       x-model="blockForm.extra_fields[fieldName]"
                                                                       rows="4"
                                                                       class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"></textarea>
+                                                        </template>
+
+                                                        {# Icon Picker #}
+                                                        <template x-if="field.type === 'vactory_icon_picker'">
+                                                            {% include "@vactory_dashboard/_components/fields/icon-picker-field.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'x_model': 'blockForm.extra_fields[fieldName]'} %}
                                                         </template>
 
                                                         {# Text Format #}
@@ -167,7 +178,7 @@
 
                                                         {# URL Extended Input #}
                                                         <template x-if="field.type === 'url_extended'">
-                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { 'required': 'field.options?.["#required"] ?? false', xmodel: 'blockForm.extra_fields' } %}
+                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { 'required': 'field.options?.["#required"] ?? false', xmodel: 'blockForm.extra_fields[fieldName]' } %}
                                                         </template>
 
                                                         {# Image Input #}
@@ -243,8 +254,8 @@
                                                                         x-for="([itemName, item], index) in Object.entries(field)"
                                                                         :key="index">
                                                                     <template x-if="itemName != 'g_title'">
-                                                                        <div :class="{'flex flex-row-reverse justify-end items-center gap-2': item.type === 'checkbox'}">
-                                                                            <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700 whitespace-nowrap min-w-0 flex-shrink-0' : 'block text-sm font-medium text-slate-700 mb-1'">
+                                                                        <div :class="{'flex flex-row-reverse justify-end items-center gap-3': item.type === 'checkbox'}">
+                                                                            <label :class="item.type === 'checkbox' ? 'text-sm font-medium text-slate-700' : 'block text-sm font-medium text-slate-700 mb-1'">
                                                                                 <span x-text="item.label"></span>
                                                                                 <span x-show="item.options?.['#required']"
                                                                                       class="text-red-500">*</span>
@@ -271,13 +282,16 @@
 
                                                                             {# Checkbox #}
                                                                             <template x-if="item.type === 'checkbox'">
-                                                                                <div>
-                                                                                    <input type="checkbox"
-                                                                                           :required="item.options?.['#required'] ?? false"
-                                                                                           x-model="blockForm.extra_fields[fieldName][itemName]"
-                                                                                           x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}"
-                                                                                    >
-                                                                                </div>
+                                                                                <input type="checkbox"
+                                                                                       :required="item.options?.['#required'] ?? false"
+                                                                                       x-model="blockForm.extra_fields[fieldName][itemName]"
+                                                                                       x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}"
+                                                                                       class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
+                                                                            </template>
+
+                                                                            {# Entity Autocomplete #}
+                                                                            <template x-if="item.type === 'entity_autocomplete'">
+                                                                                {% include "@vactory_dashboard/_components/fields/entity-autocomplete-field.html.twig" with {'required': 'item.options?.["#required"] ?? false', 'x_model': 'blockForm.extra_fields[fieldName][itemName]'} %}
                                                                             </template>
 
                                                                             {# Select Input #}
@@ -305,6 +319,11 @@
                                                                                         x-init="if (!blockForm.extra_fields[fieldName]) blockForm.extra_fields[fieldName] = {}"
                                                                                         rows="4"
                                                                                         class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"></textarea>
+                                                                            </template>
+
+                                                                            {# Icon Picker #}
+                                                                            <template x-if="item.type === 'vactory_icon_picker'">
+                                                                                {% include "@vactory_dashboard/_components/fields/icon-picker-field.html.twig" with {'required': 'item.options?.["#required"] ?? false', 'x_model': 'blockForm.extra_fields[fieldName][itemName]'} %}
                                                                             </template>
 
                                                                             {# Text Format #}
@@ -454,9 +473,9 @@
                                                     x-for="([fieldName, field], index) in Object.entries(selectedTemplate.fields)"
                                                     :key="fieldName">
                                                 <template x-if="!fieldName.startsWith('group_')">
-                                                    <div>
-                                                        <label :class="{'required': field.options?.['#required']}"
-                                                               class="block text-sm font-medium text-slate-700 mb-1">
+                                                    <div :class="field.type === 'checkbox' ? 'flex flex-row-reverse justify-end items-center gap-3' : ''">
+                                                        <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700' : 'block text-sm font-medium text-slate-700 mb-1'"
+                                                               x-show="field.type !== 'checkbox' || true">
                                                             <span x-text="field.label"></span>
                                                             <span x-show="field.options?.['#required']"
                                                                   class="text-red-500">*</span>
@@ -474,11 +493,17 @@
                                                             {% include "@vactory_dashboard/_components/fields/icon-picker-field.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'x_model': 'blockForm.fields[fieldName]'} %}
                                                         </template>
 
+                                                        {# Entity Autocomplete #}
+                                                        <template x-if="field.type === 'entity_autocomplete'">
+                                                            {% include "@vactory_dashboard/_components/fields/entity-autocomplete-field.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'x_model': 'blockForm.fields[fieldName]'} %}
+                                                        </template>
+
                                                         {# Checkbox #}
                                                         <template x-if="field.type === 'checkbox'">
                                                             <input type="checkbox"
                                                                    :required="field.options?.['#required'] ?? false"
-                                                                   x-model="blockForm.fields[fieldName]">
+                                                                   x-model="blockForm.fields[fieldName]"
+                                                                   class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
                                                         </template>
 
                                                         {# Select Input #}
@@ -566,7 +591,7 @@
 
                                                         {# URL Extended Input #}
                                                         <template x-if="field.type === 'url_extended'">
-                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { 'required': 'field.options?.["#required"] ?? false', xmodel: 'blockForm.fields' } %}
+                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig"  with { 'required': 'field.options?.["#required"] ?? false', xmodel: 'blockForm.fields[fieldName]' } %}
                                                         </template>
 
                                                         {# Image Input #}
@@ -668,6 +693,11 @@
                                                                                 {% include "@vactory_dashboard/_components/fields/icon-picker-field.html.twig" with {'required': 'item.options?.["#required"] ?? false', 'x_model': 'blockForm.fields[fieldName][itemName]'} %}
                                                                             </template>
 
+                                                                            {# Entity Autocomplete #}
+                                                                            <template x-if="item.type === 'entity_autocomplete'">
+                                                                                {% include "@vactory_dashboard/_components/fields/entity-autocomplete-field.html.twig" with {'required': 'item.options?.["#required"] ?? false', 'x_model': 'blockForm.fields[fieldName][itemName]'} %}
+                                                                            </template>
+
                                                                             {# Checkbox #}
                                                                             <template x-if="item.type === 'checkbox'">
                                                                                 <input type="checkbox"
@@ -725,7 +755,7 @@
                                                                             <template
                                                                                     x-if="item.type === 'text_format'">
                                                                                 <div x-show="!loaderCK">
-                                                                                    <div :id="`wysi-group-${index}-${item.label.toLowerCase()}`"
+                                                                                    <div :id="`wysi-group-${index}-${itemName}`"
                                                                                          x-init="
                                                                                     (() => {
                                                                                         $nextTick(() => {
@@ -928,8 +958,8 @@
                                                                                     x-for="([itemName, field], index) in Object.entries(field_)"
                                                                                     :key="index">
                                                                                 <template x-if="itemName != 'g_title'">
-                                                                                    <div :class="{'flex flex-row-reverse justify-end items-center gap-2': field.type === 'checkbox'}">
-                                                                                        <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700 mb-0' : 'block text-sm font-medium text-slate-700 mb-1'">
+                                                                                    <div :class="{'flex flex-row-reverse justify-end items-center gap-3': field.type === 'checkbox'}">
+                                                                                        <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700' : 'block text-sm font-medium text-slate-700 mb-1'"
                                                                                             <span x-text="field.label"></span>
                                                                                             <span x-show="field.options?.['#required']"
                                                                                                   class="text-red-500">*</span>
@@ -945,9 +975,14 @@
                                                                                         </template>
 
                                                                                         {# Icon Picker #}
-                                                                                        <template
-                                                                                                x-if="field.type === 'vactory_icon_picker'">
+                                                                                        <template 
+                                                                                            x-if="field.type === 'vactory_icon_picker'">
                                                                                             {% include "@vactory_dashboard/_components/fields/icon-picker-field.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'x_model': 'item[fieldName][itemName]'} %}
+                                                                                        </template>
+
+                                                                                        {# Entity Autocomplete #}
+                                                                                        <template x-if="field.type === 'entity_autocomplete'">
+                                                                                            {% include "@vactory_dashboard/_components/fields/entity-autocomplete-field.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'x_model': 'item[fieldName][itemName]'} %}
                                                                                         </template>
 
                                                                                         {# Checkbox #}
@@ -968,7 +1003,7 @@
                                                                                                     x-model="item[fieldName][itemName]"
                                                                                                     rows="4"
                                                                                                     class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent bg-white transition-all duration-150"></textarea>
-                                                                                        </template>
+                                                                                            </template>                                                                         
 
                                                                                         {# Text Format #}
                                                                                         <template x-if="loaderCK">
@@ -1055,7 +1090,7 @@
                                                                                         {# URL Extended Input #}
                                                                                         <template
                                                                                                 x-if="field.type === 'url_extended'">
-                                                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with {'required': 'field.options?.["#required"] ?? false',  xmodel: 'item' } %}
+                                                                                            {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with {'required': 'field.options?.["#required"] ?? false',  xmodel: 'item[fieldName]' } %}
                                                                                         </template>
 
 
@@ -1124,8 +1159,8 @@
                                                             <template
                                                                     x-for="(field, fieldName) in selectedTemplate.fields"
                                                                     :key="fieldName">
-                                                                    <div :class="{'flex flex-row-reverse justify-end items-center gap-2': field.type === 'checkbox'}">
-                                                                    <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700 mb-0' : 'block text-sm font-medium text-slate-700 mb-1'">
+                                                                    <div :class="{'flex flex-row-reverse justify-end items-center gap-3': field.type === 'checkbox'}">
+                                                                    <label :class="field.type === 'checkbox' ? 'text-sm font-medium text-slate-700' : 'block text-sm font-medium text-slate-700 mb-1'">
                                                                         <span x-text="field.label"></span>
                                                                         <span x-show="field.options?.['#required']"
                                                                               class="text-red-500">*</span>
@@ -1145,11 +1180,17 @@
                                                                         {% include "@vactory_dashboard/_components/fields/icon-picker-field.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'x_model': 'item[fieldName]'} %}
                                                                     </template>
 
+                                                                    {# Entity Autocomplete #}
+                                                                    <template x-if="field.type === 'entity_autocomplete'">
+                                                                        {% include "@vactory_dashboard/_components/fields/entity-autocomplete-field.html.twig" with {'required': 'field.options?.["#required"] ?? false', 'x_model': 'item[fieldName]'} %}
+                                                                    </template>
+
                                                                     {# Checkbox #}
                                                                     <template x-if="field.type === 'checkbox'">
                                                                         <input type="checkbox"
                                                                                :required="field.options?.['#required'] ?? false"
-                                                                               x-model="item[fieldName]">
+                                                                               x-model="item[fieldName]"
+                                                                               class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
                                                                     </template>
 
 
@@ -1182,7 +1223,7 @@
                                                                     </template>
                                                                     <template x-if="field.type === 'text_format'">
                                                                         <div x-show="!loaderCK">
-                                                                            <div class="wysiwyg-container" x-init="
+                                                                            <div class="wysiwyg-container" :id="`wysi-multi-${index}-${fieldName}`" x-init="
                                                                                 (() => {
                                                                                     $nextTick(() => {
                                                                                     new MutationObserver((records, observer) => {
@@ -1238,7 +1279,7 @@
 
                                                                     {# URL Extended Input #}
                                                                     <template x-if="field.type === 'url_extended'">
-                                                                        {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { 'required': 'field.options?.["#required"] ?? false', xmodel: 'item' } %}
+                                                                        {% include "@vactory_dashboard/_components/fields/link-field.html.twig" with { 'required': 'field.options?.["#required"] ?? false', xmodel: 'item[fieldName]' } %}
                                                                     </template>
 
 

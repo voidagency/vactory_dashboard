@@ -370,6 +370,20 @@ class NodeService {
     if ($paragraph_field && $entity->hasField($paragraph_field)) {
       $this->prepareVactoryParagraphsData($entity, $node_data, $paragraph_field);
     }
+
+    $this->prepareBannerData($entity, $node_data);
+
+    // Include scheduler fields if they exist.
+    if ($entity->hasField('publish_on')) {
+      $publish_on = $entity->get('publish_on')->value;
+      $node_data['publish_on'] = $publish_on ? date('Y-m-d\TH:i', $publish_on) : '';
+    }
+
+    if ($entity->hasField('unpublish_on')) {
+      $unpublish_on = $entity->get('unpublish_on')->value;
+      $node_data['unpublish_on'] = $unpublish_on ? date('Y-m-d\TH:i', $unpublish_on) : '';
+    }
+
     return $node_data;
   }
 
@@ -503,9 +517,35 @@ class NodeService {
     $this->prepareBannerData($node, $node_data);
 
     $alias = \Drupal::service('path_alias.manager')
-      ->getAliasByPath('/node/' . $node->id());
+      ->getAliasByPath('/node/' . $node->id(), $node->get('langcode')->value);
     $node_data['alias'] = $alias;
     $node_data['status'] = $node->isPublished();
+
+    // Include domain access field values if they exist.
+    if ($node->hasField('field_domain_access')) {
+      $domain_access = [];
+      foreach ($node->get('field_domain_access')->referencedEntities() as $domain) {
+        $domain_access[] = $domain->id();
+      }
+      $node_data['field_domain_access'] = $domain_access;
+    }
+
+    if ($node->hasField('field_domain_all_affiliates')) {
+      // Return as string '1' or '0' for JavaScript compatibility
+      $node_data['field_domain_all_affiliates'] = $node->get('field_domain_all_affiliates')->value ? '1' : '0';
+    }
+
+    // Include scheduler fields if they exist.
+    if ($node->hasField('publish_on')) {
+      $publish_on = $node->get('publish_on')->value;
+      $node_data['publish_on'] = $publish_on ? date('Y-m-d\TH:i', $publish_on) : '';
+    }
+
+    if ($node->hasField('unpublish_on')) {
+      $unpublish_on = $node->get('unpublish_on')->value;
+      $node_data['unpublish_on'] = $unpublish_on ? date('Y-m-d\TH:i', $unpublish_on) : '';
+    }
+
     return $node_data;
   }
 
@@ -561,6 +601,8 @@ class NodeService {
               'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
               'bundle' => $paragraph->bundle(),
               'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
+              'show_in_anchor_menu' => $paragraph->hasField('field_vactory_flag_2') && $paragraph->get('field_vactory_flag_2')->value === "1",
+              'anchor_title' => $paragraph->hasField('field_titre_ancre') ? $paragraph->get('field_titre_ancre')->value : "",
               'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
               'pid' => $paragraphData['target_id'],
               'revision_id' => $paragraph->getRevisionId(),
@@ -568,6 +610,7 @@ class NodeService {
               'widget_data' => $widgetData,
               'widget_config' => $widgetConfig,
               /* start configuration */
+              'paragraph_id' => $paragraph->hasField('paragraph_identifier') ? $paragraph->get('paragraph_identifier')->value : "",
               'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
               'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
               'color' => $hex,
@@ -589,6 +632,8 @@ class NodeService {
             'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
             'bundle' => $paragraph->bundle(),
             'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
+            'show_in_anchor_menu' => $paragraph->hasField('field_vactory_flag_2') && $paragraph->get('field_vactory_flag_2')->value === "1",
+            'anchor_title' => $paragraph->hasField('field_titre_ancre') ? $paragraph->get('field_titre_ancre')->value : "",
             'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
             'pid' => $paragraphData['target_id'],
             'revision_id' => $paragraph->getRevisionId(),
@@ -599,6 +644,7 @@ class NodeService {
             'block_id' => $paragraph->get('field_vactory_block')->plugin_id ?? "",
             'block_settings' => $paragraph->get('field_vactory_block')->settings ?? [],
             /* start configuration */
+            'paragraph_id' => $paragraph->hasField('paragraph_identifier') ? $paragraph->get('paragraph_identifier')->value : "",
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
             'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
             'color' => $hex,
@@ -630,6 +676,7 @@ class NodeService {
             'displays' => $this->getViewDisplays($blockID),
             'bundle' => $paragraph->bundle(),
             /* start configuration */
+            'paragraph_id' => $paragraph->hasField('paragraph_identifier') ? $paragraph->get('paragraph_identifier')->value : "",
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
             'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
             'color' => $hex,
@@ -643,6 +690,8 @@ class NodeService {
             'enabel_parallax' => $paragraph->hasField('paragraph_background_parallax') ? $paragraph->get('paragraph_background_parallax')->value : "",
             /* end configuration */
             'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
+            'show_in_anchor_menu' => $paragraph->hasField('field_vactory_flag_2') && $paragraph->get('field_vactory_flag_2')->value === "1",
+            'anchor_title' => $paragraph->hasField('field_titre_ancre') ? $paragraph->get('field_titre_ancre')->value : "",
             'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
             'pid' => $paragraphData['target_id'],
             'revision_id' => $paragraph->getRevisionId(),
@@ -659,12 +708,15 @@ class NodeService {
             'id' => $node->id(),
             'title' => $paragraph->hasField('field_vactory_title') ? $paragraph->get('field_vactory_title')->value : "",
             'show_title' => $paragraph->hasField('field_vactory_flag') && $paragraph->get('field_vactory_flag')->value === "1",
+            'show_in_anchor_menu' => $paragraph->hasField('field_vactory_flag_2') && $paragraph->get('field_vactory_flag_2')->value === "1",
+            'anchor_title' => $paragraph->hasField('field_titre_ancre') ? $paragraph->get('field_titre_ancre')->value : "",
             'spacing' => $paragraph->hasField('container_spacing') ? $paragraph->get('container_spacing')->value : "",
             'display' => $paragraph->hasField('field_multi_paragraph_type') ? $paragraph->get('field_multi_paragraph_type')->value : "",
             'introduction' => $paragraph->hasField('field_paragraph_introduction') ? $paragraph->get('field_paragraph_introduction')->value : "",
             'items' => $this->getReferencedTabs($paragraph),
             'bundle' => $paragraph->bundle(),
             /* start configuration */
+            'paragraph_id' => $paragraph->hasField('paragraph_identifier') ? $paragraph->get('paragraph_identifier')->value : "",
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
             'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
             'color' => $hex,
@@ -808,16 +860,36 @@ class NodeService {
     $fileFields = array_keys($fileFields);
     $extraFieldsFileFields = array_keys($fileRemoteVideoFields);
 
+    // Get fields with type url_extended.
+    $urlExtendedFields = $this->findMediaFieldsInDynamicField($widgetConfig, 'url_extended');
+    $extraFieldsUrlExtendedFields = array_filter($widgetConfig['extra_fields'] ?? [], function($field) {
+      return ($field['type'] ?? "") === 'url_extended';
+    });
+    $urlExtendedFields = array_keys($urlExtendedFields);
+    $extraFieldsUrlExtendedFields = array_keys($extraFieldsUrlExtendedFields);
+
+    // Get fields with type entity_autocomplete.
+    $entityAutocompleteFields = $this->findMediaFieldsInDynamicField($widgetConfig, 'entity_autocomplete');
+    $extraFieldsEntityAutocompleteFields = array_filter($widgetConfig['extra_fields'] ?? [], function($field) {
+      return ($field['type'] ?? "") === 'entity_autocomplete';
+    });
+    $entityAutocompleteFields = array_keys($entityAutocompleteFields);
+    $extraFieldsEntityAutocompleteFields = array_keys($extraFieldsEntityAutocompleteFields);
+
     // Process extra fields image fields.
     if (array_key_exists('extra_field', $widgetData ?? []) && $widgetData['extra_field']) {
       $this->handleExtraFieldsImageType($widgetData, $extraFieldsImageFields);
       $this->handleExtraFieldsRemoteVideoType($widgetData, $extraFieldsRemoteVideoFields);
       $this->handleExtraFieldsFileType($widgetData, $extraFieldsFileFields);
+      $this->handleExtraFieldsUrlExtendedType($widgetData, $extraFieldsUrlExtendedFields);
+      $this->handleExtraFieldsEntityAutocompleteType($widgetData, $extraFieldsEntityAutocompleteFields);
     }
     // Process each numeric key (0, 1, etc.) in widgetData.
     $this->handleNonExtraFieldsImageType($widgetData, $imageFields);
     $this->handleNonExtraFieldsRemoteVideoType($widgetData, $remoteVideoFields);
     $this->handleNonExtraFieldsFileType($widgetData, $fileFields);
+    $this->handleNonExtraFieldsUrlExtendedType($widgetData, $urlExtendedFields);
+    $this->handleNonExtraFieldsEntityAutocompleteType($widgetData, $entityAutocompleteFields);
   }
 
   /**
@@ -1101,6 +1173,237 @@ class NodeService {
   }
 
   /**
+   * Handle extra fields for url_extended type.
+   * url_extended is stored directly as { url: '...', title: '...', attributes: {...} }
+   */
+  private function handleExtraFieldsUrlExtendedType(&$widgetData, $extraFieldsUrlExtendedFields) {
+    if (!isset($widgetData['extra_field']) || !is_array($widgetData['extra_field'])) {
+      return;
+    }
+    $extra_fields = &$widgetData['extra_field'];
+    foreach ($extra_fields as $key => &$item) {
+      // Non-group extra fields
+      if (in_array($key, $extraFieldsUrlExtendedFields) && is_array($item)) {
+        // Data is already in the right format { url, title, attributes }
+        $extra_fields[$key] = [
+          'url' => $item['url'] ?? '',
+          'title' => $item['title'] ?? '',
+          'attributes' => $item['attributes'] ?? [],
+        ];
+      }
+      // Group extra fields
+      elseif (str_starts_with($key, 'group_') && is_array($item)) {
+        foreach ($item as $subKey => &$subItem) {
+          if (in_array($subKey, $extraFieldsUrlExtendedFields) && is_array($subItem)) {
+            $extra_fields[$key][$subKey] = [
+              'url' => $subItem['url'] ?? '',
+              'title' => $subItem['title'] ?? '',
+              'attributes' => $subItem['attributes'] ?? [],
+            ];
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle non extra fields for url_extended type.
+   * url_extended is stored directly as { url: '...', title: '...', attributes: {...} }
+   */
+  private function handleNonExtraFieldsUrlExtendedType(&$widgetData, $urlExtendedFields) {
+    foreach ($widgetData ?? [] as $key => &$item) {
+      // Skip non-numeric keys like 'extra_field' and 'pending_content'.
+      if (!is_numeric($key) || !is_array($item)) {
+        continue;
+      }
+
+      foreach ($item as $fieldName => &$fieldValue) {
+        // Handle grouped fields
+        if (str_starts_with($fieldName, 'group_') && is_array($fieldValue)) {
+          foreach ($fieldValue as $subFieldName => &$subFieldValue) {
+            if (in_array($subFieldName, $urlExtendedFields) && is_array($subFieldValue)) {
+              $widgetData[$key][$fieldName][$subFieldName] = [
+                'url' => $subFieldValue['url'] ?? '',
+                'title' => $subFieldValue['title'] ?? '',
+                'attributes' => $subFieldValue['attributes'] ?? [],
+              ];
+            }
+          }
+        }
+        // Handle non-grouped fields
+        elseif (in_array($fieldName, $urlExtendedFields) && is_array($fieldValue)) {
+          $widgetData[$key][$fieldName] = [
+            'url' => $fieldValue['url'] ?? '',
+            'title' => $fieldValue['title'] ?? '',
+            'attributes' => $fieldValue['attributes'] ?? [],
+          ];
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle extra fields for entity_autocomplete type.
+   * entity_autocomplete is stored as just the entity ID (number or string).
+   */
+  private function handleExtraFieldsEntityAutocompleteType(&$widgetData, $extraFieldsEntityAutocompleteFields) {
+    if (!isset($widgetData['extra_field']) || !is_array($widgetData['extra_field'])) {
+      return;
+    }
+    $extra_fields = &$widgetData['extra_field'];
+    
+    foreach ($extra_fields as $key => &$item) {
+      // Non-group extra fields
+      if (in_array($key, $extraFieldsEntityAutocompleteFields)) {
+        // Value is just the entity ID
+        $targetId = is_array($item) ? ($item['target_id'] ?? NULL) : $item;
+        if ($targetId) {
+          $entity = $this->entityTypeManager->getStorage('node')->load($targetId);
+          $extra_fields[$key] = [
+            'target_id' => (string) $targetId,
+            'title' => $entity ? $entity->label() : 'Node #' . $targetId,
+          ];
+        }
+      }
+      // Group extra fields
+      elseif (str_starts_with($key, 'group_') && is_array($item)) {
+        foreach ($item as $subKey => &$subItem) {
+          if (in_array($subKey, $extraFieldsEntityAutocompleteFields)) {
+            $targetId = is_array($subItem) ? ($subItem['target_id'] ?? NULL) : $subItem;
+            if ($targetId) {
+              $entity = $this->entityTypeManager->getStorage('node')->load($targetId);
+              $extra_fields[$key][$subKey] = [
+                'target_id' => (string) $targetId,
+                'title' => $entity ? $entity->label() : 'Node #' . $targetId,
+              ];
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Prepare widget data for saving by converting dashboard format to Drupal format.
+   *
+   * @param array $widgetData
+   *   The widget data from the dashboard.
+   * @param string $widgetId
+   *   The widget ID.
+   *
+   * @return array
+   *   The prepared widget data.
+   */
+  private function prepareWidgetDataForSave($widgetData, $widgetId) {
+    $widgetConfig = \Drupal::service('vactory_dynamic_field.vactory_provider_manager')
+      ->loadSettings($widgetId);
+
+    // Get fields with type url_extended (stored directly, no conversion needed for url_extended).
+    // url_extended is stored as { url, title, attributes } - same format as dashboard.
+
+    // Get fields with type entity_autocomplete (need to convert { target_id, title } back to just target_id).
+    $entityAutocompleteFields = $this->findMediaFieldsInDynamicField($widgetConfig, 'entity_autocomplete');
+    $extraFieldsEntityAutocompleteFields = array_filter($widgetConfig['extra_fields'] ?? [], function($field) {
+      return ($field['type'] ?? "") === 'entity_autocomplete';
+    });
+    $entityAutocompleteFields = array_keys($entityAutocompleteFields);
+    $extraFieldsEntityAutocompleteFields = array_keys($extraFieldsEntityAutocompleteFields);
+
+    // Process extra fields
+    if (isset($widgetData['extra_field']) && is_array($widgetData['extra_field'])) {
+      foreach ($widgetData['extra_field'] as $key => &$value) {
+        // Convert entity_autocomplete from dashboard format { target_id, title } to Drupal format (just target_id)
+        if (in_array($key, $extraFieldsEntityAutocompleteFields) && is_array($value) && isset($value['target_id'])) {
+          $value = $value['target_id'];
+        }
+        // Handle group extra fields
+        elseif (str_starts_with($key, 'group_') && is_array($value)) {
+          foreach ($value as $subKey => &$subValue) {
+            if (in_array($subKey, $extraFieldsEntityAutocompleteFields) && is_array($subValue) && isset($subValue['target_id'])) {
+              $widgetData['extra_field'][$key][$subKey] = $subValue['target_id'];
+            }
+          }
+        }
+      }
+    }
+
+    // Process items (numeric keys)
+    foreach ($widgetData as $key => &$item) {
+      if (!is_numeric($key) || !is_array($item)) {
+        continue;
+      }
+
+      foreach ($item as $fieldName => &$fieldValue) {
+        // Handle grouped fields
+        if (str_starts_with($fieldName, 'group_') && is_array($fieldValue)) {
+          foreach ($fieldValue as $subFieldName => &$subFieldValue) {
+            $this->convertFieldForSave($subFieldValue, $subFieldName, $entityAutocompleteFields);
+          }
+        }
+        else {
+          $this->convertFieldForSave($fieldValue, $fieldName, $entityAutocompleteFields);
+        }
+      }
+    }
+
+    return $widgetData;
+  }
+
+  /**
+   * Convert a single field value for saving.
+   */
+  private function convertFieldForSave(&$fieldValue, $fieldName, $entityAutocompleteFields) {
+    // Convert entity_autocomplete from dashboard format { target_id, title } to Drupal format (just target_id)
+    if (in_array($fieldName, $entityAutocompleteFields) && is_array($fieldValue) && isset($fieldValue['target_id'])) {
+      $fieldValue = $fieldValue['target_id'];
+    }
+  }
+
+  /**
+   * Handle non extra fields for entity_autocomplete type.
+   * entity_autocomplete is stored as just the entity ID (number or string).
+   */
+  private function handleNonExtraFieldsEntityAutocompleteType(&$widgetData, $entityAutocompleteFields) {
+    foreach ($widgetData ?? [] as $key => &$item) {
+      // Skip non-numeric keys like 'extra_field' and 'pending_content'.
+      if (!is_numeric($key) || !is_array($item)) {
+        continue;
+      }
+
+      foreach ($item as $fieldName => &$fieldValue) {
+        // Handle grouped fields
+        if (str_starts_with($fieldName, 'group_') && is_array($fieldValue)) {
+          foreach ($fieldValue as $subFieldName => &$subFieldValue) {
+            if (in_array($subFieldName, $entityAutocompleteFields)) {
+              // Value is just the entity ID
+              $targetId = is_array($subFieldValue) ? ($subFieldValue['target_id'] ?? NULL) : $subFieldValue;
+              if ($targetId) {
+                $entity = $this->entityTypeManager->getStorage('node')->load($targetId);
+                $widgetData[$key][$fieldName][$subFieldName] = [
+                  'target_id' => (string) $targetId,
+                  'title' => $entity ? $entity->label() : 'Node #' . $targetId,
+                ];
+              }
+            }
+          }
+        }
+        // Handle non-grouped fields
+        elseif (in_array($fieldName, $entityAutocompleteFields)) {
+          // Value is just the entity ID
+          $targetId = is_array($fieldValue) ? ($fieldValue['target_id'] ?? NULL) : $fieldValue;
+          if ($targetId) {
+            $entity = $this->entityTypeManager->getStorage('node')->load($targetId);
+            $widgetData[$key][$fieldName] = [
+              'target_id' => (string) $targetId,
+              'title' => $entity ? $entity->label() : 'Node #' . $targetId,
+            ];
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Get bundle fields information.
    *
    * @param string $bundle
@@ -1154,7 +1457,7 @@ class NodeService {
       switch ($field_type) {
         case 'entity_reference':
           $field_info['target_type'] = $field_settings['target_type'];
-          if ($field_settings['target_type'] === 'taxonomy_term' || $field_settings['target_type'] === 'user' || $field_settings['target_type'] === 'node') {
+          if ($field_settings['target_type'] === 'taxonomy_term' || $field_settings['target_type'] === 'user' || $field_settings['target_type'] === 'node' || $field_settings['target_type'] === 'domain') {
             $component = $form_display->getComponent($field_name);
             if ($component) {
               $widget_type = $component['type'];
@@ -1221,6 +1524,27 @@ class NodeService {
           $field_info['max'] = $field_settings['max'] ?? NULL;
           $field_info['prefix'] = $field_settings['prefix'] ?? '';
           $field_info['suffix'] = $field_settings['suffix'] ?? '';
+          // Get default value if exists
+          $default_value = $field_definition->getDefaultValueLiteral();
+          if (!empty($default_value) && isset($default_value[0]['value'])) {
+            $field_info['default_value'] = $default_value[0]['value'];
+          }
+          break;
+
+        case 'float':
+        case 'decimal':
+          $field_info['type'] = 'float';
+          $field_info['multiple'] = FALSE;
+          $field_info['min'] = $field_settings['min'] ?? NULL;
+          $field_info['max'] = $field_settings['max'] ?? NULL;
+          $field_info['prefix'] = $field_settings['prefix'] ?? '';
+          $field_info['suffix'] = $field_settings['suffix'] ?? '';
+          $field_info['scale'] = $field_settings['scale'] ?? 2;
+          // Get default value if exists
+          $default_value = $field_definition->getDefaultValueLiteral();
+          if (!empty($default_value) && isset($default_value[0]['value'])) {
+            $field_info['default_value'] = $default_value[0]['value'];
+          }
           break;
 
         case 'image':
@@ -1431,11 +1755,14 @@ class NodeService {
       "type" => "vactory_component",
       "field_vactory_title" => $block['title'],
       "field_vactory_flag" => $block['show_title'],
+      "field_vactory_flag_2" => $block['show_in_anchor_menu'],
+      "field_titre_ancre" => $block['anchor_title'],
       "container_spacing" => $block['spacing'],
       "field_vactory_component" => [
         "widget_id" => $block['widget_id'],
-        "widget_data" => json_encode($block['widget_data']),
+        "widget_data" => json_encode($this->prepareWidgetDataForSave($block['widget_data'], $block['widget_id'])),
       ],
+      "paragraph_identifier" => $block['paragraph_id'] ?? '',
       "paragraph_container" => $block['width'],
       "paragraph_css_class" => $block['css_classes'],
       "field_background_color" => !empty($block['color']) ? ['color' => $block['color']] : NULL,
@@ -1488,6 +1815,8 @@ class NodeService {
       "type" => "vactory_paragraph_block",
       "field_vactory_title" => $block['title'],
       "field_vactory_flag" => $block['show_title'],
+      "field_vactory_flag_2" => $block['show_in_anchor_menu'],
+      "field_titre_ancre" => $block['anchor_title'],
       "container_spacing" => $block['spacing'],
       "field_vactory_block" => [
         "plugin_id" => $block['blockType'],
@@ -1497,6 +1826,7 @@ class NodeService {
         'value' => $block['content'] ?? '',
         'format' => 'full_html',
       ],
+      "paragraph_identifier" => $block['paragraph_id'] ?? '',
       "paragraph_container" => $block['width'],
       "paragraph_css_class" => $block['css_classes'],
       "field_background_color" => !empty($block['color']) ? ['color' => $block['color']] : NULL,
@@ -1567,6 +1897,8 @@ class NodeService {
     $paragraph = [
       "type" => "views_reference",
       "field_vactory_title" => $block['title'],
+      "field_vactory_flag_2" => $block['show_in_anchor_menu'],
+      "field_titre_ancre" => $block['anchor_title'],
       "container_spacing" => $block['spacing'],
       "field_views_reference" => [
         "target_id" => $block['blockType'],
@@ -1575,6 +1907,7 @@ class NodeService {
       ],
 
       /* start configuration */
+      "paragraph_identifier" => $block['paragraph_id'] ?? '',
       "paragraph_container" => $block['width'],
       "paragraph_css_class" => $block['css_classes'],
       "field_background_color" => !empty($block['color']) ? ['color' => $block['color']] : NULL,
@@ -1712,10 +2045,13 @@ class NodeService {
       "type" => "vactory_paragraph_multi_template",
       "field_vactory_title" => $block['title'],
       "field_vactory_flag" => $block['show_title'],
+      "field_vactory_flag_2" => $block['show_in_anchor_menu'],
+      "field_titre_ancre" => $block['anchor_title'],
       "container_spacing" => $block['spacing'],
       "field_multi_paragraph_type" => $block['display'],
       "field_paragraph_introduction" => $block['introduction'],
       "field_vactory_paragraph_tab" => $field_vactory_paragraph_tab,
+      "paragraph_identifier" => $block['paragraph_id'] ?? '',
       "paragraph_container" => $block['width'],
       "paragraph_css_class" => $block['css_classes'],
       "field_background_color" => !empty($block['color']) ? ['color' => $block['color']] : NULL,
@@ -1792,9 +2128,12 @@ class NodeService {
           "type" => $bundle,
           "field_vactory_title" => $block['title'],
           "field_vactory_flag" => $block['show_title'],
+          "field_vactory_flag_2" => $block['show_in_anchor_menu'],
+          "field_titre_ancre" => $block['anchor_title'],
           "container_spacing" => $block['spacing'],
 
           /* start configuration */
+          "paragraph_identifier" => $block['paragraph_id'] ?? '',
           "paragraph_container" => $block['width'],
           "paragraph_css_class" => $block['css_classes'],
           "field_background_color" => !empty($block['color']) ? ['color' => $block['color']] : NULL,
@@ -1810,7 +2149,7 @@ class NodeService {
         if ($bundle === 'vactory_component') {
           $paragraph['field_vactory_component'] = [
             "widget_id" => $block['widget_id'],
-            "widget_data" => json_encode($block['widget_data']),
+            "widget_data" => json_encode($this->prepareWidgetDataForSave($block['widget_data'], $block['widget_id'])),
           ];
         }
         else {
@@ -2082,7 +2421,7 @@ class NodeService {
         $paragraph_entity->getTranslation($language)
           ->set('field_vactory_component', [
             "widget_id" => $block['widget_id'],
-            "widget_data" => json_encode($block['widget_data']),
+            "widget_data" => json_encode($this->prepareWidgetDataForSave($block['widget_data'], $block['widget_id'])),
           ]);
         break;
       case 'block':
@@ -2138,14 +2477,29 @@ class NodeService {
         ->set('paragraph_container', $block['width']);
     }
 
-    if ($paragraph_entity->hasField('spacing') && isset($block['spacing'])) {
+    if ($paragraph_entity->hasField('container_spacing') && isset($block['spacing'])) {
       $paragraph_entity->getTranslation($language)
         ->set('container_spacing', $block['spacing']);
+    }
+
+    if ($paragraph_entity->hasField('field_titre_ancre') && isset($block['anchor_title'])) {
+      $paragraph_entity->getTranslation($language)
+        ->set('field_titre_ancre', $block['anchor_title']);
+    }
+
+    if ($paragraph_entity->hasField('field_vactory_flag_2')) {
+      $paragraph_entity->getTranslation($language)
+        ->set('field_vactory_flag_2', $block['show_in_anchor_menu']);
     }
 
     if ($paragraph_entity->hasField('css_classes') && isset($block['css_classes'])) {
       $paragraph_entity->getTranslation($language)
         ->set('paragraph_css_class', $block['css_classes']);
+    }
+
+    if ($paragraph_entity->hasField('paragraph_identifier') && isset($block['paragraph_id'])) {
+      $paragraph_entity->getTranslation($language)
+        ->set('paragraph_identifier', $block['paragraph_id']);
     }
     foreach (DashboardConstants::PARAGARAPH_APPARENCE_FIELDS as $block_key => $field_name) {
       if (!$paragraph_entity->hasField($field_name)) {

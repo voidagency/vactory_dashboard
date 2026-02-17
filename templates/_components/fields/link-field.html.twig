@@ -1,8 +1,36 @@
-<template x-if="field.type === 'url_extended'">
-  <div
-    class="border border-slate-200 rounded-xl p-4 bg-slate-50"
-    x-data="autocompleteLinks({{ xmodel }}, fieldName)"
-  >
+<div
+  class="border border-slate-200 rounded-xl p-4 bg-slate-50"
+  x-data="{
+    results: [],
+    showList: false,
+    searchTimeout: null,
+
+    async search(query) {
+      clearTimeout(this.searchTimeout);
+      if (!query || query.length < 2) {
+        this.results = [];
+        this.showList = false;
+        return;
+      }
+      this.searchTimeout = setTimeout(async () => {
+        try {
+          const res = await fetch('/api/nodes/links?q=' + encodeURIComponent(query));
+          const data = await res.json();
+          this.results = data || [];
+          this.showList = this.results.length > 0;
+        } catch (e) {
+          console.error('Link autocomplete error:', e);
+          this.results = [];
+        }
+      }, 300);
+    },
+
+    hideResults() {
+      this.results = [];
+      this.showList = false;
+    }
+  }"
+>
     <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
       
       <!-- Champ : Titre du lien -->
@@ -12,8 +40,8 @@
         </label>
         <input
           type="text"
-          :required="field.options?.['#required'] ?? false"
-           x-model="{{ xmodel }}[fieldName].title"
+          :required="{{ required }}"
+          x-model="{{ xmodel }}.title"
           class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg
                  focus:outline-none focus:ring-2 focus:ring-primary-300
                  focus:border-transparent bg-white transition-all duration-150"
@@ -27,9 +55,8 @@
         </label>
         <input
           type="text"
-          :required="field.options?.['#required'] ?? false"
-          x-model="{{ xmodel }}[fieldName].url"
-          x-ref="urlInput"
+          :required="{{ required }}"
+          x-model="{{ xmodel }}.url"
           @input="search($event.target.value)"
           @focus="showList = true"
           @blur="setTimeout(() => showList = false, 200)"
@@ -47,17 +74,17 @@
                  bg-white border border-slate-300 rounded shadow-lg overscroll-auto"
           @wheel.stop
         >
-          <template x-for="item in results" :key="item.url">
+          <template x-for="result in results" :key="result.url">
             <li
-              @mousedown.prevent="select(item)"
+              @mousedown.prevent="{{ xmodel }}.url = result.url; if (!{{ xmodel }}.title) {{ xmodel }}.title = result.title; hideResults();"
               class="px-3 py-2 cursor-pointer hover:bg-slate-100"
             >
-              <div class="font-semibold" x-text="item.title"></div>
+            <div class="font-semibold" x-text="result.title"></div>
               <div class="text-xs text-slate-500">
-                <span x-text="item.type"></span> |
-                <span x-text="new Date(item.created * 1000).toLocaleDateString()"></span> |
-                ID: <span x-text="item.id"></span> |
-                Auteur: <span x-text="item.author"></span>
+                <span x-text="result.type"></span> |
+                <span x-text="new Date(result.created * 1000).toLocaleDateString()"></span> |
+                ID: <span x-text="result.id"></span> |
+                Auteur: <span x-text="result.author"></span>
               </div>
             </li>
           </template>
@@ -87,7 +114,7 @@
                 </label>
                 <input
                     type="text"
-                    x-model="{{ xmodel }}[fieldName].attributes.label"
+                    x-model="{{ xmodel }}.attributes.label"
                     class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg"
                 >
             </div>
@@ -98,7 +125,7 @@
                 </label>
                 <input
                     type="text"
-                    x-model="{{ xmodel }}[fieldName].attributes.class"
+                    x-model="{{ xmodel }}.attributes.class"
                     placeholder="{{ 'Link classes separated with spaces'|t }}"
                     class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg"
                 >
@@ -110,7 +137,7 @@
                 </label>
                 <input
                     type="text"
-                    x-model="{{ xmodel }}[fieldName].attributes.id"
+                    x-model="{{ xmodel }}.attributes.id"
                     placeholder="{{ 'Enter a valid CSS ID for the link'|t }}"
                     class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg"
                 >
@@ -121,7 +148,7 @@
                     {{ 'Link Target'|t }}
                 </label>
                 <select
-                    x-model="{{ xmodel }}[fieldName].attributes.target"
+                    x-model="{{ xmodel }}.attributes.target"
                     class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg"
                 >
                     <option value="_self">{{ 'Load in the same frame as it was clicked (_self)'|t }}</option>
@@ -138,7 +165,7 @@
                 </label>
                 <input
                     type="text"
-                    x-model="{{ xmodel }}[fieldName].attributes.rel"
+                    x-model="{{ xmodel }}.attributes.rel"
                     class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg"
                 >
             </div>
@@ -146,5 +173,4 @@
     </div>
 </div>
 
-  </div>
-</template>
+</div>

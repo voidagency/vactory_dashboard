@@ -20,6 +20,10 @@
           formData: {
             fields: {},
             status: true,
+            scheduler: {
+              publish_on: '',
+              unpublish_on: '',
+            },
           },
           language: config.language,
           activeTab: 'content',
@@ -32,6 +36,8 @@
             tab_id: '',
             alias: '',
             status: true,
+            publish_on: '',
+            unpublish_on: '',
           },
           seo: {},
           showBlocksModal: false,
@@ -59,6 +65,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -73,6 +81,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -88,6 +98,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -103,6 +115,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -140,12 +154,17 @@
           // node
           get contentFields() {
             return Object.fromEntries(
-              Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content'),
+              Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content' && !key.startsWith('field_domain_')),
             );
           },
           get crossContentFields() {
             return Object.fromEntries(
               Object.entries(this.fields).filter(([key, field]) => field.type === 'field_cross_content'),
+            );
+          },
+          get domainFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => key.startsWith('field_domain_')),
             );
           },
           async fetchSuggestions(fieldName, query) {
@@ -306,6 +325,7 @@
                   fields: this.formData.fields,
                   status: this.formData.status,
                   banner: this.banner,
+                  scheduler: this.formData.scheduler,
                 }),
               });
 
@@ -505,9 +525,28 @@
                           };
                         }
                       } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
-                        mappedItem[fieldName][itemName] = item[fieldName][itemName];
+                        mappedItem[fieldName][itemName] = item?.[fieldName]?.[itemName] ?? null;
+                      } else if (template.fields[fieldName][itemName].type === 'url_extended') {
+                        // url_extended: ensure proper structure { url, title, attributes }
+                        const urlData = item?.[fieldName]?.[itemName];
+                        mappedItem[fieldName][itemName] = {
+                          url: urlData?.url ?? '',
+                          title: urlData?.title ?? '',
+                          attributes: urlData?.attributes ?? {}
+                        };
+                      } else if (template.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                        // entity_autocomplete: { target_id, title } or null
+                        const entityData = item?.[fieldName]?.[itemName];
+                        if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                          mappedItem[fieldName][itemName] = {
+                            target_id: entityData.target_id ?? entityData,
+                            title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                          };
+                        } else {
+                          mappedItem[fieldName][itemName] = null;
+                        }
                       } else {
-                        mappedItem[fieldName][itemName] = item[fieldName][itemName];
+                        mappedItem[fieldName][itemName] = item?.[fieldName]?.[itemName] ?? '';
                       }
                     });
                   }
@@ -516,7 +555,7 @@
                   else {
                     if (template.fields[fieldName].type === 'text_format') {
                       mappedItem[fieldName] = item[fieldName].value || '';
-                      this.getForm(`wysi-${this.generateRandomString(4)}`, i, true, false, false, false, item[fieldName].value);
+                      this.getForm(`wysi-multi-${i}-${fieldName}`, -1, true, false, false, false, item[fieldName].value);
                     } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
                       const imageKey = Object.keys(item[fieldName])[0];
                       const imageData = item[fieldName][imageKey];
@@ -539,9 +578,28 @@
                         };
                       }
                     } else if (template.fields[fieldName].type === 'json_api_collection') {
-                      mappedItem[fieldName] = item[fieldName];
+                      mappedItem[fieldName] = item?.[fieldName] ?? null;
+                    } else if (template.fields[fieldName].type === 'url_extended') {
+                      // url_extended: ensure proper structure { url, title, attributes }
+                      const urlData = item?.[fieldName];
+                      mappedItem[fieldName] = {
+                        url: urlData?.url ?? '',
+                        title: urlData?.title ?? '',
+                        attributes: urlData?.attributes ?? {}
+                      };
+                    } else if (template.fields[fieldName].type === 'entity_autocomplete') {
+                      // entity_autocomplete: { target_id, title } or null
+                      const entityData = item?.[fieldName];
+                      if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                        mappedItem[fieldName] = {
+                          target_id: entityData.target_id ?? entityData,
+                          title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                        };
+                      } else {
+                        mappedItem[fieldName] = null;
+                      }
                     } else {
-                      mappedItem[fieldName] = item[fieldName] ?? '';
+                      mappedItem[fieldName] = item?.[fieldName] ?? '';
                     }
                   }
                 });
@@ -594,9 +652,28 @@
                             };
                           }
                         } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
-                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName];
+                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0]?.[fieldName]?.[itemName] ?? null;
+                        } else if (template.fields[fieldName][itemName].type === 'url_extended') {
+                          // url_extended: ensure proper structure { url, title, attributes }
+                          const urlData = block.widget_data[0]?.[fieldName]?.[itemName];
+                          this.blockForm.fields[fieldName][itemName] = {
+                            url: urlData?.url ?? '',
+                            title: urlData?.title ?? '',
+                            attributes: urlData?.attributes ?? {}
+                          };
+                        } else if (template.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                          // entity_autocomplete: { target_id, title } or null
+                          const entityData = block.widget_data[0]?.[fieldName]?.[itemName];
+                          if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                            this.blockForm.fields[fieldName][itemName] = {
+                              target_id: entityData.target_id ?? entityData,
+                              title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                            };
+                          } else {
+                            this.blockForm.fields[fieldName][itemName] = null;
+                          }
                         } else {
-                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName];
+                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0]?.[fieldName]?.[itemName] ?? '';
                         }
                       });
                     }
@@ -629,9 +706,28 @@
                           };
                         }
                       } else if (template.fields[fieldName].type === 'json_api_collection') {
-                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
+                        this.blockForm.fields[fieldName] = block.widget_data[0]?.[fieldName] ?? null;
+                      } else if (template.fields[fieldName].type === 'url_extended') {
+                        // url_extended: ensure proper structure { url, title, attributes }
+                        const urlData = block.widget_data[0]?.[fieldName];
+                        this.blockForm.fields[fieldName] = {
+                          url: urlData?.url ?? '',
+                          title: urlData?.title ?? '',
+                          attributes: urlData?.attributes ?? {}
+                        };
+                      } else if (template.fields[fieldName].type === 'entity_autocomplete') {
+                        // entity_autocomplete: { target_id, title } or null
+                        const entityData = block.widget_data[0]?.[fieldName];
+                        if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                          this.blockForm.fields[fieldName] = {
+                            target_id: entityData.target_id ?? entityData,
+                            title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                          };
+                        } else {
+                          this.blockForm.fields[fieldName] = null;
+                        }
                       } else {
-                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
+                        this.blockForm.fields[fieldName] = block.widget_data[0]?.[fieldName] ?? '';
                       }
                     }
                     // END - single field
@@ -679,9 +775,28 @@
                           };
                         }
                       } else if (template.extra_fields[fieldName][itemName].type === 'json_api_collection') {
-                        this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName];
+                        this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field?.[fieldName]?.[itemName] ?? null;
+                      } else if (template.extra_fields[fieldName][itemName].type === 'url_extended') {
+                        // url_extended: ensure proper structure { url, title, attributes }
+                        const urlData = block.widget_data.extra_field?.[fieldName]?.[itemName];
+                        this.blockForm.extra_fields[fieldName][itemName] = {
+                          url: urlData?.url ?? '',
+                          title: urlData?.title ?? '',
+                          attributes: urlData?.attributes ?? {}
+                        };
+                      } else if (template.extra_fields[fieldName][itemName].type === 'entity_autocomplete') {
+                        // entity_autocomplete: { target_id, title } or null
+                        const entityData = block.widget_data.extra_field?.[fieldName]?.[itemName];
+                        if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                          this.blockForm.extra_fields[fieldName][itemName] = {
+                            target_id: entityData.target_id ?? entityData,
+                            title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                          };
+                        } else {
+                          this.blockForm.extra_fields[fieldName][itemName] = null;
+                        }
                       } else {
-                        this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName];
+                        this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field?.[fieldName]?.[itemName] ?? '';
                       }
                     });
                   }
@@ -714,9 +829,28 @@
                         };
                       }
                     } else if (template.extra_fields[fieldName].type === 'json_api_collection') {
-                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field?.[fieldName] ?? null;
+                    } else if (template.extra_fields[fieldName].type === 'url_extended') {
+                      // url_extended: ensure proper structure { url, title, attributes }
+                      const urlData = block.widget_data.extra_field?.[fieldName];
+                      this.blockForm.extra_fields[fieldName] = {
+                        url: urlData?.url ?? '',
+                        title: urlData?.title ?? '',
+                        attributes: urlData?.attributes ?? {}
+                      };
+                    } else if (template.extra_fields[fieldName].type === 'entity_autocomplete') {
+                      // entity_autocomplete: { target_id, title } or null
+                      const entityData = block.widget_data.extra_field?.[fieldName];
+                      if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                        this.blockForm.extra_fields[fieldName] = {
+                          target_id: entityData.target_id ?? entityData,
+                          title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                        };
+                      } else {
+                        this.blockForm.extra_fields[fieldName] = null;
+                      }
                     } else {
-                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field?.[fieldName] ?? '';
                     }
 
                   }
@@ -1083,6 +1217,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1108,6 +1244,8 @@
               config: {
                 title: template.name || '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1152,6 +1290,8 @@
                       this.blockForm.extra_fields[fieldName][itemName] = template.extra_fields[fieldName][itemName]['options']['#default_value'];
                     } else if (template.extra_fields[fieldName][itemName].type === 'text_format') {
                       this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, true);
+                    } else if (template.extra_fields[fieldName][itemName].type === 'entity_autocomplete') {
+                      this.blockForm.extra_fields[fieldName][itemName] = null;
                     } else {
                       this.blockForm.extra_fields[fieldName][itemName] = '';
                     }
@@ -1188,6 +1328,8 @@
                     this.blockForm.extra_fields[fieldName] = template.extra_fields[fieldName]['options']['#default_value'];
                   } else if (template.extra_fields[fieldName].type === 'text_format') {
                     this.getForm(`wysi-extra-${index}`, -1, false, false, true, false);
+                  } else if (template.extra_fields[fieldName].type === 'entity_autocomplete') {
+                    this.blockForm.extra_fields[fieldName] = null;
                   } else {
                     this.blockForm.extra_fields[fieldName] = '';
                   }
@@ -1234,6 +1376,8 @@
                       this.blockForm.fields[fieldName][itemName] = template.fields[fieldName][itemName]['options']['#default_value'];
                     } else if (template.fields[fieldName][itemName].type === 'text_format') {
                       this.getForm(`wysi-group-${index}-${itemName}`, -1, false, true, false, true);
+                    } else if (template.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                      this.blockForm.fields[fieldName][itemName] = null;
                     } else {
                       this.blockForm.fields[fieldName][itemName] = '';
                     }
@@ -1268,6 +1412,8 @@
                     this.blockForm.fields[fieldName] = template.fields[fieldName]['options']['#default_value'];
                   } else if (template.fields[fieldName].type === 'text_format') {
                     this.getForm(`wysi-single-${index}`, -1, false, true, false, false);
+                  } else if (template.fields[fieldName].type === 'entity_autocomplete') {
+                    this.blockForm.fields[fieldName] = null;
                   } else {
                     this.blockForm.fields[fieldName] = '';
                   }
@@ -1334,6 +1480,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1442,6 +1590,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1501,6 +1651,8 @@
                 hideDesktop: block.hideDesktop == '1' ? true : false,
                 enableParallax: block.enableParallax == '1' ? true : false,
                 show_title: block.show_title || false,
+                show_in_anchor_menu: block.show_in_anchor_menu || false,
+                anchor_title: block.anchor_title || '',
                 width: block.width || 'narrow_width',
                 spacing: block.spacing || 'small_space',
                 css_classes: block.css_classes || '',
@@ -1561,6 +1713,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1580,10 +1734,13 @@
           initializeAppearance(block) {
             return {
               title: block?.title || '',
+              paragraph_id: block?.config?.paragraph_id || block?.paragraph_id || '',
               width: block?.config?.width || block.width || 'narrow_width',
               spacing: block?.config?.spacing || block?.spacing || 'small_space',
               css_classes: block?.config?.css_classes || block?.css_classes || '',
               show_title: block?.config?.show_title || block?.show_title || false,
+              show_in_anchor_menu: block?.config?.show_in_anchor_menu || block?.show_in_anchor_menu || false,
+              anchor_title: block?.anchor_title || block?.config?.anchor_title || '',
               image: block?.config?.image || block?.image,
               imageID: block?.config?.imageID || block?.imageID,
               color: block?.config?.color || block?.color,
@@ -1598,10 +1755,13 @@
           prepareConfigurationData(form) {
             return {
               title: form?.config?.title || form?.title,
+              paragraph_id: form?.config?.paragraph_id || form?.paragraph_id,
               blockType: form?.blockType,
               display: form?.config?.display || form?.display,
               content: form?.content,
               show_title: form?.config?.show_title,
+              show_in_anchor_menu: form?.config?.show_in_anchor_menu,
+              anchor_title: form?.config?.anchor_title || form?.anchor_title,
               spacing: form?.config?.spacing || form?.spacing,
               displayID: form?.displayID,
               width: form?.config?.width,
@@ -1700,6 +1860,8 @@
                   } else if (this.selectedTemplate.fields[fieldName][itemName].type === 'json_api_collection') {
                     // Nothing to change here
                     newItem[fieldName][itemName] = this.selectedTemplate.fields[fieldName][itemName]['options']['#default_value'];
+                  } else if (this.selectedTemplate.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                    newItem[fieldName][itemName] = null;
                   } else {
                     newItem[fieldName][itemName] = '';
                   }
@@ -1732,6 +1894,8 @@
                 } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
                   // Nothing to change here
                   newItem[fieldName] = this.selectedTemplate.fields[fieldName]['options']['#default_value'];
+                } else if (this.selectedTemplate.fields[fieldName].type === 'entity_autocomplete') {
+                  newItem[fieldName] = null;
                 } else {
                   newItem[fieldName] = '';
                 }
@@ -1750,11 +1914,14 @@
               if (newItemElement) {
                 newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                const hasGroupField = Object.keys(this.selectedTemplate?.fields ?? {}).some(fieldName =>
-                  fieldName.startsWith('group_'),
-                );
-
-                this.getForm('', newItemIndex, true, false, false, hasGroupField);
+                // Load CKEditor for each text_format field individually
+                Object.keys(this.selectedTemplate?.fields ?? {}).forEach((fieldName) => {
+                  if (!fieldName.startsWith('group_') && this.selectedTemplate.fields[fieldName].type === 'text_format') {
+                    this.getForm(`wysi-multi-${newItemIndex}-${fieldName}`, -1, true, false, false, false, '');
+                  }
+                });
+                // Load CKEditor for group fields (original behavior)
+                this.getForm('', newItemIndex, true, false, false, true);
 
                 // Remove highlight after 3 seconds
                 setTimeout(() => {
@@ -1829,6 +1996,12 @@
                 return;
               }
 
+              // Select field (single or multiple)
+              if (field.type === 'select') {
+                this.formData.fields[fieldKey] = field.multiple ? [] : '';
+                return;
+              }
+
               if (field.type === 'daterange') {
                 this.formData.fields[fieldKey] = {
                   value: field.value?.value || '',
@@ -1900,6 +2073,15 @@
                 return;
               }
 
+              // Link field
+              if (field.type === 'link') {
+                this.formData.fields[fieldKey] = {
+                  uri: '',
+                  title: ''
+                };
+                return;
+              }
+
               this.formData.fields[fieldKey] = '';
             });
 
@@ -1939,6 +2121,9 @@
                   blocks: this.blocks,
                   status: this.settings.status,
                   banner: this.banner,
+                  fields: Object.fromEntries(
+                    Object.entries(this.formData.fields).filter(([key]) => key.startsWith('field_domain_'))
+                  ),
                 }),
               });
 

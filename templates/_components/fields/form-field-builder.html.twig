@@ -11,15 +11,17 @@ Usage:
 #}
 
 <div>
-    <label :class="{'required': field.required}"
-           class="block text-sm font-medium text-slate-700 mb-1">
-        <span x-text="field.label"></span>
-        <span x-show="field.required" class="text-red-500">*</span>
-        {% if isEdit and language != node_default_lang %}
-            <span x-show="!field.is_translatable"
-                  class="text-slate-500">{{ '(All languages)'|t }}</span>
-        {% endif %}
-    </label>
+    <template x-if="field.type !== 'boolean'">
+        <label :class="{'required': field.required}"
+               class="block text-sm font-medium text-slate-700 mb-1">
+            <span x-text="field.label"></span>
+            <span x-show="field.required" class="text-red-500">*</span>
+            {% if isEdit and language != node_default_lang %}
+                <span x-show="!field.is_translatable"
+                      class="text-slate-500">{{ '(All languages)'|t }}</span>
+            {% endif %}
+        </label>
+    </template>
 
     {# Text Input - Simple #}
     <template x-if="field.type === 'string' && !field.multiple">
@@ -95,13 +97,35 @@ Usage:
 
     {# Integer Input #}
     <template x-if="field.type === 'integer'">
-        <div class="flex items-center">
+        <div class="flex items-center" x-init="if ((formData.fields[field.name] === undefined || formData.fields[field.name] === null || formData.fields[field.name] === '') && field.default_value !== undefined && field.default_value !== null) { formData.fields[field.name] = parseInt(field.default_value); }">
             <span x-show="field.prefix" x-text="field.prefix" class="px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-700"></span>
             <input type="number"
                    :required="field.required"
                    x-model.number="formData.fields[field.name]"
                    :min="field.min"
                    :max="field.max"
+                   @invalid="$el.classList.add('border-red-500')"
+                   @input="$el.classList.remove('border-red-500')"
+                   :class="[
+                       field.prefix ? 'rounded-l-none' : '',
+                       field.suffix ? 'rounded-r-none' : '',
+                       {% if isEdit and language != node_default_lang %}'opacity-50 cursor-not-allowed': !field.is_translatable{% endif %}
+                   ]"
+                   class="flex-1 py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+            <span x-show="field.suffix" x-text="field.suffix" class="px-3 py-1.5 text-sm bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-700"></span>
+        </div>
+    </template>
+
+    {# Float Input #}
+    <template x-if="field.type === 'float'">
+        <div class="flex items-center" x-init="if ((formData.fields[field.name] === undefined || formData.fields[field.name] === null || formData.fields[field.name] === '') && field.default_value !== undefined && field.default_value !== null) { formData.fields[field.name] = parseFloat(field.default_value); }">
+            <span x-show="field.prefix" x-text="field.prefix" class="px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-700"></span>
+            <input type="number"
+                   :required="field.required"
+                   x-model.number="formData.fields[field.name]"
+                   :min="field.min"
+                   :max="field.max"
+                   :step="field.scale ? (1 / Math.pow(10, field.scale)).toString() : 'any'"
                    @invalid="$el.classList.add('border-red-500')"
                    @input="$el.classList.remove('border-red-500')"
                    :class="[
@@ -382,14 +406,18 @@ Usage:
         </div>
     </template>
 
-    {# Radio #}
+    {# Boolean/Checkbox #}
     <template x-if="field.type === 'boolean'">
-        <input type="checkbox"
-               x-model="formData.fields[field.name]"
-               class="py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
-                {% if isEdit and language != node_default_lang %}
-            :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
-                {% endif %}/>
+        <label class="flex items-center gap-2 cursor-pointer"
+               {% if isEdit and language != node_default_lang %}
+                   :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+               {% endif %}>
+            <input type="checkbox"
+                   x-model="formData.fields[field.name]"
+                   class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded"/>
+            <span class="text-sm font-medium text-slate-700" x-text="field.label"></span>
+            <span x-show="field.required" class="text-red-500">*</span>
+        </label>
     </template>
 
     {# Color Picker #}

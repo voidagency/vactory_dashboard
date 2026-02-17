@@ -80,7 +80,7 @@
             <div class="mx-auto">
                 <form id="node-form" @submit.prevent="saveNode()"
                       class="bg-white rounded-lg shadow-sm p-2 space-y-6">
-                    <div x-show="activeTab === 'content'" class="flex gap-y-6 flex-col">
+                    <div x-show="activeTab === 'content'" class="flex gap-y-4 flex-col">
                         <template x-for="(field, fieldName) in contentFields" :key="field.name">
                             {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
                                 field: 'field',
@@ -101,6 +101,54 @@
                             } %}
                         </template>
                     </div>
+
+                    {# Settings Tab - Domain Access and Scheduler settings #}
+                    {% if domain_access_enabled or scheduler_enabled %}
+                    <div x-show="activeTab === 'settings'" class="flex gap-y-4 flex-col">
+                        {% if domain_access_enabled %}
+                        <div class="space-y-6 bg-white px-6 py-8 rounded-xl shadow-sm">
+                            <h3 class="text-lg font-semibold text-slate-900 border-b border-slate-200 pb-3">{{ 'Domain Settings'|t }}</h3>
+                            <template x-for="(field, fieldName) in domainFields" :key="field.name">
+                                {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
+                                    field: 'field',
+                                    formData: 'formData',
+                                    isEdit: true,
+                                    language: language,
+                                    node_default_lang: node_default_lang
+                                } %}
+                            </template>
+                            <template x-if="Object.keys(domainFields).length === 0">
+                                <p class="text-slate-500 text-sm">{{ 'No domain settings available for this content type.'|t }}</p>
+                            </template>
+                        </div>
+                        {% endif %}
+
+                        {# Scheduler Settings Section #}
+                        {% if scheduler_enabled %}
+                        <div class="space-y-6 bg-white px-6 py-8 rounded-xl shadow-sm">
+                            <h3 class="text-lg font-semibold text-slate-900 border-b border-slate-200 pb-3">{{ 'Scheduling Options'|t }}</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Publish on'|t }}</label>
+                                    <input
+                                        type="datetime-local"
+                                        x-model="formData.scheduler.publish_on"
+                                        class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                    <p class="mt-1 text-xs text-slate-500">{{ 'Leave empty to publish immediately or manually.'|t }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Unpublish on'|t }}</label>
+                                    <input
+                                        type="datetime-local"
+                                        x-model="formData.scheduler.unpublish_on"
+                                        class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+                                    <p class="mt-1 text-xs text-slate-500">{{ 'Leave empty to keep the content published indefinitely.'|t }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
 
                     {% if has_paragraphs_field %}
                         <div x-show="activeTab === 'templates'">
