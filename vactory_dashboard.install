@@ -5,9 +5,9 @@
  * Install script for vactory_dashboard module.
  */
 
-use Drupal\user\Entity\Role;
 use Drupal\block\Entity\Block;
 use Drupal\block_content\Entity\BlockContent;
+use Drupal\user\Entity\Role;
 
 /**
  * Assign permissions (access dash, sitemap, media ..) to webmaster.
@@ -29,6 +29,7 @@ function vactory_dashboard_update_9970() {
  */
 function vactory_dashboard_install() {
   _assign_permissions_to_webmaster();
+  _add_slug_term_to_searchapi_fields();
 }
 
 /**
@@ -51,6 +52,37 @@ function _assign_permissions_to_webmaster() {
     $role->grantPermission('administer users');
     $role->grantPermission('administer dashboard configuration');
     $role->save();
+  }
+}
+
+/**
+ * Add Slug term to Search API fields.
+ */
+function _add_slug_term_to_searchapi_fields() {
+  // Vérifier si vactory_decoupled est activé.
+  $moduleHandler = \Drupal::moduleHandler();
+
+  if (!$moduleHandler->moduleExists('vactory_decoupled')) {
+    // Ne rien faire si pas en mode decoupled.
+    return;
+  }
+
+  // Ajouter le champ slug uniquement si decoupled.
+  $index_storage = \Drupal::entityTypeManager()->getStorage('search_api_index');
+  $index = $index_storage->load('vactory_dashboard_search');
+
+  if ($index) {
+    $field = \Drupal::getContainer()
+      ->get('search_api.fields_helper')
+      ->createField($index, 'slug', [
+        'label' => 'Term slug',
+        'datasource_id' => 'entity:taxonomy_term',
+        'property_path' => 'slug',
+        'type' => 'text',
+      ]);
+
+    $index->addField($field);
+    $index->save();
   }
 }
 
