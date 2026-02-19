@@ -89,11 +89,6 @@ field_settings:
     dependencies:
       module:
         - media
-  slug:
-    label: 'Term slug'
-    datasource_id: 'entity:taxonomy_term'
-    property_path: slug
-    type: text
 
   tid:
     label: 'Term ID'
