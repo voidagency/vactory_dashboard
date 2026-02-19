@@ -11,18 +11,20 @@ Usage:
 #}
 
 <div>
-    <label :class="{'required': field.required}"
-           class="block text-sm font-medium text-slate-700 mb-1">
-        <span x-text="field.label"></span>
-        <span x-show="field.required" class="text-red-500">*</span>
-        {% if isEdit and language != node_default_lang %}
-            <span x-show="!field.is_translatable"
-                  class="text-slate-500">{{ '(All languages)'|t }}</span>
-        {% endif %}
-    </label>
+    <template x-if="field.type !== 'boolean'">
+        <label :class="{'required': field.required}"
+               class="block text-sm font-medium text-slate-700 mb-1">
+            <span x-text="field.label"></span>
+            <span x-show="field.required" class="text-red-500">*</span>
+            {% if isEdit and language != node_default_lang %}
+                <span x-show="!field.is_translatable"
+                      class="text-slate-500">{{ '(All languages)'|t }}</span>
+            {% endif %}
+        </label>
+    </template>
 
-    {# Text Input #}
-    <template x-if="field.type === 'string'">
+    {# Text Input - Simple #}
+    <template x-if="field.type === 'string' && !field.multiple">
         <input type="text"
                :required="field.required"
                x-model="formData.fields[field.name]"
@@ -32,6 +34,108 @@ Usage:
                 {% if isEdit and language != node_default_lang %}
             :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
                 {% endif %}>
+    </template>
+
+    {# Text Input - Multiple #}
+    <template x-if="field.type === 'string' && field.multiple">
+        <div class="space-y-2" {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
+            {# Toggle weight display button #}
+            <div class="flex justify-end mb-2">
+                <button type="button"
+                        @click="showMultipleFieldWeights = !showMultipleFieldWeights"
+                        class="text-xs text-primary-600 hover:text-primary-800 flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                    </svg>
+                    <span x-text="showMultipleFieldWeights ? '{{ 'Masquer le poids des lignes'|t }}' : '{{ 'Afficher le poids des lignes'|t }}'"></span>
+                </button>
+            </div>
+
+            {# List of items #}
+            <template x-for="(item, idx) in formData.fields[field.name]" :key="idx">
+                <div class="flex items-center gap-2 bg-gray-50 p-3 rounded-md border border-gray-200">
+                    {# Drag handle #}
+                    <div x-show="showMultipleFieldWeights" class="cursor-move text-gray-400 hover:text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+                        </svg>
+                    </div>
+
+                    {# Text input #}
+                    <div class="flex-1">
+                        <input type="text"
+                               x-model="formData.fields[field.name][idx]"
+                               :maxlength="field.maxlength || 255"
+                               @invalid="$el.classList.add('border-red-500')"
+                               @input="$el.classList.remove('border-red-500')"
+                               class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+                        {# Character counter #}
+                        <div class="text-xs text-gray-500 mt-1">
+                            <span x-text="(formData.fields[field.name][idx] || '').length"></span>/<span x-text="field.maxlength || 255"></span>
+                        </div>
+                    </div>
+
+                    {# Remove button #}
+                    <button type="button"
+                            @click="formData.fields[field.name].splice(idx, 1)"
+                            :disabled="formData.fields[field.name].length <= 1"
+                            :class="formData.fields[field.name].length <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'"
+                            class="px-3 py-1.5 text-sm text-gray-700 bg-gray-100 border border-gray-300 rounded-md transition-colors">
+                        {{ 'Retirer'|t }}
+                    </button>
+                </div>
+            </template>
+
+            {# Add another element button #}
+            <button type="button"
+                    @click="formData.fields[field.name].push('')"
+                    class="inline-flex items-center justify-center gap-x-2 rounded-md transition-colors px-4 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600">
+                {{ 'Ajouter un autre élément'|t }}
+            </button>
+        </div>
+    </template>
+
+    {# Integer Input #}
+    <template x-if="field.type === 'integer'">
+        <div class="flex items-center" x-init="if ((formData.fields[field.name] === undefined || formData.fields[field.name] === null || formData.fields[field.name] === '') && field.default_value !== undefined && field.default_value !== null) { formData.fields[field.name] = parseInt(field.default_value); }">
+            <span x-show="field.prefix" x-text="field.prefix" class="px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-700"></span>
+            <input type="number"
+                   :required="field.required"
+                   x-model.number="formData.fields[field.name]"
+                   :min="field.min"
+                   :max="field.max"
+                   @invalid="$el.classList.add('border-red-500')"
+                   @input="$el.classList.remove('border-red-500')"
+                   :class="[
+                       field.prefix ? 'rounded-l-none' : '',
+                       field.suffix ? 'rounded-r-none' : '',
+                       {% if isEdit and language != node_default_lang %}'opacity-50 cursor-not-allowed': !field.is_translatable{% endif %}
+                   ]"
+                   class="flex-1 py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+            <span x-show="field.suffix" x-text="field.suffix" class="px-3 py-1.5 text-sm bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-700"></span>
+        </div>
+    </template>
+
+    {# Float Input #}
+    <template x-if="field.type === 'float'">
+        <div class="flex items-center" x-init="if ((formData.fields[field.name] === undefined || formData.fields[field.name] === null || formData.fields[field.name] === '') && field.default_value !== undefined && field.default_value !== null) { formData.fields[field.name] = parseFloat(field.default_value); }">
+            <span x-show="field.prefix" x-text="field.prefix" class="px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-700"></span>
+            <input type="number"
+                   :required="field.required"
+                   x-model.number="formData.fields[field.name]"
+                   :min="field.min"
+                   :max="field.max"
+                   :step="field.scale ? (1 / Math.pow(10, field.scale)).toString() : 'any'"
+                   @invalid="$el.classList.add('border-red-500')"
+                   @input="$el.classList.remove('border-red-500')"
+                   :class="[
+                       field.prefix ? 'rounded-l-none' : '',
+                       field.suffix ? 'rounded-r-none' : '',
+                       {% if isEdit and language != node_default_lang %}'opacity-50 cursor-not-allowed': !field.is_translatable{% endif %}
+                   ]"
+                   class="flex-1 py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+            <span x-show="field.suffix" x-text="field.suffix" class="px-3 py-1.5 text-sm bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-700"></span>
+        </div>
     </template>
 
     {# Text with Summary #}
@@ -68,8 +172,53 @@ Usage:
         </div>
     </template>
 
+    {# Image Upload (for both media and image) #}
+    <template x-if="field.type === 'image' && field?.target_type !== 'media'">
+        <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
+            {% include "@vactory_dashboard/_components/media/file-selector.html.twig" with {
+                'required': 'field.required',
+                'url': 'formData.fields[field.name].url',
+                'name': 'formData.fields[field.name].name',
+                'path': 'field.name',
+                'key': 'formData.fields[field.name].key',
+                'isMultiple': 'false'
+            } %}
+            {# Alt Text Field #}
+            <template x-if="field.alt_field">
+                <div class="mt-3">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        <span>{{ 'Alternative text'|t }}</span>
+                        <span x-show="field.alt_field_required" class="text-red-500">*</span>
+                    </label>
+                    <input type="text"
+                           x-model="formData.fields[field.name].alt"
+                           :required="field.alt_field_required"
+                           placeholder="{{ 'Short description of the image used by screen readers'|t }}"
+                           class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"/>
+                    <p class="mt-1 text-xs text-gray-500">{{ 'Alternative text is used by screen readers, search engines, and when the image cannot be loaded.'|t }}</p>
+                </div>
+            </template>
+
+            {# Title Text Field #}
+            <template x-if="field.title_field">
+                <div class="mt-3">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">
+                        <span>{{ 'Title'|t }}</span>
+                        <span x-show="field.title_field_required" class="text-red-500">*</span>
+                    </label>
+                    <input type="text"
+                           x-model="formData.fields[field.name].title"
+                           :required="field.title_field_required"
+                           placeholder="{{ 'Title text'|t }}"
+                           class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"/>
+                    <p class="mt-1 text-xs text-gray-500">{{ 'Title text is used in the tool tip when a user hovers their mouse over the image.'|t }}</p>
+                </div>
+            </template>
+        </div>
+    </template>
+
     {# Image Upload #}
-    <template x-if="field.type === 'image'">
+    <template x-if="field.type === 'image' && field?.target_type === 'media'">
         <div {% if isEdit and language != node_default_lang %} :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}" {% endif %}>
             {% include "@vactory_dashboard/_components/media/media-selector.html.twig" with {
                 'required': 'field.required',
@@ -81,9 +230,19 @@ Usage:
         </div>
     </template>
 
+    {# Google Map Field #}
+    <template x-if="field.type === 'vactory_google_map_field'">
+        {% include "@vactory_dashboard/_components/fields/google-map-field.html.twig" %}
+    </template>
+
     {# Field FAQ #}
     <template x-if="field.type === 'faqfield'">
         {% include "@vactory_dashboard/_components/fields/faq.html.twig" %}
+    </template>
+
+    {# Field Quiz Questions #}
+    <template x-if="field.type === 'vactory_quiz_question'">
+        {% include "@vactory_dashboard/_components/fields/quiz-questions.html.twig" %}
     </template>
 
     {# Remote video #}
@@ -130,13 +289,23 @@ Usage:
 
     {# Link Field #}
     <template x-if="field.type === 'link'">
-        <input type="text"
-               :required="field.required"
-               x-model="formData.fields[field.name]"
-               class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+        <div class="space-y-3">
+            <input type="url"
+                :required="field.required"
+                x-model="formData.fields[field.name].uri"
+                placeholder="https://example.com"
+                class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
                 {% if isEdit and language != node_default_lang %}
-            :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                    :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
                 {% endif %}>
+            <input type="text"
+                x-model="formData.fields[field.name].title"
+                placeholder="{{ 'Link text'|t }}"
+                class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+                {% if isEdit and language != node_default_lang %}
+                :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                {% endif %}>
+        </div>
     </template>
 
     {# Email Input #}
@@ -237,16 +406,37 @@ Usage:
         </div>
     </template>
 
-    {# Radio #}
+    {# Boolean/Checkbox #}
     <template x-if="field.type === 'boolean'">
-        <input type="checkbox"
-               x-model="formData.fields[field.name]"
-               class="py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
-                {% if isEdit and language != node_default_lang %}
-            :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
-                {% endif %}/>
+        <label class="flex items-center gap-2 cursor-pointer"
+               {% if isEdit and language != node_default_lang %}
+                   :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+               {% endif %}>
+            <input type="checkbox"
+                   x-model="formData.fields[field.name]"
+                   class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded"/>
+            <span class="text-sm font-medium text-slate-700" x-text="field.label"></span>
+            <span x-show="field.required" class="text-red-500">*</span>
+        </label>
+    </template>
+
+    {# Color Picker #}
+    <template x-if="field.type === 'colorapi_color_field' || field.type === 'jquery_colorpicker'">
+        <div {% if isEdit and language != node_default_lang %}
+                :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+            {% endif %}>
+            <input type="color"
+                   :required="field.required"
+                   x-model="formData.fields[field.name].color.hexadecimal"
+                   @change="if (!formData.fields[field.name]) formData.fields[field.name] = { color: { hexadecimal: '' } }"
+                   class="block w-10 h-10 border rounded cursor-pointer">
+            <span @click="formData.fields[field.name] = { color: { hexadecimal: '' } }"
+                  class="text-primary-500 text-sm cursor-pointer hover:underline">
+                Clear
+            </span>
+        </div>
     </template>
 
     {# Field Description #}
-    <p class="mb-1 text-xs text-gray-500" x-text="field.description"></p>
-</div> 
+    <p class="mb-1 text-xs text-gray-500" x-html="field.description"></p>
+</div>

@@ -62,7 +62,7 @@
     <div x-show="showTaxoEdit" class="flex-1 overflow-y-auto">
         <div class="mx-auto">
             <form id="taxonomy-form" @submit.prevent="saveTerm()" class="bg-white rounded-lg shadow-sm p-6">
-                <div class="flex gap-y-6 flex-col">
+                <div class="flex gap-y-4 flex-col">
                     <template x-for="(field, fieldName) in fields" :key="field.name">
                         {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
                             field: 'field',
@@ -100,6 +100,7 @@
             status: true,
           },
           dynamicFields: {},
+          showMultipleFieldWeights: false,
           isSaving: false,
           notification: {
             show: false,
@@ -184,6 +185,16 @@
                 return;
               }
 
+              // Color field - initialize nested structure
+              if (field.type === 'colorapi_color_field') {
+                this.formData.fields[fieldKey] = {
+                  color: {
+                    hexadecimal: existingValue || ''
+                  }
+                };
+                return;
+              }
+
               // Radios
               if (field.type === 'radios') {
                 this.formData.fields[fieldKey] = '';
@@ -205,9 +216,16 @@
                   path: fieldKey,
                   key: new Date().getTime(),
                 };
-              } else {
-                this.formData.fields[fieldKey] = '';
+                return;
               }
+
+              // String multiple
+              if (field.type === 'string' && field.multiple) {
+                this.formData.fields[fieldKey] = [''];
+                return;
+              }
+
+              this.formData.fields[fieldKey] = '';
             });
 
             this.fetchTemplates();
@@ -634,7 +652,7 @@
                   else {
                     if (template.fields[fieldName].type === 'text_format') {
                       mappedItem[fieldName] = item[fieldName].value || '';
-                      this.getForm(`wysi-nonmultiple-${this.generateRandomString(4)}`, i, true, false, false, false, item[fieldName].value);
+                      this.getForm(`wysi-multi-${i}-${fieldName}`, -1, true, false, false, false, item[fieldName].value);
                     } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
                       const imageKey = Object.keys(item?.[fieldName] ?? {})?.[0] ?? null;
                       const imageData = item?.[fieldName]?.[imageKey] ?? {};
@@ -966,12 +984,14 @@
               if (newItemElement) {
                 newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                // Check if group_ field exists
-                const hasGroupField = Object.keys(this.selectedTemplate?.fields ?? {}).some(fieldName =>
-                  fieldName.startsWith('group_'),
-                );
-
-                this.getForm('', newItemIndex, true, false, false, hasGroupField);
+                // Load CKEditor for each text_format field individually
+                Object.keys(this.selectedTemplate?.fields ?? {}).forEach((fieldName) => {
+                  if (!fieldName.startsWith('group_') && this.selectedTemplate.fields[fieldName].type === 'text_format') {
+                    this.getForm(`wysi-multi-${newItemIndex}-${fieldName}`, -1, true, false, false, false, '');
+                  }
+                });
+                // Load CKEditor for group fields (original behavior)
+                this.getForm('', newItemIndex, true, false, false, true);
 
                 // Remove highlight after 3 seconds
                 setTimeout(() => {

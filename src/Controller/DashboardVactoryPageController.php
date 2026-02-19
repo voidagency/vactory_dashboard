@@ -120,6 +120,10 @@ class DashboardVactoryPageController extends ControllerBase {
     }
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
+
+    // Get bundle fields for domain access settings.
+    $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+
     return [
       '#theme' => 'vactory_dashboard_node_add',
       '#type' => 'page',
@@ -127,7 +131,11 @@ class DashboardVactoryPageController extends ControllerBase {
       ...$paragraph_flags,
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
+      '#fields' => $fields,
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
     ];
   }
 
@@ -142,6 +150,10 @@ class DashboardVactoryPageController extends ControllerBase {
     $vid = $this->entityTypeManager
       ->getStorage('node')
       ->getLatestRevisionId($id);
+
+    if (!$vid) {
+      throw new NotFoundHttpException('Node revision not found');
+    }
 
     $node = $this->entityTypeManager->getStorage('node')->loadRevision($vid);
     if (!$node) {
@@ -193,6 +205,10 @@ class DashboardVactoryPageController extends ControllerBase {
     $meta_tags = $this->metatagService->prepareMetatags($node_translation ?? $node);
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
+
+    // Get bundle fields for domain access settings.
+    $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+
     return [
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'page',
@@ -207,9 +223,13 @@ class DashboardVactoryPageController extends ControllerBase {
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
+      '#fields' => $fields,
       ...$paragraph_flags,
       '#preview_url' => $this->previewUrlService->getPreviewUrl($node),
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
     ];
   }
 
@@ -223,6 +243,10 @@ class DashboardVactoryPageController extends ControllerBase {
     $vid = $this->entityTypeManager
       ->getStorage('node')
       ->getLatestRevisionId($id);
+
+    if (!$vid) {
+      throw new NotFoundHttpException('Node revision not found');
+    }
 
     $node = $this->entityTypeManager->getStorage('node')->loadRevision($vid);
     if (!$node) {
@@ -271,6 +295,8 @@ class DashboardVactoryPageController extends ControllerBase {
 
     $meta_tags = $this->metatagService->prepareMetatags($node);
 
+    $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+
     return [
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'page',
@@ -282,27 +308,140 @@ class DashboardVactoryPageController extends ControllerBase {
       '#available_languages' => $available_languages_list,
       '#node_default_lang' => $node->language()->getId(),
       '#has_translation' => FALSE,
+      '#fields' => $fields,
       '#meta_tags' => $meta_tags,
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
     ];
   }
 
   /**
    * Returns available block templates.
    *
+   * This method retrieves the list of available dynamic field templates
+   * (widgets) from the vactory_dynamic_field module. The returned list
+   * automatically excludes widgets that are configured as excluded in the
+   * Dynamic Field Settings (/admin/config/system/dynamic-field-configuration).
+   *
+   * The excluded widgets configuration from vactory_dynamic_field.settings
+   * is automatically respected, ensuring consistency across both the standard
+   * Drupal UI and the Dashboard UI.
+   *
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The request object.
    *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
-   *   JSON response containing templates data.
+   *   JSON response containing templates data, with excluded widgets filtered
+   *   out.
+   *
+   * @see \Drupal\vactory_dynamic_field\Form\DynamicFieldSettingsForm
+   * @see \Drupal\vactory_dynamic_field\WidgetsManager::getModalWidgetsList()
+   * @see \Drupal\vactory_dynamic_field\WidgetsManager::getDisabledWidgets()
    */
   public function getTemplates(Request $request) {
-    // Dummy data for templates.
+    // Get templates from vactory_dynamic_field.
     $templates = \Drupal::service('vactory_dynamic_field.vactory_provider_manager')
       ->getModalWidgetsList();
+
+    $templates = $this->filterExcludedWidgets($templates);
+
     return new JsonResponse([
       'data' => $templates,
       'message' => 'Templates retrieved successfully',
     ]);
+  }
+
+  /**
+   * Filter out excluded widgets from templates list.
+   *
+   * This method provides additional filtering to ensure excluded widgets
+   * configured in Dynamic Field Settings are properly removed from the
+   * templates list. It re-applies the exclusion logic to fix a bug where
+   * widgets may still appear after being unset.
+   *
+   * @param array $templates
+   *   The templates array from getModalWidgetsList().
+   *
+   * @return array
+   *   The filtered templates array with excluded widgets removed.
+   */
+  protected function filterExcludedWidgets(array $templates) {
+    $config = \Drupal::config('vactory_dynamic_field.settings');
+    $excluded_widgets_yaml = $config->get('excluded_widgets') ?: '';
+
+    if (empty($excluded_widgets_yaml)) {
+      return $templates;
+    }
+
+    try {
+      $excluded_config = \Drupal\Component\Serialization\Yaml::decode($excluded_widgets_yaml) ?: [];
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('vactory_dashboard')->error('Invalid YAML in excluded_widgets: @message', ['@message' => $e->getMessage()]);
+      return $templates;
+    }
+
+    // Build list of disabled widgets
+    $disabled_widgets = [];
+    foreach ($excluded_config as $provider_id => $config_data) {
+      if (isset($config_data['settings'])) {
+        $settings = $config_data['settings'];
+        $disable_all = $settings['disable_all'] ?? FALSE;
+
+        if ($disable_all) {
+          // Disable all widgets from this provider except those in 'except' list
+          $disabled_widgets[$provider_id] = [
+            'disable_all' => TRUE,
+            'except' => array_map(function($id) use ($provider_id) {
+              return $provider_id . ':' . $id;
+            }, $settings['except'] ?? []),
+          ];
+        }
+        else {
+          // Disable specific widgets
+          if (isset($settings['widgets']) && is_array($settings['widgets'])) {
+            foreach ($settings['widgets'] as $widget_id) {
+              $disabled_widgets[$provider_id . ':' . $widget_id] = TRUE;
+            }
+          }
+        }
+      }
+    }
+
+    // Filter templates
+    foreach ($templates as $category => &$widgets) {
+      if (!is_array($widgets)) {
+        continue;
+      }
+
+      foreach ($widgets as $widget_key => $widget) {
+        // Check if this specific widget is disabled
+        if (isset($disabled_widgets[$widget_key])) {
+          unset($widgets[$widget_key]);
+          continue;
+        }
+
+        // Check if all widgets from this provider are disabled
+        $provider_id = explode(':', $widget_key)[0];
+        if (isset($disabled_widgets[$provider_id]) && is_array($disabled_widgets[$provider_id])) {
+          if ($disabled_widgets[$provider_id]['disable_all']) {
+            // Check if widget is in exception list
+            if (!in_array($widget_key, $disabled_widgets[$provider_id]['except'])) {
+              unset($widgets[$widget_key]);
+            }
+          }
+        }
+      }
+
+      // Remove empty categories
+      if (empty($widgets)) {
+        unset($templates[$category]);
+      }
+    }
+
+    return $templates;
   }
 
   /**
@@ -408,11 +547,15 @@ class DashboardVactoryPageController extends ControllerBase {
           ->getStorage('node')
           ->getLatestRevisionId($nid);
 
+        if (!$vid) {
+          throw new NotFoundHttpException('Node revision not found');
+        }
+
         /** @var \Drupal\node\NodeInterface $node */
         $node = $this->entityTypeManager->getStorage('node')
           ->loadRevision($vid);
         if (!$node) {
-          throw new \Exception('Node not found');
+          throw new NotFoundHttpException('Node not found');
         }
         $node_default_lang = $node->language()->getId();
       }
@@ -467,6 +610,21 @@ class DashboardVactoryPageController extends ControllerBase {
         }
       }
 
+      // Update scheduler fields if they exist and have values.
+      if (!empty($settings['publish_on']) && $node->hasField('publish_on')) {
+        $node->getTranslation($language)->set('publish_on', strtotime($settings['publish_on']));
+      }
+      elseif ($node->hasField('publish_on') && isset($settings['publish_on']) && $settings['publish_on'] === '') {
+        $node->getTranslation($language)->set('publish_on', NULL);
+      }
+
+      if (!empty($settings['unpublish_on']) && $node->hasField('unpublish_on')) {
+        $node->getTranslation($language)->set('unpublish_on', strtotime($settings['unpublish_on']));
+      }
+      elseif ($node->hasField('unpublish_on') && isset($settings['unpublish_on']) && $settings['unpublish_on'] === '') {
+        $node->getTranslation($language)->set('unpublish_on', NULL);
+      }
+
       // Update SEO fields if they exist.
       if (!empty($seo) && $node->hasField('field_vactory_meta_tags')) {
         // Mettre à jour les meta tags avec les valeurs fournies dans $seo.
@@ -477,6 +635,16 @@ class DashboardVactoryPageController extends ControllerBase {
         }
         $node->getTranslation($language)
           ->set('field_vactory_meta_tags', serialize($meta_tags));
+      }
+
+      // Update domain access and other fields if they exist.
+      $fields = $content['fields'] ?? [];
+      foreach ($fields as $field_name => $field_value) {
+        if ($node->hasField($field_name)) {
+          if ($field_value || is_array($field_value) || is_bool($field_value)) {
+            $node->getTranslation($language)->set($field_name, $field_value);
+          }
+        }
       }
 
       // Update blocks/paragraphs if they exist.
@@ -527,6 +695,7 @@ class DashboardVactoryPageController extends ControllerBase {
       $blocks = $content['blocks'] ?? [];
       $status = $content['status'] ?? TRUE;
       $banner = $content['banner'] ?? [];
+      $fields = $content['fields'] ?? [];
 
       if (empty($settings['title'])) {
         return new JsonResponse([
@@ -559,6 +728,15 @@ class DashboardVactoryPageController extends ControllerBase {
         $node->set('node_summary', $settings['summary']);
       }
 
+      // Update scheduler fields if they exist and have values.
+      if (!empty($settings['publish_on']) && $node->hasField('publish_on')) {
+        $node->set('publish_on', strtotime($settings['publish_on']));
+      }
+
+      if (!empty($settings['unpublish_on']) && $node->hasField('unpublish_on')) {
+        $node->set('unpublish_on', strtotime($settings['unpublish_on']));
+      }
+
       // Update SEO fields if they exist.
       if (!empty($seo) && $node->hasField('field_vactory_meta_tags')) {
         // Mettre à jour les meta tags avec les valeurs fournies dans $seo.
@@ -577,6 +755,15 @@ class DashboardVactoryPageController extends ControllerBase {
       }
 
       $this->nodeService->saveBannerInNode($node, $banner);
+
+      // Save domain access fields if they exist.
+      if (!empty($fields)) {
+        foreach ($fields as $field_name => $field_value) {
+          if ($node->hasField($field_name)) {
+            $node->set($field_name, $field_value);
+          }
+        }
+      }
 
       // Save the node.
       $node->isNew();

@@ -1,0 +1,264 @@
+{#
+/**
+ * @file
+ * Quiz Questions field template for Vactory Dashboard.
+ *
+ * Available variables:
+ * - field: The field definition and data.
+ */
+#}
+
+<div class="bg-white border p-4 rounded-md space-y-4" 
+     x-init="
+       // Initialize parsed answers for existing questions
+       if (formData && formData.fields && formData.fields[field.name]) {
+         formData.fields[field.name].forEach((question, index) => {
+           if (question.question_answers && !question.parsed_answers) {
+             try {
+               question.parsed_answers = JSON.parse(question.question_answers);
+             } catch (e) {
+               question.parsed_answers = [];
+             }
+           }
+         });
+       }
+     "
+
+  <!-- Boucle sur les éléments Quiz Questions -->
+  <template x-for="(quizItem, index) in formData.fields[field.name]" :key="index">
+    <div class="bg-gray-50 border rounded-md mb-4 relative" 
+         x-data="{ expanded: index === 0 }">
+      <!-- Header with controls -->
+      <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 transition-colors"
+           @click="expanded = !expanded">
+        <!-- Left side: Drag Handle, Move buttons, and Question title -->
+        <div class="flex items-center space-x-3">
+          <!-- Drag Handle Icon -->
+          <div class="text-gray-400 cursor-move" 
+               @click.stop
+               title="Drag to reorder">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+            </svg>
+          </div>
+
+          <div class="flex flex-col space-y-1" @click.stop>
+            <!-- Move Up Button -->
+            <button type="button" 
+                    @click="
+                      if (index > 0) {
+                        const temp = formData.fields[field.name][index];
+                        formData.fields[field.name].splice(index, 1);
+                        formData.fields[field.name].splice(index - 1, 0, temp);
+                      }
+                    "
+                    :disabled="index === 0"
+                    :class="index === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-200 cursor-pointer'"
+                    class="p-1 rounded transition-colors"
+                    title="Move up">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+              </svg>
+            </button>
+            <!-- Move Down Button -->
+            <button type="button" 
+                    @click="
+                      if (index < formData.fields[field.name].length - 1) {
+                        const temp = formData.fields[field.name][index];
+                        formData.fields[field.name].splice(index, 1);
+                        formData.fields[field.name].splice(index + 1, 0, temp);
+                      }
+                    "
+                    :disabled="index === formData.fields[field.name].length - 1"
+                    :class="index === formData.fields[field.name].length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-200 cursor-pointer'"
+                    class="p-1 rounded transition-colors"
+                    title="Move down">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+          </div>
+
+          {# Chevron Icon #}
+          <div class="text-gray-600">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5" x-show="expanded">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 9l7 7 7-7" />
+            </svg>
+
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5" x-show="!expanded">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </div>
+
+          <div class="font-semibold text-gray-700">
+            <span x-text="'Question ' + (index + 1)"></span>
+          </div>
+        </div>
+
+        <!-- Delete Button -->
+        <button type="button" 
+                class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded transition-colors" 
+                @click.stop="formData.fields[field.name].splice(index, 1)" 
+                title="Supprimer">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Collapsible Content -->
+      <div x-show="expanded" 
+           x-collapse
+           class="p-4 pt-0 space-y-4">
+
+      <!-- Question Number -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Question number *</label>
+        <input type="text" 
+               :value="index + 1" 
+               disabled
+               class="w-full p-2 border border-gray-300 rounded bg-gray-100 text-gray-500"/>
+      </div>
+
+      <!-- Question Type -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Question type *</label>
+        <select x-model="formData.fields[field.name][index].question_type" 
+                class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-300" required>
+          <option value="multiple">Question à choix multiple</option>
+          <option value="unique">Question à choix unique</option>
+        </select>
+      </div>
+
+      <!-- Question Reward -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Question reward *</label>
+        <input type="number" 
+               x-model="formData.fields[field.name][index].question_reward" 
+               min="1"
+               class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-300" 
+               required/>
+      </div>
+
+      <!-- Question Penalty -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Question penalty *</label>
+        <input type="number" 
+               x-model="formData.fields[field.name][index].question_penalty" 
+               max="0"
+               class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-300" 
+               required/>
+      </div>
+
+      {# Question Text #}
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Question *</label>
+        <div :id="`quiz-question-${index}`" 
+             x-init="getForm(`quiz-question-${index}`, -1, false, false, false, false, formData.fields[field.name][index].question_text_value, 'formData.fields[field.name][index].question_text_value', true);
+          (() => {
+            $nextTick(() => {
+              new MutationObserver((records, observer) => {
+                  setTimeout(() => {
+                  const textarea = $el.querySelector('textarea');
+                  
+                  if (!textarea) return;
+                  const instanceID = textarea.getAttribute('data-ckeditor5-id');
+                  let ckeditor = null;
+                  Drupal.CKEditor5Instances.forEach((instance, id) => {
+                      if (id === instanceID) {
+                      ckeditor = instance;
+                      }
+                  });
+                  if (ckeditor) {
+                      ckeditor.model.document.on('change:data', () => {
+                      formData.fields[field.name][index].question_text_value = ckeditor.getData();
+                      });
+                  }
+                  }, 1000);
+              }).observe($el, { childList: true, subtree: true });
+            });
+          })()
+        "></div>
+        <input type="hidden" x-model="formData.fields[field.name][index].question_text_format" />
+      </div>
+
+        <!-- Answers Summary -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Answers summary:</label>
+          <div class="bg-blue-50 border border-blue-200 rounded p-3 min-h-[60px]">
+            <template x-if="!formData.fields[field.name][index].parsed_answers || formData.fields[field.name][index].parsed_answers.length === 0">
+              <p class="text-gray-500 text-sm">No answers has been added yet!</p>
+            </template>
+            <template x-if="formData.fields[field.name][index].parsed_answers && formData.fields[field.name][index].parsed_answers.length > 0">
+              <div class="space-y-1">
+                <template x-for="(answer, answerIndex) in formData.fields[field.name][index].parsed_answers" :key="answerIndex">
+                  <div class="flex items-center space-x-2">
+                    <span class="text-sm font-medium" x-text="answer.answer_id + ':'"></span>
+                    <span class="text-sm" x-text="answer.answer || 'Empty answer'"></span>
+                    <template x-if="answer.is_correct == 1 || answer.is_correct === '1' || answer.is_correct === true">
+                      <span class="text-green-600 text-xs font-bold">(Correct)</span>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+        </div>
+
+      <!-- Add Answers Button -->
+      <div>
+        <button type="button" 
+                class="inline-flex items-center justify-center rounded-md transition-colors gap-x-2 bg-primary-500 text-white hover:bg-primary-600 px-4 py-2 text-sm"
+                @click="
+                  currentQuizQuestionIndex = index;
+                  const question = formData.fields[field.name][index];
+                  // Clear the array first
+                  currentQuizAnswers.splice(0, currentQuizAnswers.length);
+                  // Then populate it
+                  if (question.parsed_answers && question.parsed_answers.length > 0) {
+                    question.parsed_answers.forEach(ans => currentQuizAnswers.push({...ans}));
+                  }
+                  activeQuizAnswerTab = 0;
+                  showQuizAnswersModal = true;
+                  console.log('Modal opened with answers:', currentQuizAnswers);
+                ">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-3.5 w-3.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path>
+          </svg>
+          <template x-if="!formData.fields[field.name][index].parsed_answers || formData.fields[field.name][index].parsed_answers.length === 0">
+            <span>Add answers</span>
+          </template>
+          <template x-if="formData.fields[field.name][index].parsed_answers && formData.fields[field.name][index].parsed_answers.length > 0">
+            <span>Edit answers</span>
+          </template>
+        </button>
+      </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Bouton pour ajouter une nouvelle question -->
+  <button type="button" 
+          class="inline-flex items-center justify-center rounded-md transition-colors gap-x-2 bg-primary-500 text-white hover:bg-primary-600 px-4 py-2 text-sm w-full"
+          @click="
+            if (!formData.fields[field.name]) {
+              formData.fields[field.name] = [];
+            }
+            formData.fields[field.name].push({
+              question_number: (formData.fields[field.name].length + 1).toString(),
+              question_text_value: '',
+              question_text_format: 'basic_html',
+              question_type: 'multiple',
+              question_answers: '[]',
+              question_reward: 1,
+              question_penalty: 0,
+              parsed_answers: []
+            });
+          ">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-3.5 w-3.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path>
+    </svg>
+    <span>Ajouter une question</span>
+  </button>
+
+</div>

@@ -20,15 +20,24 @@
           formData: {
             fields: {},
             status: config.status === '1',
+            scheduler: {
+              publish_on: '',
+              unpublish_on: '',
+            },
           },
           get contentFields() {
             return Object.fromEntries(
-              Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content'),
+              Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content' && !key.startsWith('field_domain_')),
             );
           },
           get crossContentFields() {
             return Object.fromEntries(
               Object.entries(this.fields).filter(([key, field]) => field.type === 'field_cross_content'),
+            );
+          },
+          get domainFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => key.startsWith('field_domain_')),
             );
           },
           // End other bundle specific vars.
@@ -48,6 +57,8 @@
             summary: '',
             alias: '',
             status: config.status === '1',
+            publish_on: '',
+            unpublish_on: '',
           },
           seo: {},
           inputLabelsList: {},
@@ -60,6 +71,12 @@
           showParagraphViewForm: false,
           showParagraphMultipleForm: false,
           isParagraphMultiple: false,
+          showQuizAnswersModal: false,
+          showMultipleFieldWeights: false,
+          currentQuizQuestionIndex: null,
+          currentQuizAnswers: [],
+          activeQuizAnswerTab: 0,
+          googleMapFields: {},
           selectedMultipleParagraphTemplate: null,
           currentMultipleParagraphTemplateIndex: null,
           currentParagraphMultipleItem: 0,
@@ -76,6 +93,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -91,6 +110,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -106,6 +127,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -121,6 +144,8 @@
             config: {
               title: '',
               show_title: false,
+              show_in_anchor_menu: false,
+              anchor_title: '',
               width: 'narrow_width',
               spacing: 'small_space',
               css_classes: '',
@@ -334,11 +359,30 @@
                           };
                         }
                       } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
-                        mappedItem[fieldName][itemName] = item[fieldName][itemName];
+                        mappedItem[fieldName][itemName] = item?.[fieldName]?.[itemName] ?? null;
                       } else if (template.fields[fieldName][itemName].type === 'checkbox') {
-                        mappedItem[fieldName][itemName] = item[fieldName][itemName] == 1;
+                        mappedItem[fieldName][itemName] = item?.[fieldName]?.[itemName] == 1;
+                      } else if (template.fields[fieldName][itemName].type === 'url_extended') {
+                        // url_extended: ensure proper structure { url, title, attributes }
+                        const urlData = item?.[fieldName]?.[itemName];
+                        mappedItem[fieldName][itemName] = {
+                          url: urlData?.url ?? '',
+                          title: urlData?.title ?? '',
+                          attributes: urlData?.attributes ?? {}
+                        };
+                      } else if (template.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                        // entity_autocomplete: { target_id, title } or null
+                        const entityData = item?.[fieldName]?.[itemName];
+                        if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                          mappedItem[fieldName][itemName] = {
+                            target_id: entityData.target_id ?? entityData,
+                            title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                          };
+                        } else {
+                          mappedItem[fieldName][itemName] = null;
+                        }
                       } else {
-                        mappedItem[fieldName][itemName] = item[fieldName][itemName];
+                        mappedItem[fieldName][itemName] = item?.[fieldName]?.[itemName] ?? '';
                       }
                     });
                   }
@@ -348,7 +392,7 @@
                   else {
                     if (template.fields[fieldName].type === 'text_format') {
                       mappedItem[fieldName] = item[fieldName].value || '';
-                      this.getForm(`wysi-nonmultiple-${this.generateRandomString(4)}`, i, true, false, false, false, item[fieldName].value);
+                      this.getForm(`wysi-multi-${i}-${fieldName}`, -1, true, false, false, false, item[fieldName].value);
                     } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
                       const imageKey = Object.keys(item?.[fieldName] ?? {})?.[0] ?? null;
                       const imageData = item?.[fieldName]?.[imageKey] ?? {};
@@ -371,11 +415,30 @@
                         };
                       }
                     } else if (template.fields[fieldName].type === 'json_api_collection') {
-                      mappedItem[fieldName] = item[fieldName];
+                      mappedItem[fieldName] = item?.[fieldName] ?? null;
                     } else if (template.fields[fieldName].type === 'checkbox') {
-                      mappedItem[fieldName] = item[fieldName] == 1;
+                      mappedItem[fieldName] = item?.[fieldName] == 1;
+                    } else if (template.fields[fieldName].type === 'url_extended') {
+                      // url_extended: ensure proper structure { url, title, attributes }
+                      const urlData = item?.[fieldName];
+                      mappedItem[fieldName] = {
+                        url: urlData?.url ?? '',
+                        title: urlData?.title ?? '',
+                        attributes: urlData?.attributes ?? {}
+                      };
+                    } else if (template.fields[fieldName].type === 'entity_autocomplete') {
+                      // entity_autocomplete: { target_id, title } or null
+                      const entityData = item?.[fieldName];
+                      if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                        mappedItem[fieldName] = {
+                          target_id: entityData.target_id ?? entityData,
+                          title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                        };
+                      } else {
+                        mappedItem[fieldName] = null;
+                      }
                     } else {
-                      mappedItem[fieldName] = item[fieldName];
+                      mappedItem[fieldName] = item?.[fieldName] ?? '';
                     }
                   }
                   // END - multiple field
@@ -394,9 +457,9 @@
               // widget_data[0] contains the fields
               if (block.widget_data && block.widget_data[0]) {
                 Object.keys(template?.fields ?? {}).forEach((fieldName, index) => {
-                  if (block.widget_data[0][fieldName]) {
-                    // single field - group
-                    if (fieldName.startsWith('group_')) {
+                  // Process all fields from template, even if they don't have existing data
+                  // single field - group
+                  if (fieldName.startsWith('group_')) {
                       Object.keys(template.fields[fieldName]).forEach((itemName, index) => {
 
                         if (!this.blockForm.fields[fieldName]) {
@@ -427,19 +490,38 @@
                             };
                           }
                         } else if (template.fields[fieldName][itemName].type === 'json_api_collection') {
-                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName];
+                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0]?.[fieldName]?.[itemName] ?? null;
                         } else if (template.fields[fieldName][itemName].type === 'checkbox') {
-                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName] == 1;
+                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0]?.[fieldName]?.[itemName] == 1;
+                        } else if (template.fields[fieldName][itemName].type === 'url_extended') {
+                          // url_extended: ensure proper structure { url, title, attributes }
+                          const urlData = block.widget_data[0]?.[fieldName]?.[itemName];
+                          this.blockForm.fields[fieldName][itemName] = {
+                            url: urlData?.url ?? '',
+                            title: urlData?.title ?? '',
+                            attributes: urlData?.attributes ?? {}
+                          };
+                        } else if (template.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                          // entity_autocomplete: { target_id, title } or null
+                          const entityData = block.widget_data[0]?.[fieldName]?.[itemName];
+                          if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                            this.blockForm.fields[fieldName][itemName] = {
+                              target_id: entityData.target_id ?? entityData,
+                              title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                            };
+                          } else {
+                            this.blockForm.fields[fieldName][itemName] = null;
+                          }
                         } else {
-                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0][fieldName][itemName];
+                          this.blockForm.fields[fieldName][itemName] = block.widget_data[0]?.[fieldName]?.[itemName] ?? '';
                         }
                       });
 
                     } else {
                       // single field - non group
                       if (template.fields[fieldName].type === 'text_format') {
-                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName].value || '';
-                        this.getForm(`wysi-single-${index}`, -1, false, true, false, false, block.widget_data[0][fieldName].value);
+                        this.blockForm.fields[fieldName] = block.widget_data[0]?.[fieldName]?.value || '';
+                        this.getForm(`wysi-single-${index}`, -1, false, true, false, false, block.widget_data[0]?.[fieldName]?.value);
                       } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
                         const imageKey = Object.keys(block?.widget_data?.[0]?.[fieldName] ?? {})?.[0] ?? null;
                         const imageData = block?.widget_data?.[0]?.[fieldName]?.[imageKey] ?? {};
@@ -463,14 +545,32 @@
                         }
 
                       } else if (template.fields[fieldName].type === 'json_api_collection') {
-                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
+                        this.blockForm.fields[fieldName] = block.widget_data[0]?.[fieldName] ?? null;
                       } else if (template.fields[fieldName].type === 'checkbox') {
-                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName] == 1;
+                        this.blockForm.fields[fieldName] = block.widget_data[0]?.[fieldName] == 1;
+                      } else if (template.fields[fieldName].type === 'url_extended') {
+                        // url_extended: ensure proper structure { url, title, attributes }
+                        const urlData = block.widget_data[0]?.[fieldName];
+                        this.blockForm.fields[fieldName] = {
+                          url: urlData?.url ?? '',
+                          title: urlData?.title ?? '',
+                          attributes: urlData?.attributes ?? {}
+                        };
+                      } else if (template.fields[fieldName].type === 'entity_autocomplete') {
+                        // entity_autocomplete: { target_id, title } or null
+                        const entityData = block.widget_data[0]?.[fieldName];
+                        if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                          this.blockForm.fields[fieldName] = {
+                            target_id: entityData.target_id ?? entityData,
+                            title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                          };
+                        } else {
+                          this.blockForm.fields[fieldName] = null;
+                        }
                       } else {
-                        this.blockForm.fields[fieldName] = block.widget_data[0][fieldName];
+                        this.blockForm.fields[fieldName] = block.widget_data[0]?.[fieldName] ?? '';
                       }
                     }
-                  }
                 });
               }
             }
@@ -513,11 +613,30 @@
                             };
                           }
                         } else if (template.extra_fields[fieldName][itemName].type === 'json_api_collection') {
-                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName];
+                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field?.[fieldName]?.[itemName] ?? null;
                         } else if (template.extra_fields[fieldName][itemName].type === 'checkbox') {
-                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName] == 1;
+                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field?.[fieldName]?.[itemName] == 1;
+                        } else if (template.extra_fields[fieldName][itemName].type === 'url_extended') {
+                          // url_extended: ensure proper structure { url, title, attributes }
+                          const urlData = block.widget_data.extra_field?.[fieldName]?.[itemName];
+                          this.blockForm.extra_fields[fieldName][itemName] = {
+                            url: urlData?.url ?? '',
+                            title: urlData?.title ?? '',
+                            attributes: urlData?.attributes ?? {}
+                          };
+                        } else if (template.extra_fields[fieldName][itemName].type === 'entity_autocomplete') {
+                          // entity_autocomplete: { target_id, title } or null
+                          const entityData = block.widget_data.extra_field?.[fieldName]?.[itemName];
+                          if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                            this.blockForm.extra_fields[fieldName][itemName] = {
+                              target_id: entityData.target_id ?? entityData,
+                              title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                            };
+                          } else {
+                            this.blockForm.extra_fields[fieldName][itemName] = null;
+                          }
                         } else {
-                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName];
+                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field?.[fieldName]?.[itemName] ?? '';
                         }
                       }
                     });
@@ -548,11 +667,30 @@
                         };
                       }
                     } else if (template.extra_fields[fieldName].type === 'json_api_collection') {
-                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field?.[fieldName] ?? null;
                     } else if (template.extra_fields[fieldName].type === 'checkbox') {
-                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName] == 1;
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field?.[fieldName] == 1;
+                    } else if (template.extra_fields[fieldName].type === 'url_extended') {
+                      // url_extended: ensure proper structure { url, title, attributes }
+                      const urlData = block.widget_data.extra_field?.[fieldName];
+                      this.blockForm.extra_fields[fieldName] = {
+                        url: urlData?.url ?? '',
+                        title: urlData?.title ?? '',
+                        attributes: urlData?.attributes ?? {}
+                      };
+                    } else if (template.extra_fields[fieldName].type === 'entity_autocomplete') {
+                      // entity_autocomplete: { target_id, title } or null
+                      const entityData = block.widget_data.extra_field?.[fieldName];
+                      if (entityData && (entityData.target_id || typeof entityData === 'string' || typeof entityData === 'number')) {
+                        this.blockForm.extra_fields[fieldName] = {
+                          target_id: entityData.target_id ?? entityData,
+                          title: entityData.title ?? 'Node #' + (entityData.target_id ?? entityData)
+                        };
+                      } else {
+                        this.blockForm.extra_fields[fieldName] = null;
+                      }
                     } else {
-                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName];
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field?.[fieldName] ?? '';
                     }
                   }
                 }
@@ -899,6 +1037,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -927,6 +1067,8 @@
               config: {
                 title: template.name || '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -968,6 +1110,8 @@
                       this.blockForm.extra_fields[fieldName][itemName] = template.extra_fields[fieldName][itemName]['options']['#default_value'];
                     } else if (template.extra_fields[fieldName][itemName].type === 'text_format') {
                       this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, true);
+                    } else if (template.extra_fields[fieldName][itemName].type === 'entity_autocomplete') {
+                      this.blockForm.extra_fields[fieldName][itemName] = null;
                     } else {
                       this.blockForm.extra_fields[fieldName][itemName] = '';
                     }
@@ -999,6 +1143,8 @@
                     this.blockForm.extra_fields[fieldName] = template.extra_fields[fieldName]['options']['#default_value'];
                   } else if (template.extra_fields[fieldName].type === 'text_format') {
                     this.getForm(`wysi-extra-${index}`, -1, false, false, true, false);
+                  } else if (template.extra_fields[fieldName].type === 'entity_autocomplete') {
+                    this.blockForm.extra_fields[fieldName] = null;
                   } else {
                     this.blockForm.extra_fields[fieldName] = '';
                   }
@@ -1041,6 +1187,8 @@
                       this.blockForm.fields[fieldName][itemName] = template.fields[fieldName][itemName]['options']['#default_value'];
                     } else if (template.fields[fieldName][itemName].type === 'text_format') {
                       this.getForm(`wysi-group-${index}-${itemName}`, -1, false, true, false, true);
+                    } else if (template.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                      this.blockForm.fields[fieldName][itemName] = null;
                     } else {
                       this.blockForm.fields[fieldName][itemName] = '';
                     }
@@ -1071,6 +1219,8 @@
                     this.blockForm.fields[fieldName] = template.fields[fieldName]['options']['#default_value'];
                   } else if (template.fields[fieldName].type === 'text_format') {
                     this.getForm(`wysi-single-${index}`, -1, false, true, false, false);
+                  } else if (template.fields[fieldName].type === 'entity_autocomplete') {
+                    this.blockForm.fields[fieldName] = null;
                   } else {
                     this.blockForm.fields[fieldName] = '';
                   }
@@ -1172,6 +1322,8 @@
                   } else if (this.selectedTemplate.fields[fieldName][itemName].type === 'json_api_collection') {
                     // Nothing to change here
                     newItem[fieldName][itemName] = this.selectedTemplate.fields[fieldName][itemName]['options']['#default_value'];
+                  } else if (this.selectedTemplate.fields[fieldName][itemName].type === 'entity_autocomplete') {
+                    newItem[fieldName][itemName] = null;
                   } else {
                     newItem[fieldName][itemName] = '';
                   }
@@ -1204,6 +1356,8 @@
                 } else if (this.selectedTemplate.fields[fieldName].type === 'json_api_collection') {
                   // Nothing to change here
                   newItem[fieldName] = this.selectedTemplate.fields[fieldName]['options']['#default_value'];
+                } else if (this.selectedTemplate.fields[fieldName].type === 'entity_autocomplete') {
+                  newItem[fieldName] = null;
                 } else {
                   newItem[fieldName] = '';
                 }
@@ -1223,12 +1377,14 @@
               if (newItemElement) {
                 newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                // Check if group_ field exists
-                const hasGroupField = Object.keys(this.selectedTemplate?.fields ?? {}).some(fieldName =>
-                  fieldName.startsWith('group_'),
-                );
-
-                this.getForm('', newItemIndex, true, false, false, hasGroupField);
+                // Load CKEditor for each text_format field individually
+                Object.keys(this.selectedTemplate?.fields ?? {}).forEach((fieldName) => {
+                  if (!fieldName.startsWith('group_') && this.selectedTemplate.fields[fieldName].type === 'text_format') {
+                    this.getForm(`wysi-multi-${newItemIndex}-${fieldName}`, -1, true, false, false, false, '');
+                  }
+                });
+                // Load CKEditor for group fields (original behavior)
+                this.getForm('', newItemIndex, true, false, false, true);
 
                 // Remove highlight after 3 seconds
                 setTimeout(() => {
@@ -1308,6 +1464,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1398,6 +1556,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1505,6 +1665,8 @@
               config: {
                 title: '',
                 show_title: false,
+                show_in_anchor_menu: false,
+                anchor_title: '',
                 width: 'narrow_width',
                 spacing: 'small_space',
                 css_classes: '',
@@ -1533,10 +1695,13 @@
           initializeAppearance(block) {
             return {
               title: block?.title || '',
+              paragraph_id: block?.config?.paragraph_id || block?.paragraph_id || '',
               width: block?.config?.width || block.width || 'narrow_width',
               spacing: block?.config?.spacing || block?.spacing || 'small_space',
               css_classes: block?.config?.css_classes || block?.css_classes || '',
               show_title: block?.config?.show_title || block?.show_title || false,
+              show_in_anchor_menu: block?.config?.show_in_anchor_menu || block?.show_in_anchor_menu || false,
+              anchor_title: block?.config?.anchor_title || block.anchor_title || '',
               image: block?.config?.image || block?.image,
               imageID: block?.config?.imageID || block?.imageID,
               color: block?.config?.color || block?.color,
@@ -1551,7 +1716,10 @@
           prepareConfigurationData(form) {
             return {
               title: form?.title || form?.config?.title,
+              paragraph_id: form?.paragraph_id || form?.config?.paragraph_id,
               show_title: form?.show_title || form?.config?.show_title,
+              show_in_anchor_menu: form?.show_in_anchor_menu || form?.config?.show_in_anchor_menu,
+              anchor_title: form.anchor_title || form?.config?.anchor_title,
               blockType: form?.blockType,
               displayID: form?.displayID,
               content: form?.content,
@@ -1599,8 +1767,13 @@
           init() {
             const node = JSON.parse(this.node);
             // Node specific process.
-            if (this.bundle) {
-              this.fields = JSON.parse(this?.fields);
+            // Parse fields if available (for both bundle-specific content types and vactory_page)
+            if (this.fields && typeof this.fields === 'string') {
+              this.fields = JSON.parse(this.fields);
+            } else if (!this.fields) {
+              this.fields = {};
+            }
+            if (this.bundle || Object.keys(this.fields).length > 0) {
               // Initialize form data based on fields
               Object.keys(this.fields).forEach((fieldKey) => {
                 const field = this.fields[fieldKey];
@@ -1638,6 +1811,15 @@
                   return;
                 }
 
+                if (field.type === 'select') {
+                  if (field.multiple) {
+                    this.formData.fields[fieldKey] = Array.isArray(value) ? value.map(v => String(v)) : [];
+                  } else {
+                    this.formData.fields[fieldKey] = value ? String(value) : '';
+                  }
+                  return;
+                }
+
                 if (field.type === 'faqfield') {
                   if (Array.isArray(field.value) && field.value.length) {
                     this.formData.fields[fieldKey] = field.value;
@@ -1645,6 +1827,66 @@
                     this.formData.fields[fieldKey] = node[fieldKey];
                   } else {
                     this.formData.fields[fieldKey] = [{ question: '', answer: '' }];
+                  }
+
+                  return;
+                }
+
+                if (field.type === 'vactory_quiz_question') {
+                  if (Array.isArray(field.value) && field.value.length) {
+                    // Process existing quiz questions and parse answers
+                    this.formData.fields[fieldKey] = field.value.map((item, index) => {
+                      let parsedAnswers = [];
+                      try {
+                        parsedAnswers = JSON.parse(item.question_answers || '[]');
+                      } catch (e) {
+                        parsedAnswers = [];
+                      }
+
+                      return {
+                        question_number: (index + 1).toString(),
+                        question_text_value: item.question_text_value || '',
+                        question_text_format: item.question_text_format || 'basic_html',
+                        question_type: item.question_type || 'multiple',
+                        question_answers: item.question_answers || '[]',
+                        question_reward: item.question_reward || 1,
+                        question_penalty: item.question_penalty || 0,
+                        parsed_answers: parsedAnswers
+                      };
+                    });
+                  } else if (Array.isArray(node[fieldKey]) && node[fieldKey].length) {
+                    // Process node data
+                    this.formData.fields[fieldKey] = node[fieldKey].map((item, index) => {
+                      let parsedAnswers = [];
+                      try {
+                        parsedAnswers = JSON.parse(item.question_answers || '[]');
+                      } catch (e) {
+                        parsedAnswers = [];
+                      }
+                      
+                      return {
+                        question_number: (index + 1).toString(),
+                        question_text_value: item.question_text_value || '',
+                        question_text_format: item.question_text_format || 'basic_html',
+                        question_type: item.question_type || 'multiple',
+                        question_answers: item.question_answers || '[]',
+                        question_reward: item.question_reward || 1,
+                        question_penalty: item.question_penalty || 0,
+                        parsed_answers: parsedAnswers
+                      };
+                    });
+                  } else {
+                    // Default empty quiz question
+                    this.formData.fields[fieldKey] = [{
+                      question_number: '1',
+                      question_text_value: '',
+                      question_text_format: 'basic_html',
+                      question_type: 'multiple',
+                      question_answers: '[]',
+                      question_reward: 1,
+                      question_penalty: 0,
+                      parsed_answers: []
+                    }];
                   }
 
                   return;
@@ -1715,10 +1957,36 @@
                   return;
                 }
 
+                // String multiple
+                if (field.type === 'string' && field.multiple) {
+                  if (Array.isArray(value) && value.length) {
+                    this.formData.fields[fieldKey] = value;
+                  } else if (typeof value === 'string' && value) {
+                    this.formData.fields[fieldKey] = [value];
+                  } else {
+                    this.formData.fields[fieldKey] = [''];
+                  }
+                  return;
+                }
+
+                // Link field
+                if (field.type === 'link') {
+                  const linkValue = node[fieldKey];
+                  this.formData.fields[fieldKey] = {
+                    uri: linkValue?.uri ?? '',
+                    title: linkValue?.title ?? ''
+                  };
+                  return;
+                }
+
                 this.formData.fields[fieldKey] = node[fieldKey] ?? '';
 
               });
             }
+
+            // Initialize scheduler data from node
+            this.formData.scheduler.publish_on = node?.publish_on || '';
+            this.formData.scheduler.unpublish_on = node?.unpublish_on || '';
 
             // End Node specific process.
             if (node?.paragraphs && node?.paragraphs?.length > 0) {
@@ -1726,7 +1994,10 @@
                 title: paragraph.title,
                 bundle: paragraph.bundle,
                 // start configuration
+                paragraph_id: paragraph.paragraph_id ?? '',
                 show_title: paragraph.show_title ?? false,
+                show_in_anchor_menu: paragraph.show_in_anchor_menu ?? false,
+                anchor_title: paragraph.anchor_title ?? '',
                 width: paragraph.width ?? '',
                 css_classes: paragraph.css_classes ?? '',
                 color: paragraph.color ?? '#f00',
@@ -1760,6 +2031,8 @@
             this.settings.summary = node?.summary || '';
             this.settings.alias = node?.alias || '';
             // this.settings.status = node.status || false;
+            this.settings.publish_on = node?.publish_on || '';
+            this.settings.unpublish_on = node?.unpublish_on || '';
 
             window.seoData = {{ meta_tags|json_encode|raw }};
             this.seo = {
@@ -1935,6 +2208,9 @@
                   status: this.settings.status,
                   changed: this.changed,
                   banner: this.banner,
+                  fields: Object.fromEntries(
+                    Object.entries(this.formData.fields).filter(([key]) => key.startsWith('field_domain_'))
+                  ),
                 }),
               });
               const data = await response.json();
@@ -2071,8 +2347,17 @@
 
             Object.keys(this.fields).forEach((field) => {
               if (this.fields[field]?.type === 'text_with_summary' && typeof this.formData.fields[field] === 'string') {
+                // Get the latest value of wysiwyg fields.
+                const textareaId = `edit-${field.replaceAll('_', '-')}-value`;
+                let ckInstance = null;
+                for (const [key, instance] of Drupal.CKEditor5Instances.entries()) {
+                  if (instance.sourceElement && instance.sourceElement.id === textareaId) {
+                    ckInstance = instance;
+                    break;
+                  }
+                }
                 this.formData.fields[field] = {
-                  value: this.formData.fields[field],
+                  value: ckInstance ? ckInstance.getData() : this.formData.fields[field],
                   format: 'full_html',
                 };
               }
@@ -2097,6 +2382,7 @@
                   has_translation: this.has_translation,
                   changed: this.changed,
                   banner: this.banner,
+                  scheduler: this.formData.scheduler,
                 }),
               });
 
@@ -2145,6 +2431,22 @@
             type: 'image',
             limit: Alpine.store('limit'),
           },
+          // File Library States (for image field type - not media)
+          showFileLibrary: false,
+          fileLoading: false,
+          fileError: null,
+          fileItems: [],
+          currentFilePage: 1,
+          totalFilePages: 1,
+          totalFiles: 0,
+          fileFilters: {
+            search: '',
+            limit: 50,
+          },
+          selectedFile: null,
+          currentFileField: null,
+          currentFileFieldPath: null,
+          isImageFieldType: false,
           // Media Library Methods and states (@todo: must be shared across multiple files)
           async loadMedia(page = 1) {
             this.mediaLoading = true;
@@ -2248,6 +2550,86 @@
           finalizeMediaSelection() {
             this.closeMediaLibrary();
             this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
+          },
+          // File Library Methods (for image field type - not media)
+          async loadFiles(page = 1) {
+            this.fileLoading = true;
+            this.fileError = null;
+            this.currentFilePage = page;
+
+            try {
+              const params = new URLSearchParams({
+                page: this.currentFilePage.toString(),
+                limit: this.fileFilters.limit.toString(),
+                search: this.fileFilters.search,
+                type: 'image',
+              });
+
+              const response = await fetch(`/api/vactory-dashboard/files?${params.toString()}`);
+
+              if (!response.ok) {
+                throw new Error('{{ "Error loading images"|t }}');
+              }
+
+              const data = await response.json();
+
+              this.fileItems = data.data.map(item => ({
+                id: item.id,
+                url: item.url,
+                name: item.name,
+                mime: item.mime,
+                size: item.size,
+              }));
+              this.totalFiles = data.total;
+              this.totalFilePages = data.pages || 1;
+            } catch (error) {
+              console.error('Error loading files:', error);
+              this.fileError = error.message;
+              this.fileItems = [];
+            } finally {
+              this.fileLoading = false;
+            }
+          },
+          openFileLibrary(fieldName, path, key = null) {
+            this.currentFileField = fieldName;
+            this.currentFileFieldPath = path;
+            this.currentFieldKey = key;
+            this.showFileLibrary = true;
+            this.isImageFieldType = true;
+            this.loadFiles(1);
+          },
+          closeFileLibrary() {
+            this.showFileLibrary = false;
+            this.selectedFile = null;
+            this.currentFileField = null;
+            this.fileItems = [];
+            this.currentFilePage = 1;
+            this.fileFilters.search = '';
+            this.isImageFieldType = false;
+          },
+          selectFile(file) {
+            if (!file || !this.currentFileField) {
+              return;
+            }
+
+            this.selectedFile = file;
+
+            const imageData = {
+              id: file.id,
+              url: file.url,
+              name: file.name,
+              path: this.currentFileFieldPath,
+              key: this.currentFieldKey,
+            };
+
+            // Update formData for image field type
+            this.formData.fields[this.currentFileField] = imageData;
+
+            this.finalizeFileSelection();
+          },
+          finalizeFileSelection() {
+            this.closeFileLibrary();
+            this.showNotification('success', '{{ "Image selected successfully"|t }}');
           },
           clearImage(fieldName, path, key, isParagraphMultiple) {
             if (isParagraphMultiple) {

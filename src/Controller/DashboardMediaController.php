@@ -70,7 +70,6 @@ class DashboardMediaController extends ControllerBase {
    */
   protected $fileUrlGenerator;
 
-
   /**
    * Constructs a new DashboardMediaController object.
    *
@@ -169,10 +168,12 @@ class DashboardMediaController extends ControllerBase {
 
     // Get media type information.
     $media_type = $media->bundle();
-    $media_type_entity = $this->entityTypeManager->getStorage('media_type')->load($media_type);
+    $media_type_entity = $this->entityTypeManager->getStorage('media_type')
+      ->load($media_type);
 
     // Get the source field.
-    $source_field = $media_type_entity->getSource()->getSourceFieldDefinition($media_type_entity);
+    $source_field = $media_type_entity->getSource()
+      ->getSourceFieldDefinition($media_type_entity);
     $source_field_name = $source_field->getName();
 
     // Get media data.
@@ -183,12 +184,14 @@ class DashboardMediaController extends ControllerBase {
       'type_label' => $media_type_entity->label(),
       'created' => $media->getCreatedTime(),
       'changed' => $media->getChangedTime(),
-      'author' => $media->getOwner() ? $media->getOwner()->getDisplayName() : '',
+      'author' => $media->getOwner() ? $media->getOwner()
+        ->getDisplayName() : '',
       'status' => $media->isPublished(),
     ];
 
     // Get file information if available.
-    if ($media->hasField($source_field_name) && !$media->get($source_field_name)->isEmpty()) {
+    if ($media->hasField($source_field_name) && !$media->get($source_field_name)
+        ->isEmpty()) {
       $source_value = $media->get($source_field_name)->first();
 
       if ($source_value && isset($source_value->entity) && $source_value->entity instanceof FileInterface) {
@@ -200,13 +203,15 @@ class DashboardMediaController extends ControllerBase {
           'size' => $file->getSize(),
           'mime_type' => $file->getMimeType(),
         ];
-      } elseif ($media_type === 'remote_video' && isset($source_value->value)) {
+      }
+      elseif ($media_type === 'remote_video' && isset($source_value->value)) {
         $media_data['remote_url'] = $source_value->value;
       }
     }
 
     // Get alternative text for images.
-    if ($media->hasField('field_media_image') && !$media->get('field_media_image')->isEmpty()) {
+    if ($media->hasField('field_media_image') && !$media->get('field_media_image')
+        ->isEmpty()) {
       $image_field_value = $media->get('field_media_image')->getValue();
       if (!empty($image_field_value) && isset($image_field_value[0]['alt'])) {
         $media_data['alt_text'] = $image_field_value[0]['alt'];
@@ -271,7 +276,6 @@ class DashboardMediaController extends ControllerBase {
         }
       }
 
-
       // Save the media entity.
       $media->save();
 
@@ -280,12 +284,13 @@ class DashboardMediaController extends ControllerBase {
         'message' => ($this->t('Media saved successfully')),
         'media_id' => $media->id(),
       ]);
-
-    } catch (\Exception $e) {
-      \Drupal::logger('vactory_dashboard')->error('Error saving media @id: @message', [
-        '@id' => $media_id,
-        '@message' => $e->getMessage(),
-      ]);
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('vactory_dashboard')
+        ->error('Error saving media @id: @message', [
+          '@id' => $media_id,
+          '@message' => $e->getMessage(),
+        ]);
 
       return new JsonResponse([
         'error' => ($this->t('An error occurred while saving the media')),
@@ -293,7 +298,6 @@ class DashboardMediaController extends ControllerBase {
       ], 500);
     }
   }
-
 
   /**
    * Returns paginated media data.
@@ -317,7 +321,8 @@ class DashboardMediaController extends ControllerBase {
 
     // Validate and sanitize the type parameter
     $valid_types = [];
-    $media_types = $this->entityTypeManager->getStorage('media_type')->loadMultiple();
+    $media_types = $this->entityTypeManager->getStorage('media_type')
+      ->loadMultiple();
     foreach ($media_types as $media_type) {
       $valid_types[] = $media_type->id();
     }
@@ -329,7 +334,7 @@ class DashboardMediaController extends ControllerBase {
         'total' => 0,
         'page' => $page,
         'limit' => $limit,
-        'error' => 'Invalid media type: ' . $type . '. Valid types: ' . implode(', ', $valid_types)
+        'error' => 'Invalid media type: ' . $type . '. Valid types: ' . implode(', ', $valid_types),
       ]);
     }
 
@@ -378,7 +383,8 @@ class DashboardMediaController extends ControllerBase {
         continue;
       }
 
-      $media_type = $this->entityTypeManager->getStorage('media_type')->load($media->bundle());
+      $media_type = $this->entityTypeManager->getStorage('media_type')
+        ->load($media->bundle());
       $item = [
         'id' => $media->id(),
         'name' => $media->getName(),
@@ -414,9 +420,9 @@ class DashboardMediaController extends ControllerBase {
     // Add cache contexts to create separate cache entries for each filter combination
     $response->getCacheableMetadata()->addCacheContexts([
       'url.query_args:page',
-      'url.query_args:limit', 
+      'url.query_args:limit',
       'url.query_args:search',
-      'url.query_args:type'
+      'url.query_args:type',
     ]);
 
     // Add cache tags for media types to allow targeted cache invalidation
@@ -428,6 +434,175 @@ class DashboardMediaController extends ControllerBase {
     $response->getCacheableMetadata()->setCacheMaxAge(300);
 
     return $response;
+  }
+
+  /**
+   * Get files data (for image field type that stores files directly).
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request object.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   JSON response with files data.
+   */
+  public function getFilesData(Request $request) {
+    // Check if user has permission to view files.
+    if (!$this->currentUser->hasPermission('access content')) {
+      return new JsonResponse(['error' => 'Access denied'], 403);
+    }
+
+    $page = $request->query->get('page', 1);
+    $limit = $request->query->get('limit', 12);
+    $search = $request->query->get('search', '');
+    $type = $request->query->get('type', 'image'); // Default to image
+
+    // Define valid file types and their MIME patterns
+    $type_mime_patterns = [
+      'image' => ['image/%'],
+      'document' => [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.%',
+        'text/%',
+      ],
+      'all' => ['%'],
+    ];
+
+    $mime_patterns = $type_mime_patterns[$type] ?? $type_mime_patterns['image'];
+
+    // Create query for counting
+    $count_query = $this->database->select('file_managed', 'f');
+    $count_query->addExpression('COUNT(f.fid)', 'count');
+    $count_query->condition('f.status', 1); // Only permanent files
+
+    // Create main query
+    $query = $this->database->select('file_managed', 'f');
+    $query->fields('f', [
+      'fid',
+      'filename',
+      'uri',
+      'filemime',
+      'filesize',
+      'created',
+      'changed',
+    ]);
+    $query->condition('f.status', 1); // Only permanent files
+    $query->orderBy('f.created', 'DESC');
+
+    // Apply MIME type filter
+    $or_group = $query->orConditionGroup();
+    $count_or_group = $count_query->orConditionGroup();
+    foreach ($mime_patterns as $pattern) {
+      $or_group->condition('f.filemime', $pattern, 'LIKE');
+      $count_or_group->condition('f.filemime', $pattern, 'LIKE');
+    }
+    $query->condition($or_group);
+    $count_query->condition($count_or_group);
+
+    // Apply search filter
+    if (!empty($search)) {
+      $query->condition('f.filename', '%' . $this->database->escapeLike($search) . '%', 'LIKE');
+      $count_query->condition('f.filename', '%' . $this->database->escapeLike($search) . '%', 'LIKE');
+    }
+
+    // Get total count
+    $total = $count_query->execute()->fetchField();
+
+    // Add pagination
+    $query->range(($page - 1) * $limit, $limit);
+
+    // Execute query
+    $results = $query->execute()->fetchAll();
+
+    $data = [];
+    foreach ($results as $row) {
+      $file = File::load($row->fid);
+      if ($file) {
+        $url = $this->fileUrlGenerator->generateAbsoluteString($file->getFileUri());
+        $data[] = [
+          'id' => $file->id(),
+          'name' => $file->getFilename(),
+          'url' => $url,
+          'mime' => $file->getMimeType(),
+          'size' => $file->getSize(),
+          'created' => $file->getCreatedTime(),
+        ];
+      }
+    }
+
+    return new JsonResponse([
+      'data' => $data,
+      'total' => (int) $total,
+      'page' => (int) $page,
+      'limit' => (int) $limit,
+      'pages' => ceil($total / $limit),
+      'filters' => [
+        'search' => $search,
+        'type' => $type,
+      ],
+    ]);
+  }
+
+  /**
+   * Upload a file directly (for image field type).
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request object.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   JSON response with uploaded file data.
+   */
+  public function uploadFile(Request $request) {
+    // Check if user has permission to create content.
+    if (!$this->currentUser->hasPermission('access content')) {
+      return new JsonResponse(['error' => 'Access denied'], 403);
+    }
+
+    $uploaded_file = $request->files->get('file');
+    if (!$uploaded_file instanceof UploadedFile) {
+      return new JsonResponse(['error' => 'No file uploaded'], 400);
+    }
+
+    // Validate file type (only images for now)
+    $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+    $extension = strtolower($uploaded_file->getClientOriginalExtension());
+    if (!in_array($extension, $allowed_extensions)) {
+      return new JsonResponse(['error' => 'Invalid file type. Allowed: ' . implode(', ', $allowed_extensions)], 400);
+    }
+
+    // Generate unique filename
+    $filename = $uploaded_file->getClientOriginalName();
+    $destination = 'public://images/' . date('Y-m') . '/' . $filename;
+
+    // Ensure directory exists
+    $directory = dirname($destination);
+    $this->fileSystem->prepareDirectory($directory, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
+
+    // Save file
+    $file_content = file_get_contents($uploaded_file->getPathname());
+    $file = $this->fileSystem->saveData($file_content, $destination, FileSystemInterface::EXISTS_RENAME);
+
+    if (!$file) {
+      return new JsonResponse(['error' => 'Failed to save file'], 500);
+    }
+
+    // Create file entity
+    $file_entity = File::create([
+      'uri' => $file,
+      'filename' => basename($file),
+      'status' => 1, // Permanent
+    ]);
+    $file_entity->save();
+
+    $url = $this->fileUrlGenerator->generateAbsoluteString($file_entity->getFileUri());
+
+    return new JsonResponse([
+      'id' => $file_entity->id(),
+      'name' => $file_entity->getFilename(),
+      'url' => $url,
+      'mime' => $file_entity->getMimeType(),
+      'size' => $file_entity->getSize(),
+    ]);
   }
 
   /**
@@ -456,14 +631,16 @@ class DashboardMediaController extends ControllerBase {
     $bundle = $media->bundle();
     if ($bundle == 'image') {
       // For images, return the full-sized image URL instead of thumbnail
-      if ($media->hasField('field_media_image') && !$media->get('field_media_image')->isEmpty()) {
+      if ($media->hasField('field_media_image') && !$media->get('field_media_image')
+          ->isEmpty()) {
         $file = $media->get('field_media_image')->entity;
         if ($file instanceof FileInterface) {
           return $this->fileUrlGenerator->generateString($file->getFileUri());
         }
       }
       // Fallback to thumbnail if field_media_image is not available
-      if ($media->hasField('thumbnail') && !$media->get('thumbnail')->isEmpty()) {
+      if ($media->hasField('thumbnail') && !$media->get('thumbnail')
+          ->isEmpty()) {
         $file = $media->get('thumbnail')->entity;
         if ($file instanceof FileInterface) {
           return $this->fileUrlGenerator->generateString($file->getFileUri());
@@ -473,6 +650,20 @@ class DashboardMediaController extends ControllerBase {
 
     if ($bundle == 'remote_video') {
       return $media->get('field_media_oembed_video')->value;
+    }
+
+    if ($bundle == 'file') {
+      $file = $media->get('field_media_file')->entity;
+      if ($file instanceof FileInterface) {
+        return $file->createFileUrl();
+      }
+    }
+
+    if ($bundle == 'private_file') {
+      $file = $media->get('field_media_file_1')->entity;
+      if ($file instanceof FileInterface) {
+        return $file->createFileUrl();
+      }
     }
 
     return '';
@@ -525,8 +716,9 @@ class DashboardMediaController extends ControllerBase {
     // Récupérer la taille maximale depuis les paramètres.
     $max_size_bytes = $settings['max_filesize'];
     if (empty($max_size_bytes)) {
-      $max_size_bytes = Bytes::toNumber(Environment::getUploadMaxSize());
+      $max_size_bytes = Environment::getUploadMaxSize();
     }
+    $max_size_bytes = Bytes::toNumber($max_size_bytes);
 
     return [
       '#theme' => 'vactory_dashboard_ajoute_medias_files',
@@ -612,8 +804,9 @@ class DashboardMediaController extends ControllerBase {
       // Récupérer la taille maximale depuis les paramètres.
       $max_size_bytes = $max_size_bytes = $settings['max_filesize'];
       if (empty($max_size_bytes)) {
-        $max_size_bytes = Bytes::toNumber(Environment::getUploadMaxSize());
+        $max_size_bytes = Environment::getUploadMaxSize();
       }
+      $max_size_bytes = Bytes::toNumber($max_size_bytes);
 
       //  Vérification de l’extension.
       $allowed_extensions = explode(' ', $settings['file_extensions']);
@@ -637,10 +830,10 @@ class DashboardMediaController extends ControllerBase {
 
       // Choisir le chemin selon la visibilité (public ou privé).
       $isPublic = $request->get('isPublic') === '1';
-      $destinationPath = $isPublic ? UPLOAD_BASE_PATH_PUBLIC . '/uploads/' : UPLOAD_BASE_PATH_PRIVATE;
+      $destinationPath = $isPublic ? UPLOAD_BASE_PATH_PUBLIC : UPLOAD_BASE_PATH_PRIVATE;
 
       // Générer le chemin avec la date du jour
-      $date_folder = date('Y-m-d');
+      $date_folder = date('Y-m');
       $destinationPath .= '/' . $date_folder . '/';
 
       // Lire et enregistrer le fichier
@@ -723,14 +916,14 @@ class DashboardMediaController extends ControllerBase {
         $max_size_bytes = $settings['max_filesize'];
 
         if (empty($max_size_bytes)) {
-          $max_size_bytes = Bytes::toNumber(Environment::getUploadMaxSize());
+          $max_size_bytes = Environment::getUploadMaxSize();
         }
+        $max_size_bytes = Bytes::toNumber($max_size_bytes);
 
         // Vérification de l’extension
         if (!in_array($extension, $allowed_extensions)) {
           $errors['image'] = "Extension non autorisée : .$extension";
         }
-
         // Vérification de la taille
         if ($uploaded_image->getSize() > $max_size_bytes) {
           $message = "Le fichier dépasse la taille maximale autorisée : {$max_size_bytes} .";
@@ -1086,4 +1279,3 @@ class DashboardMediaController extends ControllerBase {
   }
 
 }
-

@@ -15,6 +15,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validation;
 use Drupal\Core\Session\AccountProxyInterface;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Controller for the users dashboard.
@@ -124,6 +125,18 @@ class DashboardUsersController extends ControllerBase {
     $query->accessCheck(TRUE);
     $query->condition('uid', 1, '>');
 
+    // Non-admin users should not see admin users.
+    if (!$this->isCurrentUserAdmin()) {
+      $admin_query = $this->entityTypeManager->getStorage('user')->getQuery();
+      $admin_query->accessCheck(TRUE);
+      $admin_query->condition('roles', 'administrator');
+      $admin_uids = $admin_query->execute();
+      if (!empty($admin_uids)) {
+        $count_query->condition('uid', $admin_uids, 'NOT IN');
+        $query->condition('uid', $admin_uids, 'NOT IN');
+      }
+    }
+
     // Apply filters to both queries.
     if (!empty($search)) {
       $or = $query->orConditionGroup()
@@ -163,17 +176,18 @@ class DashboardUsersController extends ControllerBase {
     // Load users.
     $users = $this->entityTypeManager->getStorage('user')->loadMultiple($uids);
 
+    // Get current user roles outside the loop.
+    $currentUser = $this->currentUser;
+    $user_roles = $currentUser->getRoles();
+
     $data = [];
     $date_formatter = \Drupal::service('date.formatter');
     foreach ($users as $user) {
       /** @var \Drupal\user\UserInterface $user */
       $roles = $user->getRoles(TRUE);
-      $role_names = array_map(function($role) {
+      $role_names = array_map(function ($role) {
         return $this->t($role);
-      }, $roles);      
-
-      $currentUser = $this->currentUser;
-      $user_roles = $currentUser->getRoles();
+      }, $roles);
 
       $last_access = $user->getLastAccessedTime();
       $last_access_formatted = $last_access ? $date_formatter->format($last_access, 'short') : $this->t('Never');
@@ -271,6 +285,11 @@ class DashboardUsersController extends ControllerBase {
       throw new NotFoundHttpException('User not found.');
     }
 
+    // Prevent non-admin users from editing users with the administrator role.
+    if (!$this->isCurrentUserAdmin() && in_array('administrator', $user->getRoles())) {
+      throw new AccessDeniedHttpException('Access denied');
+    }
+
     $user_data = [
       'id' => $user->id(),
       'name' => $user->getDisplayName(),
@@ -320,6 +339,11 @@ class DashboardUsersController extends ControllerBase {
 
     if (!$user) {
       throw new NotFoundHttpException('Utilisateur non trouvé.');
+    }
+
+    // Prevent non-admin users from editing users with the administrator role.
+    if (!$this->isCurrentUserAdmin() && in_array('administrator', $user->getRoles())) {
+      return new JsonResponse(['message' => 'Access denied.'], Response::HTTP_FORBIDDEN);
     }
 
     // Only load roles if user is admin
@@ -409,6 +433,11 @@ class DashboardUsersController extends ControllerBase {
     $user = $this->entityTypeManager->getStorage('user')->load($userId);
     if (!$user) {
       return new JsonResponse(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+    }
+
+    // Prevent non-admin users from editing users with the administrator role.
+    if (!$this->isCurrentUserAdmin() && in_array('administrator', $user->getRoles())) {
+      return new JsonResponse(['message' => 'Access denied.'], Response::HTTP_FORBIDDEN);
     }
 
     // Mise à jour des champs si présents

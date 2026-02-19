@@ -397,7 +397,17 @@ class DashboardNodeController extends ControllerBase {
     $bundle_label = $bundle_info['label'];
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled($bundle);
-    return [
+
+    // Check if any field is a Google Map field
+    $has_google_map_field = FALSE;
+    foreach ($fields as $field) {
+      if (isset($field['type']) && $field['type'] === 'vactory_google_map_field') {
+        $has_google_map_field = TRUE;
+        break;
+      }
+    }
+
+    $render_array = [
       //'#theme' => 'vactory_dashboard_node_add',
       '#theme' => 'vactory_dashboard_node_add',
       '#type' => 'not_page',
@@ -409,8 +419,18 @@ class DashboardNodeController extends ControllerBase {
       '#bundle_label' => $bundle_label,
       '#fields' => $fields,
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
       ...$paragraph_flags,
     ];
+
+    // Attach Google Maps API library if needed
+    if ($has_google_map_field) {
+      $render_array['#attached']['library'][] = 'vactory_dashboard/google-maps-api';
+    }
+
+    return $render_array;
   }
 
   /**
@@ -491,7 +511,17 @@ class DashboardNodeController extends ControllerBase {
     $bundle_label = $bundle_info['label'];
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled($bundle);
-    return [
+
+    // Check if any field is a Google Map field
+    $has_google_map_field = FALSE;
+    foreach ($fields as $field) {
+      if (isset($field['type']) && $field['type'] === 'vactory_google_map_field') {
+        $has_google_map_field = TRUE;
+        break;
+      }
+    }
+
+    $render_array = [
       // '#theme' => 'vactory_dashboard_node_edit',
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'not_page',
@@ -512,8 +542,18 @@ class DashboardNodeController extends ControllerBase {
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
       ...$paragraph_flags,
     ];
+
+    // Attach Google Maps API library if needed
+    if ($has_google_map_field) {
+      $render_array['#attached']['library'][] = 'vactory_dashboard/google-maps-api';
+    }
+
+    return $render_array;
   }
 
   /**
@@ -582,7 +622,7 @@ class DashboardNodeController extends ControllerBase {
     }
 
     // Get bundle fields.
-    $fields = $this->nodeService->getBundleFields($bundle);
+    $fields = $this->nodeService->getBundleFields($bundle, count($available_languages_list));
 
     // Check bundle if has a paragraphs field (field_vactory_paragraphs) with a dynamic field.
     $has_paragraphs_field = $this->nodeService->hasParagraphsField($fields);
@@ -594,7 +634,18 @@ class DashboardNodeController extends ControllerBase {
 
     $meta_tags = $this->metatagService->prepareMetatags($node);
 
-    return [
+    $paragraph_flags = $this->nodeService->isParagraphTypeEnabled($bundle);
+
+    // Check if any field is a Google Map field
+    $has_google_map_field = FALSE;
+    foreach ($fields as $field) {
+      if (isset($field['type']) && $field['type'] === 'vactory_google_map_field') {
+        $has_google_map_field = TRUE;
+        break;
+      }
+    }
+
+    $render_array = [
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'not_page',
       '#has_paragraphs_field' => $has_paragraphs_field,
@@ -610,7 +661,18 @@ class DashboardNodeController extends ControllerBase {
       '#has_translation' => FALSE,
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       '#meta_tags' => $meta_tags,
+      '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
+      '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
+      ...$paragraph_flags,
     ];
+
+    // Attach Google Maps API library if needed
+    if ($has_google_map_field) {
+      $render_array['#attached']['library'][] = 'vactory_dashboard/google-maps-api';
+    }
+
+    return $render_array;
   }
 
   /**
@@ -652,9 +714,35 @@ class DashboardNodeController extends ControllerBase {
         $node->set('moderation_state', $status ? 'published' : 'draft');
       }
 
+      // Get field definitions for type checking
+      $field_definitions = $node->getFieldDefinitions();
+
       // Set field values
       foreach ($data['fields'] as $field_name => $field_value) {
         if (!$node->hasField($field_name)) {
+          continue;
+        }
+
+        // Handle Google Map field type
+        if (isset($field_definitions[$field_name]) &&
+            $field_definitions[$field_name]->getType() === 'vactory_google_map_field') {
+          // Check if lat and lng are valid numbers (including 0 and negative values)
+          $has_lat = isset($field_value['lat']) && (is_numeric($field_value['lat']) || $field_value['lat'] === 0);
+          $has_lng = isset($field_value['lng']) && (is_numeric($field_value['lng']) || $field_value['lng'] === 0);
+
+          if (is_array($field_value) && $has_lat && $has_lng) {
+            // Note: Frontend uses 'lng' but database column is 'lon'
+            $map_data = [
+              'lat' => (float) $field_value['lat'],
+              'lon' => (float) $field_value['lng'],  // Convert lng to lon for database
+              'zoom' => (int) ($field_value['zoom'] ?? 10),
+              'type' => $field_value['type'] ?? 'roadmap',
+            ];
+            $node->set($field_name, $map_data);
+          } else {
+            // Clear the field if coordinates are empty
+            $node->set($field_name, NULL);
+          }
           continue;
         }
 
@@ -664,7 +752,24 @@ class DashboardNodeController extends ControllerBase {
         }
 
         if (is_array($field_value) && isset($field_value['url'], $field_value['id'])) {
-          $node->set($field_name, $field_value['id']);
+          // Check if this is an image field with alt/title
+          if (isset($field_value['alt']) || isset($field_value['title'])) {
+            // Image field type - save with alt and title
+            $image_data = [
+              'target_id' => $field_value['id'],
+            ];
+            if (isset($field_value['alt'])) {
+              $image_data['alt'] = $field_value['alt'];
+            }
+            if (isset($field_value['title'])) {
+              $image_data['title'] = $field_value['title'];
+            }
+            $node->set($field_name, $image_data);
+          }
+          else {
+            // Media entity field - just save the ID
+            $node->set($field_name, $field_value['id']);
+          }
           continue;
         }
 
@@ -683,6 +788,19 @@ class DashboardNodeController extends ControllerBase {
           if ($date !== false) {
             $date->setTimezone(new \DateTimeZone('UTC'));
             $node->set($field_name, $date->format('Y-m-d\TH:i:s'));
+            continue;
+          }
+        }
+
+        // Handle autocomplete fields (entity references) - array of {id, label}
+        if (is_array($field_value) && !empty($field_value)) {
+          $first_item = reset($field_value);
+          if (is_array($first_item) && isset($first_item['id']) && isset($first_item['label'])) {
+            // Extract just the IDs
+            $ids = array_map(function($item) {
+              return $item['id'];
+            }, $field_value);
+            $node->set($field_name, $ids);
             continue;
           }
         }
@@ -708,6 +826,16 @@ class DashboardNodeController extends ControllerBase {
         }
         // Remplace 'field_meta_tags' par le nom exact du champ metatag sur ton nœud.
         $node->set('field_vactory_meta_tags', serialize($meta_tags));
+      }
+
+      // Save scheduler fields if they exist and have values.
+      $scheduler = $data['scheduler'] ?? [];
+      if (!empty($scheduler['publish_on']) && $node->hasField('publish_on')) {
+        $node->set('publish_on', strtotime($scheduler['publish_on']));
+      }
+
+      if (!empty($scheduler['unpublish_on']) && $node->hasField('unpublish_on')) {
+        $node->set('unpublish_on', strtotime($scheduler['unpublish_on']));
       }
 
       $node->isNew();
@@ -792,8 +920,34 @@ class DashboardNodeController extends ControllerBase {
 
       $node->getTranslation($language)->set('status', $status);
 
+      // Get field definitions for type checking
+      $field_definitions = $node->getFieldDefinitions();
+
       foreach ($content['fields'] as $field_name => $field_value) {
         if (!$node->hasField($field_name)) {
+          continue;
+        }
+
+        // Handle Google Map field type
+        if (isset($field_definitions[$field_name]) &&
+            $field_definitions[$field_name]->getType() === 'vactory_google_map_field') {
+          // Check if lat and lng are valid numbers (including 0 and negative values)
+          $has_lat = isset($field_value['lat']) && (is_numeric($field_value['lat']) || $field_value['lat'] === 0);
+          $has_lng = isset($field_value['lng']) && (is_numeric($field_value['lng']) || $field_value['lng'] === 0);
+
+          if (is_array($field_value) && $has_lat && $has_lng) {
+            // Note: Frontend uses 'lng' but database column is 'lon'
+            $map_data = [
+              'lat' => (float) $field_value['lat'],
+              'lon' => (float) $field_value['lng'],  // Convert lng to lon for database
+              'zoom' => (int) ($field_value['zoom'] ?? 10),
+              'type' => $field_value['type'] ?? 'roadmap',
+            ];
+            $node->getTranslation($language)->set($field_name, $map_data);
+          } else {
+            // Clear the field if coordinates are empty
+            $node->getTranslation($language)->set($field_name, NULL);
+          }
           continue;
         }
 
@@ -804,8 +958,26 @@ class DashboardNodeController extends ControllerBase {
         }
 
         if (is_array($field_value) && isset($field_value['url'], $field_value['id'])) {
-          $node->getTranslation($language)
-            ->set($field_name, $field_value['id']);
+          // Check if this is an image field with alt/title
+          if (isset($field_value['alt']) || isset($field_value['title'])) {
+            // Image field type - save with alt and title
+            $image_data = [
+              'target_id' => $field_value['id'],
+            ];
+            if (isset($field_value['alt'])) {
+              $image_data['alt'] = $field_value['alt'];
+            }
+            if (isset($field_value['title'])) {
+              $image_data['title'] = $field_value['title'];
+            }
+            $node->getTranslation($language)
+              ->set($field_name, $image_data);
+          }
+          else {
+            // Media entity field - just save the ID
+            $node->getTranslation($language)
+              ->set($field_name, $field_value['id']);
+          }
           continue;
         }
 
@@ -824,6 +996,19 @@ class DashboardNodeController extends ControllerBase {
           if ($date !== false) {
             $date->setTimezone(new \DateTimeZone('UTC'));
             $node->getTranslation($language)->set($field_name, $date->format('Y-m-d\TH:i:s'));
+            continue;
+          }
+        }
+
+        // Handle autocomplete fields (entity references) - array of {id, label}
+        if (is_array($field_value) && !empty($field_value)) {
+          $first_item = reset($field_value);
+          if (is_array($first_item) && isset($first_item['id']) && isset($first_item['label'])) {
+            // Extract just the IDs
+            $ids = array_map(function($item) {
+              return $item['id'];
+            }, $field_value);
+            $node->getTranslation($language)->set($field_name, $ids);
             continue;
           }
         }
@@ -851,6 +1036,22 @@ class DashboardNodeController extends ControllerBase {
       // Update blocks/paragraphs if they exist.
       if ($node->hasField('field_vactory_paragraphs')) {
         $this->nodeService->updateParagraphsInNode($node, $blocks, $language, $node_default_lang);
+      }
+
+      // Save scheduler fields if they exist and have values.
+      $scheduler = $content['scheduler'] ?? [];
+      if (!empty($scheduler['publish_on']) && $node->hasField('publish_on')) {
+        $node->getTranslation($language)->set('publish_on', strtotime($scheduler['publish_on']));
+      }
+      elseif ($node->hasField('publish_on') && isset($scheduler['publish_on']) && $scheduler['publish_on'] === '') {
+        $node->getTranslation($language)->set('publish_on', NULL);
+      }
+
+      if (!empty($scheduler['unpublish_on']) && $node->hasField('unpublish_on')) {
+        $node->getTranslation($language)->set('unpublish_on', strtotime($scheduler['unpublish_on']));
+      }
+      elseif ($node->hasField('unpublish_on') && isset($scheduler['unpublish_on']) && $scheduler['unpublish_on'] === '') {
+        $node->getTranslation($language)->set('unpublish_on', NULL);
       }
 
       // Save the node
