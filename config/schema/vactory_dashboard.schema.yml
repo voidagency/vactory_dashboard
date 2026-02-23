@@ -56,3 +56,38 @@ vactory_dashboard.advanced.settings:
       sequence:
         type: integer
         label: 'File ID'
+
+vactory_dashboard.dashboard_widget_visibility:
+  type: config_object
+  label: 'Dashboard widget visibility'
+  mapping:
+    stats:
+      type: boolean
+      label: 'Stats'
+    redmine:
+      type: boolean
+      label: 'Redmine widget'
+    recent_pages:
+      type: boolean
+      label: 'Recent pages'
+    quick_actions:
+      type: boolean
+      label: 'Quick actions'
+    translations:
+      type: boolean
+      label: 'Traductions mutualisées'
+    captcha:
+      type: boolean
+      label: 'Captcha'
+    languages:
+      type: boolean
+      label: 'Languages'
+    sitemaps:
+      type: boolean
+      label: 'Sitemaps'
+    shield:
+      type: boolean
+      label: 'Shield'
+    banner_blocks:
+      type: boolean
+      label: 'Banner Blocks'

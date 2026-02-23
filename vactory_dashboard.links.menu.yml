@@ -19,6 +19,13 @@ advanced_dashboard.settings.support:
   route_name: advanced_dashboard.support
   weight: 1
 
+advanced_dashboard.dashboard_widget_visibility:
+  title: 'Dashboard widget visibility'
+  description: 'Manage dashboard and sidebar widgets visibility.'
+  route_name: dashboard.dashboard_widget_visibility
+  parent: advanced_dashboard.settings
+  weight: 2
+
 dashboard.redmine_settings:
   title: 'Redmine Config'
   description: 'Redmine config settings'

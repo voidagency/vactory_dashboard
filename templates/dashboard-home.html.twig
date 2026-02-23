@@ -1,33 +1,40 @@
 {# Dashboard layout template #}
 {% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
 {% block content %}
-	<div
-		class="dashboard-layout">
-		{# Page header #}
-		<div class="mb-8">
-			<h1 class="text-2xl font-semibold text-slate-900">{{ "Tableau de bord" | t }}</h1>
-		</div>
+    <div
+            class="dashboard-layout">
+        {# Page header #}
+        <div class="mb-8">
+            <h1 class="text-2xl font-semibold text-slate-900">{{ "Tableau de bord" | t }}</h1>
+        </div>
+        {% if widget_visibility.stats is defined and widget_visibility.stats %}
+            {# Stats grid #}
+            {% include "@vactory_dashboard/_components/stats.html.twig" with {
+                total_pages: total_pages,
+                total_users: total_users,
+                total_media: total_media,
+                pages_modified_this_week: pages_modified_this_week,
+            } %}
+        {% endif %}
 
-		{# Stats grid #}
-		{% include "@vactory_dashboard/_components/stats.html.twig" with {
-            total_pages: total_pages,
-            total_users: total_users,
-            total_media: total_media,
-            pages_modified_this_week: pages_modified_this_week,
-        } %}
+        {% if widget_visibility.redmine is defined and widget_visibility.redmine %}
+            {# Recently tickets Redmin #}
+            {% include "@vactory_dashboard/_components/tickets-redmin.html.twig" with {
+                issues: issues,
+            } %}
+        {% endif %}
 
-		{# Recently tickets Redmin #}
-		{% include "@vactory_dashboard/_components/tickets-redmin.html.twig" with {
-           issues: issues,
-        } %}
+        {% if widget_visibility.recent_pages is defined and widget_visibility.recent_pages %}
+            {# Recently modified pages #}
+            {% include "@vactory_dashboard/_components/last-modified-pages.html.twig" with {
+                last_modified_pages: last_modified_pages,
+            } %}
+        {% endif %}
 
-		{# Recently modified pages #}
-		{% include "@vactory_dashboard/_components/last-modified-pages.html.twig" with {
-            last_modified_pages: last_modified_pages,
-        } %}
+        {% if widget_visibility.quick_actions is defined and widget_visibility.quick_actions %}
+            {# Quick actions #}
+            {% include "@vactory_dashboard/_components/quick-actions.html.twig" %}
+        {% endif %}
 
-		{# Quick actions #}
-		{% include "@vactory_dashboard/_components/quick-actions.html.twig" %}
-
-	</div>
+    </div>
 {% endblock %}

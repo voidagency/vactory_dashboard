@@ -953,3 +953,12 @@ vactory_dashboard.languages_config:
   requirements:
     _permission: 'administer dashboard configuration'
 
+dashboard.dashboard_widget_visibility:
+  path: '/admin/config/dashboard-settings/widgets'
+  defaults:
+    _form: '\Drupal\vactory_dashboard\Form\DashboardWidgetVisibilityForm'
+    _title: 'Dashboard widgets visibility'
+  requirements:
+    _permission: 'access dashboard'
+  options:
+    _admin_route: TRUE

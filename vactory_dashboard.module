@@ -13,7 +13,6 @@ use Drupal\Core\Menu\MenuLinkInterface;
 use Drupal\Core\Menu\MenuTreeParameters;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Form\ViewsForm;
-use Drupal\views\ViewExecutable;
 
 /**
  * @file
@@ -91,7 +90,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
 
     'vactory_dashboard_ajoute_medias_remote_video' => [
       'template' => 'media/dashboard-ajoute-medias-remote-video',
-      'variables' => []
+      'variables' => [],
     ],
 
     'vactory_dashboard_ajoute_media' => [
@@ -157,11 +156,11 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
     ],
     'vactory_dashboard_languages' => [
       'template' => 'languages/dashboard-languages',
-      'variables' => []
+      'variables' => [],
     ],
     'vactory_dashboard_sitemap' => [
       'template' => 'sitemap/dashboard-sitemap',
-      'variables' => []
+      'variables' => [],
     ],
     'vactory_dashboard_shield' => [
       'template' => 'shield/dashboard-shield',
@@ -260,20 +259,319 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
   ];
 }
 
-function getLogo() {
-  $config = \Drupal::config('vactory_dashboard.global.settings');
+/**
+ * Implements hook_form_BASE_FORM_ID_alter() for media_library_add_form.
+ *
+ * Adds BEM classes and attaches the media library styles.
+ */
+function vactory_dashboard_form_media_library_add_form_alter(array &$form, FormStateInterface $form_state) {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  $form['#attributes']['class'][] = 'media-library-add-form';
+  $form['#attached']['library'][] = 'vactory_dashboard/claro-media-library';
 
-  $file_url = NULL;
-  $file_id = $config->get('image');
+  // If there are unsaved media items, apply styling classes to various parts
+  // of the form.
+  if (isset($form['media'])) {
+    $form['#attributes']['class'][] = 'media-library-add-form--with-input';
 
-  if (!empty($file_id)) {
-    $file = \Drupal\file\Entity\File::load(is_array($file_id) ? reset($file_id) : $file_id);
-    if ($file) {
-      $file_url = \Drupal::service('file_url_generator')
-        ->generateAbsoluteString($file->getFileUri());
+    // Put a wrapper around the informational message above the unsaved media
+    // items.
+    $form['description']['#template'] = '<p class="media-library-add-form__description">{{ text }}</p>';
+  }
+  else {
+    $form['#attributes']['class'][] = 'media-library-add-form--without-input';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for media_library_add_form_upload.
+ */
+function vactory_dashboard_form_media_library_add_form_upload_alter(array &$form, FormStateInterface $form_state) {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  $form['#attributes']['class'][] = 'media-library-add-form--upload';
+
+  if (isset($form['container'])) {
+    $form['container']['#attributes']['class'][] = 'media-library-add-form__input-wrapper';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for media_library_add_form_oembed.
+ */
+function vactory_dashboard_form_media_library_add_form_oembed_alter(array &$form, FormStateInterface $form_state) {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  $form['#attributes']['class'][] = 'media-library-add-form--oembed';
+
+  // If no media items have been added yet, add styling classes to the initial
+  // URL form.
+  if (isset($form['container'])) {
+    $form['container']['#attributes']['class'][] = 'media-library-add-form__input-wrapper';
+    $form['container']['url']['#attributes']['class'][] = 'media-library-add-form-oembed-url';
+    $form['container']['submit']['#attributes']['class'][] = 'media-library-add-form-oembed-submit';
+  }
+}
+
+/**
+ * Implements hook_preprocess_fieldset__media_library_widget().
+ */
+function vactory_dashboard_preprocess_fieldset__media_library_widget(array &$variables) {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  if (isset($variables['prefix']['weight_toggle'])) {
+    $variables['prefix']['weight_toggle']['#attributes']['class'][] = 'media-library-widget__toggle-weight';
+  }
+  if (isset($variables['suffix']['open_button'])) {
+    $variables['suffix']['open_button']['#attributes']['class'][] = 'media-library-open-button';
+  }
+}
+
+/**
+ * Implements hook_preprocess_item_list__media_library_add_form_media_list().
+ *
+ * This targets each new, unsaved media item added to the media library, before
+ * they are saved.
+ */
+function vactory_dashboard_preprocess_item_list__media_library_add_form_media_list(array &$variables) {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  foreach ($variables['items'] as &$item) {
+    $item['value']['preview']['#attributes']['class'][] = 'media-library-add-form__preview';
+    $item['value']['fields']['#attributes']['class'][] = 'media-library-add-form__fields';
+    $item['value']['remove_button']['#attributes']['class'][] = 'media-library-add-form__remove-button';
+
+    // #source_field_name is set by AddFormBase::buildEntityFormElement()
+    // to help themes and form_alter hooks identify the source field.
+    $fields = &$item['value']['fields'];
+    $source_field_name = $fields['#source_field_name'];
+    if (isset($fields[$source_field_name])) {
+      $fields[$source_field_name]['#attributes']['class'][] = 'media-library-add-form__source-field';
     }
   }
-  return $file_url;
+}
+
+/**
+ * Implements hook_preprocess_media_library_item__widget().
+ *
+ * This targets each media item selected in an entity reference field.
+ */
+function vactory_dashboard_preprocess_media_library_item__widget(array &$variables) {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  $variables['content']['remove_button']['#attributes']['class'][] = 'media-library-item__remove';
+  $variables['content']['remove_button']['#attributes']['class'][] = 'icon-link';
+}
+
+/**
+ * Implements hook_preprocess_media_library_item__small().
+ *
+ * This targets each pre-selected media item selected when adding new media in
+ * the modal media library dialog.
+ */
+function vactory_dashboard_preprocess_media_library_item__small(array &$variables) {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  $variables['content']['select']['#attributes']['class'][] = 'media-library-item__click-to-select-checkbox';
+}
+
+/**
+ * Implements hook_preprocess_links__media_library_menu().
+ *
+ * This targets the menu of available media types in the media library's modal
+ * dialog. Adds Claro's BEM classes for proper styling.
+ */
+function vactory_dashboard_preprocess_links__media_library_menu(array &$variables) {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  foreach ($variables['links'] as &$link) {
+    // Add a class to the Media Library menu items.
+    $link['attributes']->addClass('media-library-menu__item');
+    $link['link']['#options']['attributes']['class'][] = 'media-library-menu__link';
+  }
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ *
+ * Override media library wrapper template and add module path for template
+ * discovery.
+ */
+function vactory_dashboard_theme_registry_alter(&$theme_registry): void {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  $module_path = \Drupal::service('extension.list.module')
+    ->getPath('vactory_dashboard');
+  $module_template_path = $module_path . '/templates';
+
+  // Override media library wrapper template.
+  if (isset($theme_registry['media_library_wrapper'])) {
+    $theme_registry['media_library_wrapper']['path'] = $module_template_path;
+    $theme_registry['media_library_wrapper']['template'] = 'media-library/media-library-wrapper';
+  }
+
+  // Register views_view_unformatted__media_library
+  if (isset($theme_registry['views_view_unformatted'])) {
+    $suggestion = 'views_view_unformatted__media_library';
+    $theme_registry[$suggestion] = $theme_registry['views_view_unformatted'];
+    $theme_registry[$suggestion]['path'] = $module_template_path;
+    $theme_registry[$suggestion]['template'] = 'media-library/views-view-unformatted--media-library';
+  }
+
+  // Register views_view__media_library
+  if (isset($theme_registry['views_view'])) {
+    $suggestion = 'views_view__media_library';
+    $theme_registry[$suggestion] = $theme_registry['views_view'];
+    $theme_registry[$suggestion]['path'] = $module_template_path;
+    $theme_registry[$suggestion]['template'] = 'media-library/views-view--media-library';
+  }
+
+  // Register details__media_library_add_form_selected_media
+  if (isset($theme_registry['details'])) {
+    $suggestion = 'details__media_library_add_form_selected_media';
+    $theme_registry[$suggestion] = $theme_registry['details'];
+    $theme_registry[$suggestion]['path'] = $module_template_path;
+    $theme_registry[$suggestion]['template'] = 'media-library/details--media-library-add-form-selected-media';
+  }
+
+  // Register item_list__media_library_add_form_media_list and add its
+  // preprocess function explicitly, since Drupal discovers preprocess
+  // functions before hook_theme_registry_alter() runs.
+  if (isset($theme_registry['item_list'])) {
+    $suggestion = 'item_list__media_library_add_form_media_list';
+    $theme_registry[$suggestion] = $theme_registry['item_list'];
+    $theme_registry[$suggestion]['path'] = $module_template_path;
+    $theme_registry[$suggestion]['template'] = 'media-library/item-list--media-library-add-form-media-list';
+    $theme_registry[$suggestion]['preprocess functions'][] = 'vactory_dashboard_preprocess_item_list__media_library_add_form_media_list';
+  }
+
+  // Register media__media_library
+  if (isset($theme_registry['media'])) {
+    $suggestion = 'media__media_library';
+    $theme_registry[$suggestion] = $theme_registry['media'];
+    $theme_registry[$suggestion]['path'] = $module_template_path;
+    $theme_registry[$suggestion]['template'] = 'media-library/media--media-library';
+  }
+
+  // Register form element overrides.
+  $form_elements = [
+    'input',
+    'form_element',
+    'form_element_label',
+    'textarea',
+    'checkboxes',
+    'radios',
+    'field_multiple_value_form',
+  ];
+  foreach ($form_elements as $element) {
+    if (isset($theme_registry[$element])) {
+      $theme_registry[$element]['path'] = $module_template_path . '/form';
+      $theme_registry[$element]['template'] = str_replace('_', '-', $element);
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for input.
+ */
+function vactory_dashboard_preprocess_input(&$variables) {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  $type_api = $variables['element']['#type'] ?? '';
+  $type_html = $variables['attributes']['type'] ?? '';
+  $text_types_html = [
+    'text',
+    'email',
+    'tel',
+    'number',
+    'search',
+    'password',
+    'date',
+    'time',
+    'file',
+    'color',
+    'datetime-local',
+    'url',
+    'month',
+    'week',
+  ];
+
+  if (in_array($type_html, $text_types_html)) {
+    $variables['attributes']['class'][] = 'form-element';
+    $variables['attributes']['class'][] = \Drupal\Component\Utility\Html::getClass('form-element--type-' . $type_html);
+    $variables['attributes']['class'][] = \Drupal\Component\Utility\Html::getClass('form-element--api-' . $type_api);
+  }
+
+  if (in_array($type_html, ['checkbox', 'radio'])) {
+    $variables['attributes']['class'][] = 'form-boolean';
+    $variables['attributes']['class'][] = \Drupal\Component\Utility\Html::getClass('form-boolean--type-' . $type_html);
+  }
+}
+
+/**
+ * Implements hook_preprocess_form_element().
+ */
+function vactory_dashboard_preprocess_form_element(&$variables) {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  if (!empty($variables['element']['#errors'])) {
+    $variables['label']['#attributes']['class'][] = 'has-error';
+  }
+
+  if (!empty($variables['disabled'])) {
+    $variables['label']['#attributes']['class'][] = 'is-disabled';
+
+    if (!empty($variables['description']['attributes'])) {
+      $variables['description']['attributes']->addClass('is-disabled');
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for select.
+ */
+function vactory_dashboard_preprocess_select(&$variables) {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  $variables['attributes']['class'][] = 'form-element';
+  $variables['attributes']['class'][] = (isset($variables['element']['#multiple']) && $variables['element']['#multiple']) ?
+    'form-element--type-select-multiple' :
+    'form-element--type-select';
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for textarea.
+ */
+function vactory_dashboard_preprocess_textarea(&$variables) {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  $variables['attributes']['class'][] = 'form-element';
+  $variables['attributes']['class'][] = 'form-element--type-textarea';
+  $variables['attributes']['class'][] = 'form-element--api-textarea';
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for field_multiple_value_form.
+ */
+function vactory_dashboard_preprocess_field_multiple_value_form(&$variables) {
+  if (!is_vactory_admin_theme()) {
+    return;
+  }
+  $variables['disabled'] = !empty($variables['element']['#disabled']);
 }
 
 /**
@@ -301,9 +599,196 @@ function vactory_dashboard_preprocess(&$variables) {
     $data['pagespeed'] = $config->get('pagespeed_btn');
 
     $data['sidebar'] = getSidebarData();
+    $data['widget_visibility'] = get_dashboard_widget_visibility();
   }
 
   $variables = array_merge($variables, $data);
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function vactory_dashboard_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $blocks_form = [
+    'block_content_vactory_block_component_form',
+  ];
+  if (in_array($form_id, $blocks_form)) {
+    $form['actions']['configure_block']['#access'] = FALSE;
+    $defaultThemeName = \Drupal::config('system.theme')->get('default');
+
+    $regions = system_region_list($defaultThemeName, REGIONS_VISIBLE);
+
+    $region_options = [];
+    foreach ($regions as $key => $region) {
+      $region_options[$key] = $region;
+    }
+
+    $form['block_region'] = [
+      '#type' => 'select',
+      '#required' => TRUE,
+      '#title' => t('Block region'),
+      '#options' => $region_options,
+      '#empty_option' => t('- Select a region -'),
+      '#description' => t('Select which region to place the block into.'),
+      '#weight' => 90,
+    ];
+
+    $form['visibility'] = [
+      '#type' => 'vertical_tabs',
+      '#title' => t('Visibility'),
+      '#weight' => 91,
+    ];
+
+    $condition_ids = [
+      'language',
+      'request_path',
+      'user_role',
+      'entity_bundle:node',
+    ];
+
+    $manager = \Drupal::service('plugin.manager.condition');
+
+    foreach ($condition_ids as $id) {
+      if (!$manager->hasDefinition($id)) {
+        continue;
+      }
+
+      $plugin = $manager->createInstance($id, []);
+
+      $form[$id] = [
+        '#type' => 'details',
+        '#title' => $id === 'request_path' ? t("Pages") : $plugin->getPluginDefinition()['label'],
+        '#group' => 'visibility',
+        '#open' => FALSE,
+        '#tree' => TRUE,
+      ];
+      $form[$id] += $plugin->buildConfigurationForm([], $form_state);
+      if ($id !== 'request_path') {
+        unset($form[$id]['negate']);
+      }
+    }
+    $form['actions']['submit']['#submit'][] = 'save_block_content_as_block_with_visibility';
+  }
+
+  // Add media library BEM classes to the views bulk form.
+  $form_object = $form_state->getFormObject();
+  if ($form_object instanceof ViewsForm && strpos($form_object->getBaseFormId(), 'views_form_media_library') === 0) {
+    if (isset($form['header'])) {
+      $form['header']['#attributes']['class'][] = 'media-library-views-form__header';
+      $form['header']['media_bulk_form']['#attributes']['class'][] = 'media-library-views-form__bulk_form';
+    }
+    $form['actions']['submit']['#attributes']['class'] = ['media-library-select'];
+
+    if (!isset($form['#attributes']['class']) || !in_array('media-library-views-form', $form['#attributes']['class'])) {
+      $form['#attributes']['class'][] = 'media-library-views-form';
+    }
+  }
+
+  // Add media library exposed form action classes.
+  if ($form_id === 'views_exposed_form' && strpos($form['#id'], 'views-exposed-form-media-library-widget') === 0) {
+    $form['actions']['#attributes']['class'][] = 'media-library-view--form-actions';
+  }
+}
+
+/**
+ * Implémentation de hook_cron().
+ */
+function vactory_dashboard_cron() {
+  \Drupal::logger('vactory_dashboard')
+    ->notice('Début du cron personnalisé SSL.');
+
+  $config = \Drupal::configFactory()
+    ->getEditable('vactory_dashboard.ssl.settings');
+  $last_check = $config->get('ssl_info_last_check') ?? 0;
+
+  if (\Drupal::time()->getRequestTime() - $last_check < 30 * 24 * 60 * 60) {
+    \Drupal::logger('vactory_dashboard')
+      ->notice('Pas encore 30 jours depuis la dernière vérification SSL.');
+    return;
+  }
+
+  try {
+    \Drupal::logger('vactory_dashboard')
+      ->notice('Lancement automatique du check SSL via cron.');
+
+    /** @var \Drupal\vactory_dashboard\Service\SslService $ssl_service */
+    $ssl_service = \Drupal::service('vactory_dashboard.ssl_service');
+    $ssl_service->getSSLStatus();
+  }
+  catch (\Exception $e) {
+    \Drupal::logger('vactory_dashboard')
+      ->error('Erreur lors du cron SSL : @msg', [
+        '@msg' => $e->getMessage(),
+      ]);
+  }
+
+  \Drupal::logger('vactory_dashboard')->notice('Fin du cron personnalisé SSL.');
+}
+
+/*
+ * Implements hook_user_login().
+ */
+function vactory_dashboard_user_login($account) {
+  $current_user = \Drupal::currentUser();
+  $request = \Drupal::request();
+
+  // Skip if there's already a destination.
+  if ($request->query->has('destination')) {
+    return;
+  }
+
+  $config = \Drupal::config('vactory_dashboard.global.settings');
+  $redirect_enabled = $config->get('dashboard');
+  if (!$redirect_enabled) {
+    return;
+  }
+
+  if ($current_user->hasPermission('access dashboard')) {
+    $url = Url::fromRoute('vactory_dashboard.home');
+    $request->query->set('destination', $url->toString());
+  }
+}
+
+/**
+ * Implements hook_preprocess_menu_local_task().
+ */
+function vactory_preprocess_menu_local_task(&$variables) {
+  if (!\Drupal::moduleHandler()->moduleExists('vactory_dashboard')) {
+    return;
+  }
+
+  $url = $variables['link']['#url'];
+
+  if ($url instanceof Url && $url->getRouteName() == 'entity.node.edit_form') {
+    $route_parameters = $url->getRouteParameters();
+    $node_id = $route_parameters['node'] ?? NULL;
+
+    $node = Node::load($node_id);
+    $bundle = $node?->bundle();
+
+    $new_url = Url::fromRoute('vactory_dashboard.node.edit', [
+      'bundle' => $bundle,
+      'nid' => $node_id,
+    ]);
+
+    $variables['link']['#url'] = $new_url;
+  }
+}
+
+function getLogo() {
+  $config = \Drupal::config('vactory_dashboard.global.settings');
+
+  $file_url = NULL;
+  $file_id = $config->get('image');
+
+  if (!empty($file_id)) {
+    $file = \Drupal\file\Entity\File::load(is_array($file_id) ? reset($file_id) : $file_id);
+    if ($file) {
+      $file_url = \Drupal::service('file_url_generator')
+        ->generateAbsoluteString($file->getFileUri());
+    }
+  }
+  return $file_url;
 }
 
 /**
@@ -601,91 +1086,6 @@ function get_admin_path(string $path): string {
 }
 
 /**
- * Implements hook_form_alter().
- */
-function vactory_dashboard_form_alter(&$form, FormStateInterface $form_state, $form_id) {
-  $blocks_form = [
-    'block_content_vactory_block_component_form',
-  ];
-  if (in_array($form_id, $blocks_form)) {
-    $form['actions']['configure_block']['#access'] = FALSE;
-    $defaultThemeName = \Drupal::config('system.theme')->get('default');
-
-    $regions = system_region_list($defaultThemeName, REGIONS_VISIBLE);
-
-    $region_options = [];
-    foreach ($regions as $key => $region) {
-      $region_options[$key] = $region;
-    }
-
-    $form['block_region'] = [
-      '#type' => 'select',
-      '#required' => TRUE,
-      '#title' => t('Block region'),
-      '#options' => $region_options,
-      '#empty_option' => t('- Select a region -'),
-      '#description' => t('Select which region to place the block into.'),
-      '#weight' => 90,
-    ];
-
-    $form['visibility'] = [
-      '#type' => 'vertical_tabs',
-      '#title' => t('Visibility'),
-      '#weight' => 91,
-    ];
-
-    $condition_ids = [
-      'language',
-      'request_path',
-      'user_role',
-      'entity_bundle:node',
-    ];
-
-    $manager = \Drupal::service('plugin.manager.condition');
-
-    foreach ($condition_ids as $id) {
-      if (!$manager->hasDefinition($id)) {
-        continue;
-      }
-
-      $plugin = $manager->createInstance($id, []);
-
-      $form[$id] = [
-        '#type' => 'details',
-        '#title' => $id === 'request_path' ? t("Pages") : $plugin->getPluginDefinition()['label'],
-        '#group' => 'visibility',
-        '#open' => FALSE,
-        '#tree' => TRUE,
-      ];
-      $form[$id] += $plugin->buildConfigurationForm([], $form_state);
-      if ($id !== 'request_path') {
-        unset($form[$id]['negate']);
-      }
-    }
-    $form['actions']['submit']['#submit'][] = 'save_block_content_as_block_with_visibility';
-  }
-
-  // Add media library BEM classes to the views bulk form.
-  $form_object = $form_state->getFormObject();
-  if ($form_object instanceof ViewsForm && strpos($form_object->getBaseFormId(), 'views_form_media_library') === 0) {
-    if (isset($form['header'])) {
-      $form['header']['#attributes']['class'][] = 'media-library-views-form__header';
-      $form['header']['media_bulk_form']['#attributes']['class'][] = 'media-library-views-form__bulk_form';
-    }
-    $form['actions']['submit']['#attributes']['class'] = ['media-library-select'];
-
-    if (!isset($form['#attributes']['class']) || !in_array('media-library-views-form', $form['#attributes']['class'])) {
-      $form['#attributes']['class'][] = 'media-library-views-form';
-    }
-  }
-
-  // Add media library exposed form action classes.
-  if ($form_id === 'views_exposed_form' && strpos($form['#id'], 'views-exposed-form-media-library-widget') === 0) {
-    $form['actions']['#attributes']['class'][] = 'media-library-view--form-actions';
-  }
-}
-
-/**
  * Save block content as a block with visibility.
  */
 function save_block_content_as_block_with_visibility(&$form, FormStateInterface $form_state) {
@@ -844,91 +1244,6 @@ function getLanguages() {
     ];
   }
   return [$links, $default_langname, $current_langname];
-}
-
-/**
- * Implémentation de hook_cron().
- */
-function vactory_dashboard_cron() {
-  \Drupal::logger('vactory_dashboard')
-    ->notice('Début du cron personnalisé SSL.');
-
-  $config = \Drupal::configFactory()
-    ->getEditable('vactory_dashboard.ssl.settings');
-  $last_check = $config->get('ssl_info_last_check') ?? 0;
-
-  if (\Drupal::time()->getRequestTime() - $last_check < 30 * 24 * 60 * 60) {
-    \Drupal::logger('vactory_dashboard')
-      ->notice('Pas encore 30 jours depuis la dernière vérification SSL.');
-    return;
-  }
-
-  try {
-    \Drupal::logger('vactory_dashboard')
-      ->notice('Lancement automatique du check SSL via cron.');
-
-    /** @var \Drupal\vactory_dashboard\Service\SslService $ssl_service */
-    $ssl_service = \Drupal::service('vactory_dashboard.ssl_service');
-    $ssl_service->getSSLStatus();
-  }
-  catch (\Exception $e) {
-    \Drupal::logger('vactory_dashboard')
-      ->error('Erreur lors du cron SSL : @msg', [
-        '@msg' => $e->getMessage(),
-      ]);
-  }
-
-  \Drupal::logger('vactory_dashboard')->notice('Fin du cron personnalisé SSL.');
-}
-
-/*
- * Implements hook_user_login().
- */
-function vactory_dashboard_user_login($account) {
-  $current_user = \Drupal::currentUser();
-  $request = \Drupal::request();
-
-  // Skip if there's already a destination.
-  if ($request->query->has('destination')) {
-    return;
-  }
-
-  $config = \Drupal::config('vactory_dashboard.global.settings');
-  $redirect_enabled = $config->get('dashboard');
-  if (!$redirect_enabled) {
-    return;
-  }
-
-  if ($current_user->hasPermission('access dashboard')) {
-    $url = Url::fromRoute('vactory_dashboard.home');
-    $request->query->set('destination', $url->toString());
-  }
-}
-
-/**
- * Implements hook_preprocess_menu_local_task().
- */
-function vactory_preprocess_menu_local_task(&$variables) {
-  if (!\Drupal::moduleHandler()->moduleExists('vactory_dashboard')) {
-    return;
-  }
-
-  $url = $variables['link']['#url'];
-
-  if ($url instanceof Url && $url->getRouteName() == 'entity.node.edit_form') {
-    $route_parameters = $url->getRouteParameters();
-    $node_id = $route_parameters['node'] ?? NULL;
-
-    $node = Node::load($node_id);
-    $bundle = $node?->bundle();
-
-    $new_url = Url::fromRoute('vactory_dashboard.node.edit', [
-      'bundle' => $bundle,
-      'nid' => $node_id,
-    ]);
-
-    $variables['link']['#url'] = $new_url;
-  }
 }
 
 /**
@@ -1256,272 +1571,43 @@ function get_advanced_dashboard_support() {
 }
 
 /**
- * Implements hook_form_BASE_FORM_ID_alter() for media_library_add_form.
+ * Check is vactory_admin is the current active theme.
  *
- * Adds BEM classes and attaches the media library styles.
+ * @return bool
  */
-function vactory_dashboard_form_media_library_add_form_alter(array &$form, FormStateInterface $form_state) {
-  $form['#attributes']['class'][] = 'media-library-add-form';
-  $form['#attached']['library'][] = 'vactory_dashboard/claro-media-library';
-
-  // If there are unsaved media items, apply styling classes to various parts
-  // of the form.
-  if (isset($form['media'])) {
-    $form['#attributes']['class'][] = 'media-library-add-form--with-input';
-
-    // Put a wrapper around the informational message above the unsaved media
-    // items.
-    $form['description']['#template'] = '<p class="media-library-add-form__description">{{ text }}</p>';
-  }
-  else {
-    $form['#attributes']['class'][] = 'media-library-add-form--without-input';
-  }
+function is_vactory_admin_theme() {
+  return \Drupal::service('theme.manager')
+      ->getActiveTheme()
+      ->getName() === 'vactory_admin';
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for media_library_add_form_upload.
- */
-function vactory_dashboard_form_media_library_add_form_upload_alter(array &$form, FormStateInterface $form_state) {
-  $form['#attributes']['class'][] = 'media-library-add-form--upload';
-
-  if (isset($form['container'])) {
-    $form['container']['#attributes']['class'][] = 'media-library-add-form__input-wrapper';
-  }
-}
-
-/**
- * Implements hook_form_FORM_ID_alter() for media_library_add_form_oembed.
- */
-function vactory_dashboard_form_media_library_add_form_oembed_alter(array &$form, FormStateInterface $form_state) {
-  $form['#attributes']['class'][] = 'media-library-add-form--oembed';
-
-  // If no media items have been added yet, add styling classes to the initial
-  // URL form.
-  if (isset($form['container'])) {
-    $form['container']['#attributes']['class'][] = 'media-library-add-form__input-wrapper';
-    $form['container']['url']['#attributes']['class'][] = 'media-library-add-form-oembed-url';
-    $form['container']['submit']['#attributes']['class'][] = 'media-library-add-form-oembed-submit';
-  }
-}
-
-/**
- * Implements hook_preprocess_fieldset__media_library_widget().
- */
-function vactory_dashboard_preprocess_fieldset__media_library_widget(array &$variables) {
-  if (isset($variables['prefix']['weight_toggle'])) {
-    $variables['prefix']['weight_toggle']['#attributes']['class'][] = 'media-library-widget__toggle-weight';
-  }
-  if (isset($variables['suffix']['open_button'])) {
-    $variables['suffix']['open_button']['#attributes']['class'][] = 'media-library-open-button';
-  }
-}
-
-/**
- * Implements hook_preprocess_item_list__media_library_add_form_media_list().
+ * Returns dashboard widget visibility configuration.
  *
- * This targets each new, unsaved media item added to the media library, before
- * they are saved.
+ * @return array
+ *   Associative array keyed by widget machine name with boolean visibility.
  */
-function vactory_dashboard_preprocess_item_list__media_library_add_form_media_list(array &$variables) {
-  foreach ($variables['items'] as &$item) {
-    $item['value']['preview']['#attributes']['class'][] = 'media-library-add-form__preview';
-    $item['value']['fields']['#attributes']['class'][] = 'media-library-add-form__fields';
-    $item['value']['remove_button']['#attributes']['class'][] = 'media-library-add-form__remove-button';
+function get_dashboard_widget_visibility(): array {
+  $config = \Drupal::config('vactory_dashboard.dashboard_widget_visibility');
 
-    // #source_field_name is set by AddFormBase::buildEntityFormElement()
-    // to help themes and form_alter hooks identify the source field.
-    $fields = &$item['value']['fields'];
-    $source_field_name = $fields['#source_field_name'];
-    if (isset($fields[$source_field_name])) {
-      $fields[$source_field_name]['#attributes']['class'][] = 'media-library-add-form__source-field';
-    }
-  }
-}
-
-/**
- * Implements hook_preprocess_media_library_item__widget().
- *
- * This targets each media item selected in an entity reference field.
- */
-function vactory_dashboard_preprocess_media_library_item__widget(array &$variables) {
-  $variables['content']['remove_button']['#attributes']['class'][] = 'media-library-item__remove';
-  $variables['content']['remove_button']['#attributes']['class'][] = 'icon-link';
-}
-
-/**
- * Implements hook_preprocess_media_library_item__small().
- *
- * This targets each pre-selected media item selected when adding new media in
- * the modal media library dialog.
- */
-function vactory_dashboard_preprocess_media_library_item__small(array &$variables) {
-  $variables['content']['select']['#attributes']['class'][] = 'media-library-item__click-to-select-checkbox';
-}
-
-/**
- * Implements hook_preprocess_links__media_library_menu().
- *
- * This targets the menu of available media types in the media library's modal
- * dialog. Adds Claro's BEM classes for proper styling.
- */
-function vactory_dashboard_preprocess_links__media_library_menu(array &$variables) {
-  foreach ($variables['links'] as &$link) {
-    // Add a class to the Media Library menu items.
-    $link['attributes']->addClass('media-library-menu__item');
-    $link['link']['#options']['attributes']['class'][] = 'media-library-menu__link';
-  }
-}
-
-/**
- * Implements hook_theme_registry_alter().
- *
- * Override media library wrapper template and add module path for template discovery.
- */
-function vactory_dashboard_theme_registry_alter(&$theme_registry): void {
-  $module_path = \Drupal::service('extension.list.module')->getPath('vactory_dashboard');
-  $module_template_path = $module_path . '/templates';
-
-  // Override media library wrapper template.
-  if (isset($theme_registry['media_library_wrapper'])) {
-    $theme_registry['media_library_wrapper']['path'] = $module_template_path;
-    $theme_registry['media_library_wrapper']['template'] = 'media-library/media-library-wrapper';
-  }
-
-  // Register views_view_unformatted__media_library
-  if (isset($theme_registry['views_view_unformatted'])) {
-    $suggestion = 'views_view_unformatted__media_library';
-    $theme_registry[$suggestion] = $theme_registry['views_view_unformatted'];
-    $theme_registry[$suggestion]['path'] = $module_template_path;
-    $theme_registry[$suggestion]['template'] = 'media-library/views-view-unformatted--media-library';
-  }
-
-  // Register views_view__media_library
-  if (isset($theme_registry['views_view'])) {
-    $suggestion = 'views_view__media_library';
-    $theme_registry[$suggestion] = $theme_registry['views_view'];
-    $theme_registry[$suggestion]['path'] = $module_template_path;
-    $theme_registry[$suggestion]['template'] = 'media-library/views-view--media-library';
-  }
-
-  // Register details__media_library_add_form_selected_media
-  if (isset($theme_registry['details'])) {
-    $suggestion = 'details__media_library_add_form_selected_media';
-    $theme_registry[$suggestion] = $theme_registry['details'];
-    $theme_registry[$suggestion]['path'] = $module_template_path;
-    $theme_registry[$suggestion]['template'] = 'media-library/details--media-library-add-form-selected-media';
-  }
-
-  // Register item_list__media_library_add_form_media_list and add its
-  // preprocess function explicitly, since Drupal discovers preprocess
-  // functions before hook_theme_registry_alter() runs.
-  if (isset($theme_registry['item_list'])) {
-    $suggestion = 'item_list__media_library_add_form_media_list';
-    $theme_registry[$suggestion] = $theme_registry['item_list'];
-    $theme_registry[$suggestion]['path'] = $module_template_path;
-    $theme_registry[$suggestion]['template'] = 'media-library/item-list--media-library-add-form-media-list';
-    $theme_registry[$suggestion]['preprocess functions'][] = 'vactory_dashboard_preprocess_item_list__media_library_add_form_media_list';
-  }
-
-  // Register media__media_library
-  if (isset($theme_registry['media'])) {
-    $suggestion = 'media__media_library';
-    $theme_registry[$suggestion] = $theme_registry['media'];
-    $theme_registry[$suggestion]['path'] = $module_template_path;
-    $theme_registry[$suggestion]['template'] = 'media-library/media--media-library';
-  }
-
-  // Register form element overrides.
-  $form_elements = [
-    'input',
-    'form_element',
-    'form_element_label',
-    'textarea',
-    'checkboxes',
-    'radios',
-    'field_multiple_value_form',
-  ];
-  foreach ($form_elements as $element) {
-    if (isset($theme_registry[$element])) {
-      $theme_registry[$element]['path'] = $module_template_path . '/form';
-      $theme_registry[$element]['template'] = str_replace('_', '-', $element);
-    }
-  }
-}
-
-/**
- * Implements hook_preprocess_HOOK() for input.
- */
-function vactory_dashboard_preprocess_input(&$variables) {
-  $type_api = $variables['element']['#type'] ?? '';
-  $type_html = $variables['attributes']['type'] ?? '';
-  $text_types_html = [
-    'text',
-    'email',
-    'tel',
-    'number',
-    'search',
-    'password',
-    'date',
-    'time',
-    'file',
-    'color',
-    'datetime-local',
-    'url',
-    'month',
-    'week',
+  $defaults = [
+    'stats' => TRUE,
+    'redmine' => TRUE,
+    'recent_pages' => TRUE,
+    'quick_actions' => TRUE,
+    'translations' => TRUE,
+    'captcha' => TRUE,
+    'languages' => TRUE,
+    'sitemaps' => TRUE,
+    'shield' => TRUE,
+    'banner_blocks' => TRUE,
   ];
 
-  if (in_array($type_html, $text_types_html)) {
-    $variables['attributes']['class'][] = 'form-element';
-    $variables['attributes']['class'][] = \Drupal\Component\Utility\Html::getClass('form-element--type-' . $type_html);
-    $variables['attributes']['class'][] = \Drupal\Component\Utility\Html::getClass('form-element--api-' . $type_api);
+  $values = [];
+
+  foreach ($defaults as $key => $default) {
+    $values[$key] = $config->get($key) ?? $default;
   }
 
-  if (in_array($type_html, ['checkbox', 'radio'])) {
-    $variables['attributes']['class'][] = 'form-boolean';
-    $variables['attributes']['class'][] = \Drupal\Component\Utility\Html::getClass('form-boolean--type-' . $type_html);
-  }
-}
-
-/**
- * Implements hook_preprocess_form_element().
- */
-function vactory_dashboard_preprocess_form_element(&$variables) {
-  if (!empty($variables['element']['#errors'])) {
-    $variables['label']['#attributes']['class'][] = 'has-error';
-  }
-
-  if (!empty($variables['disabled'])) {
-    $variables['label']['#attributes']['class'][] = 'is-disabled';
-
-    if (!empty($variables['description']['attributes'])) {
-      $variables['description']['attributes']->addClass('is-disabled');
-    }
-  }
-}
-
-/**
- * Implements hook_preprocess_HOOK() for select.
- */
-function vactory_dashboard_preprocess_select(&$variables) {
-  $variables['attributes']['class'][] = 'form-element';
-  $variables['attributes']['class'][] = (isset($variables['element']['#multiple']) && $variables['element']['#multiple']) ?
-    'form-element--type-select-multiple' :
-    'form-element--type-select';
-}
-
-/**
- * Implements hook_preprocess_HOOK() for textarea.
- */
-function vactory_dashboard_preprocess_textarea(&$variables) {
-  $variables['attributes']['class'][] = 'form-element';
-  $variables['attributes']['class'][] = 'form-element--type-textarea';
-  $variables['attributes']['class'][] = 'form-element--api-textarea';
-}
-
-/**
- * Implements hook_preprocess_HOOK() for field_multiple_value_form.
- */
-function vactory_dashboard_preprocess_field_multiple_value_form(&$variables) {
-  $variables['disabled'] = !empty($variables['element']['#disabled']);
+  return $values;
 }
