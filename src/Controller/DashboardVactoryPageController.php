@@ -136,6 +136,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
       '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
+      '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
     ];
   }
 
@@ -230,6 +231,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
       '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
+      '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
     ];
   }
 
@@ -314,6 +316,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
       '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
+      '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
     ];
   }
 

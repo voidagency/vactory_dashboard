@@ -40,6 +40,11 @@
               Object.entries(this.fields).filter(([key, field]) => key.startsWith('field_domain_')),
             );
           },
+          get searchFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => key === 'field_exclude_from_search'),
+            );
+          },
           // End other bundle specific vars.
           selectedDynamicField: null,
           showDynamicFieldModal: false,
@@ -1953,7 +1958,7 @@
                 }
 
                 if (field.type === 'boolean') {
-                  this.formData.fields[fieldKey] = node[fieldKey] === '1' ?? false;
+                  this.formData.fields[fieldKey] = (node[fieldKey] === '1' || node[fieldKey] === 1) ?? false;
                   return;
                 }
 

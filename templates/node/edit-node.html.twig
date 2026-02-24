@@ -102,8 +102,8 @@
                         </template>
                     </div>
 
-                    {# Settings Tab - Domain Access and Scheduler settings #}
-                    {% if domain_access_enabled or scheduler_enabled %}
+                    {# Settings Tab - Domain Access, Scheduler, and Search settings #}
+                    {% if domain_access_enabled or scheduler_enabled or search_api_exclude_entity_enabled %}
                     <div x-show="activeTab === 'settings'" class="flex gap-y-4 flex-col">
                         {% if domain_access_enabled %}
                         <div class="space-y-6 bg-white px-6 py-8 rounded-xl shadow-sm">
@@ -119,6 +119,22 @@
                             </template>
                             <template x-if="Object.keys(domainFields).length === 0">
                                 <p class="text-slate-500 text-sm">{{ 'No domain settings available for this content type.'|t }}</p>
+                            </template>
+                        </div>
+                        {% endif %}
+
+                        {# Search Settings Section #}
+                        {% if search_api_exclude_entity_enabled %}
+                        <div x-show="Object.keys(searchFields || {}).length > 0" class="space-y-6 bg-white px-6 py-8 rounded-xl shadow-sm">
+                            <h3 class="text-lg font-semibold text-slate-900 border-b border-slate-200 pb-3">{{ 'Exclude from search'|t }}</h3>
+                            <template x-for="(field, fieldName) in searchFields" :key="field.name">
+                                {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
+                                    field: 'field',
+                                    formData: 'formData',
+                                    isEdit: true,
+                                    language: language,
+                                    node_default_lang: node_default_lang
+                                } %}
                             </template>
                         </div>
                         {% endif %}

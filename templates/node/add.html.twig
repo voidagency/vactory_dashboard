@@ -167,6 +167,11 @@
               Object.entries(this.fields).filter(([key, field]) => key.startsWith('field_domain_')),
             );
           },
+          get searchFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => key === 'field_exclude_from_search'),
+            );
+          },
           async fetchSuggestions(fieldName, query) {
             if (!query || query.length < 1) {
               this.suggestions[fieldName] = [];

@@ -422,6 +422,7 @@ class DashboardNodeController extends ControllerBase {
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
       '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
+      '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
       ...$paragraph_flags,
     ];
 
@@ -545,6 +546,7 @@ class DashboardNodeController extends ControllerBase {
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
       '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
+      '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
       ...$paragraph_flags,
     ];
 
@@ -664,6 +666,7 @@ class DashboardNodeController extends ControllerBase {
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
       '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
+      '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
       ...$paragraph_flags,
     ];
 

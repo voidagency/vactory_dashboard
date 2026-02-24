@@ -555,6 +555,12 @@ class NodeService {
       $node_data['field_domain_all_affiliates'] = $node->get('field_domain_all_affiliates')->value ? '1' : '0';
     }
 
+    // Include search exclude field if it exists.
+    if ($node->hasField('field_exclude_from_search')) {
+      $value = $node->get('field_exclude_from_search')->value;
+      $node_data['field_exclude_from_search'] = $value ? 1 : 0;
+    }
+
     // Include scheduler fields if they exist.
     if ($node->hasField('publish_on')) {
       $publish_on = $node->get('publish_on')->value;
@@ -1537,6 +1543,7 @@ class NodeService {
           $field_info['multiple'] = $cardinality == -1;
           break;
 
+
         case 'integer':
           $field_info['type'] = 'integer';
           $field_info['multiple'] = FALSE;
@@ -1603,6 +1610,16 @@ class NodeService {
             $field_info['widget_default_open'] = 'closed';
           }
           break;
+      }
+
+      // Handle search_api_exclude_entity field type
+      if ($field_type === 'search_api_exclude_entity') {
+        $field_info['type'] = 'boolean';
+        $field_info['multiple'] = FALSE;
+        $component = $form_display->getComponent($field_name);
+        if ($component && isset($component['settings']['field_label'])) {
+          $field_info['label'] = $component['settings']['field_label'];
+        }
       }
 
       $field_info['is_translatable'] = $countActiveLangs === 0 || $field_definition->isTranslatable();
