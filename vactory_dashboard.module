@@ -207,6 +207,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'anchor' => NULL,
         'scheduler_enabled' => FALSE,
         'search_api_exclude_entity_enabled' => FALSE,
+        'xmlsitemap_enabled' => NULL,
       ],
     ],
     'vactory_dashboard_node_add' => [
@@ -229,6 +230,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'anchor' => NULL,
         'scheduler_enabled' => FALSE,
         'search_api_exclude_entity_enabled' => FALSE,
+        'xmlsitemap_enabled' => NULL,
       ],
     ],
     'vactory_dashboard_taxonomy_add' => [

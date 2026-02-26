@@ -24,6 +24,11 @@
               publish_on: '',
               unpublish_on: '',
             },
+            xmlsitemap: {
+              status: 'default',
+              priority: 'default',
+              changefreq: '86400',
+            },
           },
           language: config.language,
           activeTab: 'content',
@@ -331,6 +336,7 @@
                   status: this.formData.status,
                   banner: this.banner,
                   scheduler: this.formData.scheduler,
+                  xmlsitemap: this.formData.xmlsitemap,
                 }),
               });
 
@@ -2136,6 +2142,7 @@
                   status: this.settings.status,
                   banner: this.banner,
                   fields: this.formData.fields,
+                  xmlsitemap: this.formData.xmlsitemap,
                 }),
               });
 

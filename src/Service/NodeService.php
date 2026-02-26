@@ -404,6 +404,23 @@ class NodeService {
       $node_data['unpublish_on'] = $unpublish_on ? date('Y-m-d\TH:i', $unpublish_on) : '';
     }
 
+    if ($this->moduleHandler->moduleExists('xmlsitemap')) {
+      /** @var \Drupal\xmlsitemap\XmlSitemapLinkStorageInterface $link_storage */
+      $link_storage = \Drupal::service('xmlsitemap.link_storage');
+      $link = $link_storage->load('node', $entity->id());
+
+      // If no link found, create a temporary one to get default values.
+      if (!$link) {
+        $link = $link_storage->create($entity);
+      }
+
+      $node_data['xmlsitemap'] = [
+        'status' => $link['status_override'] ? (string) $link['status'] : 'default',
+        'priority' => $link['priority_override'] ? number_format($link['priority'], 1) : 'default',
+        'changefreq' => (string) $link['changefreq'],
+      ];
+    }
+
     return $node_data;
   }
 
@@ -559,6 +576,24 @@ class NodeService {
     if ($node->hasField('field_exclude_from_search')) {
       $value = $node->get('field_exclude_from_search')->value;
       $node_data['field_exclude_from_search'] = $value ? 1 : 0;
+    }
+
+    // Include XML Sitemap settings if module exists.
+    if ($this->moduleHandler->moduleExists('xmlsitemap')) {
+      /** @var \Drupal\xmlsitemap\XmlSitemapLinkStorageInterface $link_storage */
+      $link_storage = \Drupal::service('xmlsitemap.link_storage');
+      $link = $link_storage->load('node', $node->id());
+
+      // If no link found, create a temporary one to get default values.
+      if (!$link) {
+        $link = $link_storage->create($node);
+      }
+
+      $node_data['xmlsitemap'] = [
+        'status' => $link['status_override'] ? (string) $link['status'] : 'default',
+        'priority' => $link['priority_override'] ? number_format($link['priority'], 1) : 'default',
+        'changefreq' => (string) $link['changefreq'],
+      ];
     }
 
     // Include scheduler fields if they exist.
@@ -2611,6 +2646,58 @@ class NodeService {
     if ($node->hasField('node_banner_showbreadcrumb')) {
       $node->set('node_banner_showbreadcrumb', $banner['node_banner_showbreadcrumb'] ?? FALSE);
     }
+  }
+  /**
+   * Save XML Sitemap settings for a node.
+   *
+   * @param \Drupal\node\NodeInterface $node
+   *   The node entity.
+   * @param array $values
+   *   The XML Sitemap values (status, priority, changefreq).
+   */
+  public function saveXmlSitemap(NodeInterface $node, array $values) {
+    if (!$this->moduleHandler->moduleExists('xmlsitemap')) {
+      return;
+    }
+
+    /** @var \Drupal\xmlsitemap\XmlSitemapLinkStorageInterface $link_storage */
+    $link_storage = \Drupal::service('xmlsitemap.link_storage');
+    $link = $link_storage->load('node', $node->id());
+
+    if (!$link) {
+      $link = $link_storage->create($node);
+    }
+
+    // Handle status.
+    if (isset($values['status'])) {
+      if ($values['status'] === 'default') {
+        $link['status'] = $link['status_default'];
+        $link['status_override'] = 0;
+      }
+      else {
+        $link['status'] = (int) $values['status'];
+        $link['status_override'] = 1;
+      }
+    }
+
+    // Handle priority.
+    if (isset($values['priority'])) {
+      if ($values['priority'] === 'default') {
+        $link['priority'] = $link['priority_default'];
+        $link['priority_override'] = 0;
+      }
+      else {
+        $link['priority'] = (float) $values['priority'];
+        $link['priority_override'] = 1;
+      }
+    }
+
+    // Handle changefreq.
+    if (isset($values['changefreq'])) {
+      $link['changefreq'] = (int) $values['changefreq'];
+    }
+
+    $link_storage->save($link);
   }
 
 }

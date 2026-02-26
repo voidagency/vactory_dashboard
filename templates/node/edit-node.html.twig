@@ -138,6 +138,45 @@
                             </template>
                         </div>
                         {% endif %}
+                        {% if xmlsitemap_enabled %}
+                        <div class="space-y-6 bg-white px-6 py-8 rounded-xl shadow-sm">
+                            <h3 class="text-lg font-semibold text-slate-900 border-b border-slate-200 pb-3">{{ 'XML Sitemap'|t }}</h3>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {# Inclusion #}
+                                <div class="form-group">
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">{{ 'Inclusion'|t }}</label>
+                                    <select x-model="formData.xmlsitemap.status" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                        {% for key, value in xmlsitemap_enabled.status %}
+                                            <option value="{{ key }}">{{ value }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                {# Priority #}
+                                <div class="form-group" x-show="formData.xmlsitemap.status !== '0'">
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">{{ 'Priority'|t }}</label>
+                                    <select x-model="formData.xmlsitemap.priority" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                        {% for key, value in xmlsitemap_enabled.priority %}
+                                            <option value="{{ key }}">{{ value }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <p class="mt-1 text-xs text-slate-500">{{ 'The priority of this URL relative to other URLs on your site.'|t }}</p>
+                                </div>
+
+                                {# Change Frequency #}
+                                <div class="form-group" x-show="formData.xmlsitemap.status !== '0'">
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">{{ 'Change frequency'|t }}</label>
+                                    <select x-model="formData.xmlsitemap.changefreq" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                        {% for key, value in xmlsitemap_enabled.changefreq %}
+                                            <option value="{{ key }}">{{ value }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <p class="mt-1 text-xs text-slate-500">{{ 'Select the frequency of changes.'|t }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
 
                         {# Scheduler Settings Section #}
                         {% if scheduler_enabled %}

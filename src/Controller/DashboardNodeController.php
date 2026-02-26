@@ -423,6 +423,11 @@ class DashboardNodeController extends ControllerBase {
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
       '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
       '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
+      '#xmlsitemap_enabled' => \Drupal::moduleHandler()->moduleExists('xmlsitemap') ? [
+        'status' => xmlsitemap_get_status_options(1),
+        'priority' => xmlsitemap_get_priority_options(0.5),
+        'changefreq' => xmlsitemap_get_changefreq_options(),
+      ] : [],
       ...$paragraph_flags,
     ];
 
@@ -547,6 +552,11 @@ class DashboardNodeController extends ControllerBase {
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
       '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
       '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
+      '#xmlsitemap_enabled' => \Drupal::moduleHandler()->moduleExists('xmlsitemap') ? [
+        'status' => xmlsitemap_get_status_options(1),
+        'priority' => xmlsitemap_get_priority_options(0.5),
+        'changefreq' => xmlsitemap_get_changefreq_options(),
+      ] : [],
       ...$paragraph_flags,
     ];
 
@@ -667,6 +677,11 @@ class DashboardNodeController extends ControllerBase {
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
       '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
       '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
+      '#xmlsitemap_enabled' => \Drupal::moduleHandler()->moduleExists('xmlsitemap') ? [
+        'status' => xmlsitemap_get_status_options(1),
+        'priority' => xmlsitemap_get_priority_options(0.5),
+        'changefreq' => xmlsitemap_get_changefreq_options(),
+      ] : [],
       ...$paragraph_flags,
     ];
 
@@ -867,6 +882,11 @@ class DashboardNodeController extends ControllerBase {
 
       $node->isNew();
       $node->save();
+
+      // Save XML Sitemap settings after node is saved.
+      if (isset($data['xmlsitemap'])) {
+        $this->nodeService->saveXmlSitemap($node, $data['xmlsitemap']);
+      }
 
       return new JsonResponse([
         'message' => $this->t('Node created successfully'),
@@ -1107,6 +1127,12 @@ class DashboardNodeController extends ControllerBase {
 
       // Save the node
       $node->save();
+
+      // Save XML Sitemap settings after node is saved.
+      if (isset($content['xmlsitemap'])) {
+        $translation = $node->getTranslation($language);
+        $this->nodeService->saveXmlSitemap($translation, $content['xmlsitemap']);
+      }
 
       return new JsonResponse([
         'message' => $this->t('Node updated successfully'),
