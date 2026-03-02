@@ -2596,45 +2596,6 @@ class NodeService {
   }
 
   /**
-   * Ensures the node type has scheduler third-party settings enabled.
-   *
-   * The Scheduler module's cron only processes nodes of content types that
-   * have publish_enable/unpublish_enable explicitly set to TRUE in their
-   * third-party settings (both default to FALSE in scheduler.settings.yml).
-   * This method auto-enables those settings the first time a scheduler date
-   * is saved through the dashboard, so that scheduler_cron() includes the
-   * bundle in its getEnabledTypes() query.
-   *
-   * @param string $bundle
-   *   The node type machine name.
-   * @param bool $publish
-   *   Whether to enable publish scheduling on the bundle.
-   * @param bool $unpublish
-   *   Whether to enable unpublish scheduling on the bundle.
-   */
-  public function ensureSchedulerBundleSettings(string $bundle, bool $publish = FALSE, bool $unpublish = FALSE): void {
-    if (!$this->moduleHandler->moduleExists('scheduler') || (!$publish && !$unpublish)) {
-      return;
-    }
-    $node_type = $this->entityTypeManager->getStorage('node_type')->load($bundle);
-    if (!$node_type) {
-      return;
-    }
-    $needs_save = FALSE;
-    if ($publish && !$node_type->getThirdPartySetting('scheduler', 'publish_enable', FALSE)) {
-      $node_type->setThirdPartySetting('scheduler', 'publish_enable', TRUE);
-      $needs_save = TRUE;
-    }
-    if ($unpublish && !$node_type->getThirdPartySetting('scheduler', 'unpublish_enable', FALSE)) {
-      $node_type->setThirdPartySetting('scheduler', 'unpublish_enable', TRUE);
-      $needs_save = TRUE;
-    }
-    if ($needs_save) {
-      $node_type->save();
-    }
-  }
-
-  /**
    * Save banner in given node.
    */
   public function saveBannerInNode(NodeInterface $node, $banner = []) {

@@ -631,12 +631,6 @@ class DashboardVactoryPageController extends ControllerBase {
         $node->getTranslation($language)->set('unpublish_on', NULL);
       }
 
-      $this->nodeService->ensureSchedulerBundleSettings(
-        $node->bundle(),
-        !empty($settings['publish_on']),
-        !empty($settings['unpublish_on'])
-      );
-
       // Update SEO fields if they exist.
       if (!empty($seo) && $node->hasField('field_vactory_meta_tags')) {
         // Mettre à jour les meta tags avec les valeurs fournies dans $seo.
@@ -748,12 +742,6 @@ class DashboardVactoryPageController extends ControllerBase {
       if (!empty($settings['unpublish_on']) && $node->hasField('unpublish_on')) {
         $node->set('unpublish_on', strtotime($settings['unpublish_on']));
       }
-
-      $this->nodeService->ensureSchedulerBundleSettings(
-        $node->bundle(),
-        !empty($settings['publish_on']),
-        !empty($settings['unpublish_on'])
-      );
 
       // Update SEO fields if they exist.
       if (!empty($seo) && $node->hasField('field_vactory_meta_tags')) {

@@ -868,12 +868,6 @@ class DashboardNodeController extends ControllerBase {
         $node->set('unpublish_on', strtotime($scheduler['unpublish_on']));
       }
 
-      $this->nodeService->ensureSchedulerBundleSettings(
-        $bundle,
-        !empty($scheduler['publish_on']),
-        !empty($scheduler['unpublish_on'])
-      );
-
       $node->isNew();
       $node->save();
 
@@ -1114,11 +1108,6 @@ class DashboardNodeController extends ControllerBase {
         $node->getTranslation($language)->set('unpublish_on', NULL);
       }
 
-      $this->nodeService->ensureSchedulerBundleSettings(
-        $bundle,
-        !empty($scheduler['publish_on']),
-        !empty($scheduler['unpublish_on'])
-      );
       // Save the node.
       $node->save();
 
