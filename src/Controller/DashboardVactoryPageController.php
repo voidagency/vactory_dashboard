@@ -639,9 +639,38 @@ class DashboardVactoryPageController extends ControllerBase {
 
       // Update domain access and other fields if they exist.
       $fields = $content['fields'] ?? [];
+      $field_definitions = $node->getFieldDefinitions();
       foreach ($fields as $field_name => $field_value) {
         if ($node->hasField($field_name)) {
-          if ($field_value || is_array($field_value) || is_bool($field_value)) {
+          $field_type = $field_definitions[$field_name]->getType();
+          if ($field_type === 'entity_reference_revisions') {
+            continue;
+          }
+
+          // Handle Link field type with attributes.
+          if ($field_type === 'link') {
+            if (is_array($field_value) && isset($field_value['uri'])) {
+              $link_data = [
+                'uri' => $field_value['uri'],
+                'title' => $field_value['title'] ?? '',
+              ];
+              // Add attributes if present.
+              if (!empty($field_value['attributes'])) {
+                $attributes = array_filter($field_value['attributes'], function($v) {
+                  return $v !== '' && $v !== null;
+                });
+                if (!empty($attributes)) {
+                  $link_data['options']['attributes'] = $attributes;
+                }
+              }
+              $node->getTranslation($language)->set($field_name, $link_data);
+            } else {
+              $node->getTranslation($language)->set($field_name, NULL);
+            }
+            continue;
+          }
+
+          if ($field_value || is_array($field_value) || is_bool($field_value) || $field_value === '0' || $field_value === 0) {
             $node->getTranslation($language)->set($field_name, $field_value);
           }
         }
@@ -757,10 +786,41 @@ class DashboardVactoryPageController extends ControllerBase {
       $this->nodeService->saveBannerInNode($node, $banner);
 
       // Save domain access fields if they exist.
+      $field_definitions = $node->getFieldDefinitions();
       if (!empty($fields)) {
         foreach ($fields as $field_name => $field_value) {
           if ($node->hasField($field_name)) {
-            $node->set($field_name, $field_value);
+            $field_type = $field_definitions[$field_name]->getType();
+            if ($field_type === 'entity_reference_revisions') {
+              continue;
+            }
+
+            // Handle Link field type with attributes.
+            if ($field_type === 'link') {
+              if (is_array($field_value) && isset($field_value['uri'])) {
+                $link_data = [
+                  'uri' => $field_value['uri'],
+                  'title' => $field_value['title'] ?? '',
+                ];
+                // Add attributes if present.
+                if (!empty($field_value['attributes'])) {
+                  $attributes = array_filter($field_value['attributes'], function($v) {
+                    return $v !== '' && $v !== null;
+                  });
+                  if (!empty($attributes)) {
+                    $link_data['options']['attributes'] = $attributes;
+                  }
+                }
+                $node->set($field_name, $link_data);
+              } else {
+                $node->set($field_name, NULL);
+              }
+              continue;
+            }
+
+            if ($field_value || is_array($field_value) || is_bool($field_value) || $field_value === '0' || $field_value === 0) {
+              $node->set($field_name, $field_value);
+            }
           }
         }
       }
