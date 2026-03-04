@@ -144,6 +144,12 @@ class DashboardVactoryPageController extends ControllerBase {
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#xmlsitemap_enabled' => \Drupal::moduleHandler()->moduleExists('xmlsitemap') ? [
+        'status' => xmlsitemap_get_status_options(1),
+        'priority' => xmlsitemap_get_priority_options(0.5),
+        'changefreq' => xmlsitemap_get_changefreq_options(),
+      ] : [],
+      '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
       '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['enabled'],
       '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['publish_enable'],
       '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['unpublish_enable'],
@@ -243,6 +249,12 @@ class DashboardVactoryPageController extends ControllerBase {
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#xmlsitemap_enabled' => \Drupal::moduleHandler()->moduleExists('xmlsitemap') ? [
+        'status' => xmlsitemap_get_status_options(1),
+        'priority' => xmlsitemap_get_priority_options(0.5),
+        'changefreq' => xmlsitemap_get_changefreq_options(),
+      ] : [],
+      '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
       '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['enabled'],
       '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['publish_enable'],
       '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['unpublish_enable'],
@@ -333,6 +345,12 @@ class DashboardVactoryPageController extends ControllerBase {
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
+      '#xmlsitemap_enabled' => \Drupal::moduleHandler()->moduleExists('xmlsitemap') ? [
+        'status' => xmlsitemap_get_status_options(1),
+        'priority' => xmlsitemap_get_priority_options(0.5),
+        'changefreq' => xmlsitemap_get_changefreq_options(),
+      ] : [],
+      '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
       '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['enabled'],
       '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['publish_enable'],
       '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['unpublish_enable'],
@@ -673,9 +691,12 @@ class DashboardVactoryPageController extends ControllerBase {
       $this->nodeService->updateParagraphsInNode($node, $blocks, $language, $node_default_lang);
 
       $this->nodeService->saveBannerInNode($node->getTranslation($language), $banner);
-
-      // Save the node.
       $node->save();
+
+      // Save XML Sitemap settings after node is saved.
+      if (isset($content['xmlsitemap'])) {
+        $this->nodeService->saveXmlSitemap($node->getTranslation($language), $content['xmlsitemap']);
+      }
 
       return new JsonResponse([
         'message' => $this->t('Node saved successfully'),
@@ -790,6 +811,10 @@ class DashboardVactoryPageController extends ControllerBase {
       // Save the node.
       $node->isNew();
       $node->save();
+
+      if (isset($content['xmlsitemap'])) {
+        $this->nodeService->saveXmlSitemap($node, $content['xmlsitemap']);
+      }
 
       return new JsonResponse([
         'message' => $this->t('Node saved successfully'),

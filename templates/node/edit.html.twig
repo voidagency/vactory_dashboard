@@ -24,6 +24,11 @@
               publish_on: '',
               unpublish_on: '',
             },
+            xmlsitemap: {
+              status: 'default',
+              priority: 'default',
+              changefreq: '86400',
+            },
           },
           get contentFields() {
             return Object.fromEntries(
@@ -38,6 +43,11 @@
           get domainFields() {
             return Object.fromEntries(
               Object.entries(this.fields).filter(([key, field]) => key.startsWith('field_domain_')),
+            );
+          },
+          get searchFields() {
+            return Object.fromEntries(
+              Object.entries(this.fields).filter(([key, field]) => key === 'field_exclude_from_search'),
             );
           },
           // End other bundle specific vars.
@@ -1953,7 +1963,7 @@
                 }
 
                 if (field.type === 'boolean') {
-                  this.formData.fields[fieldKey] = node[fieldKey] === '1' ?? false;
+                  this.formData.fields[fieldKey] = (node[fieldKey] === '1' || node[fieldKey] === 1) ?? false;
                   return;
                 }
 
@@ -1996,6 +2006,13 @@
             // Initialize scheduler data from node
             this.formData.scheduler.publish_on = node?.publish_on || '';
             this.formData.scheduler.unpublish_on = node?.unpublish_on || '';
+
+            // Initialize XML Sitemap data from node
+            if (node?.xmlsitemap) {
+              this.formData.xmlsitemap.status = node.xmlsitemap.status || 'default';
+              this.formData.xmlsitemap.priority = node.xmlsitemap.priority || 'default';
+              this.formData.xmlsitemap.changefreq = node.xmlsitemap.changefreq || '86400';
+            }
 
             // End Node specific process.
             if (node?.paragraphs && node?.paragraphs?.length > 0) {
@@ -2218,6 +2235,7 @@
                   changed: this.changed,
                   banner: this.banner,
                   fields: this.formData.fields,
+                  xmlsitemap: this.formData.xmlsitemap,
                 }),
               });
               const data = await response.json();
@@ -2390,6 +2408,7 @@
                   changed: this.changed,
                   banner: this.banner,
                   scheduler: this.formData.scheduler,
+                  xmlsitemap: this.formData.xmlsitemap,
                 }),
               });
 
