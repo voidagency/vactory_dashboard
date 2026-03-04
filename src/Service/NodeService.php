@@ -2570,6 +2570,32 @@ class NodeService {
   }
 
   /**
+   * Returns the scheduler publish/unpublish enabled state for a bundle.
+   *
+   * @param string $bundle
+   *   The node type machine name.
+   *
+   * @return array
+   *   Keys: 'publish_enable', 'unpublish_enable', 'enabled' (either is TRUE).
+   */
+  public function getSchedulerBundleSettings(string $bundle): array {
+    $publish = FALSE;
+    $unpublish = FALSE;
+    if ($this->moduleHandler->moduleExists('scheduler')) {
+      $node_type = $this->entityTypeManager->getStorage('node_type')->load($bundle);
+      if ($node_type) {
+        $publish = (bool) $node_type->getThirdPartySetting('scheduler', 'publish_enable', FALSE);
+        $unpublish = (bool) $node_type->getThirdPartySetting('scheduler', 'unpublish_enable', FALSE);
+      }
+    }
+    return [
+      'publish_enable' => $publish,
+      'unpublish_enable' => $unpublish,
+      'enabled' => $publish || $unpublish,
+    ];
+  }
+
+  /**
    * Save banner in given node.
    */
   public function saveBannerInNode(NodeInterface $node, $banner = []) {

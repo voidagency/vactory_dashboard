@@ -135,7 +135,9 @@ class DashboardVactoryPageController extends ControllerBase {
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
-      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
+      '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['enabled'],
+      '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['publish_enable'],
+      '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['unpublish_enable'],
     ];
   }
 
@@ -229,7 +231,9 @@ class DashboardVactoryPageController extends ControllerBase {
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
-      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
+      '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['enabled'],
+      '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['publish_enable'],
+      '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['unpublish_enable'],
     ];
   }
 
@@ -313,7 +317,9 @@ class DashboardVactoryPageController extends ControllerBase {
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
-      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
+      '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['enabled'],
+      '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['publish_enable'],
+      '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['unpublish_enable'],
     ];
   }
 
