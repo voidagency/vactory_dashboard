@@ -4,7 +4,7 @@
         <div class="sticky top-0 z-10 bg-slate-50">
             <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm">
                 {# Header with back button, title and actions #}
-                {% include "@vactory_dashboard/node/_components/actions.html.twig" %}
+                {% include "@vactory_dashboard/node/_components/actions.html.twig" with {bundle: 'vactory_page'} %}
             </div>
 
             {# Notification #}
