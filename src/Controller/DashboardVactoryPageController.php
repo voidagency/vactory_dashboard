@@ -22,6 +22,12 @@ use Drupal\vactory_dashboard\Service\PreviewUrlService;
  */
 class DashboardVactoryPageController extends ControllerBase {
 
+  const PAGE_FIELDS = [
+    'field_exclude_from_search',
+    'field_domain_access',
+    'field_domain_all_affiliates',
+  ];
+
   /**
    * The preview URL service.
    *
@@ -121,8 +127,11 @@ class DashboardVactoryPageController extends ControllerBase {
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
 
-    // Get bundle fields for domain access settings.
+    // Get bundle fields for defined fields vactory_page.
     $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+    $fields = array_filter($fields, function ($field) {
+      return in_array($field['name'], self::PAGE_FIELDS);
+    });
 
     return [
       '#theme' => 'vactory_dashboard_node_add',
@@ -214,8 +223,11 @@ class DashboardVactoryPageController extends ControllerBase {
 
     $paragraph_flags = $this->nodeService->isParagraphTypeEnabled();
 
-    // Get bundle fields for domain access settings.
+    // Get bundle fields for defined fields vactory_page.
     $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+    $fields = array_filter($fields, function ($field) {
+      return in_array($field['name'], self::PAGE_FIELDS);
+    });
 
     return [
       '#theme' => 'vactory_dashboard_node_edit',
@@ -311,7 +323,11 @@ class DashboardVactoryPageController extends ControllerBase {
 
     $meta_tags = $this->metatagService->prepareMetatags($node);
 
+    // Get bundle fields for defined fields vactory_page.
     $fields = $this->nodeService->getBundleFields('vactory_page', count($available_languages_list));
+    $fields = array_filter($fields, function ($field) {
+      return in_array($field['name'], self::PAGE_FIELDS);
+    });
 
     return [
       '#theme' => 'vactory_dashboard_node_edit',
