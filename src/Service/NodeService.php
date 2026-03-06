@@ -404,6 +404,23 @@ class NodeService {
       $node_data['unpublish_on'] = $unpublish_on ? date('Y-m-d\TH:i', $unpublish_on) : '';
     }
 
+    if ($this->moduleHandler->moduleExists('xmlsitemap')) {
+      /** @var \Drupal\xmlsitemap\XmlSitemapLinkStorageInterface $link_storage */
+      $link_storage = \Drupal::service('xmlsitemap.link_storage');
+      $link = $link_storage->load('node', $entity->id());
+
+      // If no link found, create a temporary one to get default values.
+      if (!$link) {
+        $link = $link_storage->create($entity);
+      }
+
+      $node_data['xmlsitemap'] = [
+        'status' => $link['status_override'] ? (string) $link['status'] : 'default',
+        'priority' => $link['priority_override'] ? number_format($link['priority'], 1) : 'default',
+        'changefreq' => (string) $link['changefreq'],
+      ];
+    }
+
     return $node_data;
   }
 
@@ -553,6 +570,30 @@ class NodeService {
     if ($node->hasField('field_domain_all_affiliates')) {
       // Return as string '1' or '0' for JavaScript compatibility
       $node_data['field_domain_all_affiliates'] = $node->get('field_domain_all_affiliates')->value ? '1' : '0';
+    }
+
+    // Include search exclude field if it exists.
+    if ($node->hasField('field_exclude_from_search')) {
+      $value = $node->get('field_exclude_from_search')->value;
+      $node_data['field_exclude_from_search'] = $value ? 1 : 0;
+    }
+
+    // Include XML Sitemap settings if module exists.
+    if ($this->moduleHandler->moduleExists('xmlsitemap')) {
+      /** @var \Drupal\xmlsitemap\XmlSitemapLinkStorageInterface $link_storage */
+      $link_storage = \Drupal::service('xmlsitemap.link_storage');
+      $link = $link_storage->load('node', $node->id());
+
+      // If no link found, create a temporary one to get default values.
+      if (!$link) {
+        $link = $link_storage->create($node);
+      }
+
+      $node_data['xmlsitemap'] = [
+        'status' => $link['status_override'] ? (string) $link['status'] : 'default',
+        'priority' => $link['priority_override'] ? number_format($link['priority'], 1) : 'default',
+        'changefreq' => (string) $link['changefreq'],
+      ];
     }
 
     // Include scheduler fields if they exist.
@@ -1537,6 +1578,7 @@ class NodeService {
           $field_info['multiple'] = $cardinality == -1;
           break;
 
+
         case 'integer':
           $field_info['type'] = 'integer';
           $field_info['multiple'] = FALSE;
@@ -1603,6 +1645,16 @@ class NodeService {
             $field_info['widget_default_open'] = 'closed';
           }
           break;
+      }
+
+      // Handle search_api_exclude_entity field type
+      if ($field_type === 'search_api_exclude_entity') {
+        $field_info['type'] = 'boolean';
+        $field_info['multiple'] = FALSE;
+        $component = $form_display->getComponent($field_name);
+        if ($component && isset($component['settings']['field_label'])) {
+          $field_info['label'] = $component['settings']['field_label'];
+        }
       }
 
       $field_info['is_translatable'] = $countActiveLangs === 0 || $field_definition->isTranslatable();
@@ -2570,6 +2622,32 @@ class NodeService {
   }
 
   /**
+   * Returns the scheduler publish/unpublish enabled state for a bundle.
+   *
+   * @param string $bundle
+   *   The node type machine name.
+   *
+   * @return array
+   *   Keys: 'publish_enable', 'unpublish_enable', 'enabled' (either is TRUE).
+   */
+  public function getSchedulerBundleSettings(string $bundle): array {
+    $publish = FALSE;
+    $unpublish = FALSE;
+    if ($this->moduleHandler->moduleExists('scheduler')) {
+      $node_type = $this->entityTypeManager->getStorage('node_type')->load($bundle);
+      if ($node_type) {
+        $publish = (bool) $node_type->getThirdPartySetting('scheduler', 'publish_enable', FALSE);
+        $unpublish = (bool) $node_type->getThirdPartySetting('scheduler', 'unpublish_enable', FALSE);
+      }
+    }
+    return [
+      'publish_enable' => $publish,
+      'unpublish_enable' => $unpublish,
+      'enabled' => $publish || $unpublish,
+    ];
+  }
+
+  /**
    * Save banner in given node.
    */
   public function saveBannerInNode(NodeInterface $node, $banner = []) {
@@ -2594,6 +2672,58 @@ class NodeService {
     if ($node->hasField('node_banner_showbreadcrumb')) {
       $node->set('node_banner_showbreadcrumb', $banner['node_banner_showbreadcrumb'] ?? FALSE);
     }
+  }
+  /**
+   * Save XML Sitemap settings for a node.
+   *
+   * @param \Drupal\node\NodeInterface $node
+   *   The node entity.
+   * @param array $values
+   *   The XML Sitemap values (status, priority, changefreq).
+   */
+  public function saveXmlSitemap(NodeInterface $node, array $values) {
+    if (!$this->moduleHandler->moduleExists('xmlsitemap')) {
+      return;
+    }
+
+    /** @var \Drupal\xmlsitemap\XmlSitemapLinkStorageInterface $link_storage */
+    $link_storage = \Drupal::service('xmlsitemap.link_storage');
+    $link = $link_storage->load('node', $node->id());
+
+    if (!$link) {
+      $link = $link_storage->create($node);
+    }
+
+    // Handle status.
+    if (isset($values['status'])) {
+      if ($values['status'] === 'default') {
+        $link['status'] = $link['status_default'] ?? NULL;
+        $link['status_override'] = 0;
+      }
+      else {
+        $link['status'] = (int) $values['status'];
+        $link['status_override'] = 1;
+      }
+    }
+
+    // Handle priority.
+    if (isset($values['priority'])) {
+      if ($values['priority'] === 'default') {
+        $link['priority'] = $link['priority_default'] ?? NULL;
+        $link['priority_override'] = 0;
+      }
+      else {
+        $link['priority'] = (float) $values['priority'];
+        $link['priority_override'] = 1;
+      }
+    }
+
+    // Handle changefreq.
+    if (isset($values['changefreq'])) {
+      $link['changefreq'] = (int) $values['changefreq'];
+    }
+
+    $link_storage->save($link);
   }
 
 }

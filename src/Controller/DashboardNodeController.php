@@ -421,7 +421,15 @@ class DashboardNodeController extends ControllerBase {
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
-      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
+      '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
+      '#xmlsitemap_enabled' => \Drupal::moduleHandler()->moduleExists('xmlsitemap') ? [
+        'status' => xmlsitemap_get_status_options(1),
+        'priority' => xmlsitemap_get_priority_options(0.5),
+        'changefreq' => xmlsitemap_get_changefreq_options(),
+      ] : [],
+      '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['enabled'],
+      '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['publish_enable'],
+      '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['unpublish_enable'],
       ...$paragraph_flags,
     ];
 
@@ -544,7 +552,15 @@ class DashboardNodeController extends ControllerBase {
       '#banner' => $this->nodeService->getBannerConfiguration($bundle),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
-      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
+      '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
+      '#xmlsitemap_enabled' => \Drupal::moduleHandler()->moduleExists('xmlsitemap') ? [
+        'status' => xmlsitemap_get_status_options(1),
+        'priority' => xmlsitemap_get_priority_options(0.5),
+        'changefreq' => xmlsitemap_get_changefreq_options(),
+      ] : [],
+      '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['enabled'],
+      '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['publish_enable'],
+      '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['unpublish_enable'],
       ...$paragraph_flags,
     ];
 
@@ -663,7 +679,15 @@ class DashboardNodeController extends ControllerBase {
       '#meta_tags' => $meta_tags,
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
       '#anchor' => \Drupal::moduleHandler()->moduleExists('vactory_anchor'),
-      '#scheduler_enabled' => \Drupal::moduleHandler()->moduleExists('scheduler'),
+      '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
+      '#xmlsitemap_enabled' => \Drupal::moduleHandler()->moduleExists('xmlsitemap') ? [
+        'status' => xmlsitemap_get_status_options(1),
+        'priority' => xmlsitemap_get_priority_options(0.5),
+        'changefreq' => xmlsitemap_get_changefreq_options(),
+      ] : [],
+      '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['enabled'],
+      '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['publish_enable'],
+      '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['unpublish_enable'],
       ...$paragraph_flags,
     ];
 
@@ -864,6 +888,11 @@ class DashboardNodeController extends ControllerBase {
 
       $node->isNew();
       $node->save();
+
+      // Save XML Sitemap settings after node is saved.
+      if (isset($data['xmlsitemap'])) {
+        $this->nodeService->saveXmlSitemap($node, $data['xmlsitemap']);
+      }
 
       return new JsonResponse([
         'message' => $this->t('Node created successfully'),
@@ -1102,8 +1131,14 @@ class DashboardNodeController extends ControllerBase {
         $node->getTranslation($language)->set('unpublish_on', NULL);
       }
 
-      // Save the node
+      // Save the node.
       $node->save();
+
+      // Save XML Sitemap settings after node is saved.
+      if (isset($content['xmlsitemap'])) {
+        $translation = $node->getTranslation($language);
+        $this->nodeService->saveXmlSitemap($translation, $content['xmlsitemap']);
+      }
 
       return new JsonResponse([
         'message' => $this->t('Node updated successfully'),
