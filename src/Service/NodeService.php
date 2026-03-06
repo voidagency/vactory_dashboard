@@ -2697,7 +2697,7 @@ class NodeService {
     // Handle status.
     if (isset($values['status'])) {
       if ($values['status'] === 'default') {
-        $link['status'] = $link['status_default'];
+        $link['status'] = $link['status_default'] ?? NULL;
         $link['status_override'] = 0;
       }
       else {
@@ -2709,7 +2709,7 @@ class NodeService {
     // Handle priority.
     if (isset($values['priority'])) {
       if ($values['priority'] === 'default') {
-        $link['priority'] = $link['priority_default'];
+        $link['priority'] = $link['priority_default'] ?? NULL;
         $link['priority_override'] = 0;
       }
       else {
