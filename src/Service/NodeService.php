@@ -391,7 +391,9 @@ class NodeService {
       $this->prepareVactoryParagraphsData($entity, $node_data, $paragraph_field);
     }
 
-    $this->prepareBannerData($entity, $node_data);
+    if ($entity instanceof NodeInterface) {
+      $this->prepareBannerData($entity, $node_data);
+    }
 
     // Include scheduler fields if they exist.
     if ($entity->hasField('publish_on')) {
