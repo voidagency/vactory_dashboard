@@ -813,14 +813,19 @@ class DashboardMediaController extends ControllerBase {
       $extension = strtolower($uploaded_file->getClientOriginalExtension());
 
       if (!in_array($extension, $allowed_extensions)) {
-        $message = "Extension non autorisée : .$extension";
-        return new JsonResponse(['error' => $message], 400);
+        $message = $this->t('Extension non autorisée : .@ext', ['@ext' => $extension]);
+        return new JsonResponse(['error' => (string) $message], 400);
       }
 
-      //  Taille maximale : 8 Mo
       if ($uploaded_file->getSize() > $max_size_bytes) {
-        $message = "Le fichier dépasse la taille maximale autorisée : {$max_size_bytes} .";
-        return new JsonResponse(['error' => $message], 400);
+        $file_size = format_size($uploaded_file->getSize());
+        $max_size = format_size($max_size_bytes);
+        $message = $this->t("Le fichier spécifié @name n'a pas pu être transféré. Le fichier fait @size, ce qui dépasse la taille maximale autorisée (@max).", [
+          '@name' => $fileName,
+          '@size' => $file_size,
+          '@max' => $max_size,
+        ]);
+        return new JsonResponse(['error' => (string) $message], 400);
       }
 
       // Ajouter extension au nom si nécessaire.
@@ -922,12 +927,18 @@ class DashboardMediaController extends ControllerBase {
 
         // Vérification de l’extension
         if (!in_array($extension, $allowed_extensions)) {
-          $errors['image'] = "Extension non autorisée : .$extension";
+          $errors['image'] = (string) $this->t('Extension non autorisée : .@ext', ['@ext' => $extension]);
         }
-        // Vérification de la taille
         if ($uploaded_image->getSize() > $max_size_bytes) {
-          $message = "Le fichier dépasse la taille maximale autorisée : {$max_size_bytes} .";
-          return new JsonResponse(['error' => $message], 400);
+          $file_size = format_size($uploaded_image->getSize());
+          $max_size = format_size($max_size_bytes);
+          $image_name = $uploaded_image->getClientOriginalName();
+          $message = $this->t("Le fichier spécifié @name n'a pas pu être transféré. Le fichier fait @size, ce qui dépasse la taille maximale autorisée (@max).", [
+            '@name' => $image_name,
+            '@size' => $file_size,
+            '@max' => $max_size,
+          ]);
+          return new JsonResponse(['error' => (string) $message], 400);
         }
       }
 
@@ -1133,7 +1144,7 @@ class DashboardMediaController extends ControllerBase {
       $errors = [];
 
       if (!$files || count($files) === 0) {
-        return new JsonResponse(['errors' => ['files' => 'Aucun document reçu.']], 400);
+        return new JsonResponse(['errors' => ['files' => (string) $this->t('Aucun document reçu.')]], 400);
       }
 
       // 🔹 Extensions autorisées
@@ -1159,7 +1170,7 @@ class DashboardMediaController extends ControllerBase {
       //  Validation
       foreach ($files as $file) {
         if (!$file instanceof UploadedFile) {
-          $errors[] = "Fichier invalide.";
+          $errors[] = (string) $this->t('Fichier invalide.');
           continue;
         }
 
@@ -1168,12 +1179,12 @@ class DashboardMediaController extends ControllerBase {
         $total_size += $size;
 
         if (!in_array($ext, $allowed_extensions)) {
-          $errors[] = "Extension non autorisée : .$ext";
+          $errors[] = (string) $this->t('Extension non autorisée : .@ext', ['@ext' => $ext]);
         }
       }
 
       if ($total_size > $max_total_size) {
-        $errors[] = "La taille totale des fichiers dépasse 20 Mo.";
+        $errors[] = (string) $this->t('La taille totale des fichiers dépasse la limite autorisée de 20 Mo.');
       }
 
       if (!empty($errors)) {
@@ -1181,47 +1192,58 @@ class DashboardMediaController extends ControllerBase {
       }
       $file_system = $this->fileSystem;
       $dateFolder = (new \DateTime())->format('Y-m-d');
+      $uid = $this->currentUser->id();
+      $success_count = 0;
+      $failed_count = 0;
 
-      //  Enregistrement des fichiers
       foreach ($files as $file) {
-        $ext = strtolower($file->getClientOriginalExtension());
-        $is_image = in_array($ext, $allowed_extensions_image);
+        try {
+          $ext = strtolower($file->getClientOriginalExtension());
+          $is_image = in_array($ext, $allowed_extensions_image);
 
-        $filename = $file->getClientOriginalName();
-        $file_contents = file_get_contents($file->getPathname());
+          $filename = $file->getClientOriginalName();
+          $file_contents = file_get_contents($file->getPathname());
 
-        //  Dossier de destination
-        $subDir = $is_image ? 'images' : 'uploads';
-        $destinationPath = UPLOAD_BASE_PATH_PUBLIC . "$subDir/$dateFolder/";
+          $subDir = $is_image ? 'images' : 'uploads';
+          $destinationPath = UPLOAD_BASE_PATH_PUBLIC . "$subDir/$dateFolder/";
 
-        //  Créer dossier si nécessaire
-        $file_system->prepareDirectory($destinationPath, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
+          $file_system->prepareDirectory($destinationPath, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
 
-        //  Sauvegarder fichier
-        $destination = $destinationPath . $filename;
-        $uri = $file_system->saveData($file_contents, $destination, FileSystemInterface::EXISTS_RENAME);
-        $uid = $this->currentUser->id();
-        //  Créer entité fichier
-        $saved_file = File::create([
-          'uri' => $uri,
-          'uid' => $uid,
-          'status' => 1,
-        ]);
-        $saved_file->save();
+          $destination = $destinationPath . $filename;
+          $uri = $file_system->saveData($file_contents, $destination, FileSystemInterface::EXISTS_RENAME);
 
-        // Créer entité média
-        $media = Media::create([
-          'bundle' => $is_image ? 'image' : 'file',
-          'uid' => $uid,
-          'status' => 1,
-          $is_image ? 'field_media_image' : 'field_media_file' => [
-            'target_id' => $saved_file->id(),
-          ],
-        ]);
-        $media->save();
+          $saved_file = File::create([
+            'uri' => $uri,
+            'uid' => $uid,
+            'status' => 1,
+          ]);
+          $saved_file->save();
+
+          $media = Media::create([
+            'bundle' => $is_image ? 'image' : 'file',
+            'uid' => $uid,
+            'status' => 1,
+            $is_image ? 'field_media_image' : 'field_media_file' => [
+              'target_id' => $saved_file->id(),
+            ],
+          ]);
+          $media->save();
+          $success_count++;
+        }
+        catch (\Exception $e) {
+          \Drupal::logger('vactory_dashboard')->error('Failed to import file @name: @error', [
+            '@name' => $file->getClientOriginalName(),
+            '@error' => $e->getMessage(),
+          ]);
+          $failed_count++;
+        }
       }
 
-      return new JsonResponse(['status' => 'success']);
+      return new JsonResponse([
+        'status' => 'success',
+        'success_count' => $success_count,
+        'failed_count' => $failed_count,
+      ]);
     }
     catch (\Exception $e) {
       \Drupal::logger('custom_upload')->error($e->getMessage());
