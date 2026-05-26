@@ -1,0 +1,69 @@
+{% if scheduler_enabled %}
+  <div class="space-y-6 bg-white px-6 py-8 rounded-xl shadow-sm{% if scheduler_with_margin|default(false) %} mt-6{% endif %}">
+    <h3 class="text-lg font-semibold text-slate-900 border-b border-slate-200 pb-3">{{ 'Scheduling Options'|t }}</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {% if scheduler_publish_enabled %}
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Publish on'|t }}</label>
+          <div class="flex gap-2">
+            <input
+              type="date"
+              :value="getSchedulerDate({{ scheduler_model }}.publish_on)"
+              @input="setSchedulerDate('{{ scheduler_model }}', 'publish_on', $event.target.value)"
+              class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+            <input
+              type="time"
+              :value="getSchedulerTime({{ scheduler_model }}.publish_on)"
+              @input="setSchedulerTime('{{ scheduler_model }}', 'publish_on', $event.target.value)"
+              class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+          </div>
+          <p class="mt-1 text-xs text-slate-500">{{ 'Enter a date and time. Leave the date field blank to avoid scheduled publication.'|t }}</p>
+        </div>
+        {% if scheduler_moderation_enabled %}
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Publish state'|t }}</label>
+            <select
+              x-model="{{ scheduler_model }}.publish_state"
+              class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+              <option value="">{{ '- None -'|t }}</option>
+              {% for key, value in scheduler_publish_state_options %}
+                <option value="{{ key }}">{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+      {% endif %}
+      {% if scheduler_unpublish_enabled %}
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Unpublish on'|t }}</label>
+          <div class="flex gap-2">
+            <input
+              type="date"
+              :value="getSchedulerDate({{ scheduler_model }}.unpublish_on)"
+              @input="setSchedulerDate('{{ scheduler_model }}', 'unpublish_on', $event.target.value)"
+              class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+            <input
+              type="time"
+              :value="getSchedulerTime({{ scheduler_model }}.unpublish_on)"
+              @input="setSchedulerTime('{{ scheduler_model }}', 'unpublish_on', $event.target.value)"
+              class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+          </div>
+          <p class="mt-1 text-xs text-slate-500">{{ 'Enter a date and time. Leave the date field blank to avoid scheduled unpublication.'|t }}</p>
+        </div>
+        {% if scheduler_moderation_enabled %}
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Unpublish state'|t }}</label>
+            <select
+              x-model="{{ scheduler_model }}.unpublish_state"
+              class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
+              <option value="">{{ '- None -'|t }}</option>
+              {% for key, value in scheduler_unpublish_state_options %}
+                <option value="{{ key }}">{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+{% endif %}

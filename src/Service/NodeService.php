@@ -23,11 +23,19 @@ use Drupal\Core\TypedData\TranslatableInterface;
 use Drupal\views\Views;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\Core\file\FileUrlGeneratorInterface;
+use Drupal\node\Entity\Node;
 
 /**
  * Service for node utilities.
  */
 class NodeService {
+
+  private const SCHEDULER_PUBLISH_STATE = 'publish_state';
+  private const SCHEDULER_UNPUBLISH_STATE = 'unpublish_state';
+  private const SCHEDULER_MODERATION_FIELDS = [
+    self::SCHEDULER_PUBLISH_STATE,
+    self::SCHEDULER_UNPUBLISH_STATE,
+  ];
 
   /**
    * The entity type manager.
@@ -403,6 +411,7 @@ class NodeService {
       $unpublish_on = $entity->get('unpublish_on')->value;
       $node_data['unpublish_on'] = $unpublish_on ? date('Y-m-d\TH:i', $unpublish_on) : '';
     }
+    $this->prepareSchedulerModerationData($entity, $node_data);
 
     if ($this->moduleHandler->moduleExists('xmlsitemap')) {
       /** @var \Drupal\xmlsitemap\XmlSitemapLinkStorageInterface $link_storage */
@@ -606,6 +615,7 @@ class NodeService {
       $unpublish_on = $node->get('unpublish_on')->value;
       $node_data['unpublish_on'] = $unpublish_on ? date('Y-m-d\TH:i', $unpublish_on) : '';
     }
+    $this->prepareSchedulerModerationData($node, $node_data);
 
     return $node_data;
   }
@@ -2645,6 +2655,172 @@ class NodeService {
       'unpublish_enable' => $unpublish,
       'enabled' => $publish || $unpublish,
     ];
+  }
+
+  /**
+   * Builds render variables for Scheduler and SCMI dashboard controls.
+   *
+   * @param string $bundle
+   *   The node type machine name.
+   * @param \Drupal\node\NodeInterface|null $node
+   *   Existing node context. Omit on add forms.
+   * @param string|null $language
+   *   Langcode used to build add-form moderation options.
+   *
+   * @return array
+   *   Scheduler render variables keyed for Drupal render arrays.
+   */
+  public function getSchedulerRenderSettings(string $bundle, ?NodeInterface $node = NULL, ?string $language = NULL): array {
+    $bundle_settings = $this->getSchedulerBundleSettings($bundle);
+    $moderation_settings = $node
+      ? $this->getSchedulerModerationSettings($node)
+      : $this->getSchedulerModerationSettingsForBundle($bundle, $language);
+
+    return [
+      '#scheduler_enabled' => $bundle_settings['enabled'],
+      '#scheduler_publish_enabled' => $bundle_settings['publish_enable'],
+      '#scheduler_unpublish_enabled' => $bundle_settings['unpublish_enable'],
+      ...$moderation_settings,
+    ];
+  }
+
+  /**
+   * Returns scheduler moderation options for a new node of the given bundle.
+   *
+   * @param string $bundle
+   *   The node type machine name.
+   * @param string|null $language
+   *   The langcode to use on the temporary node.
+   *
+   * @return array
+   *   Scheduler Content Moderation Integration options keyed by field name.
+   */
+  public function getSchedulerModerationSettingsForBundle(string $bundle, ?string $language = NULL): array {
+    $node = Node::create([
+      'type' => $bundle,
+      'langcode' => $language ?: \Drupal::languageManager()->getCurrentLanguage()->getId(),
+    ]);
+
+    return $this->getSchedulerModerationSettings($node);
+  }
+
+  /**
+   * Returns scheduler moderation options for an existing node.
+   *
+   * @param \Drupal\node\NodeInterface $node
+   *   The node entity.
+   *
+   * @return array
+   *   Render variables for SCMI state selects.
+   */
+  public function getSchedulerModerationSettings(NodeInterface $node): array {
+    $enabled = $this->moduleHandler->moduleExists('scheduler_content_moderation_integration')
+      && ($node->hasField(self::SCHEDULER_PUBLISH_STATE) || $node->hasField(self::SCHEDULER_UNPUBLISH_STATE));
+    return [
+      '#scheduler_moderation_enabled' => $enabled,
+      '#scheduler_publish_state_options' => $enabled ? $this->getSchedulerModerationOptions($node, self::SCHEDULER_PUBLISH_STATE) : [],
+      '#scheduler_unpublish_state_options' => $enabled ? $this->getSchedulerModerationOptions($node, self::SCHEDULER_UNPUBLISH_STATE) : [],
+    ];
+  }
+
+  /**
+   * Saves SCMI publish/unpublish transition states.
+   *
+   * @param \Drupal\node\NodeInterface $node
+   *   The node or translation being saved.
+   * @param array $scheduler
+   *   Scheduler payload from the dashboard.
+   */
+  public function saveSchedulerModerationFields(NodeInterface $node, array $scheduler): void {
+    foreach (self::SCHEDULER_MODERATION_FIELDS as $field_name) {
+      if (!$node->hasField($field_name) || !array_key_exists($field_name, $scheduler)) {
+        continue;
+      }
+      $node->set($field_name, $scheduler[$field_name] !== '' ? $scheduler[$field_name] : NULL);
+    }
+  }
+
+  /**
+   * Adds SCMI state values to dashboard node data.
+   *
+   * @param \Drupal\node\NodeInterface $node
+   *   The node entity.
+   * @param array $node_data
+   *   Node data returned to Alpine.
+   */
+  private function prepareSchedulerModerationData(NodeInterface $node, array &$node_data): void {
+    foreach (self::SCHEDULER_MODERATION_FIELDS as $field_name) {
+      if ($node->hasField($field_name)) {
+        $node_data[$field_name] = $node->get($field_name)->value ?? '';
+      }
+    }
+  }
+
+  /**
+   * Builds available SCMI options for one transition field.
+   *
+   * @param \Drupal\node\NodeInterface $node
+   *   The node entity.
+   * @param string $field_name
+   *   The SCMI field name.
+   *
+   * @return array
+   *   Options suitable for a dashboard select.
+   */
+  private function getSchedulerModerationOptions(NodeInterface $node, string $field_name): array {
+    if (!$node->hasField($field_name) || !function_exists('\options_allowed_values')) {
+      return [];
+    }
+
+    $definition = $node->get($field_name)->getFieldDefinition()->getFieldStorageDefinition();
+    $options_callback = '\options_allowed_values';
+    $options = $options_callback($definition, $node);
+    unset($options['_none']);
+
+    if (empty($options)) {
+      $options = $this->getWorkflowStateOptions($node, $field_name);
+    }
+
+    return array_map('strval', $options);
+  }
+
+  /**
+   * Builds a conservative workflow-state fallback for dashboard SCMI selects.
+   *
+   * @param \Drupal\node\NodeInterface $node
+   *   The node entity.
+   * @param string $field_name
+   *   The SCMI field name.
+   *
+   * @return array
+   *   Workflow states filtered by publish/unpublish behavior.
+   */
+  private function getWorkflowStateOptions(NodeInterface $node, string $field_name): array {
+    $moderation_information = \Drupal::service('content_moderation.moderation_information');
+    if (!$moderation_information->isModeratedEntity($node)) {
+      return [];
+    }
+
+    $workflow = $moderation_information->getWorkflowForEntity($node);
+    if (!$workflow) {
+      return [];
+    }
+
+    $options = [];
+    foreach ($workflow->getTypePlugin()->getStates() as $state_id => $state) {
+      if (!$state->isDefaultRevisionState()) {
+        continue;
+      }
+      if ($field_name === self::SCHEDULER_PUBLISH_STATE && !$state->isPublishedState()) {
+        continue;
+      }
+      if ($field_name === self::SCHEDULER_UNPUBLISH_STATE && $state->isPublishedState()) {
+        continue;
+      }
+      $options[$state_id] = $state->label();
+    }
+
+    return $options;
   }
 
   /**

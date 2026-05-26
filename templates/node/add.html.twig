@@ -22,7 +22,9 @@
             status: true,
             scheduler: {
               publish_on: '',
+              publish_state: '',
               unpublish_on: '',
+              unpublish_state: '',
             },
             xmlsitemap: {
               status: 'default',
@@ -42,7 +44,33 @@
             alias: '',
             status: true,
             publish_on: '',
+            publish_state: '',
             unpublish_on: '',
+            unpublish_state: '',
+          },
+          getSchedulerTarget(path) {
+            return path.split('.').reduce((target, key) => target?.[key], this);
+          },
+          getSchedulerDate(value) {
+            return (value || '').slice(0, 10);
+          },
+          getSchedulerTime(value) {
+            return (value || '').slice(11, 16);
+          },
+          setSchedulerDate(targetPath, field, date) {
+            const target = this.getSchedulerTarget(targetPath);
+            if (!target) {
+              return;
+            }
+            target[field] = date ? `${date}T${this.getSchedulerTime(target[field]) || '00:00'}` : '';
+          },
+          setSchedulerTime(targetPath, field, time) {
+            const target = this.getSchedulerTarget(targetPath);
+            if (!target) {
+              return;
+            }
+            const date = this.getSchedulerDate(target[field]);
+            target[field] = date ? `${date}T${time || '00:00'}` : '';
           },
           seo: {},
           showBlocksModal: false,
