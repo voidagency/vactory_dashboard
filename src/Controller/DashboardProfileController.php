@@ -58,9 +58,10 @@ class DashboardProfileController extends ControllerBase {
     $account = $this->currentUser->getAccount();
 
     // Filtrer les rôles (exclure 'authenticated')
-  $role_ids = array_filter($account->getRoles(), function ($role) {
-    return $role !== 'authenticated';
-  });
+    $role_ids = array_values(array_unique(array_filter(
+      $account->getRoles(),
+      fn($role) => $role !== 'authenticated'
+    )));
 
   // Charger les rôles avec leur label
   $roles = array_map(function ($role_id) {

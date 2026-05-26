@@ -529,6 +529,19 @@
                                 </div>
 
                                 <div class="flex flex-col gap-2 px-4 py-3">
+                                  <div class="clear-cache ">
+                                    <button @click="clearCache"
+                                            class="group w-full text-left px-4 text-sm font-semibold hover:bg-red-100 rounded-lg transition-all duration-200 flex items-center justify-start border border-gray-300 hover:border-red-200 hover:shadow-sm h-10">
+                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                              class="h-4 w-4 mr-2 group-hover:scale-110 text-red-600 transition-transform duration-200"
+                                              fill="none"
+                                              viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                        {{ 'Vider le cache'|t }}
+                                    </button>
+                                  </div>
                                     <template x-if="profile && profile.hasAdvancedRoleAccess">
                                         <a href="{{ advanced_mode_url }}" target="_blank"
                                            class="group relative w-full text-left px-4 text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between overflow-hidden h-10">
