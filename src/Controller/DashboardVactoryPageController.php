@@ -150,9 +150,7 @@ class DashboardVactoryPageController extends ControllerBase {
         'changefreq' => xmlsitemap_get_changefreq_options(),
       ] : [],
       '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
-      '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['enabled'],
-      '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['publish_enable'],
-      '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['unpublish_enable'],
+      ...$this->nodeService->getSchedulerRenderSettings('vactory_page', NULL, $current_language),
     ];
   }
 
@@ -172,6 +170,7 @@ class DashboardVactoryPageController extends ControllerBase {
       throw new NotFoundHttpException('Node revision not found');
     }
 
+    /** @var \Drupal\node\NodeInterface $node */
     $node = $this->entityTypeManager->getStorage('node')->loadRevision($vid);
     if (!$node) {
       throw new NotFoundHttpException('Node not found');
@@ -255,9 +254,7 @@ class DashboardVactoryPageController extends ControllerBase {
         'changefreq' => xmlsitemap_get_changefreq_options(),
       ] : [],
       '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
-      '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['enabled'],
-      '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['publish_enable'],
-      '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['unpublish_enable'],
+      ...$this->nodeService->getSchedulerRenderSettings('vactory_page', $node_translation ?? $node),
     ];
   }
 
@@ -276,6 +273,7 @@ class DashboardVactoryPageController extends ControllerBase {
       throw new NotFoundHttpException('Node revision not found');
     }
 
+    /** @var \Drupal\node\NodeInterface $node */
     $node = $this->entityTypeManager->getStorage('node')->loadRevision($vid);
     if (!$node) {
       throw new NotFoundHttpException('Node not found');
@@ -351,9 +349,7 @@ class DashboardVactoryPageController extends ControllerBase {
         'changefreq' => xmlsitemap_get_changefreq_options(),
       ] : [],
       '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
-      '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['enabled'],
-      '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['publish_enable'],
-      '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings('vactory_page')['unpublish_enable'],
+      ...$this->nodeService->getSchedulerRenderSettings('vactory_page', $node),
     ];
   }
 
@@ -664,6 +660,7 @@ class DashboardVactoryPageController extends ControllerBase {
       elseif ($node->hasField('unpublish_on') && isset($settings['unpublish_on']) && $settings['unpublish_on'] === '') {
         $node->getTranslation($language)->set('unpublish_on', NULL);
       }
+      $this->nodeService->saveSchedulerModerationFields($node->getTranslation($language), $settings);
 
       // Update SEO fields if they exist.
       if (!empty($seo) && $node->hasField('field_vactory_meta_tags')) {
@@ -779,6 +776,7 @@ class DashboardVactoryPageController extends ControllerBase {
       if (!empty($settings['unpublish_on']) && $node->hasField('unpublish_on')) {
         $node->set('unpublish_on', strtotime($settings['unpublish_on']));
       }
+      $this->nodeService->saveSchedulerModerationFields($node, $settings);
 
       // Update SEO fields if they exist.
       if (!empty($seo) && $node->hasField('field_vactory_meta_tags')) {

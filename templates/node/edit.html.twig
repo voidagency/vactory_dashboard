@@ -22,7 +22,9 @@
             status: config.status === '1',
             scheduler: {
               publish_on: '',
+              publish_state: '',
               unpublish_on: '',
+              unpublish_state: '',
             },
             xmlsitemap: {
               status: 'default',
@@ -68,7 +70,33 @@
             alias: '',
             status: config.status === '1',
             publish_on: '',
+            publish_state: '',
             unpublish_on: '',
+            unpublish_state: '',
+          },
+          getSchedulerTarget(path) {
+            return path.split('.').reduce((target, key) => target?.[key], this);
+          },
+          getSchedulerDate(value) {
+            return (value || '').slice(0, 10);
+          },
+          getSchedulerTime(value) {
+            return (value || '').slice(11, 16);
+          },
+          setSchedulerDate(targetPath, field, date) {
+            const target = this.getSchedulerTarget(targetPath);
+            if (!target) {
+              return;
+            }
+            target[field] = date ? `${date}T${this.getSchedulerTime(target[field]) || '00:00'}` : '';
+          },
+          setSchedulerTime(targetPath, field, time) {
+            const target = this.getSchedulerTarget(targetPath);
+            if (!target) {
+              return;
+            }
+            const date = this.getSchedulerDate(target[field]);
+            target[field] = date ? `${date}T${time || '00:00'}` : '';
           },
           seo: {},
           inputLabelsList: {},
@@ -2005,7 +2033,9 @@
 
             // Initialize scheduler data from node
             this.formData.scheduler.publish_on = node?.publish_on || '';
+            this.formData.scheduler.publish_state = node?.publish_state || '';
             this.formData.scheduler.unpublish_on = node?.unpublish_on || '';
+            this.formData.scheduler.unpublish_state = node?.unpublish_state || '';
 
             // Initialize XML Sitemap data from node
             if (node?.xmlsitemap) {
@@ -2058,7 +2088,9 @@
             this.settings.alias = node?.alias || '';
             // this.settings.status = node.status || false;
             this.settings.publish_on = node?.publish_on || '';
+            this.settings.publish_state = node?.publish_state || '';
             this.settings.unpublish_on = node?.unpublish_on || '';
+            this.settings.unpublish_state = node?.unpublish_state || '';
 
             window.seoData = {{ meta_tags|json_encode|raw }};
             this.seo = {
