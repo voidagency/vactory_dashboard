@@ -1131,6 +1131,10 @@ class DashboardNodeController extends ControllerBase {
         $node->getTranslation($language)->set('unpublish_on', NULL);
       }
 
+      if (!$has_translation && \Drupal::moduleHandler()->moduleExists('pathauto')) {
+        \Drupal::service('pathauto.generator')->updateEntityAlias($node->getTranslation($language), 'insert', ['force' => TRUE]);
+      }
+
       // Save the node.
       $node->save();
 

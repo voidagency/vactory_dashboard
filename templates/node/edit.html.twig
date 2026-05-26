@@ -348,13 +348,13 @@
                         mappedItem[fieldName][itemName] = item[fieldName]?.[itemName]?.value || '';
                         this.getForm(`wysi-${this.generateRandomString(4)}`, i, true, false, false, true, item[fieldName]?.[itemName]?.value || '');
                       } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName][itemName].type)) {
-                        const imageKey = Object.keys(item?.[fieldName][itemName] ?? {})?.[0] ?? null;
+                        const imageKey = Object.keys(item?.[fieldName]?.[itemName] ?? {})?.[0] ?? null;
                         const imageData = item?.[fieldName]?.[itemName]?.[imageKey] ?? {};
                         const imageId = imageData?.selection?.[0]?.target_id ?? null;
                         if (imageId) {
                           mappedItem[fieldName][itemName] = {
                             id: imageId,
-                            url: imageData.selection[0].url,
+                            url: imageData?.selection?.[0]?.url,
                             name: imageData?.selection?.[0]?.name ?? imageData?.name,
                             path: 'items.' + i + '.' + fieldName + '.' + itemName,
                             key: imageKey,
@@ -401,8 +401,8 @@
                   // START - multiple field
                   else {
                     if (template.fields[fieldName].type === 'text_format') {
-                      mappedItem[fieldName] = item[fieldName].value || '';
-                      this.getForm(`wysi-multi-${i}-${fieldName}`, -1, true, false, false, false, item[fieldName].value);
+                      mappedItem[fieldName] = item[fieldName]?.value || '';
+                      this.getForm(`wysi-multi-${i}-${fieldName}`, -1, true, false, false, false, item[fieldName]?.value);
                     } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
                       const imageKey = Object.keys(item?.[fieldName] ?? {})?.[0] ?? null;
                       const imageData = item?.[fieldName]?.[imageKey] ?? {};
@@ -410,7 +410,7 @@
                       if (imageId) {
                         mappedItem[fieldName] = {
                           id: imageId,
-                          url: imageData.selection[0].url,
+                          url: imageData?.selection?.[0]?.url,
                           name: imageData?.selection?.[0]?.name ?? imageData?.name,
                           path: 'items.' + i + '.' + fieldName,
                           key: imageKey,
@@ -599,16 +599,16 @@
                         }
 
                         if (template.extra_fields[fieldName][itemName].type === 'text_format') {
-                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName]?.[itemName]?.value || '';
-                          this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, true, block.widget_data.extra_field[fieldName]?.[itemName]?.value || '');
+                          this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field?.[fieldName]?.[itemName]?.value || '';
+                          this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, true, block.widget_data.extra_field?.[fieldName]?.[itemName]?.value || '');
                         } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName][itemName].type)) {
-                          const imageKey = Object.keys(block?.widget_data?.extra_field?.[fieldName][itemName] ?? {})?.[0] ?? null;
+                          const imageKey = Object.keys(block?.widget_data?.extra_field?.[fieldName]?.[itemName] ?? {})?.[0] ?? null;
                           const imageData = block?.widget_data?.extra_field?.[fieldName]?.[itemName]?.[imageKey] ?? {};
                           const imageId = imageData?.selection?.[0]?.target_id ?? null;
                           if (imageId) {
                             this.blockForm.extra_fields[fieldName][itemName] = {
                               id: imageId,
-                              url: imageData.selection[0].url,
+                              url: imageData?.selection?.[0]?.url,
                               name: imageData?.selection?.[0]?.name ?? imageData?.name,
                               path: 'extra_fields.' + fieldName + '.' + itemName,
                               key: imageKey,
@@ -653,8 +653,8 @@
                   } else {
                     // extra field - non group
                     if (template.extra_fields[fieldName].type === 'text_format') {
-                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName].value || '';
-                      this.getForm(`wysi-extra-${index}`, -1, false, false, true, false, block.widget_data.extra_field[fieldName].value || '');
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field?.[fieldName]?.value || '';
+                      this.getForm(`wysi-extra-${index}`, -1, false, false, true, false, block.widget_data.extra_field?.[fieldName]?.value || '');
                     } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
                       const imageKey = Object.keys(block?.widget_data?.extra_field?.[fieldName] ?? {})?.[0] ?? null;
                       const imageData = block?.widget_data?.extra_field?.[fieldName]?.[imageKey] ?? {};
@@ -662,7 +662,7 @@
                       if (imageId) {
                         this.blockForm.extra_fields[fieldName] = {
                           id: imageId,
-                          url: imageData.selection[0].url,
+                          url: imageData?.selection?.[0]?.url,
                           name: imageData?.selection?.[0]?.name ?? imageData?.name,
                           path: 'extra_fields.' + fieldName,
                           key: imageKey,
