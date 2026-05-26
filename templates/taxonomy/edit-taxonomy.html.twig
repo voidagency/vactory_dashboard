@@ -151,6 +151,9 @@
           showParagraphMultipleForm: false,
           isParagraphMultiple: false,
           isTaxoEdit: false,
+          suggestions: {},
+          inputLabels: {},
+          inputLabelsList: {},
           paragraphMultipleForm: { items: [] },
           currentParagraphMultipleItem: null,
           currentMultipleParagraphTemplateIndex: null,
@@ -265,6 +268,23 @@
                 return;
               }
 
+              if (field.type === 'autocomplete' && field.multiple) {
+                this.inputLabels[fieldKey] = '';
+                const items = Array.isArray(existingValue) ? existingValue : [];
+                this.formData.fields[fieldKey] = items.map(i => i.id || i);
+                this.inputLabelsList[fieldKey] = items.map(i => i.label || '');
+                return;
+              }
+              if (field.type === 'autocomplete' && !field.multiple) {
+                if (existingValue && typeof existingValue === 'object') {
+                  this.formData.fields[fieldKey] = existingValue.id || '';
+                  this.inputLabels[fieldKey] = existingValue.label || '';
+                } else {
+                  this.formData.fields[fieldKey] = existingValue || '';
+                  this.inputLabels[fieldKey] = '';
+                }
+                return;
+              }
               this.formData.fields[fieldKey] = existingValue || '';
 
             });
@@ -486,6 +506,46 @@
             this.showBlocksModal = true;
             this.showTemplatesList = true;
             this.selectedDynamicField = fieldName;
+          },
+
+          async fetchSuggestions(fieldName, query) {
+            const field = this.fields[fieldName];
+            if (!field || !query || query.length < 1) {
+              this.suggestions[fieldName] = [];
+              return;
+            }
+            const options = field.options || {};
+            this.suggestions[fieldName] = Object.entries(options)
+              .filter(([id, label]) => label.toLowerCase().includes(query.toLowerCase()))
+              .slice(0, 10)
+              .map(([id, label]) => ({ id, label, value: id }));
+          },
+
+          selectSuggestion(fieldName, item) {
+            this.formData.fields[fieldName] = item.id;
+            this.inputLabels[fieldName] = item.label;
+            this.suggestions[fieldName] = [];
+          },
+
+          selectAutocompleteItem(fieldName, item) {
+            if (!Array.isArray(this.formData.fields[fieldName])) {
+              this.formData.fields[fieldName] = [];
+            }
+            if (!this.inputLabelsList[fieldName]) {
+              this.inputLabelsList[fieldName] = [];
+            }
+            const exists = this.formData.fields[fieldName].some(id => String(id) === String(item.id));
+            if (!exists) {
+              this.formData.fields[fieldName].push(item.id);
+              this.inputLabelsList[fieldName].push(item.label);
+            }
+            this.inputLabels[fieldName] = '';
+            this.suggestions[fieldName] = [];
+          },
+
+          removeAutocompleteItem(fieldName, idx) {
+            this.formData.fields[fieldName].splice(idx, 1);
+            this.inputLabelsList[fieldName].splice(idx, 1);
           },
 
           async fetchTemplates() {

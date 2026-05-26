@@ -28,15 +28,15 @@
                             {{ "Sélectionnez les documents à importer" | t }}<span class="text-red-500">*</span>
                         </label>
 
-                        <div class="flex items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-pointer transition-colors duration-200"
+                        <div class="flex items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-pointer transition-colors duration-200"
                              x-ref="dropzone"
                              @dragover.prevent="dragOver = true"
                              @dragenter.prevent="dragOver = true"
                              @dragleave.prevent="dragOver = false"
                              @drop.prevent="handleDrop($event)"
                              :class="{'border-primary-500 bg-primary-50': dragOver, 'border-gray-300 bg-gray-50': !dragOver}">
-                            <label for="documents" class="w-full h-full flex items-center justify-center">
-                                <div class="flex flex-col items-center justify-center py-5 px-3">
+                            <label for="documents" class="w-full h-full flex items-center justify-center cursor-pointer">
+                                <div class="flex flex-col items-center justify-center py-8 px-3">
                                     <svg class="w-8 h-8 mb-4 text-gray-500" xmlns="http://www.w3.org/2000/svg"
                                          fill="none"
                                          viewbox="0 0 20 16">
@@ -45,11 +45,9 @@
                                               d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
                                     </svg>
                                     <p class="mb-2 text-sm text-gray-500">
-                                        <span class="font-semibold">Cliquez pour importer</span>
-                                        ou glissez-déposez
+                                        <span class="font-semibold">{{ 'Cliquez pour importer'|t }}</span>
+                                        {{ 'ou glissez-déposez'|t }}
                                     </p>
-                                    <p class="text-xs text-gray-500">{{ allowed_extensions | join(', ') }}
-                                        (max. 20 Mo)</p>
                                 </div>
                             </label>
                         </div>
@@ -60,53 +58,39 @@
                     <div>
 
                         <template x-if="fileNames.length > 0">
-                            <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 mt-4 overflow-hidden">
-                                <template x-for="(file, index) in fileNames" :key="index">
-                                    <div
-                                            class="relative text-center border rounded-md p-2 bg-white shadow-sm">
-                                        <!-- Bouton pour supprimer le fichier -->
-                                        <div class="absolute top-2 right-2">
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 mt-4">
+                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                                    <template x-for="(file, index) in fileNames" :key="index">
+                                        <div class="relative text-center border border-gray-200 rounded-md p-2 bg-white shadow-sm">
                                             <button type="button" @click="removeFile(index)"
-                                                    class="bg-white text-red-500 hover:bg-gray-50 rounded-full p-1 shadow-lg border border-gray-200 transition-all duration-200 ease-in-out transform">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
-                                                     viewbox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                    <path fill-rule="evenodd"
-                                                          d="M6.293 4.293a1 1 0 011.414 0L10 6.586l2.293-2.293a1 1 0 111.414 1.414L11.414 8l2.293 2.293a1 1 0 11-1.414 1.414L10 9.414l-2.293 2.293a1 1 0 11-1.414-1.414L8.586 8 6.293 5.707a1 1 0 010-1.414z"
-                                                          clip-rule="evenodd"/>
+                                                    class="absolute -top-2 -right-2 bg-white text-gray-500 hover:text-red-500 rounded-full p-0.5 shadow border border-gray-200 transition-colors z-10">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M6.293 4.293a1 1 0 011.414 0L10 6.586l2.293-2.293a1 1 0 111.414 1.414L11.414 8l2.293 2.293a1 1 0 11-1.414 1.414L10 9.414l-2.293 2.293a1 1 0 11-1.414-1.414L8.586 8 6.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
                                                 </svg>
                                             </button>
+
+                                            <template x-if="previews[index]">
+                                                <img :src="previews[index]" class="w-full h-24 object-cover mx-auto mb-2 rounded"/>
+                                            </template>
+
+                                            <template x-if="!previews[index]">
+                                                <div class="flex flex-col items-center justify-center h-24 bg-gray-50 rounded mb-2">
+                                                    <span class="text-sm font-semibold text-gray-700" x-text="formatFileSize(fileSizes[index])"></span>
+                                                    <span class="text-[10px] text-gray-400 uppercase mt-1" x-text="file.split('.').pop()"></span>
+                                                </div>
+                                            </template>
+
+                                            <p class="text-xs text-gray-600 truncate" x-text="file" :title="file"></p>
                                         </div>
-
-                                        <!-- Aperçu de l'image -->
-                                        <template x-if="previews[index]">
-                                            <img :src="previews[index]"
-                                                 class="w-full h-28 object-cover mx-auto mb-2 rounded-md"/>
-                                        </template>
-
-
-                                        <!-- Aperçu si non-image -->
-                                        <template x-if="!previews[index]">
-                                            <div class="flex items-center justify-center h-32 w-30 bg-gray-100 rounded mb-2">
-                                                <svg class="h-8 w-8 text-gray-500 mr-4" fill="none" viewbox="0 0 24 24"
-                                                     stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                          stroke-width="2"
-                                                          d="M14 3v4a1 1 0 0 0 1 1h4M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2zM9 9h1M9 13h6M9 17h6"/>
-                                                </svg>
-                                            </div>
-                                        </template>
-
-                                        <!-- Nom du fichier -->
-                                        <p class="text-xs text-gray-700 truncate" x-text="file"></p>
-                                    </div>
-                                </template>
+                                    </template>
+                                </div>
                             </div>
                         </template>
 
                     </div>
-                    <template x-if="errors.file">
-                        <p class="text-sm text-red-600 mt-2" x-text="errors.file"></p>
-                    </template>
+                    <p class="text-xs text-gray-500 mt-3">
+                        {{ "La somme des tailles de documents sélectionnés doit être <= 20M. Seules les extensions suivantes sont autorisées:"|t }} {{ allowed_extensions | join(' ') }}.
+                    </p>
 
 
                     <!-- Boutons -->
@@ -125,7 +109,7 @@
                                 :class="{'opacity-50 cursor-not-allowed': loading,'bg-primary-500 hover:bg-primary-600': !loading,'bg-primary-400': loading}"
                                 class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
                             <!-- Button text (changes based on loading state) -->
-                            <span x-text="loading ? '{{ 'Ajout...'|t }}' : '{{ 'Ajouter'|t }}'"></span>
+                            <span x-text="loading ? '{{ 'Import en cours...'|t }}' : '{{ 'Importer'|t }}'"></span>
 
                             <!-- Loading spinner (shown when saving) -->
                             <svg x-show="loading" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg"
@@ -151,6 +135,7 @@
           errors: {},
           fileNames: [],
           files: [],
+          fileSizes: [],
           previews: [],
           dragOver: false,
 
@@ -173,14 +158,20 @@
             }, 5000);
           },
 
+          formatFileSize(bytes) {
+            if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + ' Go';
+            if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' Mo';
+            if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' Ko';
+            return bytes + ' o';
+          },
+
           sanitizeFilename(filename) {
-            // Replace problematic characters with safe alternatives
             return filename
-              .replace(/['"]/g, '') // Remove quotes and apostrophes
-              .replace(/[^\w\s.-]/g, '_') // Replace other special chars with underscore
-              .replace(/\s+/g, '_') // Replace multiple spaces with single underscore
-              .replace(/_+/g, '_') // Replace multiple underscores with single underscore
-              .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
+              .replace(/['"]/g, '')
+              .replace(/[^\w\s.-]/g, '_')
+              .replace(/\s+/g, '_')
+              .replace(/_+/g, '_')
+              .replace(/^_|_$/g, '');
           },
 
           handleFile(event) {
@@ -199,10 +190,8 @@
                 continue;
               }
 
-              // Create a new file with sanitized name if needed
               const sanitizedName = this.sanitizeFilename(file.name);
               if (sanitizedName !== file.name) {
-                // Create a new File object with the sanitized name
                 const sanitizedFile = new File([file], sanitizedName, { type: file.type });
                 this.fileNames.push(sanitizedName);
                 this.files.push(sanitizedFile);
@@ -210,9 +199,10 @@
                 this.fileNames.push(file.name);
                 this.files.push(file);
               }
+              this.fileSizes.push(file.size);
 
               const currentIndex = this.previews.length;
-              this.previews.push(null); // Réserve une place
+              this.previews.push(null);
 
               if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
@@ -233,6 +223,7 @@
           removeFile(index) {
             this.fileNames.splice(index, 1);
             this.files.splice(index, 1);
+            this.fileSizes.splice(index, 1);
             this.previews.splice(index, 1);
           },
 
@@ -258,10 +249,8 @@
                   continue;
                 }
 
-                // Create a new file with sanitized name if needed
                 const sanitizedName = this.sanitizeFilename(file.name);
                 if (sanitizedName !== file.name) {
-                  // Create a new File object with the sanitized name
                   const sanitizedFile = new File([file], sanitizedName, { type: file.type });
                   this.fileNames.push(sanitizedName);
                   this.files.push(sanitizedFile);
@@ -269,11 +258,10 @@
                   this.fileNames.push(file.name);
                   this.files.push(file);
                 }
+                this.fileSizes.push(file.size);
 
                 const currentIndex = this.previews.length;
-                this.previews.push(null); // Reserve a spot
-
-                // Generate preview for image files
+                this.previews.push(null);
                 if (file.type.startsWith('image/')) {
                   const reader = new FileReader();
                   reader.onload = (e) => {
@@ -302,39 +290,24 @@
             this.errors = {};
 
             if (this.files.length === 0) {
-              this.errors.file = "{{ 'Veuillez sélectionner un document.' | t | e('js') }}";
+              this.errors.file = "{{ 'Veuillez sélectionner au moins un document.' | t | e('js') }}";
               this.loading = false;
-              this.showNotification('error', '{{ "Veuillez vérifier les valeurs fournies."|t }}');
+              this.showNotification('error', this.errors.file);
+              return;
+            }
+
+            const totalSize = this.fileSizes.reduce((sum, s) => sum + s, 0);
+            if (totalSize > 20 * 1024 * 1024) {
+              const msg = '{{ "La taille totale des fichiers sélectionnés dépasse la limite autorisée de 20 Mo."|t|e('js') }}';
+              this.loading = false;
+              this.showNotification('error', msg);
               return;
             }
 
             const formData = new FormData(this.$refs.form);
-
-            // Debug: Log what's in the FormData initially
-            console.log('Initial FormData contents:');
-            for (let [key, value] of formData.entries()) {
-              console.log(key, value);
-            }
-
-            // Remove any existing documents[] entries and add our files
             formData.delete('documents[]');
-
-            // Ajouter chaque fichier de la liste locale au FormData
             for (let i = 0; i < this.files.length; i++) {
-              const file = this.files[i];
-              console.log('Adding file to FormData:', {
-                name: file.name,
-                size: file.size,
-                type: file.type,
-                lastModified: file.lastModified,
-              });
-              formData.append('documents[]', file);
-            }
-
-            // Debug: Log final FormData contents
-            console.log('Final FormData contents:');
-            for (let [key, value] of formData.entries()) {
-              console.log(key, value);
+              formData.append('documents[]', this.files[i]);
             }
 
             try {
@@ -344,24 +317,24 @@
               });
 
               const result = await response.json();
-              console.log('API Response:', {
-                status: response.status,
-                ok: response.ok,
-                result: result,
-              });
 
               if (!response.ok) {
                 if (response.status === 403) {
                   this.showNotification('error', '{{ "Vous n\'avez pas les permissions nécessaires pour créer des documents."|t|e('js') }}');
                 } else {
-                  this.errors = result.errors || {};
-                  console.error('Upload failed:', result);
-                  this.showNotification('error', '{{ "Veuillez vérifier les valeurs fournies."|t|e('js') }}');
+                  const serverMsg = result.errors?.files || result.error || '{{ "Une erreur est survenue lors de l\'import."|t|e('js') }}';
+                  this.errors.file = serverMsg;
+                  this.showNotification('error', serverMsg);
                 }
-              } else { // Redirection ou autre action après succès
-                console.log('Upload successful:', result);
-                this.showNotification('success', '{{ "Documents ajouté avec succes"|t|e('js') }}');
-                window.location.href = '{{ path("vactory_dashboard.media") }}';
+              } else {
+                const success = result.success_count || 0;
+                const failed = result.failed_count || 0;
+                const successLabel = '{{ "Import s\'est terminé, @success fichier(s) importé(s) avec succès, @failed cas d\'echec."|t|e('js') }}'.replace('@success', success).replace('@failed', failed);
+                this.showNotification('success', successLabel);
+                this.fileNames = [];
+                this.files = [];
+                this.fileSizes = [];
+                this.previews = [];
               }
             } catch (error) {
               console.error('Erreur :', error);

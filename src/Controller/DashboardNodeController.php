@@ -427,9 +427,7 @@ class DashboardNodeController extends ControllerBase {
         'priority' => xmlsitemap_get_priority_options(0.5),
         'changefreq' => xmlsitemap_get_changefreq_options(),
       ] : [],
-      '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['enabled'],
-      '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['publish_enable'],
-      '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['unpublish_enable'],
+      ...$this->nodeService->getSchedulerRenderSettings($bundle, NULL, $current_language),
       ...$paragraph_flags,
     ];
 
@@ -558,9 +556,7 @@ class DashboardNodeController extends ControllerBase {
         'priority' => xmlsitemap_get_priority_options(0.5),
         'changefreq' => xmlsitemap_get_changefreq_options(),
       ] : [],
-      '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['enabled'],
-      '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['publish_enable'],
-      '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['unpublish_enable'],
+      ...$this->nodeService->getSchedulerRenderSettings($bundle, $node_translation ?? $node),
       ...$paragraph_flags,
     ];
 
@@ -685,9 +681,7 @@ class DashboardNodeController extends ControllerBase {
         'priority' => xmlsitemap_get_priority_options(0.5),
         'changefreq' => xmlsitemap_get_changefreq_options(),
       ] : [],
-      '#scheduler_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['enabled'],
-      '#scheduler_publish_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['publish_enable'],
-      '#scheduler_unpublish_enabled' => $this->nodeService->getSchedulerBundleSettings($bundle)['unpublish_enable'],
+      ...$this->nodeService->getSchedulerRenderSettings($bundle, $node),
       ...$paragraph_flags,
     ];
 
@@ -885,6 +879,7 @@ class DashboardNodeController extends ControllerBase {
       if (!empty($scheduler['unpublish_on']) && $node->hasField('unpublish_on')) {
         $node->set('unpublish_on', strtotime($scheduler['unpublish_on']));
       }
+      $this->nodeService->saveSchedulerModerationFields($node, $scheduler);
 
       $node->isNew();
       $node->save();
@@ -1129,6 +1124,11 @@ class DashboardNodeController extends ControllerBase {
       }
       elseif ($node->hasField('unpublish_on') && isset($scheduler['unpublish_on']) && $scheduler['unpublish_on'] === '') {
         $node->getTranslation($language)->set('unpublish_on', NULL);
+      }
+      $this->nodeService->saveSchedulerModerationFields($node->getTranslation($language), $scheduler);
+
+      if (!$has_translation && \Drupal::moduleHandler()->moduleExists('pathauto')) {
+        \Drupal::service('pathauto.generator')->updateEntityAlias($node->getTranslation($language), 'insert', ['force' => TRUE]);
       }
 
       // Save the node.

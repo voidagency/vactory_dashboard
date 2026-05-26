@@ -22,7 +22,9 @@
             status: true,
             scheduler: {
               publish_on: '',
+              publish_state: '',
               unpublish_on: '',
+              unpublish_state: '',
             },
             xmlsitemap: {
               status: 'default',
@@ -42,7 +44,33 @@
             alias: '',
             status: true,
             publish_on: '',
+            publish_state: '',
             unpublish_on: '',
+            unpublish_state: '',
+          },
+          getSchedulerTarget(path) {
+            return path.split('.').reduce((target, key) => target?.[key], this);
+          },
+          getSchedulerDate(value) {
+            return (value || '').slice(0, 10);
+          },
+          getSchedulerTime(value) {
+            return (value || '').slice(11, 16);
+          },
+          setSchedulerDate(targetPath, field, date) {
+            const target = this.getSchedulerTarget(targetPath);
+            if (!target) {
+              return;
+            }
+            target[field] = date ? `${date}T${this.getSchedulerTime(target[field]) || '00:00'}` : '';
+          },
+          setSchedulerTime(targetPath, field, time) {
+            const target = this.getSchedulerTarget(targetPath);
+            if (!target) {
+              return;
+            }
+            const date = this.getSchedulerDate(target[field]);
+            target[field] = date ? `${date}T${time || '00:00'}` : '';
           },
           seo: {},
           showBlocksModal: false,
@@ -515,14 +543,14 @@
                         mappedItem[fieldName][itemName] = item[fieldName]?.[itemName]?.value || '';
                         this.getForm(`wysi-${this.generateRandomString(4)}`, i, true, false, false, true, item[fieldName]?.[itemName]?.value || '');
                       } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName][itemName].type)) {
-                        const imageKey = Object.keys(item?.[fieldName][itemName] ?? {})?.[0] ?? null;
+                        const imageKey = Object.keys(item?.[fieldName]?.[itemName] ?? {})?.[0] ?? null;
                         const imageData = item?.[fieldName]?.[itemName]?.[imageKey] ?? {};
                         const imageId = imageData?.selection?.[0]?.target_id ?? null;
                         if (imageId) {
                           mappedItem[fieldName][itemName] = {
                             id: imageId,
-                            url: imageData.selection[0].url,
-                            name: imageData.name,
+                            url: imageData?.selection?.[0]?.url,
+                            name: imageData?.name,
                             path: 'items.' + i + '.' + fieldName + '.' + itemName,
                             key: imageKey,
                           };
@@ -565,17 +593,17 @@
 
                   else {
                     if (template.fields[fieldName].type === 'text_format') {
-                      mappedItem[fieldName] = item[fieldName].value || '';
-                      this.getForm(`wysi-multi-${i}-${fieldName}`, -1, true, false, false, false, item[fieldName].value);
+                      mappedItem[fieldName] = item[fieldName]?.value || '';
+                      this.getForm(`wysi-multi-${i}-${fieldName}`, -1, true, false, false, false, item[fieldName]?.value);
                     } else if (['image', 'file', 'remote_video'].includes(template.fields[fieldName].type)) {
-                      const imageKey = Object.keys(item[fieldName])[0];
-                      const imageData = item[fieldName][imageKey];
-                      const imageId = imageData.selection[0].target_id;
+                      const imageKey = Object.keys(item?.[fieldName] ?? {})?.[0] ?? null;
+                      const imageData = item?.[fieldName]?.[imageKey] ?? {};
+                      const imageId = imageData?.selection?.[0]?.target_id ?? null;
                       if (imageId) {
                         mappedItem[fieldName] = {
                           id: imageId,
-                          url: imageData.selection[0].url,
-                          name: imageData.name,
+                          url: imageData?.selection?.[0]?.url,
+                          name: imageData?.name,
                           path: 'items.' + i + '.' + fieldName,
                           key: imageKey,
                         };
@@ -762,17 +790,17 @@
                       }
 
                       if (template.extra_fields[fieldName][itemName].type === 'text_format') {
-                        this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field[fieldName][itemName].value || '';
-                        this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, true, block.widget_data.extra_field[fieldName][itemName].value || '');
+                        this.blockForm.extra_fields[fieldName][itemName] = block.widget_data.extra_field?.[fieldName]?.[itemName]?.value || '';
+                        this.getForm(`wysi-groupextra-${index}-${itemName}`, -1, false, false, true, true, block.widget_data.extra_field?.[fieldName]?.[itemName]?.value || '');
                       } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName][itemName].type)) {
-                        const imageKey = Object.keys(block.widget_data.extra_field[fieldName][itemName])[0];
-                        const imageData = block.widget_data.extra_field[fieldName][itemName][imageKey];
-                        const imageId = imageData.selection[0].target_id;
+                        const imageKey = Object.keys(block?.widget_data?.extra_field?.[fieldName]?.[itemName] ?? {})?.[0] ?? null;
+                        const imageData = block?.widget_data?.extra_field?.[fieldName]?.[itemName]?.[imageKey] ?? {};
+                        const imageId = imageData?.selection?.[0]?.target_id ?? null;
                         if (imageId) {
                           this.blockForm.extra_fields[fieldName][itemName] = {
                             id: imageId,
-                            url: imageData.selection[0].url,
-                            name: imageData.name,
+                            url: imageData?.selection?.[0]?.url,
+                            name: imageData?.name,
                             path: 'extra_fields.' + fieldName + '.' + itemName,
                             key: imageKey,
                           };
@@ -816,17 +844,17 @@
                   // START - extra field
                   else {
                     if (template.extra_fields[fieldName].type === 'text_format') {
-                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field[fieldName].value || '';
-                      this.getForm(`wysi-extra-${index}`, -1, false, false, true, false, block.widget_data.extra_field[fieldName].value || '');
+                      this.blockForm.extra_fields[fieldName] = block.widget_data.extra_field?.[fieldName]?.value || '';
+                      this.getForm(`wysi-extra-${index}`, -1, false, false, true, false, block.widget_data.extra_field?.[fieldName]?.value || '');
                     } else if (['image', 'file', 'remote_video'].includes(template.extra_fields[fieldName].type)) {
-                      const imageKey = Object.keys(block.widget_data.extra_field[fieldName])[0];
-                      const imageData = block.widget_data.extra_field[fieldName][imageKey];
-                      const imageId = imageData.selection[0].target_id;
+                      const imageKey = Object.keys(block?.widget_data?.extra_field?.[fieldName] ?? {})?.[0] ?? null;
+                      const imageData = block?.widget_data?.extra_field?.[fieldName]?.[imageKey] ?? {};
+                      const imageId = imageData?.selection?.[0]?.target_id ?? null;
                       if (imageId) {
                         this.blockForm.extra_fields[fieldName] = {
                           id: imageId,
-                          url: imageData.selection[0].url,
-                          name: imageData.name,
+                          url: imageData?.selection?.[0]?.url,
+                          name: imageData?.name,
                           path: 'extra_fields.' + fieldName,
                           key: imageKey,
                         };

@@ -227,6 +227,10 @@ Usage:
                 'key': 'formData.fields[field.name].key',
                 'type': 'image'
             } %}
+            <p x-show="field.file_extensions || field.max_filesize" class="mt-1.5 text-xs text-slate-500">
+                <span x-show="field.max_filesize">{{ '1 seul fichier.'|t }} {{ 'Limité à'|t }} <span x-text="field.max_filesize"></span>.</span>
+                <span x-show="field.file_extensions">{{ 'Types autorisés :'|t }} <span x-text="field.file_extensions"></span>.</span>
+            </p>
         </div>
     </template>
 
@@ -270,6 +274,10 @@ Usage:
                 'key': 'formData.fields[field.name].key',
                 'type': 'file'
             } %}
+            <p x-show="field.file_extensions || field.max_filesize" class="mt-1.5 text-xs text-slate-500">
+                <span x-show="field.max_filesize">{{ '1 seul fichier.'|t }} {{ 'Limité à'|t }} <span x-text="field.max_filesize"></span>.</span>
+                <span x-show="field.file_extensions">{{ 'Types autorisés :'|t }} <span x-text="field.file_extensions"></span>.</span>
+            </p>
         </div>
     </template>
 
@@ -284,6 +292,10 @@ Usage:
                 'key': 'formData.fields[field.name].key',
                 'type': 'private_file'
             } %}
+            <p x-show="field.file_extensions || field.max_filesize" class="mt-1.5 text-xs text-slate-500">
+                <span x-show="field.max_filesize">{{ '1 seul fichier.'|t }} {{ 'Limité à'|t }} <span x-text="field.max_filesize"></span>.</span>
+                <span x-show="field.file_extensions">{{ 'Types autorisés :'|t }} <span x-text="field.file_extensions"></span>.</span>
+            </p>
         </div>
     </template>
 
