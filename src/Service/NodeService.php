@@ -1555,7 +1555,26 @@ class NodeService {
           }
           if ($field_settings['target_type'] === 'media') {
             $target_bundles = $field_settings['handler_settings']['target_bundles'] ?? [];
-            $field_info['type'] = reset($target_bundles);
+            $media_bundle = reset($target_bundles);
+            $field_info['type'] = $media_bundle;
+
+            $source_field_map = [
+              'image' => 'field_media_image',
+              'file' => 'field_media_file',
+              'private_file' => 'field_media_file_1',
+            ];
+            $source_field_name = $source_field_map[$media_bundle] ?? NULL;
+            if ($source_field_name) {
+              $media_field_definitions = $this->entityFieldManager->getFieldDefinitions('media', $media_bundle);
+              if (isset($media_field_definitions[$source_field_name])) {
+                $media_field_settings = $media_field_definitions[$source_field_name]->getSettings();
+                $field_info['file_extensions'] = $media_field_settings['file_extensions'] ?? '';
+                $field_info['max_filesize'] = $media_field_settings['max_filesize'] ?? '';
+                if (empty($field_info['max_filesize'])) {
+                  $field_info['max_filesize'] = format_size(\Drupal\Component\Utility\Environment::getUploadMaxSize());
+                }
+              }
+            }
           }
           break;
 
