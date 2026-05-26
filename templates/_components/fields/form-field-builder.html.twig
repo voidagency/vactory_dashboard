@@ -300,16 +300,31 @@ Usage:
     </template>
 
     {# Link Field #}
+    {% set link_email_error %}{{ 'Les adresses email ne sont pas autorisées. Utilisez le format mailto:email@exemple.com'|t }}{% endset %}
+    {% set link_url_error %}{{ "L'URL saisie doit commencer par /, ?, # ou être une URL externe (http:// ou https://)."|t }}{% endset %}
     <template x-if="field.type === 'link'">
-        <div class="space-y-3">
-            <input type="url"
+        <div class="space-y-3" x-data="{
+            linkUrlError: '',
+            validateLinkUrl(url) {
+                if (!url || url.trim() === '') { this.linkUrlError = ''; return true; }
+                url = url.trim();
+                if (/^https?:\/\//.test(url) || /^\//.test(url) || /^\?/.test(url) || /^#/.test(url) || /^<front>/.test(url)) { this.linkUrlError = ''; return true; }
+                if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(url)) { this.linkUrlError = '{{ link_email_error|e('js') }}'; return false; }
+                this.linkUrlError = '{{ link_url_error|e('js') }}'; return false;
+            }
+        }">
+            <input type="text"
                 :required="field.required"
                 x-model="formData.fields[field.name].uri"
+                @input="validateLinkUrl($event.target.value)"
+                @blur="validateLinkUrl(formData.fields[field.name].uri)"
                 placeholder="https://example.com"
-                class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+                :class="linkUrlError ? 'border-red-400 focus:ring-red-300' : 'border-gray-300 focus:ring-primary-300'"
+                class="w-full py-1.5 px-3 text-sm border rounded-md focus:outline-none focus:ring-2 focus:border-transparent"
                 {% if isEdit and language != node_default_lang %}
                     :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
                 {% endif %}>
+            <p x-show="linkUrlError" x-text="linkUrlError" class="text-xs text-red-600 mt-1"></p>
             <input type="text"
                 x-model="formData.fields[field.name].title"
                 placeholder="{{ 'Link text'|t }}"

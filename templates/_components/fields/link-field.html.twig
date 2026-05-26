@@ -1,12 +1,34 @@
+{% set link_email_error %}{{ 'Les adresses email ne sont pas autorisées. Utilisez le format mailto:email@exemple.com'|t }}{% endset %}
+{% set link_url_error %}{{ "L'URL saisie doit commencer par /, ?, # ou être une URL externe (http:// ou https://)."|t }}{% endset %}
 <div
   class="border border-slate-200 rounded-xl p-4 bg-slate-50"
   x-data="{
     results: [],
     showList: false,
     searchTimeout: null,
+    urlError: '',
+
+    validateUrl(url) {
+      if (!url || url.trim() === '') {
+        this.urlError = '';
+        return true;
+      }
+      url = url.trim();
+      if (/^https?:\/\//.test(url) || /^\//.test(url) || /^\?/.test(url) || /^#/.test(url) || /^<front>/.test(url)) {
+        this.urlError = '';
+        return true;
+      }
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(url)) {
+        this.urlError = '{{ link_email_error|e('js') }}';
+        return false;
+      }
+      this.urlError = '{{ link_url_error|e('js') }}';
+      return false;
+    },
 
     async search(query) {
       clearTimeout(this.searchTimeout);
+      this.validateUrl(query);
       if (!query || query.length < 2) {
         this.results = [];
         this.showList = false;
@@ -59,11 +81,13 @@
           x-model="{{ xmodel }}.url"
           @input="search($event.target.value)"
           @focus="showList = true"
-          @blur="setTimeout(() => showList = false, 200)"
-          class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg
-                 focus:outline-none focus:ring-2 focus:ring-primary-300
+          @blur="setTimeout(() => { showList = false; validateUrl({{ xmodel }}.url); }, 200)"
+          :class="urlError ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-primary-300'"
+          class="w-full py-2 px-3 text-sm border rounded-lg
+                 focus:outline-none focus:ring-2
                  focus:border-transparent bg-white transition-all duration-150"
         >
+        <p x-show="urlError" x-text="urlError" class="text-xs text-red-600 mt-1"></p>
 
         <!-- Liste déroulante des suggestions -->
         <ul
