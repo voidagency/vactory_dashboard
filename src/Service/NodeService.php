@@ -1647,6 +1647,13 @@ class NodeService {
             $field_info['widget_default_open'] = 'closed';
           }
           break;
+
+        case 'entity_reference_hierarchy':
+          $field_info['target_type'] = $field_settings['target_type'];
+          $field_info['type'] = 'autocomplete';
+          $field_info['multiple'] = $cardinality == -1;
+          $field_info['options'] = $this->load_entity_reference_options($field_info);
+          break;
       }
 
       // Handle search_api_exclude_entity field type
