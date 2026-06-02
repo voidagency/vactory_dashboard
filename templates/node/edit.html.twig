@@ -69,6 +69,8 @@
             summary: '',
             alias: '',
             status: config.status === '1',
+            moderation: (() => { try { return JSON.parse(config.moderation || '{}'); } catch (e) { return {}; } })(),
+            moderation_state: '',
             publish_on: '',
             publish_state: '',
             unpublish_on: '',
@@ -2087,6 +2089,7 @@
             this.settings.summary = node?.summary || '';
             this.settings.alias = node?.alias || '';
             // this.settings.status = node.status || false;
+            this.settings.moderation_state = this.settings.moderation?.current_state || '';
             this.settings.publish_on = node?.publish_on || '';
             this.settings.publish_state = node?.publish_state || '';
             this.settings.unpublish_on = node?.unpublish_on || '';
@@ -2264,6 +2267,7 @@
                   seo: this.seo,
                   blocks: this.blocks,
                   status: this.settings.status,
+                  moderation_state: this.settings.moderation_state,
                   changed: this.changed,
                   banner: this.banner,
                   fields: this.formData.fields,
@@ -2434,6 +2438,7 @@
                   language: this.language,
                   fields: this.formData.fields,
                   status: this.formData.status,
+                  moderation_state: this.settings.moderation_state,
                   seo: this.seo,
                   blocks: this.blocks,
                   has_translation: this.has_translation,

@@ -321,6 +321,7 @@ class DashboardNodeController extends ControllerBase {
         'created' => $node->getCreatedTime(),
         'changed' => $node->getChangedTime(),
         'status' => (bool) $node->isPublished(),
+        'moderation' => $this->nodeService->getModerationStateInfo($node),
         'language' => $node->language()->getId(),
         'langague_label' => $node->language()->getName(),
         'alias' => $this->previewUrlService->getPreviewUrl($node),
@@ -429,6 +430,7 @@ class DashboardNodeController extends ControllerBase {
       ] : [],
       ...$this->nodeService->getSchedulerRenderSettings($bundle, NULL, $current_language),
       ...$paragraph_flags,
+      '#moderation' => $this->nodeService->getModerationData(Node::create(['type' => $bundle])),
     ];
 
     // Attach Google Maps API library if needed
@@ -558,6 +560,7 @@ class DashboardNodeController extends ControllerBase {
       ] : [],
       ...$this->nodeService->getSchedulerRenderSettings($bundle, $node_translation ?? $node),
       ...$paragraph_flags,
+      '#moderation' => $this->nodeService->getModerationData($node_translation ?? $node),
     ];
 
     // Attach Google Maps API library if needed
@@ -683,6 +686,7 @@ class DashboardNodeController extends ControllerBase {
       ] : [],
       ...$this->nodeService->getSchedulerRenderSettings($bundle, $node),
       ...$paragraph_flags,
+      '#moderation' => $this->nodeService->getModerationData($node),
     ];
 
     // Attach Google Maps API library if needed
@@ -728,8 +732,21 @@ class DashboardNodeController extends ControllerBase {
 
       $banner = $data['banner'] ?? [];
 
-      if ($node->hasField('moderation_state')) {
-        $node->set('moderation_state', $status ? 'published' : 'draft');
+      $moderation = $this->nodeService->getModerationData($node);
+      if ($moderation['enabled']) {
+        // Moderated bundle: apply the submitted state, let content_moderation
+        // derive the published status from it.
+        $moderation_state = $data['moderation_state'] ?? NULL;
+        if (!empty($moderation_state)) {
+          $allowed_ids = array_column($moderation['states'], 'id');
+          if (!in_array($moderation_state, $allowed_ids, TRUE)) {
+            return new JsonResponse([
+              'status' => 'error',
+              'message' => $this->t('Invalid moderation state: @state', ['@state' => $moderation_state]),
+            ], 400);
+          }
+          $node->set('moderation_state', $moderation_state);
+        }
       }
 
       // Get field definitions for type checking
@@ -961,12 +978,27 @@ class DashboardNodeController extends ControllerBase {
         ], 409);
       }
 
-      if ($node->hasField('moderation_state')) {
-        $node->getTranslation($language)
-          ->set('moderation_state', $status ? 'published' : 'draft');
-      }
+      $translation = $node->getTranslation($language);
+      $moderation = $this->nodeService->getModerationData($translation);
 
-      $node->getTranslation($language)->set('status', $status);
+      if ($moderation['enabled']) {
+        // Moderated bundle: apply the submitted state, let content_moderation
+        // derive the published status from it.
+        $moderation_state = $content['moderation_state'] ?? NULL;
+        if (!empty($moderation_state)) {
+          $allowed_ids = array_column($moderation['states'], 'id');
+          if (!in_array($moderation_state, $allowed_ids, TRUE)) {
+            return new JsonResponse([
+              'message' => $this->t('Invalid moderation state: @state', ['@state' => $moderation_state]),
+            ], 400);
+          }
+          $translation->set('moderation_state', $moderation_state);
+        }
+      }
+      else {
+        // Non-moderated bundle: keep the legacy published checkbox behavior.
+        $translation->set('status', $status);
+      }
 
       // Get field definitions for type checking
       $field_definitions = $node->getFieldDefinitions();

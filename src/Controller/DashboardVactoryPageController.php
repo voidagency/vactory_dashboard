@@ -151,6 +151,7 @@ class DashboardVactoryPageController extends ControllerBase {
       ] : [],
       '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
       ...$this->nodeService->getSchedulerRenderSettings('vactory_page', NULL, $current_language),
+      '#moderation' => $this->nodeService->getModerationData(Node::create(['type' => 'vactory_page'])),
     ];
   }
 
@@ -255,6 +256,7 @@ class DashboardVactoryPageController extends ControllerBase {
       ] : [],
       '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
       ...$this->nodeService->getSchedulerRenderSettings('vactory_page', $node_translation ?? $node),
+      '#moderation' => $this->nodeService->getModerationData($node_translation ?? $node),
     ];
   }
 
@@ -350,6 +352,7 @@ class DashboardVactoryPageController extends ControllerBase {
       ] : [],
       '#search_api_exclude_entity_enabled' => isset($fields['field_exclude_from_search']),
       ...$this->nodeService->getSchedulerRenderSettings('vactory_page', $node),
+      '#moderation' => $this->nodeService->getModerationData($node),
     ];
   }
 
@@ -609,12 +612,27 @@ class DashboardVactoryPageController extends ControllerBase {
         ], 409);
       }
 
-      if ($node->hasField('moderation_state')) {
-        $node->getTranslation($language)
-          ->set('moderation_state', $status ? 'published' : 'draft');
-      }
+      $translation = $node->getTranslation($language);
+      $moderation = $this->nodeService->getModerationData($translation);
 
-      $node->getTranslation($language)->set('status', $status);
+      if ($moderation['enabled']) {
+        // Moderated bundle: apply the submitted state and let content_moderation
+        // derive the published status from it.
+        $moderation_state = $content['moderation_state'] ?? NULL;
+        if (!empty($moderation_state)) {
+          $allowed_ids = array_column($moderation['states'], 'id');
+          if (!in_array($moderation_state, $allowed_ids, TRUE)) {
+            return new JsonResponse([
+              'message' => $this->t('Invalid moderation state: @state', ['@state' => $moderation_state]),
+            ], 400);
+          }
+          $translation->set('moderation_state', $moderation_state);
+        }
+      }
+      else {
+        // Non-moderated bundle: keep the legacy published checkbox behavior.
+        $translation->set('status', $status);
+      }
 
       // Update node fields.
       if (isset($settings['title'])) {

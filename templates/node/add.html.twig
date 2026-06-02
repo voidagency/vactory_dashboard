@@ -43,6 +43,8 @@
             tab_id: '',
             alias: '',
             status: true,
+            moderation: (() => { try { return JSON.parse(config.moderation || '{}'); } catch (e) { return {}; } })(),
+            moderation_state: '',
             publish_on: '',
             publish_state: '',
             unpublish_on: '',
@@ -362,6 +364,7 @@
                   blocks: this.blocks,
                   fields: this.formData.fields,
                   status: this.formData.status,
+                  moderation_state: this.settings.moderation_state,
                   banner: this.banner,
                   scheduler: this.formData.scheduler,
                   xmlsitemap: this.formData.xmlsitemap,
@@ -1983,6 +1986,9 @@
             // Fetch templates when component initializes
             this.fetchTemplates();
 
+            // Default to the workflow's initial moderation state for new pages.
+            this.settings.moderation_state = this.settings.moderation?.current_state || '';
+
             this.fields = JSON.parse(this.fields);
             // Initialize form data based on fields
             Object.keys(this.fields).forEach((fieldKey) => {
@@ -2168,6 +2174,7 @@
                   seo: this.seo,
                   blocks: this.blocks,
                   status: this.settings.status,
+                  moderation_state: this.settings.moderation_state,
                   banner: this.banner,
                   fields: this.formData.fields,
                   xmlsitemap: this.formData.xmlsitemap,
