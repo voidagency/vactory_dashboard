@@ -2,28 +2,35 @@
 {% set link_url_error %}{{ "L'URL saisie doit commencer par /, ?, # ou être une URL externe (http:// ou https://)."|t }}{% endset %}
 <div
   class="border border-slate-200 rounded-xl p-4 bg-slate-50"
+  x-effect="validateUrl(({{ xmodel }} && {{ xmodel }}.url) || '')"
   x-data="{
     results: [],
     showList: false,
     searchTimeout: null,
     urlError: '',
+    linkFieldId: 'link_' + Math.random().toString(36).slice(2),
+
+    destroy() {
+      this.$store.linkValidation.clear(this.linkFieldId);
+    },
 
     validateUrl(url) {
-      if (!url || url.trim() === '') {
-        this.urlError = '';
-        return true;
+      let message = '';
+      const value = (url || '').trim();
+      if (value !== '') {
+        if (/^https?:\/\//.test(value) || /^\//.test(value) || /^\?/.test(value) || /^#/.test(value) || /^<front>/.test(value)) {
+          message = '';
+        }
+        else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          message = '{{ link_email_error|e('js') }}';
+        }
+        else {
+          message = '{{ link_url_error|e('js') }}';
+        }
       }
-      url = url.trim();
-      if (/^https?:\/\//.test(url) || /^\//.test(url) || /^\?/.test(url) || /^#/.test(url) || /^<front>/.test(url)) {
-        this.urlError = '';
-        return true;
-      }
-      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(url)) {
-        this.urlError = '{{ link_email_error|e('js') }}';
-        return false;
-      }
-      this.urlError = '{{ link_url_error|e('js') }}';
-      return false;
+      this.urlError = message;
+      this.$store.linkValidation.set(this.linkFieldId, message);
+      return message === '';
     },
 
     async search(query) {

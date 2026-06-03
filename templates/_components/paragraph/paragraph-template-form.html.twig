@@ -35,7 +35,10 @@
                     'size': 'md',
                     'type': 'button',
                     'text': 'Enregistrer'|t,
-                    'attributes': create_attribute().setAttribute('@click', 'saveBlock("block-form");')
+                    'attributes': create_attribute()
+                        .setAttribute('@click', 'saveBlock("block-form");')
+                        .setAttribute(':disabled', '$store.linkValidation.hasErrors')
+                        .setAttribute(':class', "$store.linkValidation.hasErrors ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''")
                 } %}
             </div>
         </div>
@@ -1445,6 +1448,10 @@
           },
 
           async saveBlock() {
+            if (this.$store.linkValidation.hasErrors) {
+              this.showNotification('error', '{{ "Veuillez corriger les URL invalides avant d'enregistrer."|t|e('js') }}');
+              return;
+            }
             if (!this.validateForm()) {
               this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
               return;

@@ -702,31 +702,6 @@ Macro to render menu items recursively with proper depth and active state handli
           });
         }, { deep: true });
       },
-      async clearCache() {
-        this.cacheClearing = true;
-        try {
-          const response = await fetch('{{ path('vactory_dashboard.clear_cache') }}', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-
-          if (response.ok) {
-            this.successMessage = 'Cache vidé avec succès.';
-            console.log('Success Message:', this.successMessage);
-          } else {
-            await response.json();
-            this.erreurMessage = 'Erreur lors du vidage du cache.';
-            alert(this.erreurMessage);
-            console.log('Erreur Message:', this.erreurMessage);
-          }
-        } catch (error) {
-          console.error('Error clearing cache:', error);
-        } finally {
-          this.cacheClearing = false;
-        }
-      },
       isCurrentPage(url) {
         if (!url) {
           return false;

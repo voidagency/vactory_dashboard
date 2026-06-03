@@ -54,6 +54,8 @@
     </div>
     <div
             x-data="contentSearch" class="flex flex-col w-0 flex-1 overflow-hidden">
+        {# Global toast for layout-level actions (e.g. clear cache). #}
+        {% include '@vactory_dashboard/_components/notification.html.twig' %}
         {# removed z-0 #}
         <div class="relative flex-shrink-0 flex h-16 bg-white shadow-sm border-b border-slate-200">
             <div class="flex-1 px-3 lg:px-6 flex justify-between">
@@ -530,16 +532,21 @@
 
                                 <div class="flex flex-col gap-2 px-4 py-3">
                                   <div class="clear-cache ">
-                                    <button @click="clearCache"
+                                    <button @click="clearCache()" :disabled="cacheClearing"
+                                            :class="cacheClearing ? 'opacity-60 cursor-not-allowed' : ''"
                                             class="group w-full text-left px-4 text-sm font-semibold hover:bg-red-100 rounded-lg transition-all duration-200 flex items-center justify-start border border-gray-300 hover:border-red-200 hover:shadow-sm h-10">
-                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                        <svg x-show="!cacheClearing" xmlns="http://www.w3.org/2000/svg"
                                               class="h-4 w-4 mr-2 group-hover:scale-110 text-red-600 transition-transform duration-200"
                                               fill="none"
                                               viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                   d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                         </svg>
-                                        {{ 'Vider le cache'|t }}
+                                        <svg x-show="cacheClearing" class="animate-spin h-4 w-4 mr-2 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span x-text="cacheClearing ? '{{ 'Vidage en cours...'|t|e('js') }}' : '{{ 'Vider le cache'|t|e('js') }}'"></span>
                                     </button>
                                   </div>
                                     <template x-if="profile && profile.hasAdvancedRoleAccess">
@@ -614,6 +621,31 @@
 
   document.addEventListener('alpine:init', () => {
     Alpine.store('limit', 50);
+
+    // Tracks live link/URL validation errors so Save buttons can be disabled.
+    Alpine.store('linkValidation', {
+      errors: {},
+      set(id, message) {
+        const next = { ...this.errors };
+        if (message) {
+          next[id] = message;
+        }
+        else {
+          delete next[id];
+        }
+        this.errors = next;
+      },
+      clear(id) {
+        if (id in this.errors) {
+          const next = { ...this.errors };
+          delete next[id];
+          this.errors = next;
+        }
+      },
+      get hasErrors() {
+        return Object.keys(this.errors).length > 0;
+      },
+    });
     Alpine.data('contentSearch', () => ({
       query: '',
       results: [],
@@ -629,6 +661,7 @@
       profile: [],
       support: [],
       showMobileSearch: false,
+      cacheClearing: false,
       notification: {
         show: false,
         error: false,
@@ -773,6 +806,32 @@
 
       getFirstLetter(name) {
         return typeof name === 'string' && name.length > 0 ? name.charAt(0).toUpperCase() : '';
+      },
+
+      async clearCache() {
+        if (this.cacheClearing) {
+          return;
+        }
+        this.cacheClearing = true;
+        try {
+          const response = await fetch('{{ path('vactory_dashboard.clear_cache') }}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            this.setNotification(false, '{{ 'Cache vidé avec succès.'|t|e('js') }}');
+          } else {
+            this.setNotification(true, '{{ 'Erreur lors du vidage du cache.'|t|e('js') }}');
+          }
+        } catch (error) {
+          console.error('Error clearing cache:', error);
+          this.setNotification(true, '{{ 'Erreur lors du vidage du cache.'|t|e('js') }}');
+        } finally {
+          this.cacheClearing = false;
+        }
       },
 
       async logout() {
