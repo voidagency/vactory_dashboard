@@ -48,11 +48,10 @@
 
                     <button
                             @click="saveNode()"
-                            :disabled="isSaving"
+                            :disabled="isSaving || $store.linkValidation.hasErrors"
                             :class="{
-                    'opacity-50 cursor-not-allowed': isSaving,
-                    'bg-primary-500 hover:bg-primary-600': !isSaving,
-                    'bg-primary-400': isSaving
+                    'opacity-50 cursor-not-allowed bg-primary-400': isSaving || $store.linkValidation.hasErrors,
+                    'bg-primary-500 hover:bg-primary-600': !(isSaving || $store.linkValidation.hasErrors)
                 }"
                             class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                     >

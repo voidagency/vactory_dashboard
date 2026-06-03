@@ -32,10 +32,9 @@
 		<div class="flex items-center gap-2">
             {% include "@vactory_dashboard/node/_components/preview.html.twig" with { preview_url: preview_url } %}
 			<button
-				@click="saveVactoryPageNode()" :disabled="isSaving" :class="{
-					                'opacity-50 cursor-not-allowed': isSaving,
-					                'bg-primary-500 hover:bg-primary-600': !isSaving,
-					                'bg-primary-400': isSaving
+				@click="saveVactoryPageNode()" :disabled="isSaving || $store.linkValidation.hasErrors" :class="{
+					                'opacity-50 cursor-not-allowed bg-primary-400': isSaving || $store.linkValidation.hasErrors,
+					                'bg-primary-500 hover:bg-primary-600': !(isSaving || $store.linkValidation.hasErrors)
 					            }" class="max-lg:w-full inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
 				<!-- Loading spinner (shown when saving) -->
 				<svg x-show="isSaving" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24">

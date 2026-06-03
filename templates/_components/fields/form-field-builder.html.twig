@@ -303,14 +303,23 @@ Usage:
     {% set link_email_error %}{{ 'Les adresses email ne sont pas autorisées. Utilisez le format mailto:email@exemple.com'|t }}{% endset %}
     {% set link_url_error %}{{ "L'URL saisie doit commencer par /, ?, # ou être une URL externe (http:// ou https://)."|t }}{% endset %}
     <template x-if="field.type === 'link'">
-        <div class="space-y-3" x-data="{
+        <div class="space-y-3"
+            x-effect="validateLinkUrl(formData.fields[field.name] && formData.fields[field.name].uri)"
+            x-data="{
             linkUrlError: '',
+            linkFieldId: 'link_' + Math.random().toString(36).slice(2),
+            destroy() { this.$store.linkValidation.clear(this.linkFieldId); },
             validateLinkUrl(url) {
-                if (!url || url.trim() === '') { this.linkUrlError = ''; return true; }
-                url = url.trim();
-                if (/^https?:\/\//.test(url) || /^\//.test(url) || /^\?/.test(url) || /^#/.test(url) || /^<front>/.test(url)) { this.linkUrlError = ''; return true; }
-                if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(url)) { this.linkUrlError = '{{ link_email_error|e('js') }}'; return false; }
-                this.linkUrlError = '{{ link_url_error|e('js') }}'; return false;
+                let message = '';
+                const value = (url || '').trim();
+                if (value !== '') {
+                    if (/^https?:\/\//.test(value) || /^\//.test(value) || /^\?/.test(value) || /^#/.test(value) || /^<front>/.test(value)) { message = ''; }
+                    else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { message = '{{ link_email_error|e('js') }}'; }
+                    else { message = '{{ link_url_error|e('js') }}'; }
+                }
+                this.linkUrlError = message;
+                this.$store.linkValidation.set(this.linkFieldId, message);
+                return message === '';
             }
         }">
             <input type="text"
