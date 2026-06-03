@@ -2852,6 +2852,142 @@ class NodeService {
   }
 
   /**
+   * Build content moderation data for the dashboard state selector.
+   *
+   * Mirrors Drupal core's ModerationStateWidget: returns the node's current
+   * moderation state plus the target states of the transitions the current
+   * user is allowed to perform. For non-moderated bundles, 'enabled' is FALSE
+   * and the dashboard keeps its legacy published checkbox.
+   *
+   * @param \Drupal\node\NodeInterface $node
+   *   The node entity (may be unsaved/new for the add flow).
+   *
+   * @return array
+   *   Associative array with keys:
+   *   - enabled (bool): whether the entity is moderated.
+   *   - current_state (string): current moderation state id.
+   *   - current_label (string): current moderation state label.
+   *   - states (array): list of ['id' => string, 'label' => string], ordered
+   *     by workflow state weight, containing the current state plus permitted
+   *     transition targets.
+   */
+  public function getModerationData(NodeInterface $node): array {
+    $data = [
+      'enabled' => FALSE,
+      'current_state' => '',
+      'current_label' => '',
+      'states' => [],
+    ];
+
+    $moderation_information = \Drupal::service('content_moderation.moderation_information');
+    if (!$moderation_information->isModeratedEntity($node)) {
+      return $data;
+    }
+
+    $workflow = $moderation_information->getWorkflowForEntity($node);
+    if (!$workflow) {
+      return $data;
+    }
+
+    $type_plugin = $workflow->getTypePlugin();
+
+    // Resolve the current state: explicit field value, the stored original
+    // state for an existing node, or the workflow's initial state for a new one.
+    $current_state_id = NULL;
+    if ($node->hasField('moderation_state') && !$node->get('moderation_state')->isEmpty()) {
+      $current_state_id = $node->get('moderation_state')->value;
+    }
+    if (!$current_state_id && !$node->isNew()) {
+      $original_state = $moderation_information->getOriginalState($node);
+      if ($original_state) {
+        $current_state_id = $original_state->id();
+      }
+    }
+    if (!$current_state_id) {
+      $current_state_id = $type_plugin->getInitialState($node)->id();
+    }
+
+    $data['enabled'] = TRUE;
+    $data['current_state'] = $current_state_id;
+    if ($type_plugin->hasState($current_state_id)) {
+      $data['current_label'] = (string) $type_plugin->getState($current_state_id)->label();
+    }
+
+    // Collect the current state plus permitted transition targets (de-duped).
+    $validator = \Drupal::service('content_moderation.state_transition_validation');
+    $current_user = \Drupal::currentUser();
+    $allowed = [];
+    if ($type_plugin->hasState($current_state_id)) {
+      $allowed[$current_state_id] = TRUE;
+    }
+    foreach ($validator->getValidTransitions($node, $current_user) as $transition) {
+      $allowed[$transition->to()->id()] = TRUE;
+    }
+
+    // Emit in workflow weight order (getStates() is already weight-ordered).
+    foreach ($type_plugin->getStates() as $state_id => $state) {
+      if (isset($allowed[$state_id])) {
+        $data['states'][] = [
+          'id' => $state_id,
+          'label' => (string) $state->label(),
+        ];
+      }
+    }
+
+    return $data;
+  }
+
+  /**
+   * Lightweight current moderation state info for list displays.
+   *
+   * Unlike getModerationData(), this does not compute valid transitions, so it
+   * is cheap to call per row in a content listing.
+   *
+   * @param \Drupal\node\NodeInterface $node
+   *   The node entity.
+   *
+   * @return array
+   *   Associative array with keys:
+   *   - enabled (bool): whether the entity is moderated.
+   *   - state (string): current moderation state id.
+   *   - label (string): current moderation state label.
+   *   - published (bool): whether that state is a published state.
+   */
+  public function getModerationStateInfo(NodeInterface $node): array {
+    $info = [
+      'enabled' => FALSE,
+      'state' => '',
+      'label' => '',
+      'published' => (bool) $node->isPublished(),
+    ];
+
+    $moderation_information = \Drupal::service('content_moderation.moderation_information');
+    if (!$moderation_information->isModeratedEntity($node)) {
+      return $info;
+    }
+
+    $workflow = $moderation_information->getWorkflowForEntity($node);
+    if (!$workflow) {
+      return $info;
+    }
+
+    $type_plugin = $workflow->getTypePlugin();
+    $state_id = !$node->get('moderation_state')->isEmpty()
+      ? $node->get('moderation_state')->value
+      : '';
+
+    $info['enabled'] = TRUE;
+    $info['state'] = $state_id;
+    if ($state_id && $type_plugin->hasState($state_id)) {
+      $state = $type_plugin->getState($state_id);
+      $info['label'] = (string) $state->label();
+      $info['published'] = $state->isPublishedState();
+    }
+
+    return $info;
+  }
+
+  /**
    * Save banner in given node.
    */
   public function saveBannerInNode(NodeInterface $node, $banner = []) {

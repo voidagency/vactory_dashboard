@@ -3,7 +3,8 @@
              bundle: '{{ bundle }}',
              bundle_label: '{{ bundle_labeln }}',
              language: '{{ language }}',
-             fields: '{{ fields|json_encode|e('js') }}'
+             fields: '{{ fields|json_encode|e('js') }}',
+             moderation: '{{ moderation|json_encode|e('js') }}'
            })">
     {# Header with back button, title and actions #}
     <div class="bg-white py-4 px-4 border-b border-gray-200 flex justify-between items-center">
@@ -20,14 +21,30 @@
         </div>
         <div
                 class="flex items-center space-x-4">
-            {# Publish checkbox #}
-            <div class="flex items-center">
-                <input type="checkbox" id="publish-status" x-model="formData.status"
-                       class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
-                <label for="publish-status" class="ml-2 block text-sm text-gray-700">
-                    {{ 'Publish'|t }}
-                </label>
-            </div>
+            {# Moderation state selector (moderated bundles) or publish checkbox (others) #}
+            <template x-if="settings.moderation && settings.moderation.enabled">
+                <div class="flex items-center gap-x-2">
+                    <label for="moderation-state" class="block text-sm font-medium text-gray-700">
+                        {{ 'État'|t }}
+                    </label>
+                    <select id="moderation-state"
+                            x-model="settings.moderation_state"
+                            class="py-1.5 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+                        <template x-for="s in settings.moderation.states" :key="s.id">
+                            <option :value="s.id" :selected="s.id === settings.moderation_state" x-text="s.label"></option>
+                        </template>
+                    </select>
+                </div>
+            </template>
+            <template x-if="!settings.moderation || !settings.moderation.enabled">
+                <div class="flex items-center">
+                    <input type="checkbox" id="publish-status" x-model="formData.status"
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                    <label for="publish-status" class="ml-2 block text-sm text-gray-700">
+                        {{ 'Publish'|t }}
+                    </label>
+                </div>
+            </template>
 
             {% include "@vactory_dashboard/node/_components/langs.html.twig" %}
             <button

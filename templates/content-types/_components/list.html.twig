@@ -94,8 +94,12 @@
                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-semibold text-slate-900 max-w-[300px] truncate"
                             x-text="item.title"></td>
                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-semibold"
-                            :class="item.status ? 'text-green-600' : 'text-red-600'"
-                            x-text="item.status ? '{{ 'Published'|t }}' : '{{ 'Unpublished'|t }}'"></td>
+                            :class="(item.moderation && item.moderation.enabled)
+                                ? (item.moderation.published ? 'text-green-600' : (item.moderation.state === 'archived' ? 'text-red-600' : 'text-amber-600'))
+                                : (item.status ? 'text-green-600' : 'text-red-600')"
+                            x-text="(item.moderation && item.moderation.enabled)
+                                ? item.moderation.label
+                                : (item.status ? '{{ 'Published'|t }}' : '{{ 'Unpublished'|t }}')"></td>
                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900"
                             x-text="item.langague_label"></td>
                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900"
