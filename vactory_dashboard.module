@@ -213,6 +213,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'scheduler_moderation_enabled' => FALSE,
         'scheduler_publish_state_options' => [],
         'scheduler_unpublish_state_options' => [],
+        'moderation' => NULL,
       ],
     ],
     'vactory_dashboard_node_add' => [
@@ -241,6 +242,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'scheduler_moderation_enabled' => FALSE,
         'scheduler_publish_state_options' => [],
         'scheduler_unpublish_state_options' => [],
+        'moderation' => NULL,
       ],
     ],
     'vactory_dashboard_taxonomy_add' => [
