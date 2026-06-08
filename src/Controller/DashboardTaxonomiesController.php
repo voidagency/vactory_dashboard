@@ -285,7 +285,7 @@ class DashboardTaxonomiesController extends ControllerBase {
     $vocabulary = $this->entityTypeManager->getStorage('taxonomy_vocabulary')->load($vid);
     $vocabulary_label = $vocabulary->label();
 
-    return [
+    return array_merge([
       '#theme' => 'vactory_dashboard_taxonomy_add',
       '#type' => 'not_page',
       '#language' => $current_language,
@@ -294,7 +294,7 @@ class DashboardTaxonomiesController extends ControllerBase {
       '#vid' => $vid,
       '#vocabulary_label' => $vocabulary_label,
       '#fields' => $fields,
-    ];
+    ], $this->getTaxonomySchedulerRenderSettings($vid));
   }
 
   /**
@@ -377,7 +377,7 @@ class DashboardTaxonomiesController extends ControllerBase {
     $vocabulary = $this->entityTypeManager->getStorage('taxonomy_vocabulary')->load($vid);
     $vocabulary_label = $vocabulary->label();
 
-    return [
+    return array_merge([
       '#theme' => 'vactory_dashboard_taxonomy_edit',
       '#type' => 'not_page',
       '#term' => $this->processTerm($term_translation ?? $term, $fields),
@@ -391,7 +391,7 @@ class DashboardTaxonomiesController extends ControllerBase {
       '#vocabulary_label' => $vocabulary_label,
       '#fields' => $fields,
       '#has_translation' => $term_translation ? TRUE : FALSE,
-    ];
+    ], $this->getTaxonomySchedulerRenderSettings($vid, $term_translation ?? $term));
   }
 
   /**
@@ -476,7 +476,7 @@ class DashboardTaxonomiesController extends ControllerBase {
     $vocabulary = $this->entityTypeManager->getStorage('taxonomy_vocabulary')->load($vid);
     $vocabulary_label = $vocabulary->label();
 
-    return [
+    return array_merge([
       '#theme' => 'vactory_dashboard_taxonomy_edit',
       '#type' => 'not_page',
       '#term' => $this->processTerm($term, $fields),
@@ -489,7 +489,7 @@ class DashboardTaxonomiesController extends ControllerBase {
       '#fields' => $fields,
       '#has_translation' => FALSE,
       '#status' => $term->get('status')->value,
-    ];
+    ], $this->getTaxonomySchedulerRenderSettings($vid, $term));
   }
 
   /**
@@ -558,6 +558,8 @@ class DashboardTaxonomiesController extends ControllerBase {
           }
         }
       }
+
+      $this->saveSchedulerFields($term, $content['scheduler'] ?? []);
 
       $term->save();
 
@@ -679,6 +681,8 @@ class DashboardTaxonomiesController extends ControllerBase {
           }
         }
       }
+
+      $this->saveSchedulerFields($term_translation, $content['scheduler'] ?? []);
 
       $term->save();
 
@@ -828,7 +832,91 @@ class DashboardTaxonomiesController extends ControllerBase {
     // @todo: use processTerm instead of processNode.
     $data_processed = \Drupal::service('vactory_dashboard.node_service')->processNode($term, $fields);
     $data['fields'] = $data_processed;
+    $data['publish_on'] = $data_processed['publish_on'] ?? '';
+    $data['unpublish_on'] = $data_processed['unpublish_on'] ?? '';
     return $data;
+  }
+
+  /**
+   * Builds Scheduler render settings for taxonomy terms.
+   *
+   * @param string $vid
+   *   The vocabulary ID.
+   * @param \Drupal\taxonomy\TermInterface|null $term
+   *   Existing term context. Omit on add forms.
+   *
+   * @return array
+   *   Scheduler render variables keyed for Drupal render arrays.
+   */
+  protected function getTaxonomySchedulerRenderSettings(string $vid, $term = NULL): array {
+    $defaults = [
+      '#scheduler_enabled' => FALSE,
+      '#scheduler_publish_enabled' => FALSE,
+      '#scheduler_unpublish_enabled' => FALSE,
+      '#scheduler_moderation_enabled' => FALSE,
+      '#scheduler_publish_state_options' => [],
+      '#scheduler_unpublish_state_options' => [],
+    ];
+
+    if (
+      !\Drupal::moduleHandler()->moduleExists('scheduler') ||
+      !$this->currentUser()->hasPermission('schedule publishing of taxonomy_term')
+    ) {
+      return $defaults;
+    }
+
+    $vocabulary = $this->entityTypeManager->getStorage('taxonomy_vocabulary')->load($vid);
+    if (!$vocabulary) {
+      return $defaults;
+    }
+
+    if (!$term) {
+      $term = $this->entityTypeManager->getStorage('taxonomy_term')->create([
+        'vid' => $vid,
+      ]);
+    }
+
+    $scheduler_settings = \Drupal::config('scheduler.settings');
+    $publish_enabled = (bool) $vocabulary->getThirdPartySetting(
+      'scheduler',
+      'publish_enable',
+      $scheduler_settings->get('default_publish_enable') ?? FALSE
+    );
+    $unpublish_enabled = (bool) $vocabulary->getThirdPartySetting(
+      'scheduler',
+      'unpublish_enable',
+      $scheduler_settings->get('default_unpublish_enable') ?? FALSE
+    );
+
+    $publish_enabled = $publish_enabled && $term->hasField('publish_on');
+    $unpublish_enabled = $unpublish_enabled && $term->hasField('unpublish_on');
+
+    return [
+      '#scheduler_enabled' => $publish_enabled || $unpublish_enabled,
+      '#scheduler_publish_enabled' => $publish_enabled,
+      '#scheduler_unpublish_enabled' => $unpublish_enabled,
+      '#scheduler_moderation_enabled' => FALSE,
+      '#scheduler_publish_state_options' => [],
+      '#scheduler_unpublish_state_options' => [],
+    ];
+  }
+
+  /**
+   * Saves Scheduler publish and unpublish dates on a taxonomy term.
+   *
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $term
+   *   The taxonomy term or translation being saved.
+   * @param array $scheduler
+   *   Scheduler payload from the dashboard.
+   */
+  protected function saveSchedulerFields($term, array $scheduler): void {
+    foreach (['publish_on', 'unpublish_on'] as $field_name) {
+      if (!$term->hasField($field_name) || !array_key_exists($field_name, $scheduler)) {
+        continue;
+      }
+
+      $term->set($field_name, $scheduler[$field_name] !== '' ? strtotime($scheduler[$field_name]) : NULL);
+    }
   }
 
 }
