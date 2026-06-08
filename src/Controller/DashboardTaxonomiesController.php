@@ -262,6 +262,7 @@ class DashboardTaxonomiesController extends ControllerBase {
     $config = \Drupal::config('vactory_dashboard.global.settings');
     $enabled_languages = $config->get('dashboard_languages') ?? [];
     $enabled_languages = array_filter($enabled_languages);
+    $languages_display_format = $config->get('display_format');
 
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
@@ -291,6 +292,7 @@ class DashboardTaxonomiesController extends ControllerBase {
       '#language' => $current_language,
       '#vocabulary_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
+      '#languages_display_format' => $languages_display_format,
       '#vid' => $vid,
       '#vocabulary_label' => $vocabulary_label,
       '#fields' => $fields,
@@ -345,6 +347,7 @@ class DashboardTaxonomiesController extends ControllerBase {
     $config = \Drupal::config('vactory_dashboard.global.settings');
     $enabled_languages = $config->get('dashboard_languages') ?? [];
     $enabled_languages = array_filter($enabled_languages);
+    $languages_display_format = $config->get('display_format');
 
     // Get existing translations.
     $existing_translations = $term->getTranslationLanguages();
@@ -384,6 +387,7 @@ class DashboardTaxonomiesController extends ControllerBase {
       '#language' => $term_translation ? $term_translation->language()->getId() : $term->language()->getId(),
       '#vocabulary_default_lang' => $term->language()->getId(),
       '#available_languages' => $available_languages_list,
+      '#languages_display_format' => $languages_display_format,
       '#vid' => $vid,
       '#changed' => $term_translation ? $term_translation->get('changed')->value : $term->get('changed')->value,
       '#tid' => $tid,
@@ -444,6 +448,7 @@ class DashboardTaxonomiesController extends ControllerBase {
     $config = \Drupal::config('vactory_dashboard.global.settings');
     $enabled_languages = $config->get('dashboard_languages') ?? [];
     $enabled_languages = array_filter($enabled_languages);
+    $languages_display_format = $config->get('display_format');
 
     // Get existing translations.
     $existing_translations = $term->getTranslationLanguages();
@@ -483,6 +488,7 @@ class DashboardTaxonomiesController extends ControllerBase {
       '#language' => $current_language,
       '#vocabulary_default_lang' => $term->language()->getId(),
       '#available_languages' => $available_languages_list,
+      '#languages_display_format' => $languages_display_format,
       '#vid' => $vid,
       '#tid' => $tid,
       '#vocabulary_label' => $vocabulary_label,

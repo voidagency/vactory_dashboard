@@ -24,6 +24,9 @@ vactory_dashboard.global.settings:
   type: config_object
   label: 'Vactory Dashboard Global Settings'
   mapping:
+    display_format:
+      type: string
+      label: 'Languages display format'
     dashboard_webforms:
       type: sequence
       label: 'Webforms to display in dashboard'
