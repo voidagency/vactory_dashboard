@@ -5,6 +5,7 @@ namespace Drupal\vactory_dashboard\Service;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -399,7 +400,7 @@ class NodeService {
       $this->prepareVactoryParagraphsData($entity, $node_data, $paragraph_field);
     }
 
-    if ($entity instanceof NodeInterface) {
+    if ($entity instanceof FieldableEntityInterface) {
       $this->prepareBannerData($entity, $node_data);
     }
 
@@ -413,9 +414,11 @@ class NodeService {
       $unpublish_on = $entity->get('unpublish_on')->value;
       $node_data['unpublish_on'] = $unpublish_on ? date('Y-m-d\TH:i', $unpublish_on) : '';
     }
-    $this->prepareSchedulerModerationData($entity, $node_data);
+    if ($entity instanceof NodeInterface) {
+      $this->prepareSchedulerModerationData($entity, $node_data);
+    }
 
-    if ($this->moduleHandler->moduleExists('xmlsitemap')) {
+    if ($entity instanceof NodeInterface && $this->moduleHandler->moduleExists('xmlsitemap')) {
       /** @var \Drupal\xmlsitemap\XmlSitemapLinkStorageInterface $link_storage */
       $link_storage = \Drupal::service('xmlsitemap.link_storage');
       $link = $link_storage->load('node', $entity->id());
@@ -438,12 +441,14 @@ class NodeService {
   /**
    * Prepare Banner Data.
    *
-   * @param \Drupal\node\NodeInterface $entity
-   * @param $node_data
+   * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
+   *   The fieldable entity.
+   * @param array $node_data
+   *   Node data returned to Alpine.
    *
    * @return void
    */
-  private function prepareBannerData(NodeInterface $entity, &$node_data) {
+  private function prepareBannerData(FieldableEntityInterface $entity, array &$node_data): void {
     if ($entity->hasField('node_banner_image')) {
       $node_data['node_banner_image'] = $this->prepareMediaData($entity, 'node_banner_image', 'banner.node_banner_image');
     }

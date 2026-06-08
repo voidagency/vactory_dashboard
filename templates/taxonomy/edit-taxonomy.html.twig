@@ -86,6 +86,9 @@
                                 } %}
                             </template>
                         </div>
+                        {% include "@vactory_dashboard/node/_components/scheduler-settings.html.twig" with {
+                            scheduler_model: 'formData.scheduler'
+                        } %}
                     </form>
                 </div>
             </div>
@@ -119,6 +122,12 @@
           formData: {
             fields: {},
             status: config.status === '1',
+            scheduler: {
+              publish_on: '',
+              publish_state: '',
+              unpublish_on: '',
+              unpublish_state: '',
+            },
           },
           isSaving: false,
           isLoadingTemplates: false,
@@ -183,9 +192,35 @@
           currentField: null,
           currentFieldPath: null,
           currentFieldKey: null,
+          getSchedulerTarget(path) {
+            return path.split('.').reduce((target, key) => target?.[key], this);
+          },
+          getSchedulerDate(value) {
+            return (value || '').slice(0, 10);
+          },
+          getSchedulerTime(value) {
+            return (value || '').slice(11, 16);
+          },
+          setSchedulerDate(targetPath, field, date) {
+            const target = this.getSchedulerTarget(targetPath);
+            if (!target) {
+              return;
+            }
+            target[field] = date ? `${date}T${this.getSchedulerTime(target[field]) || '00:00'}` : '';
+          },
+          setSchedulerTime(targetPath, field, time) {
+            const target = this.getSchedulerTarget(targetPath);
+            if (!target) {
+              return;
+            }
+            const date = this.getSchedulerDate(target[field]);
+            target[field] = date ? `${date}T${time || '00:00'}` : '';
+          },
 
           init() {
             this.isTaxoEdit = true;
+            this.formData.scheduler.publish_on = this.term?.publish_on || '';
+            this.formData.scheduler.unpublish_on = this.term?.unpublish_on || '';
             // Initialize form data based on fields and existing term data
             Object.keys(this.fields).forEach((fieldKey) => {
               const field = this.fields[fieldKey];
@@ -947,6 +982,7 @@
                   status: this.formData.status,
                   has_translation: this.has_translation,
                   changed: this.changed,
+                  scheduler: this.formData.scheduler,
                   blockData: this.blockData,
                 }),
               });
