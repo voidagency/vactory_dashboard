@@ -317,37 +317,6 @@ class NodeService {
         continue;
       }
 
-      // Handle social media links field type
-      if ($field['type'] === 'social_media_links_field') {
-        $values = $entity->get($field['name'])->getValue();
-        $platform_values = [];
-        $field_platforms = $field['platforms'] ?? [];
-        foreach ($field_platforms as $platform_id => $platform_info) {
-          $platform_values[$platform_id] = '';
-        }
-
-        foreach ($values as $item) {
-          if (!empty($item['platform_values']) && is_array($item['platform_values'])) {
-            foreach ($item['platform_values'] as $platform_id => $platform_value) {
-              if (isset($platform_values[$platform_id])) {
-                $platform_values[$platform_id] = $platform_value['value'] ?? '';
-              }
-            }
-            continue;
-          }
-
-          if (isset($item['platform']) && isset($item['value'])) {
-            $platform = $item['platform'];
-            if (isset($platform_values[$platform])) {
-              $platform_values[$platform] = $item['value'];
-            }
-          }
-        }
-        
-        $node_data[$field['name']] = $platform_values;
-        continue;
-      }
-
       $media_target_type = $field['target_type'] ?? "";
 
       if (in_array($field['type'], [
@@ -1718,28 +1687,6 @@ class NodeService {
           $field_info['type'] = 'autocomplete';
           $field_info['multiple'] = $cardinality == -1;
           $field_info['options'] = $this->load_entity_reference_options($field_info);
-          break;
-
-        case 'social_media_links_field':
-          $field_info['type'] = 'social_media_links_field';
-          $field_info['multiple'] = $cardinality == -1 || $cardinality > 1;
-          $component = $form_display->getComponent($field_name);
-          $field_info['widget_type'] = $component['type'] ?? 'social_media_links_field_default';
-          $platforms = [];
-          $platform_settings = $field_settings['platforms'] ?? [];
-          $all_platforms = \Drupal::service('plugin.manager.social_media_links.platform')
-            ->getPlatformsSortedByWeight(['platforms' => $platform_settings]);
-          foreach ($all_platforms as $platform_id => $platform) {
-            $enabled = $platform_settings[$platform_id]['enabled'] ?? FALSE;
-            if ($enabled || empty($platform_settings)) {
-              $platforms[$platform_id] = [
-                'label'  => $platform['name']->render(),
-                'prefix' => $platform['instance']->getUrlPrefix(),
-                'suffix' => $platform['instance']->getUrlSuffix(),
-              ];
-            }
-          }
-          $field_info['platforms'] = $platforms;
           break;
       }
 
