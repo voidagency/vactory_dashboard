@@ -1,5 +1,5 @@
 {% if scheduler_enabled %}
-  <div class="space-y-6 bg-white px-6 py-8 rounded-xl shadow-sm{% if scheduler_with_margin|default(false) %} mt-6{% endif %}">
+  <div class="space-y-2 bg-white py-3 rounded-xl shadow-sm{% if scheduler_with_margin|default(false) %} mt-6{% endif %}">
     <h3 class="text-lg font-semibold text-slate-900 border-b border-slate-200 pb-3">{{ 'Scheduling Options'|t }}</h3>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       {% if scheduler_publish_enabled %}
