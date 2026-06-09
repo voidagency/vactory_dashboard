@@ -1499,6 +1499,8 @@ class NodeService {
       ->getFormDisplay($type, $bundle, $form_mode);
 
     $components = $form_display->getComponents();
+    $field_groups = $this->extractFieldGroups($form_display);
+
     uasort($components, function($a, $b) {
       return ($a['weight'] ?? 0) <=> ($b['weight'] ?? 0);
     });
@@ -1703,7 +1705,68 @@ class NodeService {
       $field_info['is_translatable'] = $countActiveLangs === 0 || $field_definition->isTranslatable();
       $field_definitions[$field_name] = $field_info;
     }
+
+    $groups = $field_groups['field_groups'];
+    foreach ($groups as $group_name => $group_config) {
+      $children = $group_config['children'] ?? [];
+      foreach ($children as $child_field_name) {
+        if (isset($field_definitions[$child_field_name])) {
+          $field_definitions[$child_field_name]['group'] = $group_name;
+          $field_definitions[$child_field_name]['group_label'] = $group_config['label'] ?? $group_name;
+          $field_definitions[$child_field_name]['group_description'] = $group_config['description'] ?? '';
+          $field_definitions[$child_field_name]['group_format_type'] = $group_config['format_type'] ?? 'fieldset';
+          $field_definitions[$child_field_name]['group_format_settings'] = $group_config['format_settings'] ?? [];
+        }
+      }
+    }
     return $field_definitions;
+  }
+
+  /**
+   * Extract field group information from form display third-party settings.
+   *
+   * @param \Drupal\Core\Entity\Display\EntityFormDisplayInterface $form_display
+   *
+   * @return array
+   *   Structured field group data
+   *
+   */
+  private function extractFieldGroups($form_display) {
+    $result = [
+      'field_groups' => [],
+    ];
+
+    if (!$form_display) {
+      return $result;
+    }
+
+    // Get field_group data from third-party settings
+    // field_group module stores its configuration in third-party settings
+    $field_groups = $form_display->getThirdPartySettings('field_group');
+    if (empty($field_groups)) {
+      return $result;
+    }
+
+    // Process each field group
+    foreach ($field_groups as $group_name => $group_config) {
+      $result['field_groups'][$group_name] = [
+        'label' => $group_config['label'] ?? $group_name,
+        'type' => $group_config['format_type'] ?? 'fieldset',
+        'weight' => $group_config['weight'] ?? 0,
+        'children' => $group_config['children'] ?? [],
+        'description' => $group_config['format_settings']['description'] ?? '',
+        'format_type' => $group_config['format_type'] ?? 'fieldset',
+        'format_settings' => $group_config['format_settings'] ?? [],
+        'region' => $group_config['region'] ?? 'content',
+      ];
+    }
+
+    // Sort groups by weight
+    uasort($result['field_groups'], function($a, $b) {
+      return ($a['weight'] ?? 0) <=> ($b['weight'] ?? 0);
+    });
+
+    return $result;
   }
 
   /**

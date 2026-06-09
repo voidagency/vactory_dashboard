@@ -80,16 +80,65 @@
         <div class="mx-auto">
             <form id="node-form" @submit.prevent="saveNode()" class="bg-white rounded-lg shadow-sm p-6">
                 <div x-show="activeTab === 'content'" class="flex gap-y-4 flex-col">
-                    <template x-for="(field, fieldName) in contentFields" :key="field.name">
-                        {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
-                            field: 'field',
-                            formData: 'formData',
-                            isEdit: false,
-                            language: language,
-                            node_default_lang: node_default_lang
-                        } %}
+                    <template x-for="block in groupedContentFields" :key="block.name">
+                        <div>
+                            {# Render a collapsible Details Group Block #}
+                            <template x-if="block.type === 'group' && block.format_type === 'details'">
+                                <details class="group/details space-y-4 bg-white px-4 py-3 rounded-xl shadow-sm border border-slate-200" :class="block.classes" :id="block.id || null" :open="block.open">
+                                    <summary class="flex items-center justify-between cursor-pointer list-none select-none text-lg font-semibold text-slate-900">
+                                        <span x-text="block.label"></span>
+                                        <svg class="h-5 w-5 text-slate-400 transition-transform group-open/details:rotate-180" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                        </svg>
+                                    </summary>
+                                    <div class="space-y-4 border-t border-slate-200 mt-3 pt-4">
+                                        <p x-show="block.description" class="text-sm text-slate-500 mb-4" x-text="block.description"></p>
+                                        <template x-for="(field, fieldName) in block.fields" :key="fieldName">
+                                            {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
+                                                field: 'field',
+                                                formData: 'formData',
+                                                isEdit: false,
+                                                language: language,
+                                                node_default_lang: node_default_lang
+                                            } %}
+                                        </template>
+                                    </div>
+                                </details>
+                            </template>
+
+                            {# Render a Group Block #}
+                            <template x-if="block.type === 'group' && block.format_type !== 'details'">
+                                <div class="space-y-4 bg-white px-4 py-3 rounded-xl shadow-sm border border-slate-200" :class="block.classes">
+                                    <h3 class="text-lg font-semibold text-slate-900 border-b border-slate-200 pb-3 mb-4" x-text="block.label"></h3>
+                                    <p x-show="block.description" class="text-sm text-slate-500 mb-4" x-text="block.description"></p>
+                                    <template x-for="(field, fieldName) in block.fields" :key="fieldName">
+                                        {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
+                                            field: 'field',
+                                            formData: 'formData',
+                                            isEdit: false,
+                                            language: language,
+                                            node_default_lang: node_default_lang
+                                        } %}
+                                    </template>
+                                </div>
+                            </template>
+
+                            {# Render a Single Ungrouped Field Block #}
+                            <template x-if="block.type === 'field'">
+                            <template x-for="(field, fieldName) in { [block.name]: block.field }" :key="block.name">
+                                    {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
+                                        field: 'field',
+                                        formData: 'formData',
+                                        isEdit: false,
+                                        language: language,
+                                        node_default_lang: node_default_lang
+                                    } %}
+                                </template>
+                            </template>
+                        </div>
                     </template>
                 </div>
+
                 <div x-show="activeTab === 'cross_content'">
                     <template x-for="(field, fieldName) in crossContentFields" :key="field.name">
                         {% include "@vactory_dashboard/_components/fields/cross-content-field-builder.html.twig" with {

@@ -74,6 +74,43 @@
             const date = this.getSchedulerDate(target[field]);
             target[field] = date ? `${date}T${time || '00:00'}` : '';
           },
+          get groupedContentFields() {
+            const fields = typeof this.fields === 'string' ? JSON.parse(this.fields) : this.fields;
+            const blocks = [];
+            const processedGroups = new Set();
+
+            for (const [fieldName, field] of Object.entries(fields)) {
+              if (field.group) {
+                if (!processedGroups.has(field.group)) {
+                  const groupSettings = field.group_format_settings || {};
+                  blocks.push({
+                    type: 'group',
+                    name: field.group,
+                    label: field.group_label || field.group,
+                    description: field.group_description || '',
+                    format_type: field.group_format_type || 'fieldset',
+                    open: !!groupSettings.open,
+                    classes: groupSettings.classes || '',
+                    id: groupSettings.id || '',
+                    fields: {}
+                  });
+                  processedGroups.add(field.group);
+                }
+
+                const groupBlock = blocks.find(b => b.name === field.group);
+                if (groupBlock) {
+                  groupBlock.fields[fieldName] = field;
+                }
+              } else {
+                blocks.push({
+                  type: 'field',
+                  name: fieldName,
+                  field: field
+                });
+              }
+            }
+            return blocks;
+          },
           seo: {},
           showBlocksModal: false,
           showBlockForm: false,
