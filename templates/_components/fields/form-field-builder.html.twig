@@ -571,6 +571,56 @@ Usage:
         </div>
     </template>
 
+    {# Social Media Links Field #}
+    <template x-if="field.type === 'social_media_links_field'">
+        <div class="space-y-3"
+            x-init="if (!formData.fields[field.name] || typeof formData.fields[field.name] !== 'object' || Array.isArray(formData.fields[field.name])) { formData.fields[field.name] = {} }"
+            {% if isEdit and language != node_default_lang %}
+            :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+            {% endif %}>
+            
+            <template x-for="(platformInfo, platformKey) in field.platforms" :key="platformKey">
+                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-md border border-gray-200">
+                    <label class="w-32 text-sm font-medium text-gray-700 shrink-0" x-text="platformInfo.label"></label>
+                    <div class="flex-1">
+                        <div class="flex flex items-center border border-gray-300 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-primary-300 focus-within:border-transparent bg-white">
+                            <template x-if="platformInfo.prefix">
+                                <span class="px-3 py-1.5 text-sm text-gray-500 bg-gray-100 border-r border-gray-300 whitespace-nowrap" x-text="platformInfo.prefix"></span>
+                            </template>
+                            
+                            <input :type="platformKey === 'email' ? 'email' : 'text'"
+                                :pattern="platformKey === 'email' ? '[^@\\s]+@[^@\\s]+\\.[^@\\s]+' : null"
+                                :required="field.required"
+                                x-model="formData.fields[field.name][platformKey]"
+                                :placeholder="platformKey === 'email' ? 'Enter email address...' : 'Enter username or URL...'"
+                                @invalid="$el.parentElement.classList.add('border-red-500')"
+                                @input="
+                                    if (platformKey === 'email' && $el.value.trim() && !$el.checkValidity()) {
+                                        emailErrors[field.name + ':' + platformKey] = 'Please enter a valid email address';
+                                        $el.parentElement.classList.add('border-red-500');
+                                    } else {
+                                        emailErrors[field.name + ':' + platformKey] = '';
+                                        $el.parentElement.classList.remove('border-red-500');
+                                    }
+                                "
+                                class="flex-1 py-1.5 px-3 text-sm border-0 focus:outline-none focus:ring-0">
+                                
+                            <template x-if="platformInfo.suffix">
+                                <span class="px-3 py-1.5 text-sm text-gray-500 bg-gray-100 border-l border-gray-300 whitespace-nowrap" x-text="platformInfo.suffix"></span>
+                            </template>
+                        </div>
+
+                        <p
+                            x-show="platformKey === 'email' && emailErrors[field.name + ':' + platformKey]"
+                            x-text="emailErrors[field.name + ':' + platformKey]"
+                            class="ml-[140px] mt-1 text-xs text-red-500">
+                        </p>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </template>
+
     {# Field Description #}
     <p class="mb-1 text-xs text-gray-500" x-html="field.description"></p>
 </div>
