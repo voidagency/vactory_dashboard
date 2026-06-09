@@ -720,7 +720,6 @@ class DashboardNodeController extends ControllerBase {
       $node = Node::create([
         'type' => $data['bundle'],
         'langcode' => $language,
-        'status' => $status,
         'path' => [
           'pathauto' => 1,
         ],
@@ -737,6 +736,9 @@ class DashboardNodeController extends ControllerBase {
         // Moderated bundle: apply the submitted state, let content_moderation
         // derive the published status from it.
         $moderation_state = $data['moderation_state'] ?? NULL;
+        if (empty($moderation_state)) {
+          $moderation_state = $moderation['current_state'] ?? NULL;
+        }
         if (!empty($moderation_state)) {
           $allowed_ids = array_column($moderation['states'], 'id');
           if (!in_array($moderation_state, $allowed_ids, TRUE)) {
@@ -747,6 +749,9 @@ class DashboardNodeController extends ControllerBase {
           }
           $node->set('moderation_state', $moderation_state);
         }
+      }
+      else {
+        $node->set('status', $status);
       }
 
       // Get field definitions for type checking

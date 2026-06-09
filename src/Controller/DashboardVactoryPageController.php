@@ -761,11 +761,12 @@ class DashboardVactoryPageController extends ControllerBase {
         ], 400);
       }
 
+      // Do not force the published status here: for moderated bundles
+      // content_moderation must derive it from the moderation state.
       $node_data = [
         'type' => 'vactory_page',
         'langcode' => $language,
         'uid' => \Drupal::currentUser()->id(),
-        'status' => $status,
         'path' => [
           'pathauto' => ltrim($settings['alias']) === '',
           'alias' => '/' . ltrim($settings['alias'], '/'),
@@ -774,8 +775,24 @@ class DashboardVactoryPageController extends ControllerBase {
 
       $node = Node::create($node_data);
 
-      if ($node->hasField('moderation_state')) {
-        $node->set('moderation_state', $status ? 'published' : 'draft');
+      $moderation = $this->nodeService->getModerationData($node);
+      if ($moderation['enabled']) {
+        $moderation_state = $content['moderation_state'] ?? NULL;
+        if (empty($moderation_state)) {
+          $moderation_state = $moderation['current_state'] ?? NULL;
+        }
+        if (!empty($moderation_state)) {
+          $allowed_ids = array_column($moderation['states'], 'id');
+          if (!in_array($moderation_state, $allowed_ids, TRUE)) {
+            return new JsonResponse([
+              'message' => $this->t('Invalid moderation state: @state', ['@state' => $moderation_state]),
+            ], 400);
+          }
+          $node->set('moderation_state', $moderation_state);
+        }
+      }
+      else {
+        $node->set('status', $status);
       }
 
       if (isset($settings['title'])) {
