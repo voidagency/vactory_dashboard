@@ -923,7 +923,7 @@ vactory_dashboard.batch_export_process:
     _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::processBatchExport'
   methods: [GET]
   requirements:
-    _permission: 'administer dashboard configuration'
+    _permission: 'access dashboard'
 
 vactory_dashboard.batch_export_download:
   path: '/batch-export/download/{webform_id}'

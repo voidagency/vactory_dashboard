@@ -195,6 +195,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'has_translation' => NULL,
         'node_default_lang' => NULL,
         'available_languages' => NULL,
+        'languages_display_format' => NULL,
         'permissions' => NULL,
         'isParagraphViewEnabled' => NULL,
         'isParagraphBlockEnabled' => NULL,
@@ -228,6 +229,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'language' => NULL,
         'available_languages' => NULL,
         'node_default_lang' => NULL,
+        'languages_display_format' => NULL,
         'bundle' => NULL,
         'fields' => NULL,
         'bundle_label' => NULL,
@@ -253,6 +255,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'language' => NULL,
         'vocabulary_default_lang' => NULL,
         'available_languages' => NULL,
+        'languages_display_format' => NULL,
         'fields' => NULL,
         'scheduler_enabled' => FALSE,
         'scheduler_publish_enabled' => FALSE,
@@ -270,6 +273,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'language' => NULL,
         'vocabulary_default_lang' => NULL,
         'available_languages' => NULL,
+        'languages_display_format' => NULL,
         'fields' => NULL,
         'term' => NULL,
         'tid' => NULL,
@@ -622,6 +626,9 @@ function vactory_dashboard_preprocess(&$variables) {
     $data['languages'] = $links;
     $data['default_language'] = $defaultlang;
     $data['current_language'] = $currentlang;
+    $data['current_language_id'] = \Drupal::languageManager()
+      ->getCurrentLanguage()
+      ->getId();
 
     $config = \Drupal::config('vactory_dashboard.global.settings');
     $data['pagespeed'] = $config->get('pagespeed_btn');
