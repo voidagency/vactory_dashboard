@@ -416,6 +416,10 @@ class NodeService {
     }
     if ($entity instanceof NodeInterface) {
       $this->prepareSchedulerModerationData($entity, $node_data);
+
+      // Provide the current URL alias so the dashboard can edit it.
+      $node_data['alias'] = \Drupal::service('path_alias.manager')
+        ->getAliasByPath('/node/' . $entity->id(), $entity->get('langcode')->value);
     }
 
     if ($entity instanceof NodeInterface && $this->moduleHandler->moduleExists('xmlsitemap')) {

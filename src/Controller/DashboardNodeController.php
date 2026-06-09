@@ -20,7 +20,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Drupal\vactory_dashboard\Service\MetatagService;
 use Drupal\token\Token;
 use Drupal\vactory_dashboard\Service\PreviewUrlService;
+use Drupal\vactory_dashboard\Service\AliasValidationService;
 use Drupal\path_alias\AliasManagerInterface;
+use Drupal\pathauto\PathautoState;
 
 /**
  * Controller for the node dashboard.
@@ -86,6 +88,13 @@ class DashboardNodeController extends ControllerBase {
   protected $configFactory;
 
   /**
+   * The alias validation service.
+   *
+   * @var \Drupal\vactory_dashboard\Service\AliasValidationService
+   */
+  protected AliasValidationService $aliasValidationService;
+
+  /**
    * Constructs a new DashboardUsersController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
@@ -111,7 +120,8 @@ class DashboardNodeController extends ControllerBase {
     PreviewUrlService $previewUrlService,
     AliasManagerInterface $alias_manager,
     NodeService $node_service,
-    ConfigFactoryInterface $config_factory
+    ConfigFactoryInterface $config_factory,
+    AliasValidationService $alias_validation_service
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
@@ -121,6 +131,7 @@ class DashboardNodeController extends ControllerBase {
     $this->aliasManager = $alias_manager;
     $this->nodeService = $node_service;
     $this->configFactory = $config_factory;
+    $this->aliasValidationService = $alias_validation_service;
   }
 
   /**
@@ -135,7 +146,8 @@ class DashboardNodeController extends ControllerBase {
       $container->get('vactory_dashboard.preview_url'),
       $container->get('path_alias.manager'),
       $container->get('vactory_dashboard.node_service'),
-      $container->get('config.factory')
+      $container->get('config.factory'),
+      $container->get('vactory_dashboard.alias_validation')
     );
   }
 
@@ -720,13 +732,17 @@ class DashboardNodeController extends ControllerBase {
         ->getDefaultLanguage()
         ->getId();
 
+      // Resolve the optional URL alias: empty means let pathauto generate one.
+      $alias = isset($data['alias']) ? trim($data['alias']) : '';
+
       // Create node
       $node = Node::create([
         'type' => $data['bundle'],
         'langcode' => $language,
         'status' => $status,
         'path' => [
-          'pathauto' => 1,
+          'pathauto' => $alias === '' ? PathautoState::CREATE : PathautoState::SKIP,
+          'alias' => $alias === '' ? '' : '/' . ltrim($alias, '/'),
         ],
       ]);
 
@@ -1002,6 +1018,26 @@ class DashboardNodeController extends ControllerBase {
       else {
         // Non-moderated bundle: keep the legacy published checkbox behavior.
         $translation->set('status', $status);
+      }
+
+      // Update the submitted alias.
+      if (array_key_exists('alias', $content)) {
+        $alias = trim($content['alias'] ?? '');
+        if (!empty($alias)) {
+          $this->aliasValidationService->validate($alias, $node->id());
+          $node->path->pathauto = PathautoState::SKIP;
+          $this->entityTypeManager->getStorage('path_alias')
+            ->create([
+              'path' => '/node/' . $node->id(),
+              'alias' => '/' . ltrim($alias, '/'),
+              'langcode' => $language,
+            ])
+            ->save();
+        }
+        else {
+          // Empty alias - let pathauto generate one.
+          $node->path->pathauto = PathautoState::CREATE;
+        }
       }
 
       // Get field definitions for type checking
