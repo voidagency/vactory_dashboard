@@ -1052,6 +1052,27 @@ function get_admin_path(string $path): string {
       $url = Url::fromRoute('node.add', ['node_type' => $bundle])->toString();
       break;
 
+    // Block content - list.
+    case 'vactory_dashboard.block_content':
+      $url = Url::fromRoute('entity.block_content.collection')->toString();
+      break;
+
+    // Block content - add.
+    case 'vactory_dashboard.block_content.add':
+      $block_content_type = $route_match->getParameter('block_content_type');
+      $type_id = is_object($block_content_type) ? $block_content_type->id() : $block_content_type;
+      $url = Url::fromRoute('block_content.add_form', ['block_content_type' => $type_id])
+        ->toString();
+      break;
+
+    // Block content - edit.
+    case 'vactory_dashboard.block_content.edit':
+      $block_content = $route_match->getParameter('block_content');
+      $block_id = is_object($block_content) ? $block_content->id() : $block_content;
+      $url = Url::fromRoute('entity.block_content.edit_form', ['block_content' => $block_id])
+        ->toString();
+      break;
+
     // Media.
     case 'vactory_dashboard.media':
       $url = Url::fromRoute('entity.media.collection')->toString();
