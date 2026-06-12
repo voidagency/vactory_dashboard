@@ -342,12 +342,14 @@
                               open: false, 
                               enabledLanguages: [], 
                               languagesCount: 0,
+                              displayFormat: 'list',
                               init() {
                                   fetch('{{ path('vactory_dashboard.languages_config') }}')
                                       .then(response => response.json())
                                       .then(data => { 
                                           this.enabledLanguages = data.languages || []; 
                                           this.languagesCount = this.enabledLanguages.length;
+                                          this.displayFormat = data.display_format || 'list';
                                       })
                                       .catch(error => console.error('Error fetching languages config:', error))
                               }
@@ -360,8 +362,27 @@
                                   </div>
                               </template>
 
+                              {# Multiple languages - show inline list #}
+                              <template x-if="languagesCount > 1 && displayFormat === 'list'">
+                                  <div class="flex max-w-[55vw] items-center overflow-x-auto py-1" style="gap: 6px;">
+                                      {% for language in languages %}
+                                          <template x-if="enabledLanguages.length === 0 || enabledLanguages.includes('{{ language.id }}')">
+                                              <a href="{{ language.url }}"
+                                                 class="inline-flex shrink-0 items-center justify-center rounded-lg font-semibold transition-colors"
+                                                 style="height: 36px; padding: 0 12px; gap: 4px; font-size: 13px; border: 2px solid {{ language.id == current_language_id ? '#8bbcff' : 'transparent' }}; background-color: {{ language.id == current_language_id ? '#eef6ff' : '#f1f5f9' }}; color: {{ language.id == current_language_id ? '#2563eb' : '#475569' }};"
+                                                 title="{{ language.name | t }}">
+                                                  {{ language.id | upper }}
+                                                  {% if language.is_default %}
+                                                      <span style="color: #94a3b8;">({{ "Original" | t }})</span>
+                                                  {% endif %}
+                                              </a>
+                                          </template>
+                                      {% endfor %}
+                                  </div>
+                              </template>
+
                               {# Multiple languages - show dropdown #}
-                              <template x-if="languagesCount > 1">
+                              <template x-if="languagesCount > 1 && displayFormat === 'select'">
                                   <div>
                                       <button
                                               @click="open = !open"

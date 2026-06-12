@@ -1,0 +1,385 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% block content %}
+  <div x-data="contentBlocksManager()">
+    <div class="mb-6">
+      <h1 class="text-2xl font-semibold text-slate-900">{{ 'Content blocks'|t }}</h1>
+    </div>
+
+    <div class="mb-6 border-b border-slate-200 bg-white">
+      <nav class="-mb-px flex overflow-auto">
+        <button type="button"
+                class="border-b-2 border-primary-500 px-4 py-4 text-sm font-medium text-primary-600">
+          {{ 'Content blocks'|t }}
+        </button>
+      </nav>
+    </div>
+
+    <div class="mb-6 flex flex-col-reverse items-start gap-4 lg:flex-row lg:items-center">
+      <div class="w-full flex-1">
+        <label for="block-search" class="sr-only">{{ 'Search'|t }}</label>
+        <div class="relative">
+          <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            <svg class="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <input id="block-search"
+                 type="search"
+                 x-model="filters.search"
+                 @input.debounce.300ms="loadBlocks(1)"
+                 placeholder="{{ 'Search by block description...'|t }}"
+                 class="block w-full rounded-md border-0 py-2 pl-10 pr-3 text-sm leading-6 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary-500">
+        </div>
+      </div>
+
+      {% if creatable_block_types %}
+        <div class="shrink-0">
+          <button type="button"
+                  @click="openAddBlockModal()"
+                  class="inline-flex items-center rounded-md bg-primary-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-600">
+            <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"/>
+            </svg>
+            {{ 'Add content block'|t }}
+          </button>
+        </div>
+      {% endif %}
+    </div>
+
+    <div x-show="selectedItems.length > 0"
+         x-cloak
+         class="mb-6 rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200 sm:px-6">
+      <div class="flex items-center justify-between gap-4">
+        <div class="text-sm text-slate-900">
+          <span x-text="selectedItems.length"></span>
+          {{ 'item(s) selected'|t }}
+        </div>
+        <button type="button"
+                @click="confirmBulkDelete()"
+                class="inline-flex items-center rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700">
+          {{ 'Delete selection'|t }}
+        </button>
+      </div>
+    </div>
+
+    {% include "@vactory_dashboard/_components/modals/delete-confirmation-modal.html.twig" with {
+      show_var: 'showConfirmModal',
+      confirm_action: 'deleteBlocks()',
+      title: 'Delete content block'|t,
+      message: 'Are you sure you want to delete the selected content block(s)? This action cannot be undone.'|t,
+      confirm_text: 'Delete'|t,
+      cancel_text: 'Cancel'|t
+    } %}
+
+    {% include "@vactory_dashboard/blocks/add-content-block-modal.html.twig" %}
+
+    <div x-show="loading" class="flex items-center justify-center py-12">
+      <div class="text-center">
+        <div class="mx-auto mb-3 h-12 w-12 animate-spin rounded-full border-b-2 border-primary-500"></div>
+        <p class="text-sm text-slate-600">{{ 'Loading data...'|t }}</p>
+      </div>
+    </div>
+
+    <div x-show="!loading"
+         class="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div x-show="blocks.length === 0" class="py-12 text-center">
+        <h2 class="mt-2 text-sm font-semibold text-slate-900">{{ 'No results'|t }}</h2>
+        <p class="mt-1 text-sm text-slate-500">{{ 'There are no content blocks matching your search.'|t }}</p>
+      </div>
+
+      <table x-show="blocks.length > 0" class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="relative py-3.5 pl-4 pr-3">
+              <input type="checkbox"
+                     @change="toggleAll($event.target.checked)"
+                     :checked="allVisibleSelected"
+                     class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500">
+            </th>
+            <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold uppercase text-slate-900">{{ 'Block description'|t }}</th>
+            <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold uppercase text-slate-900">{{ 'Block type'|t }}</th>
+            <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold uppercase text-slate-900">{{ 'Language'|t }}</th>
+            <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold uppercase text-slate-900">{{ 'Updated'|t }}</th>
+            <th class="relative py-3.5 pl-3 pr-4">
+              <span class="sr-only">{{ 'Actions'|t }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <template x-for="block in blocks" :key="block.id">
+            <tr>
+              <td class="relative py-4 pl-4 pr-3">
+                <input x-show="block.can_delete"
+                       type="checkbox"
+                       :value="block.id"
+                       x-model="selectedItems"
+                       class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500">
+              </td>
+              <td class="max-w-[300px] truncate whitespace-nowrap py-4 pl-4 pr-3 text-sm font-semibold text-slate-900">
+                <a x-show="block.edit_url"
+                   :href="block.edit_url"
+                   x-text="block.label"
+                   class="hover:text-primary-600"></a>
+                <span x-show="!block.edit_url" x-text="block.label"></span>
+              </td>
+              <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900" x-text="block.type_label"></td>
+              <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900" x-text="block.language"></td>
+              <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900" x-text="block.changed"></td>
+              <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium">
+                <div class="flex justify-end space-x-3">
+                  <a x-show="block.edit_url"
+                     :href="block.edit_url"
+                     class="text-slate-400 hover:text-green-600"
+                     title="{{ 'Edit'|t }}">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586Z"/>
+                    </svg>
+                  </a>
+                  <button x-show="block.can_delete"
+                          type="button"
+                          :disabled="selectedItems.length > 0"
+                          @click="confirmSingleDelete(block.id)"
+                          class="text-slate-400 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+                          title="{{ 'Delete'|t }}">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+
+    <div x-show="!loading && totalPages > 1"
+         class="mt-4 flex items-center justify-end">
+      <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="{{ 'Pagination'|t }}">
+        <button type="button"
+                @click="loadBlocks(currentPage - 1)"
+                :disabled="currentPage === 1"
+                class="relative inline-flex items-center rounded-l-md bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 disabled:opacity-50">
+          {{ 'Previous'|t }}
+        </button>
+        <template x-for="page in pages" :key="page">
+          <button type="button"
+                  @click="loadBlocks(page)"
+                  :class="page === currentPage ? 'z-10 bg-primary-500 text-white' : 'bg-white text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50'"
+                  class="relative inline-flex items-center px-4 py-2 text-sm font-semibold">
+            <span x-text="page"></span>
+          </button>
+        </template>
+        <button type="button"
+                @click="loadBlocks(currentPage + 1)"
+                :disabled="currentPage === totalPages"
+                class="relative inline-flex items-center rounded-r-md bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 disabled:opacity-50">
+          {{ 'Next'|t }}
+        </button>
+      </nav>
+    </div>
+  </div>
+{% endblock %}
+
+{% block javascripts %}
+  <script>
+    function contentBlocksManager() {
+      return {
+        blocks: [],
+        selectedItems: [],
+        pendingDeleteIds: [],
+        selectedTerms: [],
+        loading: false,
+        currentPage: 1,
+        totalPages: 1,
+        total: 0,
+        pages: [],
+        limit: Alpine.store('limit'),
+        showConfirmModal: false,
+        showAddBlockModal: false,
+        addBlockModalStep: 'types',
+        selectedBlockType: null,
+        creatableBlockTypes: {{ creatable_block_types|json_encode|raw }},
+        templates: [],
+        templateCategories: [],
+        blockSearch: '',
+        blockCategory: 'all',
+        isLoadingTemplates: false,
+        filters: {
+          search: '',
+        },
+        get addBlockModalTitle() {
+          if (this.addBlockModalStep === 'templates') {
+            return '{{ 'Choose a template'|t|e('js') }}';
+          }
+          return '{{ 'Add content block'|t|e('js') }}';
+        },
+        get filteredTemplates() {
+          return this.templates.filter((template) => {
+            const matchesSearch = (template.name || '').toLowerCase().includes(this.blockSearch.toLowerCase());
+            const matchesCategory = this.blockCategory === 'all' || template.category === this.blockCategory;
+            return matchesSearch && matchesCategory;
+          });
+        },
+        get deletableVisibleIds() {
+          return this.blocks.filter(block => block.can_delete).map(block => block.id);
+        },
+        get allVisibleSelected() {
+          return this.deletableVisibleIds.length > 0
+            && this.deletableVisibleIds.every(id => this.selectedItems.includes(id));
+        },
+        init() {
+          this.loadBlocks();
+        },
+        openAddBlockModal() {
+          this.showAddBlockModal = true;
+          this.addBlockModalStep = 'types';
+          this.selectedBlockType = null;
+          this.blockSearch = '';
+          this.blockCategory = 'all';
+        },
+        closeAddBlockModal() {
+          this.showAddBlockModal = false;
+          this.addBlockModalStep = 'types';
+          this.selectedBlockType = null;
+          this.blockSearch = '';
+          this.blockCategory = 'all';
+        },
+        selectBlockType(type) {
+          if (!type.is_dynamic) {
+            window.location.href = type.add_url;
+            return;
+          }
+          this.selectedBlockType = type;
+          this.addBlockModalStep = 'templates';
+          this.blockSearch = '';
+          this.blockCategory = 'all';
+          if (this.templates.length === 0) {
+            this.fetchTemplates();
+          }
+        },
+        backToBlockTypes() {
+          this.addBlockModalStep = 'types';
+          this.selectedBlockType = null;
+          this.blockSearch = '';
+          this.blockCategory = 'all';
+        },
+        selectTemplateAndCreate(template) {
+          if (!this.selectedBlockType) {
+            return;
+          }
+          const templateId = encodeURIComponent(template.uuid || template.id);
+          window.location.href = `${this.selectedBlockType.add_url}?template=${templateId}`;
+        },
+        async fetchTemplates() {
+          this.isLoadingTemplates = true;
+          try {
+            const response = await fetch("{{ path('vactory_dashboard.templates') }}");
+            const result = await response.json();
+            if (!response.ok) {
+              throw new Error(result.message || '{{ 'Failed to load templates'|t|e('js') }}');
+            }
+            const categoriesSet = new Set();
+            const templatesArray = [];
+            Object.entries(result.data || {}).forEach(([category, categoryTemplates]) => {
+              categoriesSet.add(category);
+              Object.entries(categoryTemplates).forEach(([id, template]) => {
+                templatesArray.push({
+                  ...template,
+                  id: template.uuid || id,
+                  category,
+                });
+              });
+            });
+            this.templates = templatesArray;
+            this.templateCategories = Array.from(categoriesSet);
+          } catch (error) {
+            console.error('Error fetching templates:', error);
+          } finally {
+            this.isLoadingTemplates = false;
+          }
+        },
+        async loadBlocks(page = 1) {
+          if (page < 1 || page > this.totalPages) {
+            return;
+          }
+          this.loading = true;
+          const params = new URLSearchParams({
+            page,
+            limit: this.limit,
+            search: this.filters.search,
+          });
+          try {
+            const response = await fetch(`{{ path('vactory_dashboard.block_content.data') }}?${params}`);
+            const data = await response.json();
+            if (!response.ok) {
+              throw new Error(data.message || '{{ 'Unable to load content blocks.'|t }}');
+            }
+            this.blocks = data.data;
+            this.currentPage = data.page;
+            this.totalPages = data.pages;
+            this.total = data.total;
+            this.pages = this.generatePageNumbers(data.page, data.pages);
+            this.selectedItems = [];
+          } catch (error) {
+            console.error('Error loading content blocks:', error);
+          } finally {
+            this.loading = false;
+          }
+        },
+        generatePageNumbers(currentPage, totalPages) {
+          const pages = [];
+          const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+          const end = Math.min(totalPages, start + 4);
+          for (let page = start; page <= end; page++) {
+            pages.push(page);
+          }
+          return pages;
+        },
+        toggleAll(checked) {
+          this.selectedItems = checked ? [...this.deletableVisibleIds] : [];
+        },
+        confirmSingleDelete(id) {
+          this.pendingDeleteIds = [id];
+          this.showConfirmModal = true;
+        },
+        confirmBulkDelete() {
+          this.pendingDeleteIds = [...this.selectedItems];
+          this.showConfirmModal = true;
+        },
+        uncheck() {
+          this.pendingDeleteIds = [];
+        },
+        async deleteBlocks() {
+          if (this.pendingDeleteIds.length === 0) {
+            return;
+          }
+          try {
+            const response = await fetch('{{ path('vactory_dashboard.block_content.delete') }}', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ ids: this.pendingDeleteIds }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+              throw new Error(data.message || '{{ 'Unable to delete content block.'|t }}');
+            }
+            const deletedCount = this.pendingDeleteIds.length;
+            this.showConfirmModal = false;
+            this.pendingDeleteIds = [];
+            this.selectedItems = [];
+            const page = this.currentPage > 1 && deletedCount >= this.blocks.length
+              ? this.currentPage - 1
+              : this.currentPage;
+            await this.loadBlocks(page);
+          } catch (error) {
+            console.error('Error deleting content blocks:', error);
+          }
+        },
+      };
+    }
+  </script>
+{% endblock %}

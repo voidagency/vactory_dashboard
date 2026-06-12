@@ -386,6 +386,27 @@ Macro to render menu items recursively with proper depth and active state handli
                             </div>
                         </div>
                     {% endif %}
+                    {# Content blocks #}
+                    {% if user.hasPermission('access block library') or user.hasPermission('administer block content') %}
+                        <div class="content-blocks w-full">
+                            <a href="{{ path('vactory_dashboard.block_content') }}"
+                            class="{% if '/admin/dashboard/content-blocks' in current_path %}bg-primary-50 text-primary-600{% endif %} h-8 flex items-center w-full rounded-md transition-colors duration-150 mb-0.5 font-semibold text-slate-700 px-3 py-2 group hover:bg-primary-50"
+                            style="padding-left: 12px;">
+                                <span class="{% if '/admin/dashboard/content-blocks' in current_path %}text-primary-600{% else %}text-gray-500{% endif %} mr-3 group-hover:text-primary-600 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor" aria-hidden="true"
+                                        class="h-5 w-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M4.5 7.5 12 3l7.5 4.5v9L12 21l-7.5-4.5v-9Z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="m4.875 7.725 7.125 4.275 7.125-4.275M12 12v9"/>
+                                    </svg>
+                                </span>
+
+                                <span class="{% if '/admin/dashboard/content-blocks' in current_path %}text-primary-600{% endif %} truncate group-hover:text-primary-600 transition-colors">{{ "Blocs de contenu"|t }}</span>
+                            </a>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
 

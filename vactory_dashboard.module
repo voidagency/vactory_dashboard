@@ -176,6 +176,36 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'block_types' => [],
       ],
     ],
+    'vactory_dashboard_content_blocks' => [
+      'template' => 'blocks/content-list',
+      'variables' => [
+        'block_types' => [],
+        'creatable_block_types' => [],
+      ],
+    ],
+    'vactory_dashboard_content_block_form' => [
+      'template' => 'blocks/content-form',
+      'variables' => [
+        'form' => NULL,
+        'mode' => 'form',
+        'operation' => 'edit',
+        'page_title' => NULL,
+        'block_type_id' => NULL,
+        'block_type_label' => NULL,
+        'block_id' => NULL,
+        'block_label' => NULL,
+        'widget_id' => NULL,
+        'widget_data' => [],
+        'language' => NULL,
+        'node_default_lang' => NULL,
+        'available_languages' => [],
+        'languages_display_format' => NULL,
+        'has_translation' => TRUE,
+        'fields' => [],
+        'field_groups' => [],
+        'block' => ['fields' => []],
+      ],
+    ],
     'vactory_dashboard_node_edit' => [
       'template' => 'node/edit',
       'variables' => [
@@ -195,6 +225,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'has_translation' => NULL,
         'node_default_lang' => NULL,
         'available_languages' => NULL,
+        'languages_display_format' => NULL,
         'permissions' => NULL,
         'isParagraphViewEnabled' => NULL,
         'isParagraphBlockEnabled' => NULL,
@@ -228,6 +259,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'language' => NULL,
         'available_languages' => NULL,
         'node_default_lang' => NULL,
+        'languages_display_format' => NULL,
         'bundle' => NULL,
         'fields' => NULL,
         'bundle_label' => NULL,
@@ -253,6 +285,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'language' => NULL,
         'vocabulary_default_lang' => NULL,
         'available_languages' => NULL,
+        'languages_display_format' => NULL,
         'fields' => NULL,
         'scheduler_enabled' => FALSE,
         'scheduler_publish_enabled' => FALSE,
@@ -270,6 +303,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'language' => NULL,
         'vocabulary_default_lang' => NULL,
         'available_languages' => NULL,
+        'languages_display_format' => NULL,
         'fields' => NULL,
         'term' => NULL,
         'tid' => NULL,
@@ -622,6 +656,9 @@ function vactory_dashboard_preprocess(&$variables) {
     $data['languages'] = $links;
     $data['default_language'] = $defaultlang;
     $data['current_language'] = $currentlang;
+    $data['current_language_id'] = \Drupal::languageManager()
+      ->getCurrentLanguage()
+      ->getId();
 
     $config = \Drupal::config('vactory_dashboard.global.settings');
     $data['pagespeed'] = $config->get('pagespeed_btn');
@@ -1013,6 +1050,27 @@ function get_admin_path(string $path): string {
     case 'vactory_dashboard.node.add':
       $bundle = $route_match->getParameter('bundle');
       $url = Url::fromRoute('node.add', ['node_type' => $bundle])->toString();
+      break;
+
+    // Block content - list.
+    case 'vactory_dashboard.block_content':
+      $url = Url::fromRoute('entity.block_content.collection')->toString();
+      break;
+
+    // Block content - add.
+    case 'vactory_dashboard.block_content.add':
+      $block_content_type = $route_match->getParameter('block_content_type');
+      $type_id = is_object($block_content_type) ? $block_content_type->id() : $block_content_type;
+      $url = Url::fromRoute('block_content.add_form', ['block_content_type' => $type_id])
+        ->toString();
+      break;
+
+    // Block content - edit.
+    case 'vactory_dashboard.block_content.edit':
+      $block_content = $route_match->getParameter('block_content');
+      $block_id = is_object($block_content) ? $block_content->id() : $block_content;
+      $url = Url::fromRoute('entity.block_content.edit_form', ['block_content' => $block_id])
+        ->toString();
       break;
 
     // Media.

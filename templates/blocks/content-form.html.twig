@@ -1,0 +1,734 @@
+{% extends "@vactory_dashboard/_layout/main-content-layout.html.twig" %}
+
+{% block content %}
+  {% if mode == 'dynamic' %}
+    <div
+      x-data="contentBlockEditor({
+        operation: '{{ operation }}',
+        blockId: '{{ block_id }}',
+        blockTypeId: '{{ block_type_id }}',
+        blockLabel: '{{ block_label|e('js') }}',
+        widgetId: '{{ widget_id }}',
+        widgetData: '{{ widget_data|json_encode|e('js') }}',
+        language: '{{ language }}',
+        hasTranslation: '{{ has_translation }}'
+      })"
+      x-init="init()"
+      class="h-full">
+      <div class="sticky top-0 z-10 bg-white">
+        <div class="bg-white py-4 px-3 border-b border-slate-200 flex justify-between items-center gap-x-4">
+          <div class="flex items-center gap-x-3">
+            <a href="{{ path('vactory_dashboard.block_content') }}"
+               class="me-3 text-slate-500 hover:text-primary-500 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                   stroke="currentColor" aria-hidden="true" class="h-4 w-4">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
+              </svg>
+            </a>
+            <div>
+              <h1 class="text-lg font-medium">{{ page_title }}</h1>
+              <p class="text-sm text-slate-500">{{ block_type_label }}</p>
+            </div>
+          </div>
+          <div class="flex max-lg:w-full max-lg:flex-wrap max-lg:gap-3 max-lg:[&>*]:w-full max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:px-3 max-lg:py-4 lg:items-center lg:space-x-4">
+            {% include "@vactory_dashboard/node/_components/langs.html.twig" %}
+            <button
+              type="button"
+              @click="saveBlock('block-form')"
+              :disabled="isSaving || !selectedTemplate || $store.linkValidation?.hasErrors"
+              :class="{
+                'opacity-50 cursor-not-allowed bg-primary-400': isSaving || !selectedTemplate || $store.linkValidation?.hasErrors,
+                'bg-primary-500 hover:bg-primary-600': !(isSaving || !selectedTemplate || $store.linkValidation?.hasErrors)
+              }"
+              class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+              <svg x-show="isSaving" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                   fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                        stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span x-text="isSaving ? '{{ 'Saving...'|t }}' : '{{ 'Save'|t }}'"></span>
+            </button>
+          </div>
+        </div>
+        {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
+      </div>
+
+      <template x-if="isLoadingTemplates">
+        <div class="flex items-center justify-center py-16">
+          <div class="animate-spin h-8 w-8 rounded-full border-b-2 border-primary-500"></div>
+        </div>
+      </template>
+
+      <template x-if="!isLoadingTemplates && !selectedTemplate && operation === 'add'">
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold text-slate-900">{{ 'Choose a template'|t }}</h2>
+            <p class="mt-1 text-sm text-slate-500">{{ 'Select the block template to create.'|t }}</p>
+          </div>
+
+          <div class="mb-6">
+            <div class="relative">
+              <input
+                x-model="blockSearch"
+                type="text"
+                class="w-full py-2.5 px-4 ps-10 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150"
+                placeholder="{{ 'Search for a template...'|t }}">
+              <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                <svg class="h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex border-b border-slate-200 mb-6 overflow-x-auto">
+            <button
+              type="button"
+              @click="blockCategory = 'all'"
+              :class="{'border-b-2 border-primary-500 !text-primary-500': blockCategory === 'all'}"
+              class="py-2.5 px-4 font-medium text-slate-500 hover:text-primary-500 whitespace-nowrap transition-colors">
+              {{ 'All'|t }}
+            </button>
+            <template x-for="category in categories" :key="category">
+              <button
+                type="button"
+                @click="blockCategory = category"
+                :class="{'border-b-2 border-primary-500 !text-primary-500': blockCategory === category}"
+                class="py-2.5 px-4 font-medium text-slate-500 hover:text-primary-500 whitespace-nowrap transition-colors"
+                x-text="category">
+              </button>
+            </template>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <template x-if="filteredTemplates.length === 0">
+              <div class="col-span-full text-center py-12">
+                <p class="text-sm text-slate-500">{{ 'No templates found'|t }}</p>
+              </div>
+            </template>
+            <template x-for="template in filteredTemplates" :key="template.id">
+              <button
+                type="button"
+                @click="selectTemplate(template)"
+                x-show="template && template.name"
+                class="group border border-slate-200 rounded-xl hover:border-primary-300 hover:bg-primary-50 transition-all duration-150 flex flex-col overflow-hidden">
+                <div class="h-40 bg-slate-100 overflow-hidden border-b border-slate-200">
+                  <img
+                    :alt="'Template ' + template.name"
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    :src="template.screenshot">
+                </div>
+                <div class="p-4 text-left">
+                  <div class="flex flex-col gap-2 items-start justify-between">
+                    <span class="text-xs px-2 py-1 rounded-full bg-primary-100 text-primary-700" x-text="template.category"></span>
+                    <span class="font-medium text-slate-900" x-text="template.name"></span>
+                  </div>
+                </div>
+              </button>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <template x-if="!isLoadingTemplates && selectedTemplate">
+        <div>
+          <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Block description'|t }}</label>
+            <input type="text"
+                   x-model="blockLabel"
+                   required
+                   class="w-full py-2 px-3 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+          </div>
+          {% include "@vactory_dashboard/_components/paragraph/paragraph-template-form.html.twig" with {
+            hideBlockConfig: true,
+            hideBlockHeader: true
+          } %}
+        </div>
+      </template>
+
+      <template x-if="!isLoadingTemplates && !selectedTemplate && operation !== 'add'">
+        <div class="bg-white rounded-xl shadow-sm p-6 text-sm text-red-700">
+          {{ 'Unable to load the configured block template.'|t }}
+        </div>
+      </template>
+    </div>
+  {% elseif mode == 'standard' %}
+    {% include "@vactory_dashboard/blocks/standard-block-editor.html.twig" %}
+  {% else %}
+    <div class="h-full pb-6">
+      {{ form }}
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+  {% if mode == 'dynamic' %}
+    <script>
+      document.addEventListener('alpine:init', () => {
+        Alpine.data('contentBlockEditor', (config) => ({
+          operation: config.operation,
+          blockId: config.blockId,
+          blockTypeId: config.blockTypeId,
+          blockLabel: config.blockLabel,
+          widgetId: config.widgetId,
+          widgetData: config.widgetData ? JSON.parse(config.widgetData) : {},
+          language: config.language,
+          hasTranslation: config.hasTranslation,
+          templates: [],
+          categories: [],
+          blockSearch: '',
+          blockCategory: 'all',
+          selectedTemplate: null,
+          blockForm: {
+            extra_fields: {},
+            fields: {},
+            items: [],
+            config: {},
+          },
+          notification: {
+            show: false,
+            type: 'success',
+            message: '',
+            timeout: null,
+          },
+          showBlockForm: true,
+          isTaxoEdit: false,
+          isParagraphMultiple: false,
+          currentBlockIndex: null,
+          currentParagraphMultipleItem: null,
+          currentMultipleParagraphTemplateIndex: null,
+          selectedDynamicField: null,
+          showDynamicFieldModal: false,
+          showParagraphMultipleForm: false,
+          showTemplatesList: false,
+          showBlocksModal: false,
+          loaderCK: false,
+          isSaving: false,
+          isLoadingTemplates: false,
+          appearanceBackgroundImage: false,
+          mediaLoading: false,
+          mediaError: null,
+          mediaItems: [],
+          showMediaLibrary: false,
+          currentMediaPage: 1,
+          totalMediaPages: 1,
+          totalMedia: 0,
+          selectedType: 'image',
+          selectedMedia: null,
+          currentField: null,
+          currentFieldPath: null,
+          currentFieldKey: null,
+          mediaFilters: {
+            search: '',
+            type: 'image',
+            limit: Alpine.store('limit') || 50,
+          },
+          async init() {
+            await this.fetchTemplates();
+            if (this.operation === 'add') {
+              const params = new URLSearchParams(window.location.search);
+              const templateId = params.get('template');
+              if (templateId) {
+                const template = this.templates.find((item) => item.uuid === templateId || item.id === templateId);
+                if (template) {
+                  this.selectTemplate(template);
+                }
+              }
+              return;
+            }
+            this.selectedTemplate = this.templates.find((template) => template.uuid === this.widgetId || template.id === this.widgetId);
+            if (!this.selectedTemplate) {
+              return;
+            }
+            this.initializeSelectedTemplate(this.widgetData);
+          },
+          get filteredTemplates() {
+            return this.templates.filter((template) => {
+              const matchesSearch = (template.name || '').toLowerCase().includes(this.blockSearch.toLowerCase());
+              const matchesCategory = this.blockCategory === 'all' || template.category === this.blockCategory;
+              return matchesSearch && matchesCategory;
+            });
+          },
+          selectTemplate(template) {
+            this.selectedTemplate = template;
+            this.blockLabel = this.blockLabel || template.name || '';
+            this.initializeSelectedTemplate({});
+          },
+          initializeSelectedTemplate(widgetData = {}) {
+            this.blockForm = {
+              extra_fields: this.initValues(this.selectedTemplate.extra_fields || {}, widgetData.extra_field || {}, 'extra_fields'),
+              fields: {},
+              items: [],
+              config: {
+                title: this.selectedTemplate.name || '',
+                show_title: false,
+                width: 'narrow_width',
+                spacing: 'small_space',
+                css_classes: '',
+              },
+            };
+            if (this.selectedTemplate.multiple) {
+              const rows = Object.keys(widgetData)
+                .filter((key) => /^\d+$/.test(key))
+                .sort((a, b) => Number(a) - Number(b));
+              this.blockForm.items = rows.length
+                ? rows.map((key, index) => this.initValues(this.selectedTemplate.fields || {}, widgetData[key] || {}, `items.${index}`))
+                : [this.createEmptyItem(0)];
+            } else {
+              this.blockForm.fields = this.initValues(this.selectedTemplate.fields || {}, widgetData[0] || {}, 'fields');
+            }
+            this.$nextTick(() => {
+              this.initializeTextFormatEditors(widgetData);
+            });
+          },
+          initializeTextFormatEditors(widgetData = {}) {
+            Object.keys(this.selectedTemplate?.extra_fields || {}).forEach((fieldName, fieldIndex) => {
+              const field = this.selectedTemplate.extra_fields[fieldName];
+              if (fieldName.startsWith('group_')) {
+                Object.keys(field || {}).forEach((itemName, itemIndex) => {
+                  const item = field[itemName];
+                  if (itemName !== 'g_title' && item?.type === 'text_format') {
+                    this.getForm(
+                      `wysi-groupextra-${itemIndex}-${itemName}`,
+                      -1,
+                      false,
+                      false,
+                      true,
+                      true,
+                      widgetData.extra_field?.[fieldName]?.[itemName]?.value || '',
+                    );
+                  }
+                });
+                return;
+              }
+
+              if (field?.type === 'text_format') {
+                this.getForm(
+                  `wysi-extra-${fieldIndex}`,
+                  -1,
+                  false,
+                  false,
+                  true,
+                  false,
+                  widgetData.extra_field?.[fieldName]?.value || '',
+                );
+              }
+            });
+
+            if (this.selectedTemplate?.multiple) {
+              this.blockForm.items.forEach((item, itemIndex) => {
+                Object.keys(this.selectedTemplate?.fields || {}).forEach((fieldName) => {
+                  const field = this.selectedTemplate.fields[fieldName];
+                  if (fieldName.startsWith('group_')) {
+                    Object.keys(field || {}).forEach((itemName) => {
+                      if (itemName !== 'g_title' && field[itemName]?.type === 'text_format') {
+                        this.getForm('', itemIndex, true, false, false, true, item?.[fieldName]?.[itemName] || '');
+                      }
+                    });
+                    return;
+                  }
+
+                  if (field?.type === 'text_format') {
+                    this.getForm(
+                      `wysi-multi-${itemIndex}-${fieldName}`,
+                      -1,
+                      true,
+                      false,
+                      false,
+                      false,
+                      item?.[fieldName] || '',
+                    );
+                  }
+                });
+              });
+              return;
+            }
+
+            Object.keys(this.selectedTemplate?.fields || {}).forEach((fieldName, fieldIndex) => {
+              const field = this.selectedTemplate.fields[fieldName];
+              if (fieldName.startsWith('group_')) {
+                Object.keys(field || {}).forEach((itemName, itemIndex) => {
+                  const item = field[itemName];
+                  if (itemName !== 'g_title' && item?.type === 'text_format') {
+                    this.getForm(
+                      `wysi-group-${itemIndex}-${itemName}`,
+                      -1,
+                      false,
+                      true,
+                      false,
+                      true,
+                      widgetData[0]?.[fieldName]?.[itemName]?.value || '',
+                    );
+                  }
+                });
+                return;
+              }
+
+              if (field?.type === 'text_format') {
+                this.getForm(
+                  `wysi-single-${fieldIndex}`,
+                  -1,
+                  false,
+                  true,
+                  false,
+                  false,
+                  widgetData[0]?.[fieldName]?.value || '',
+                );
+              }
+            });
+          },
+          async fetchTemplates() {
+            this.isLoadingTemplates = true;
+            try {
+              const response = await fetch("{{ path('vactory_dashboard.templates') }}");
+              const result = await response.json();
+              if (!response.ok) {
+                throw new Error(result.message || '{{ 'Failed to load templates'|t }}');
+              }
+              const categoriesSet = new Set();
+              const templatesArray = [];
+              Object.entries(result.data || {}).forEach(([category, templates]) => {
+                categoriesSet.add(category);
+                Object.entries(templates).forEach(([id, template]) => {
+                  templatesArray.push({
+                    ...template,
+                    id: template.uuid || id,
+                    category,
+                  });
+                });
+              });
+              this.templates = templatesArray;
+              this.categories = Array.from(categoriesSet);
+            } catch (error) {
+              console.error('Error fetching templates:', error);
+              this.showNotification('error', error.message);
+            } finally {
+              this.isLoadingTemplates = false;
+            }
+          },
+          initValues(definitions, values, basePath) {
+            const output = {};
+            Object.entries(definitions || {}).forEach(([fieldName, definition]) => {
+              if (fieldName.startsWith('group_')) {
+                output[fieldName] = this.initValues(definition, values?.[fieldName] || {}, `${basePath}.${fieldName}`);
+                return;
+              }
+              output[fieldName] = this.normalizeFieldValue(definition, values?.[fieldName], `${basePath}.${fieldName}`);
+            });
+            return output;
+          },
+          normalizeFieldValue(definition, value, path) {
+            if (definition.type === 'text_format') {
+              return value?.value || '';
+            }
+            if (['image', 'file', 'remote_video'].includes(definition.type)) {
+              return this.normalizeMediaValue(value, path);
+            }
+            if (definition.type === 'checkbox') {
+              return value === true || value === 1 || value === '1';
+            }
+            if (definition.type === 'url_extended') {
+              return {
+                url: value?.url || '',
+                title: value?.title || '',
+                attributes: value?.attributes || {},
+              };
+            }
+            if (definition.type === 'json_api_collection') {
+              return value ?? definition.options?.['#default_value'] ?? null;
+            }
+            if (definition.type === 'entity_autocomplete') {
+              if (value && (value.target_id || typeof value === 'string' || typeof value === 'number')) {
+                const targetId = value.target_id ?? value;
+                return {
+                  target_id: targetId,
+                  title: value.title ?? `Node #${targetId}`,
+                };
+              }
+              return null;
+            }
+            return value ?? '';
+          },
+          normalizeMediaValue(value, path) {
+            const key = Object.keys(value || {})[0] || Date.now();
+            const mediaData = value?.[key] || {};
+            const selected = mediaData.selection?.[0] || {};
+            return {
+              id: selected.target_id || null,
+              url: selected.url || null,
+              name: selected.name || mediaData.name || null,
+              path,
+              key,
+            };
+          },
+          createEmptyItem(index) {
+            return this.initValues(this.selectedTemplate?.fields || {}, {}, `items.${index}`);
+          },
+          addItem() {
+            this.blockForm.items.push(this.createEmptyItem(this.blockForm.items.length));
+          },
+          serializeValues(definitions, values) {
+            const output = {};
+            Object.entries(definitions || {}).forEach(([fieldName, definition]) => {
+              if (fieldName.startsWith('group_')) {
+                output[fieldName] = this.serializeValues(definition, values?.[fieldName] || {});
+                return;
+              }
+              output[fieldName] = this.serializeFieldValue(definition, values?.[fieldName]);
+            });
+            return output;
+          },
+          serializeFieldValue(definition, value) {
+            if (definition.type === 'text_format') {
+              return {
+                value: value || '',
+                format: 'full_html',
+              };
+            }
+            if (['image', 'file', 'remote_video'].includes(definition.type)) {
+              const key = value?.key || Date.now();
+              return {
+                [key]: {
+                  media_library_selection: '',
+                  media_library_update_widget: 'Update widget',
+                  open_button: 'Add media',
+                  name: value?.name || value?.id || '',
+                  selection: value?.id ? [{
+                    remove_button: 'Remove',
+                    target_id: value.id,
+                    url: value.url,
+                    name: value.name,
+                    weight: 0,
+                  }] : [],
+                },
+              };
+            }
+            return value;
+          },
+          buildWidgetData() {
+            const data = {};
+            if (this.selectedTemplate?.multiple) {
+              this.blockForm.items.forEach((item, index) => {
+                data[index] = this.serializeValues(this.selectedTemplate.fields || {}, item);
+              });
+            } else {
+              data[0] = this.serializeValues(this.selectedTemplate?.fields || {}, this.blockForm.fields);
+            }
+            if (Object.keys(this.blockForm.extra_fields || {}).length > 0) {
+              data.extra_field = this.serializeValues(this.selectedTemplate?.extra_fields || {}, this.blockForm.extra_fields);
+            }
+            return data;
+          },
+          validateForm(id = 'block-form') {
+            const form = document.getElementById(id);
+            const requiredInputs = form ? form.querySelectorAll('[required]') : [];
+            let isValid = true;
+            let firstInvalidElement = null;
+            requiredInputs.forEach((input) => {
+              const hasValue = input.tagName === 'BUTTON'
+                ? !!input.parentNode.querySelector('img, .file-name, .video-title')
+                : !!String(input.value || '').trim();
+              input.classList.toggle('!border-red-500', !hasValue);
+              if (!hasValue && !firstInvalidElement) {
+                firstInvalidElement = input;
+              }
+              isValid = isValid && hasValue;
+            });
+            if (firstInvalidElement) {
+              firstInvalidElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return isValid;
+          },
+          async saveBlock(id = 'block-form') {
+            if (this.$store.linkValidation?.hasErrors) {
+              this.showNotification('error', '{{ "Veuillez corriger les URL invalides avant d'enregistrer."|t|e('js') }}');
+              return;
+            }
+            if (!this.validateForm(id)) {
+              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              return;
+            }
+            if (this.isSaving) {
+              return;
+            }
+            this.isSaving = true;
+            try {
+              const endpoint = this.operation === 'add'
+                ? `/api/vactory-dashboard/content-blocks/add/${this.blockTypeId}/dynamic/save`
+                : `/api/vactory-dashboard/content-blocks/${this.blockId}/dynamic/save`;
+              const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  label: this.blockLabel,
+                  language: this.language,
+                  has_translation: this.hasTranslation,
+                  widget_id: this.selectedTemplate.uuid || this.widgetId,
+                  widget_data: this.buildWidgetData(),
+                }),
+              });
+              const data = await response.json();
+              if (!response.ok) {
+                throw new Error(data.message || '{{ 'Failed to save content block'|t }}');
+              }
+              this.showNotification('success', this.operation === 'add' ? '{{ 'Content block created successfully'|t }}' : '{{ 'Content block saved successfully'|t }}');
+              window.location.href = this.operation === 'add' ? (data.list || '{{ path('vactory_dashboard.block_content') }}') : window.location.href;
+            } catch (error) {
+              console.error('Error saving content block:', error);
+              this.showNotification('error', error.message);
+            } finally {
+              this.isSaving = false;
+            }
+          },
+          showNotification(type, message) {
+            if (this.notification.timeout) {
+              clearTimeout(this.notification.timeout);
+            }
+            this.notification.type = type;
+            this.notification.message = message;
+            this.notification.show = true;
+            this.notification.timeout = setTimeout(() => {
+              this.notification.show = false;
+            }, 5000);
+          },
+          getForm(id, index = -1, isMultiple = false, isSingle = false, isExtra = false, isGroup = false, defaultValue = '', xmodel = '', required = '') {
+            this.loaderCK = true;
+            fetch('/api/dashboard/wysiwyg', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ isMultiple, isSingle, isExtra, isGroup, defaultValue, xmodel, required }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                const targetClass = (isMultiple && isGroup) ? '.wysiwyg-group-container' : '.wysiwyg-container';
+                if (index >= 0) {
+                  const draggable = document.querySelector(`[data-item-index="${index}"]`);
+                  const element = draggable?.querySelector(targetClass);
+                  if (element) {
+                    element.innerHTML = data.html;
+                    Drupal.attachBehaviors(element);
+                  }
+                } else {
+                  const container = document.getElementById(id);
+                  if (container) {
+                    container.innerHTML = data.html;
+                    Drupal.attachBehaviors(container);
+                  }
+                }
+              })
+              .finally(() => {
+                this.loaderCK = false;
+              });
+          },
+          async loadMedia(page = 1) {
+            this.mediaLoading = true;
+            this.mediaError = null;
+            this.currentMediaPage = page;
+            try {
+              const params = new URLSearchParams({
+                page: this.currentMediaPage.toString(),
+                limit: this.mediaFilters.limit.toString(),
+                search: this.mediaFilters.search,
+                type: this.selectedType,
+              });
+              const response = await fetch(`{{ path('vactory_dashboard.media.data') }}?${params.toString()}`);
+              if (!response.ok) {
+                throw new Error('{{ "Une erreur est survenue lors du chargement des médias"|t }}');
+              }
+              const data = await response.json();
+              this.mediaItems = data.data.map((item) => ({
+                id: item.id,
+                url: item.url,
+                name: item.name,
+                type: item.type,
+                preview: item?.preview,
+              }));
+              this.totalMedia = data.total;
+              this.totalMediaPages = data.pages;
+            } catch (error) {
+              this.mediaError = error.message;
+              this.mediaItems = [];
+            } finally {
+              this.mediaLoading = false;
+            }
+          },
+          openMediaLibrary(fieldName, path, key = null, type = 'image', appearance = false) {
+            this.selectedType = type;
+            this.currentField = fieldName;
+            this.currentFieldPath = path;
+            this.currentFieldKey = key;
+            this.showMediaLibrary = true;
+            this.appearanceBackgroundImage = appearance;
+            this.loadMedia(1);
+          },
+          closeMediaLibrary() {
+            this.showMediaLibrary = false;
+            this.selectedMedia = null;
+            this.currentField = null;
+            this.mediaItems = [];
+            this.currentMediaPage = 1;
+            this.mediaFilters.search = '';
+          },
+          setValueByPath(obj, path, newValue) {
+            const keys = path.split('.');
+            const lastKey = keys.pop();
+            const target = keys.reduce((o, key) => o?.[key], obj);
+            if (target && lastKey) {
+              target[lastKey] = newValue;
+            }
+          },
+          selectMedia(media) {
+            if (!media || !this.currentFieldPath) {
+              return;
+            }
+            this.setValueByPath(this.blockForm, this.currentFieldPath, {
+              id: media.id,
+              url: media.url,
+              name: media.name,
+              path: this.currentFieldPath,
+              key: this.currentFieldKey || Date.now(),
+            });
+            this.closeMediaLibrary();
+            this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
+          },
+          clearImage(fieldName, path, key) {
+            this.setValueByPath(this.blockForm, path, {
+              id: null,
+              url: null,
+              name: null,
+              path,
+              key: key || Date.now(),
+            });
+          },
+          getFieldValue(fieldName, index = null) {
+            return index !== null ? this.blockForm.items[index]?.[fieldName] : this.blockForm.fields[fieldName];
+          },
+          getVideoEmbedUrl(url) {
+            if (!url) {
+              return '';
+            }
+            const youtubePatterns = [
+              /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+              /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+            ];
+            for (const pattern of youtubePatterns) {
+              const match = url?.match(pattern);
+              if (match) {
+                return `https://www.youtube.com/embed/${match[1]}?rel=0&modestbranding=1`;
+              }
+            }
+            return url;
+          },
+        }));
+      });
+    </script>
+  {% endif %}
+{% endblock %}

@@ -4,6 +4,7 @@
 </div>
 <div x-data="{ isRTL: document.dir === 'rtl', fieldName: '' }" :dir="isRTL ? 'rtl' : 'ltr'">
     <div class="h-full flex flex-col bg-slate-50">
+        {% if not hideBlockHeader %}
         <div class="sticky top-0 z-10 bg-white rounded-xl py-4 px-6 border-b border-slate-200 flex justify-between items-center mb-6">
             <div class="flex items-center gap-x-3">
                 {% if not hideBlockConfig %}
@@ -42,6 +43,7 @@
                 } %}
             </div>
         </div>
+        {% endif %}
 
         <div class="flex-1 overflow-y-auto">
             <div x-data="{ collapsedView: false }" class="mx-auto">
@@ -206,7 +208,7 @@
                                                                        :required="field.options?.['#required'] ?? false"
                                                                        x-model="blockForm.extra_fields[fieldName]"
                                                                        class="block w-10 h-10 border rounded cursor-pointer">
-                                                                <span @click="blockForm.extra_fields[fieldName] = ''"
+                                                                <span @click="blockForm.extra_fields[fieldName] = field.options?.['#default_value'] || ''"
                                                                       class="text-primary-500 text-sm cursor-pointer hover:underline">
                                                                     Clear
                                                                 </span>
@@ -427,7 +429,7 @@
                                                                                            :required="item.options?.['#required'] ?? false"
                                                                                            x-model="blockForm.extra_fields[fieldName][itemName]"
                                                                                            class="block w-10 h-10 border rounded cursor-pointer">
-                                                                                    <span @click="blockForm.extra_fields[fieldName][itemName] = ''"
+                                                                                    <span @click="blockForm.extra_fields[fieldName][itemName] = item.options?.['#default_value'] || ''"
                                                                                           class="text-primary-500 text-sm cursor-pointer hover:underline">
                                                                                         Clear
                                                                                     </span>
@@ -619,7 +621,7 @@
                                                                        :required="field.options?.['#required'] ?? false"
                                                                        x-model="blockForm.fields[fieldName]"
                                                                        class="block w-10 h-10 border rounded cursor-pointer">
-                                                                <span @click="blockForm.fields[fieldName] = ''"
+                                                                <span @click="blockForm.fields[fieldName] = field.options?.['#default_value'] || ''"
                                                                       class="text-primary-500 text-sm cursor-pointer hover:underline">
                                                                     Clear
                                                                 </span>
@@ -831,7 +833,7 @@
                                                                                            :required="item.options?.['#required'] ?? false"
                                                                                            x-model="blockForm.fields[fieldName][itemName]"
                                                                                            class="block w-10 h-10 border rounded cursor-pointer">
-                                                                                    <span @click="blockForm.fields[fieldName][itemName] = ''"
+                                                                                    <span @click="blockForm.fields[fieldName][itemName] = item.options?.['#default_value'] || ''"
                                                                                           class="text-primary-500 text-sm cursor-pointer hover:underline">
                                                                                         Clear
                                                                                     </span>
@@ -1124,7 +1126,7 @@
                                                                                                        :required="field.options?.['#required'] ?? false"
                                                                                                        x-model="item[fieldName][itemName]"
                                                                                                        class="block w-10 h-10 border rounded cursor-pointer">
-                                                                                                <span @click="item[fieldName][itemName] = ''"
+                                                                                                <span @click="item[fieldName][itemName] = field.options?.['#default_value'] || ''"
                                                                                                       class="text-primary-500 text-sm cursor-pointer hover:underline">
                                                                                                     Clear
                                                                                                 </span>
@@ -1310,7 +1312,7 @@
                                                                                    :required="field.options?.['#required'] ?? false"
                                                                                    x-model="item[fieldName]"
                                                                                    class="block w-10 h-10 border rounded cursor-pointer">
-                                                                            <span @click="item[fieldName] = ''"
+                                                                            <span @click="item[fieldName] = field.options?.['#default_value'] || ''"
                                                                                   class="text-primary-500 text-sm cursor-pointer hover:underline">
                                                                                 Clear
                                                                             </span>

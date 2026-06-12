@@ -6,6 +6,7 @@ use Drupal\Component\Serialization\Json;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -185,6 +186,32 @@ class NodeService {
           $node_data[$field['name']] = $color_value[0]['color'];
         } else {
           $node_data[$field['name']] = '';
+        }
+        continue;
+      }
+
+      if ($field['type'] === 'boolean') {
+        $node_data[$field['name']] = (bool) $entity->get($field['name'])->value;
+        continue;
+      }
+
+      if ($field['type'] === 'text_with_summary') {
+        $node_data[$field['name']] = $entity->get($field['name'])->value ?? '';
+        continue;
+      }
+
+      if ($field['type'] === 'block_field') {
+        $values = $entity->get($field['name'])->getValue();
+        $node_data[$field['name']] = [];
+        foreach ($values as $item) {
+          if (empty($item['plugin_id'])) {
+            continue;
+          }
+          $node_data[$field['name']][] = $this->normalizeBlockFieldItem(
+            $item['plugin_id'],
+            $item['settings'] ?? [],
+            TRUE
+          );
         }
         continue;
       }
@@ -645,11 +672,22 @@ class NodeService {
         }
 
         $hex = "";
-        if ($paragraph->hasField('field_background_color') && !$paragraph->get('field_background_color')
-            ->isEmpty()) {
-          $colorItem = $paragraph->get('field_background_color')->first();
-          $colorRaw = $colorItem->get('color')->getString();
-          $hex = explode(',', $colorRaw)[0];
+        $defaultColor = "";
+        if ($paragraph->hasField('field_background_color')) {
+          $colorField = $paragraph->get('field_background_color');
+          // Resolve the field's configured default color in Drupal.
+          $default = $colorField->getFieldDefinition()->getDefaultValueLiteral();
+          if (!empty($default[0]['color'])) {
+            $defaultColor = explode(',', $default[0]['color'])[0];
+          }
+          if (!$colorField->isEmpty()) {
+            $colorRaw = $colorField->first()->get('color')->getString();
+            $hex = explode(',', $colorRaw)[0];
+          }
+          else {
+            // No saved value: fall back to the configured default.
+            $hex = $defaultColor;
+          }
         }
 
         $image = "";
@@ -692,6 +730,7 @@ class NodeService {
               'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
               'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
               'color' => $hex,
+              'default_color' => $defaultColor,
               'bg_image' => $image,
               'imageID' => $imageID,
               'position_image_x' => $paragraph->hasField('field_position_image_x') ? $paragraph->get('field_position_image_x')->value : "",
@@ -726,6 +765,7 @@ class NodeService {
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
             'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
             'color' => $hex,
+            'default_color' => $defaultColor,
             'bg_image' => $image,
             'imageID' => $imageID,
             'position_image_x' => $paragraph->hasField('field_position_image_x') ? $paragraph->get('field_position_image_x')->value : "",
@@ -758,6 +798,7 @@ class NodeService {
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
             'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
             'color' => $hex,
+            'default_color' => $defaultColor,
             'bg_image' => $image,
             'imageID' => $imageID,
             'position_image_x' => $paragraph->hasField('field_position_image_x') ? $paragraph->get('field_position_image_x')->value : "",
@@ -798,6 +839,7 @@ class NodeService {
             'width' => $paragraph->hasField('paragraph_container') ? $paragraph->get('paragraph_container')->value : "",
             'css_classes' => $paragraph->hasField('paragraph_css_class') ? $paragraph->get('paragraph_css_class')->value : "",
             'color' => $hex,
+            'default_color' => $defaultColor,
             'bg_image' => $image,
             'imageID' => $imageID,
             'position_image_x' => $paragraph->hasField('field_position_image_x') ? $paragraph->get('field_position_image_x')->value : "",
@@ -1688,6 +1730,30 @@ class NodeService {
           $field_info['multiple'] = $cardinality == -1;
           $field_info['options'] = $this->load_entity_reference_options($field_info);
           break;
+
+        case 'boolean':
+          $field_info['type'] = 'boolean';
+          break;
+
+        case 'colorapi_color_field':
+          $field_info['type'] = 'colorapi_color_field';
+          // Get default color defined on the field in Drupal.
+          $default_value = $field_definition->getDefaultValueLiteral();
+          if (!empty($default_value[0]['color'])) {
+            $field_info['default_value'] = [
+              'color' => [
+                'hexadecimal' => $default_value[0]['color'],
+              ],
+            ];
+          }
+          break;
+
+        case 'block_field':
+          $field_info['type'] = 'block_field';
+          $field_info['multiple'] = $cardinality == -1 || $cardinality > 1;
+          $field_info['options'] = $this->getBlockFieldOptions($field_settings, $field_definition);
+          $field_info['options_grouped'] = $this->getBlockFieldOptions($field_settings, $field_definition, [], TRUE);
+          break;
       }
 
       // Handle search_api_exclude_entity field type
@@ -1704,6 +1770,71 @@ class NodeService {
       $field_definitions[$field_name] = $field_info;
     }
     return $field_definitions;
+  }
+
+  /**
+   * Builds an ordered render layout that mirrors the form display field groups.
+   *
+   * Returns a flat, weight-ordered list where each entry is either a single
+   * field or a group wrapping its child fields, so the dashboard can render
+   * grouped fields (e.g. "Background image & Couleur de fond") like Drupal.
+   *
+   * @param array $fields
+   *   The fields keyed by machine name (as returned by getBundleFields()).
+   * @param string $bundle
+   *   The bundle machine name.
+   * @param string $type
+   *   The entity type id (e.g. 'block_content').
+   *
+   * @return array
+   *   Ordered list of ['type' => 'field', 'name' => ...] or
+   *   ['type' => 'group', 'label' => ..., 'children' => [field names]].
+   */
+  public function buildFieldLayout(array $fields, $bundle, $type = 'node') {
+    $form_display = \Drupal::service('entity_display.repository')
+      ->getFormDisplay($type, $bundle, 'default');
+    $groups = $form_display->getThirdPartySettings('field_group');
+
+    // Map each field name to the group that owns it, keeping group metadata.
+    $field_to_group = [];
+    foreach ($groups as $group_name => $group) {
+      foreach (($group['children'] ?? []) as $child) {
+        $field_to_group[$child] = $group_name;
+      }
+    }
+
+    $layout = [];
+    $emitted_groups = [];
+    foreach ($fields as $field_name => $field_info) {
+      $group_name = $field_to_group[$field_name] ?? NULL;
+
+      // Ungrouped field: emit as-is in its weight position.
+      if ($group_name === NULL || !isset($groups[$group_name])) {
+        $layout[] = ['type' => 'field', 'name' => $field_name];
+        continue;
+      }
+
+      // Grouped field: emit the whole group at the position of its first
+      // visible child, preserving the field (weight) order for the children.
+      if (isset($emitted_groups[$group_name])) {
+        continue;
+      }
+      $emitted_groups[$group_name] = TRUE;
+      $children = [];
+      foreach (($groups[$group_name]['children'] ?? []) as $child) {
+        if (isset($fields[$child])) {
+          $children[] = $child;
+        }
+      }
+      $layout[] = [
+        'type' => 'group',
+        'name' => $group_name,
+        'label' => (string) ($groups[$group_name]['label'] ?? ''),
+        'children' => $children,
+      ];
+    }
+
+    return $layout;
   }
 
   /**
@@ -2433,6 +2564,107 @@ class NodeService {
       ];
     }
     return $paragraph_blocks;
+  }
+
+  /**
+   * Returns selectable block plugin options for block_field widgets.
+   */
+  public function getBlockFieldOptions(array $field_settings = [], FieldDefinitionInterface $field_definition = NULL, array $exclude_plugin_ids = [], $grouped = FALSE) {
+    $options = [];
+    $groups = [];
+    if (!\Drupal::moduleHandler()->moduleExists('block_field')) {
+      return $grouped ? $groups : $options;
+    }
+
+    if ($field_definition) {
+      $widget_options = \Drupal::service('plugin.manager.block_field_selection')
+        ->getWidgetOptions($field_definition);
+      foreach ($widget_options as $category => $category_options) {
+        $category = (string) $category;
+        foreach ($category_options as $plugin_id => $label) {
+          if (isset($exclude_plugin_ids[$plugin_id])) {
+            continue;
+          }
+          $options[$plugin_id] = $label;
+          $groups[$category][$plugin_id] = $label;
+        }
+      }
+      return $grouped ? $groups : $options;
+    }
+
+    $definitions = \Drupal::service('block_field.manager')->getBlockDefinitions();
+    $allowed = $field_settings['selection_settings']['plugin_ids'] ?? [];
+    if (!empty($allowed)) {
+      $allowed = array_filter($allowed);
+    }
+
+    foreach ($definitions as $plugin_id => $definition) {
+      if (isset($exclude_plugin_ids[$plugin_id])) {
+        continue;
+      }
+      if (!empty($allowed) && !isset($allowed[$plugin_id])) {
+        continue;
+      }
+      $label = $definition['admin_label'] ?? $plugin_id;
+      $category = (string) ($definition['category'] ?? 'Other');
+      $options[$plugin_id] = $label;
+      $groups[$category][$plugin_id] = $label;
+    }
+
+    return $grouped ? $groups : $options;
+  }
+
+  /**
+   * Builds a normalized block_field value with plugin configuration.
+   */
+  public function normalizeBlockFieldItem($plugin_id, array $settings = [], $include_label = FALSE) {
+    $item = [
+      'plugin_id' => $plugin_id,
+      'settings' => $settings,
+    ];
+
+    if (empty($plugin_id)) {
+      return $item;
+    }
+
+    $block_manager = \Drupal::service('plugin.manager.block');
+    if (!$block_manager->hasDefinition($plugin_id)) {
+      return $item;
+    }
+
+    $instance = $block_manager->createInstance($plugin_id, $settings);
+    $configuration = $instance->getConfiguration();
+    if (isset($configuration['label_display']) && $configuration['label_display'] === 0) {
+      $configuration['label_display'] = FALSE;
+    }
+    $item['settings'] = $configuration;
+
+    if ($include_label) {
+      $item['label'] = $instance->label() ?: ($configuration['label'] ?? $plugin_id);
+    }
+
+    return $item;
+  }
+
+  /**
+   * Converts submitted block_field values for entity storage.
+   */
+  public function buildBlockFieldValues(array $items) {
+    $values = [];
+    foreach ($items as $item) {
+      if (empty($item['plugin_id'])) {
+        continue;
+      }
+      $normalized = $this->normalizeBlockFieldItem(
+        $item['plugin_id'],
+        is_array($item['settings'] ?? NULL) ? $item['settings'] : []
+      );
+      $values[] = [
+        'plugin_id' => $normalized['plugin_id'],
+        'settings' => $normalized['settings'],
+      ];
+    }
+    return $values;
   }
 
   /**

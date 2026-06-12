@@ -1,0 +1,167 @@
+{# Two-step modal: block type selection → template picker (for dynamic types) #}
+<div
+  x-show="showAddBlockModal"
+  x-cloak
+  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+  x-transition:enter="transition ease-out duration-300"
+  x-transition:enter-start="opacity-0"
+  x-transition:enter-end="opacity-100"
+  x-transition:leave="transition ease-in duration-200"
+  x-transition:leave-start="opacity-100"
+  x-transition:leave-end="opacity-0">
+
+  <div
+    class="flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+    :class="addBlockModalStep === 'templates' ? 'max-w-5xl' : 'max-w-3xl'"
+    x-transition:enter="transition ease-out duration-300"
+    x-transition:enter-start="opacity-0 scale-95"
+    x-transition:enter-end="opacity-100 scale-100"
+    x-transition:leave="transition ease-in duration-200"
+    x-transition:leave-start="opacity-100 scale-100"
+    x-transition:leave-end="opacity-0 scale-95"
+    @click.outside="closeAddBlockModal()">
+
+    <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+      <div>
+        <h2 class="text-xl font-semibold text-slate-900" x-text="addBlockModalTitle"></h2>
+        <p class="mt-1 text-sm text-slate-500" x-show="addBlockModalStep === 'types'">
+          {{ 'Choose the type of content block to create.'|t }}
+        </p>
+        <p class="mt-1 text-sm text-slate-500" x-show="addBlockModalStep === 'templates' && selectedBlockType">
+          <span>{{ 'Choose a template for'|t }}</span>
+          <span class="font-medium text-slate-700" x-text="selectedBlockType?.label"></span>
+        </p>
+      </div>
+      <button type="button"
+              @click="closeAddBlockModal()"
+              class="text-slate-400 transition-colors hover:text-red-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-6">
+      {# Step 1: Block type cards #}
+      <template x-if="addBlockModalStep === 'types'">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <template x-for="type in creatableBlockTypes" :key="type.id">
+            <button type="button"
+                    @click="selectBlockType(type)"
+                    class="group rounded-xl border-2 border-dashed border-slate-300 p-6 text-left transition-all duration-200 hover:border-primary-400 hover:bg-primary-50">
+              <div class="flex items-start gap-4">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100">
+                  <svg x-show="type.is_dynamic" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                  </svg>
+                  <svg x-show="!type.is_dynamic" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <h3 class="font-semibold text-slate-900 group-hover:text-primary-700" x-text="type.label"></h3>
+                  <p class="mt-1 text-sm text-slate-500" x-text="type.description || '{{ 'Create a new content block'|t|e('js') }}'"></p>
+                  <p class="mt-2 text-xs font-medium text-primary-600" x-show="type.is_dynamic">
+                    {{ 'Choose a template next'|t }}
+                  </p>
+                </div>
+              </div>
+            </button>
+          </template>
+        </div>
+      </template>
+
+      {# Step 2: Template grid #}
+      <template x-if="addBlockModalStep === 'templates'">
+        <div>
+          <div class="mb-4">
+            <button type="button"
+                    @click="backToBlockTypes()"
+                    class="inline-flex items-center gap-2 text-slate-600 transition-colors hover:text-slate-900">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              </svg>
+              <span class="text-sm">{{ 'Back to block types'|t }}</span>
+            </button>
+          </div>
+
+          <div class="mb-6">
+            <div class="relative">
+              <input x-model="blockSearch"
+                     type="text"
+                     class="w-full rounded-lg border border-slate-300 px-4 py-2.5 ps-10 text-sm transition-all duration-150 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-300"
+                     placeholder="{{ 'Search for a template...'|t }}">
+              <div class="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3">
+                <svg class="h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-6 flex overflow-x-auto border-b border-slate-200">
+            <button type="button"
+                    @click="blockCategory = 'all'"
+                    :class="{'border-b-2 border-primary-500 !text-primary-500': blockCategory === 'all'}"
+                    class="whitespace-nowrap px-4 py-2.5 font-medium text-slate-500 transition-colors hover:text-primary-500">
+              {{ 'All'|t }}
+            </button>
+            <template x-for="category in templateCategories" :key="category">
+              <button type="button"
+                      @click="blockCategory = category"
+                      :class="{'border-b-2 border-primary-500 !text-primary-500': blockCategory === category}"
+                      class="whitespace-nowrap px-4 py-2.5 font-medium text-slate-500 transition-colors hover:text-primary-500"
+                      x-text="category">
+              </button>
+            </template>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+            <template x-if="isLoadingTemplates">
+              <div class="col-span-full flex items-center justify-center py-12">
+                <svg class="h-8 w-8 animate-spin text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="ms-3 text-sm text-slate-600">{{ 'Loading templates...'|t }}</span>
+              </div>
+            </template>
+
+            <template x-if="!isLoadingTemplates && filteredTemplates.length === 0">
+              <div class="col-span-full py-12 text-center">
+                <p class="text-sm text-slate-500">{{ 'No templates found'|t }}</p>
+              </div>
+            </template>
+
+            <template x-if="!isLoadingTemplates" x-for="template in filteredTemplates" :key="template.id">
+              <button type="button"
+                      @click="selectTemplateAndCreate(template)"
+                      x-show="template && template.name"
+                      class="group flex flex-col overflow-hidden rounded-xl border border-slate-200 transition-all duration-150 hover:border-primary-300 hover:bg-primary-50">
+                <div class="h-40 overflow-hidden border-b border-slate-200 bg-slate-100">
+                  <img :alt="'Template ' + template.name"
+                       class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                       :src="template.screenshot">
+                </div>
+                <div class="p-4 text-left">
+                  <div class="flex flex-col items-start justify-between gap-2">
+                    <span class="rounded-full bg-primary-100 px-2 py-1 text-xs text-primary-700" x-text="template.category"></span>
+                    <span class="font-medium text-slate-900" x-text="template.name"></span>
+                  </div>
+                </div>
+              </button>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div class="flex justify-end border-t border-slate-200 px-6 py-4">
+      <button type="button"
+              @click="closeAddBlockModal()"
+              class="inline-flex items-center justify-center gap-x-2 rounded-md bg-gray-100 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-200">
+        {{ 'Cancel'|t }}
+      </button>
+    </div>
+  </div>
+</div>
