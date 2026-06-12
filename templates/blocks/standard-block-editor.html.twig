@@ -1,0 +1,375 @@
+<script type="application/json" id="standard-block-editor-config">
+  {{ {
+    operation: operation,
+    block_id: block_id,
+    block_type_id: block_type_id,
+    page_title: page_title,
+    language: language,
+    has_translation: has_translation ?? true,
+    fields: fields,
+    field_groups: field_groups,
+    block: block,
+  }|json_encode|raw }}
+</script>
+
+<div
+  x-data="standardBlockEditor()"
+  x-init="init()"
+  class="h-full flex flex-col">
+  <div class="sticky top-0 z-10 bg-white">
+    <div class="bg-white py-4 px-3 border-b border-slate-200 flex justify-between items-center gap-x-4">
+      <div class="flex items-center gap-x-3">
+        <a href="{{ path('vactory_dashboard.block_content') }}"
+           class="me-3 text-slate-500 hover:text-primary-500 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+               stroke="currentColor" aria-hidden="true" class="h-4 w-4">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"></path>
+          </svg>
+        </a>
+        <div>
+          <h1 class="text-lg font-medium">{{ page_title }}</h1>
+          <p class="text-sm text-slate-500">{{ block_type_label }}</p>
+        </div>
+      </div>
+      <div class="flex max-lg:w-full max-lg:flex-wrap max-lg:gap-3 max-lg:[&>*]:w-full max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:px-3 max-lg:py-4 lg:items-center lg:space-x-4">
+        {% include "@vactory_dashboard/node/_components/langs.html.twig" %}
+        <button type="button"
+                @click="saveBlock()"
+                :disabled="isSaving || $store.linkValidation?.hasErrors"
+                :class="{
+                  'opacity-50 cursor-not-allowed bg-primary-400': isSaving || $store.linkValidation?.hasErrors,
+                  'bg-primary-500 hover:bg-primary-600': !(isSaving || $store.linkValidation?.hasErrors)
+                }"
+                class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm font-semibold text-white shadow-sm">
+          <svg x-show="isSaving" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span x-text="isSaving ? '{{ 'Saving...'|t }}' : '{{ 'Save'|t }}'"></span>
+        </button>
+      </div>
+    </div>
+    {% include "@vactory_dashboard/node/_components/message-notification.html.twig" %}
+  </div>
+
+  <div class="flex-1 overflow-y-auto">
+    <div class="mx-auto">
+      <form id="standard-block-form" @submit.prevent="saveBlock()" class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex flex-col gap-y-6">
+          {# Render fields following the Drupal form-display layout (groups + ungrouped). #}
+          <template x-for="entry in (field_groups && field_groups.length ? field_groups : Object.keys(fields).map(name => ({ type: 'field', name })))"
+                    :key="entry.name">
+            <div>
+              {# Single (ungrouped) field #}
+              <template x-if="entry.type === 'field' && fields[entry.name]">
+                <div x-data="{ field: fields[entry.name] }">
+                  {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
+                    field: 'field',
+                    formData: 'formData',
+                    isEdit: operation == 'edit',
+                    language: language,
+                    node_default_lang: node_default_lang
+                  } %}
+                </div>
+              </template>
+
+              {# Field group (collapsible), mirroring Drupal field_group #}
+              <template x-if="entry.type === 'group'">
+                <div x-data="{ openGroup: true }"
+                     class="border border-slate-200 rounded-xl shadow-sm bg-white">
+                  <div class="flex justify-between items-center cursor-pointer select-none px-4 py-3 border-b border-slate-100"
+                       @click="openGroup = !openGroup">
+                    <h3 x-text="entry.label" class="text-base font-semibold text-slate-900"></h3>
+                    <svg :class="{'rotate-180': openGroup}"
+                         class="w-5 h-5 transform transition-transform duration-300 text-slate-400"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                  </div>
+                  <div x-show="openGroup" x-transition class="flex flex-col gap-y-6 p-4">
+                    <template x-for="childName in entry.children" :key="childName">
+                      <div x-show="fields[childName]" x-data="{ field: fields[childName] }">
+                        {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
+                          field: 'field',
+                          formData: 'formData',
+                          isEdit: operation == 'edit',
+                          language: language,
+                          node_default_lang: node_default_lang
+                        } %}
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% include "@vactory_dashboard/_components/media/media-library.html.twig" %}
+</div>
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('standardBlockEditor', () => {
+      const readConfig = () => {
+        const element = document.getElementById('standard-block-editor-config');
+        if (!element) {
+          return {};
+        }
+        try {
+          return JSON.parse(element.textContent);
+        } catch (error) {
+          console.error('Unable to parse standard block editor config.', error);
+          return {};
+        }
+      };
+      const config = readConfig();
+
+      return {
+      operation: config.operation,
+      blockId: config.block_id,
+      blockTypeId: config.block_type_id,
+      pageTitle: config.page_title,
+      language: config.language,
+      hasTranslation: config.has_translation,
+      fields: config.fields || {},
+      field_groups: config.field_groups || [],
+      block: config.block || { fields: {} },
+      formData: { fields: {} },
+      isSaving: false,
+      showMultipleFieldWeights: false,
+      notification: { show: false, type: 'success', message: '', timeout: null },
+      showMediaLibrary: false,
+      mediaLoading: false,
+      mediaError: null,
+      mediaItems: [],
+      currentMediaPage: 1,
+      totalMediaPages: 1,
+      totalMedia: 0,
+      selectedType: 'image',
+      selectedMedia: null,
+      currentField: null,
+      currentFieldPath: null,
+      currentFieldKey: null,
+      mediaFilters: { search: '', type: 'image', limit: Alpine.store('limit') || 50 },
+
+      init() {
+        const existing = this.block.fields || {};
+        Object.keys(this.fields).forEach((fieldKey) => {
+          const field = this.fields[fieldKey];
+          const existingValue = existing[fieldKey];
+
+          if (field?.type === 'block_field' && Array.isArray(existingValue)) {
+            field.options = field.options || {};
+            existingValue.forEach((item) => {
+              if (!item?.plugin_id || field.options[item.plugin_id]) {
+                return;
+              }
+              field.options[item.plugin_id] = item.label || item.plugin_id;
+            });
+          }
+
+          if (field?.textFormatField) {
+            this.formData.fields[fieldKey] = existingValue || '';
+            setTimeout(() => {
+              const input = document.getElementById(`edit-${field.name.replaceAll('_', '-')}-value`);
+              if (input && Drupal.editors?.ckeditor5) {
+                Drupal.editors.ckeditor5.onChange(input, () => {
+                  const ckInstance = Drupal.CKEditor5Instances.values().next().value;
+                  if (ckInstance) {
+                    this.formData.fields[field.name] = ckInstance.getData();
+                  }
+                });
+              }
+            }, 2000);
+            return;
+          }
+
+          if (field.type === 'colorapi_color_field') {
+            const defaultHex = field.default_value?.color?.hexadecimal || '';
+            const hex = existingValue?.hexadecimal || existingValue?.color?.hexadecimal || existingValue || defaultHex;
+            this.formData.fields[fieldKey] = { color: { hexadecimal: hex } };
+            return;
+          }
+
+          if (field.type === 'block_field') {
+            const items = Array.isArray(existingValue) ? existingValue : [];
+            const mapped = items.map((item) => {
+              const pluginId = item?.plugin_id ? String(item.plugin_id) : '';
+              return {
+                plugin_id: pluginId,
+                label: item?.label || field.options?.[pluginId] || pluginId,
+                settings: (item?.settings && typeof item.settings === 'object' && !Array.isArray(item.settings))
+                  ? item.settings
+                  : {},
+              };
+            });
+            // Show one empty row by default when there are no saved values.
+            this.formData.fields[fieldKey] = mapped.length > 0
+              ? mapped
+              : [{ plugin_id: '', label: '', settings: {} }];
+            return;
+          }
+
+          if (['image', 'file', 'remote_video', 'private_file'].includes(field.type)) {
+            this.formData.fields[fieldKey] = existingValue || {
+              id: null, url: null, name: null, path: fieldKey, key: Date.now(),
+            };
+            return;
+          }
+
+          if (field.type === 'boolean') {
+            this.formData.fields[fieldKey] = !!existingValue;
+            return;
+          }
+
+          if (field.type === 'checkboxes') {
+            this.formData.fields[fieldKey] = existingValue || [];
+            return;
+          }
+
+          if (field.type === 'string' && field.multiple) {
+            this.formData.fields[fieldKey] = existingValue?.length ? existingValue : [''];
+            return;
+          }
+
+          this.formData.fields[fieldKey] = existingValue ?? '';
+        });
+      },
+
+      validateForm() {
+        let isValid = true;
+        document.querySelectorAll('#standard-block-form [required]').forEach((input) => {
+          if (!input.checkValidity()) {
+            input.classList.add('border-red-500');
+            isValid = false;
+          }
+        });
+        return isValid;
+      },
+
+      async saveBlock() {
+        if (this.$store.linkValidation?.hasErrors) {
+          this.showNotification('error', '{{ "Veuillez corriger les URL invalides avant d\'enregistrer."|t|e('js') }}');
+          return;
+        }
+        if (!this.validateForm()) {
+          this.showNotification('error', '{{ 'Please fill in all required fields'|t|e('js') }}');
+          return;
+        }
+        if (this.isSaving) {
+          return;
+        }
+        this.isSaving = true;
+        try {
+          const endpoint = this.operation === 'add'
+            ? `/api/vactory-dashboard/content-blocks/add/${this.blockTypeId}/standard/save`
+            : `/api/vactory-dashboard/content-blocks/${this.blockId}/standard/save`;
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fields: this.formData.fields,
+              language: this.language,
+              has_translation: this.hasTranslation,
+            }),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.message || '{{ 'Failed to save content block'|t|e('js') }}');
+          }
+          this.showNotification('success', this.operation === 'add'
+            ? '{{ 'Content block created successfully'|t|e('js') }}'
+            : '{{ 'Content block saved successfully'|t|e('js') }}');
+          window.location.href = this.operation === 'add'
+            ? (data.list || '{{ path('vactory_dashboard.block_content') }}')
+            : window.location.href;
+        } catch (error) {
+          this.showNotification('error', error.message);
+        } finally {
+          this.isSaving = false;
+        }
+      },
+
+      showNotification(type, message) {
+        if (this.notification.timeout) {
+          clearTimeout(this.notification.timeout);
+        }
+        this.notification.type = type;
+        this.notification.message = message;
+        this.notification.show = true;
+        this.notification.timeout = setTimeout(() => { this.notification.show = false; }, 5000);
+      },
+
+      async loadMedia(page = 1) {
+        this.mediaLoading = true;
+        this.mediaError = null;
+        this.currentMediaPage = page;
+        try {
+          const params = new URLSearchParams({
+            page: String(page),
+            limit: String(this.mediaFilters.limit),
+            search: this.mediaFilters.search,
+            type: this.selectedType,
+          });
+          const response = await fetch(`{{ path('vactory_dashboard.media.data') }}?${params.toString()}`);
+          if (!response.ok) {
+            throw new Error('{{ 'Unable to load media.'|t|e('js') }}');
+          }
+          const data = await response.json();
+          this.mediaItems = data.data || [];
+          this.totalMedia = data.total;
+          this.totalMediaPages = data.pages;
+        } catch (error) {
+          this.mediaError = error.message;
+          this.mediaItems = [];
+        } finally {
+          this.mediaLoading = false;
+        }
+      },
+
+      openMediaLibrary(fieldName, path, key = null, type = 'image') {
+        this.selectedType = type;
+        this.currentField = fieldName;
+        this.currentFieldPath = path;
+        this.currentFieldKey = key;
+        this.showMediaLibrary = true;
+        this.loadMedia(1);
+      },
+
+      closeMediaLibrary() {
+        this.showMediaLibrary = false;
+        this.selectedMedia = null;
+        this.currentField = null;
+        this.mediaItems = [];
+        this.currentMediaPage = 1;
+        this.mediaFilters.search = '';
+      },
+
+      selectMedia(media) {
+        if (!media || !this.currentField) {
+          return;
+        }
+        this.formData.fields[this.currentField] = {
+          id: media.id,
+          url: media.url,
+          name: media.name,
+          path: this.currentField,
+          key: this.currentFieldKey || Date.now(),
+        };
+        this.closeMediaLibrary();
+      },
+
+      clearImage(fieldName) {
+        this.formData.fields[fieldName] = {
+          id: null, url: null, name: null, path: fieldName, key: Date.now(),
+        };
+      },
+    };
+    });
+  });
+</script>

@@ -1,0 +1,99 @@
+.vactory-dashboard-block-form .form-item,
+.vactory-dashboard-block-form .js-form-wrapper,
+.vactory-dashboard-block-form .field--type-text-with-summary,
+.vactory-dashboard-block-form .field--widget-text-textarea-with-summary {
+  margin-bottom: 1rem;
+}
+
+.vactory-dashboard-block-form label,
+.vactory-dashboard-block-form .form-item__label,
+.vactory-dashboard-block-form .fieldset-legend {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+.vactory-dashboard-block-form input[type="text"],
+.vactory-dashboard-block-form input[type="email"],
+.vactory-dashboard-block-form input[type="url"],
+.vactory-dashboard-block-form input[type="number"],
+.vactory-dashboard-block-form input[type="password"],
+.vactory-dashboard-block-form select,
+.vactory-dashboard-block-form textarea,
+.vactory-dashboard-block-form .form-text,
+.vactory-dashboard-block-form .form-textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #0f172a;
+  background: #fff;
+}
+
+.vactory-dashboard-block-form textarea,
+.vactory-dashboard-block-form .form-textarea {
+  min-height: 9rem;
+}
+
+.vactory-dashboard-block-form .ck-editor,
+.vactory-dashboard-block-form .ck-editor__main,
+.vactory-dashboard-block-form .ck-editor__editable {
+  min-height: 12rem;
+}
+
+.vactory-dashboard-block-form .ck.ck-editor {
+  width: 100%;
+}
+
+.vactory-dashboard-block-form details,
+.vactory-dashboard-block-form .claro-details {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0.75rem 1rem;
+}
+
+.vactory-dashboard-block-form details > summary,
+.vactory-dashboard-block-form .claro-details__summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.vactory-dashboard-block-form .form-checkboxes,
+.vactory-dashboard-block-form .form-radios,
+.vactory-dashboard-block-form .form-type-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vactory-dashboard-block-form .form-type-checkbox input {
+  width: auto;
+}
+
+.vactory-dashboard-block-form .media-library-widget,
+.vactory-dashboard-block-form .block-field-widget,
+.vactory-dashboard-block-form .field--widget-block-field-default {
+  width: 100%;
+}
+
+.vactory-dashboard-block-form .description,
+.vactory-dashboard-block-form .form-item__description {
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.vactory-dashboard-block-form .vactory-dashboard-block-form__panel > .form-wrapper,
+.vactory-dashboard-block-form .vactory-dashboard-block-form__panel > .js-form-wrapper,
+.vactory-dashboard-block-form .vactory-dashboard-block-form__panel > fieldset,
+.vactory-dashboard-block-form .vactory-dashboard-block-form__panel > details {
+  margin-bottom: 1.5rem;
+}

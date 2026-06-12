@@ -176,6 +176,36 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'block_types' => [],
       ],
     ],
+    'vactory_dashboard_content_blocks' => [
+      'template' => 'blocks/content-list',
+      'variables' => [
+        'block_types' => [],
+        'creatable_block_types' => [],
+      ],
+    ],
+    'vactory_dashboard_content_block_form' => [
+      'template' => 'blocks/content-form',
+      'variables' => [
+        'form' => NULL,
+        'mode' => 'form',
+        'operation' => 'edit',
+        'page_title' => NULL,
+        'block_type_id' => NULL,
+        'block_type_label' => NULL,
+        'block_id' => NULL,
+        'block_label' => NULL,
+        'widget_id' => NULL,
+        'widget_data' => [],
+        'language' => NULL,
+        'node_default_lang' => NULL,
+        'available_languages' => [],
+        'languages_display_format' => NULL,
+        'has_translation' => TRUE,
+        'fields' => [],
+        'field_groups' => [],
+        'block' => ['fields' => []],
+      ],
+    ],
     'vactory_dashboard_node_edit' => [
       'template' => 'node/edit',
       'variables' => [
@@ -723,6 +753,13 @@ function vactory_dashboard_form_alter(&$form, FormStateInterface $form_state, $f
   if ($form_id === 'views_exposed_form' && strpos($form['#id'], 'views-exposed-form-media-library-widget') === 0) {
     $form['actions']['#attributes']['class'][] = 'media-library-view--form-actions';
   }
+}
+
+/**
+ * Redirects content block forms back to the dashboard list.
+ */
+function vactory_dashboard_block_content_redirect_submit(array &$form, FormStateInterface $form_state) {
+  $form_state->setRedirect('vactory_dashboard.block_content');
 }
 
 /**
