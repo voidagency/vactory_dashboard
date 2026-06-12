@@ -34,18 +34,6 @@ alpine-icon-picker:
   dependencies:
     - vactory_admin/alpinejs
     - vactory_icon/vactory_icon.fonticonpicker
-inline-block-editor:
-  css:
-    theme:
-      assets/css/inline-block-editor.css: {}
-  dependencies:
-    - vactory_dynamic_field/dynamic.form_modal
-content-block-form:
-  css:
-    theme:
-      assets/css/content-block-form.css: {}
-  dependencies:
-    - vactory_dashboard/claro-media-library
 google-maps-api:
   dependencies:
     - vactory_google_map_field/google-map-apis

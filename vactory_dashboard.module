@@ -756,13 +756,6 @@ function vactory_dashboard_form_alter(&$form, FormStateInterface $form_state, $f
 }
 
 /**
- * Redirects content block forms back to the dashboard list.
- */
-function vactory_dashboard_block_content_redirect_submit(array &$form, FormStateInterface $form_state) {
-  $form_state->setRedirect('vactory_dashboard.block_content');
-}
-
-/**
  * Implémentation de hook_cron().
  */
 function vactory_dashboard_cron() {
