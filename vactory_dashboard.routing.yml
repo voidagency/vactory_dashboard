@@ -557,7 +557,7 @@ vactory_dashboard.block_content:
     _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::contentBlocks'
     _title: "Content blocks"
   requirements:
-    _permission: "access block library+administer block content"
+    _permission: "administer block content"
 
 vactory_dashboard.block_content.data:
   path: "/api/vactory-dashboard/content-blocks"
@@ -566,7 +566,7 @@ vactory_dashboard.block_content.data:
     _title: "Content blocks data"
   methods: [GET]
   requirements:
-    _permission: "access block library+administer block content"
+    _permission: "administer block content"
   options:
     no_cache: TRUE
 
@@ -660,7 +660,59 @@ vactory_dashboard.block_content.delete:
     _title: "Delete content block"
   methods: [POST]
   requirements:
-    _permission: "access block library+administer block content"
+    _permission: "administer block content"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.block_regions:
+  path: "/admin/dashboard/content-blocks/regions"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::blockRegions'
+    _title: "Block layout"
+  requirements:
+    _permission: "administer blocks"
+
+vactory_dashboard.block_regions.save:
+  path: "/api/vactory-dashboard/block-regions/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::saveBlockRegions'
+    _title: "Save block regions"
+  methods: [POST]
+  requirements:
+    _permission: "administer blocks"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.block_regions.available:
+  path: "/api/vactory-dashboard/block-regions/available"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::getAvailableBlocks'
+    _title: "Available blocks"
+  methods: [GET]
+  requirements:
+    _permission: "administer blocks"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.block_regions.place:
+  path: "/api/vactory-dashboard/block-regions/place"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::placeBlock'
+    _title: "Place block"
+  methods: [POST]
+  requirements:
+    _permission: "administer blocks"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.block_regions.remove:
+  path: "/api/vactory-dashboard/block-regions/remove"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::removeBlock'
+    _title: "Remove block"
+  methods: [POST]
+  requirements:
+    _permission: "administer blocks"
   options:
     no_cache: TRUE
 

@@ -11,7 +11,9 @@
         widgetId: '{{ widget_id }}',
         widgetData: '{{ widget_data|json_encode|e('js') }}',
         language: '{{ language }}',
-        hasTranslation: '{{ has_translation }}'
+        hasTranslation: '{{ has_translation }}',
+        blockRegion: '{{ block_region }}',
+        regions: '{{ regions|json_encode|e('js') }}'
       })"
       x-init="init()"
       class="h-full">
@@ -63,7 +65,7 @@
       </template>
 
       <template x-if="!isLoadingTemplates && !selectedTemplate && operation === 'add'">
-        <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="mt-6 bg-white rounded-xl shadow-sm p-6">
           <div class="mb-6">
             <h2 class="text-lg font-semibold text-slate-900">{{ 'Choose a template'|t }}</h2>
             <p class="mt-1 text-sm text-slate-500">{{ 'Select the block template to create.'|t }}</p>
@@ -134,7 +136,7 @@
       </template>
 
       <template x-if="!isLoadingTemplates && selectedTemplate">
-        <div>
+        <div class="mt-6">
           <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
             <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Block description'|t }}</label>
             <input type="text"
@@ -146,11 +148,29 @@
             hideBlockConfig: true,
             hideBlockHeader: true
           } %}
+
+          {# Region placement (assigns the block to a theme region). #}
+          {% if regions is not empty %}
+            <div class="bg-white rounded-xl shadow-sm p-6 mt-6">
+              <label class="block text-sm font-medium text-slate-700 mb-1">{{ 'Region'|t }}</label>
+              {# Options are rendered server-side (with the current region pre-selected) so the
+                 value is preserved: an Alpine x-for would insert the options after x-model binds,
+                 dropping the initial selection. #}
+              <select x-model="region"
+                      class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-300">
+                <option value="" {{ block_region ? '' : 'selected' }}>{{ '- None (not placed) -'|t }}</option>
+                {% for machine, label in regions %}
+                  <option value="{{ machine }}" {{ machine == block_region ? 'selected' : '' }}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              <p class="mt-1 text-xs text-slate-500">{{ 'Select the region where this block should be displayed.'|t }}</p>
+            </div>
+          {% endif %}
         </div>
       </template>
 
       <template x-if="!isLoadingTemplates && !selectedTemplate && operation !== 'add'">
-        <div class="bg-white rounded-xl shadow-sm p-6 text-sm text-red-700">
+        <div class="mt-6 bg-white rounded-xl shadow-sm p-6 text-sm text-red-700">
           {{ 'Unable to load the configured block template.'|t }}
         </div>
       </template>
@@ -175,6 +195,8 @@
           blockTypeId: config.blockTypeId,
           blockLabel: config.blockLabel,
           widgetId: config.widgetId,
+          region: config.blockRegion || '',
+          regions: config.regions ? JSON.parse(config.regions) : {},
           widgetData: config.widgetData ? JSON.parse(config.widgetData) : {},
           language: config.language,
           hasTranslation: config.hasTranslation,
@@ -571,6 +593,7 @@
                   has_translation: this.hasTranslation,
                   widget_id: this.selectedTemplate.uuid || this.widgetId,
                   widget_data: this.buildWidgetData(),
+                  region: this.region,
                 }),
               });
               const data = await response.json();

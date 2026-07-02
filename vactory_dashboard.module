@@ -176,6 +176,14 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'block_types' => [],
       ],
     ],
+    'vactory_dashboard_block_regions' => [
+      'template' => 'blocks/regions',
+      'variables' => [
+        'dashboard_theme' => NULL,
+        'regions' => [],
+        'blocks' => [],
+      ],
+    ],
     'vactory_dashboard_content_blocks' => [
       'template' => 'blocks/content-list',
       'variables' => [
@@ -203,6 +211,8 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'has_translation' => TRUE,
         'fields' => [],
         'field_groups' => [],
+        'regions' => [],
+        'block_region' => NULL,
         'block' => ['fields' => []],
       ],
     ],
@@ -1055,6 +1065,11 @@ function get_admin_path(string $path): string {
     // Block content - list.
     case 'vactory_dashboard.block_content':
       $url = Url::fromRoute('entity.block_content.collection')->toString();
+      break;
+
+    // Block regions - layout.
+    case 'vactory_dashboard.block_regions':
+      $url = Url::fromRoute('block.admin_display')->toString();
       break;
 
     // Block content - add.

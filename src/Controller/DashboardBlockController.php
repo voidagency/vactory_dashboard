@@ -289,6 +289,8 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
         '#block_label' => '',
         '#widget_id' => '',
         '#widget_data' => [],
+        '#regions' => $this->getRegionOptions(),
+        '#block_region' => '',
       ], $language_context);
     }
 
@@ -304,6 +306,8 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
       '#block_id' => NULL,
       '#fields' => $fields,
       '#field_groups' => $this->nodeService->buildFieldLayout($fields, $block_content_type->id(), 'block_content'),
+      '#regions' => $this->getRegionOptions(),
+      '#block_region' => '',
       '#block' => ['fields' => []],
     ], $language_context);
   }
@@ -356,6 +360,8 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
         '#widget_data' => is_array($widget_data) ? $widget_data : [],
         '#operation' => 'edit',
         '#block_type_id' => $block->bundle(),
+        '#regions' => $this->getRegionOptions(),
+        '#block_region' => $this->getBlockContentRegion($block),
         '#has_translation' => $block_content->hasTranslation($current_language),
       ], $language_context);
     }
@@ -373,6 +379,8 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
       '#block_id' => $block->id(),
       '#fields' => $fields,
       '#field_groups' => $this->nodeService->buildFieldLayout($fields, $block->bundle(), 'block_content'),
+      '#regions' => $this->getRegionOptions(),
+      '#block_region' => $this->getBlockContentRegion($block),
       '#block' => $this->processBlockContent($block, $fields),
       '#has_translation' => $block_content->hasTranslation($current_language),
     ], $language_context);
@@ -430,6 +438,9 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
       'widget_data' => json_encode($widget_data),
     ]);
     $target_block->save();
+    if (array_key_exists('region', $data)) {
+      $this->syncBlockContentPlacement($block_content, $data['region']);
+    }
 
     return new JsonResponse([
       'message' => $this->t('Content block saved successfully.'),
@@ -477,6 +488,9 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
         ],
       ]);
     $block_content->save();
+    if (array_key_exists('region', $data)) {
+      $this->syncBlockContentPlacement($block_content, $data['region']);
+    }
 
     return new JsonResponse([
       'message' => $this->t('Content block created successfully.'),
@@ -736,6 +750,9 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
       ]);
       $this->applyStandardBlockFieldValues($block, $fields);
       $block->save();
+      if (array_key_exists('region', $data)) {
+        $this->syncBlockContentPlacement($block, $data['region']);
+      }
 
       return new JsonResponse([
         'message' => $this->t('Content block created successfully.'),
@@ -773,6 +790,9 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
 
       $this->applyStandardBlockFieldValues($block, $fields);
       $block->save();
+      if (array_key_exists('region', $data)) {
+        $this->syncBlockContentPlacement($block_content, $data['region']);
+      }
 
       return new JsonResponse([
         'message' => $this->t('Content block saved successfully.'),
@@ -853,6 +873,342 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
       }
       unset($field['options'][$self_plugin_id]);
     }
+  }
+
+  /**
+   * Renders the block regions layout (admin/structure/block style).
+   *
+   * @return array
+   *   A render array.
+   */
+  public function blockRegions() {
+    $theme = \Drupal::config('system.theme')->get('default');
+
+    // Ordered region machine name => human label for the default theme.
+    $regions = system_region_list($theme, REGIONS_VISIBLE);
+
+    // Load every block placed in this theme, grouped by region.
+    $block_storage = $this->entityTypeManager->getStorage('block');
+    $block_ids = $block_storage->getQuery()
+      ->condition('theme', $theme)
+      ->accessCheck(TRUE)
+      ->execute();
+    $blocks = $block_storage->loadMultiple($block_ids);
+
+    $grouped = [];
+    foreach (array_keys($regions) as $region) {
+      $grouped[$region] = [];
+    }
+    foreach ($blocks as $block) {
+      $region = $block->getRegion();
+      // Blocks whose region no longer exists fall back to the first region.
+      if (!isset($grouped[$region])) {
+        $region = array_key_first($regions);
+      }
+      $grouped[$region][] = [
+        'id' => $block->id(),
+        'label' => $block->label(),
+        'region' => $region,
+        'weight' => (int) $block->getWeight(),
+        'status' => (bool) $block->status(),
+        'plugin' => $block->getPluginId(),
+      ];
+    }
+    // Keep each region ordered by weight.
+    foreach ($grouped as &$region_blocks) {
+      usort($region_blocks, static function ($a, $b) {
+        return $a['weight'] <=> $b['weight'];
+      });
+    }
+    unset($region_blocks);
+
+    return [
+      '#theme' => 'vactory_dashboard_block_regions',
+      '#dashboard_theme' => $theme,
+      '#regions' => $regions,
+      '#blocks' => $grouped,
+      '#attached' => [
+        'library' => ['vactory_admin/alpinejs'],
+      ],
+    ];
+  }
+
+  /**
+   * Persists block placements (region, weight, status) from the layout UI.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request object.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   The save response.
+   */
+  public function saveBlockRegions(Request $request) {
+    $data = json_decode($request->getContent(), TRUE);
+    $placements = $data['placements'] ?? [];
+    if (!is_array($placements) || empty($placements)) {
+      return new JsonResponse(['message' => $this->t('No placements to save.')], 400);
+    }
+
+    $theme = \Drupal::config('system.theme')->get('default');
+    $valid_regions = array_keys(system_region_list($theme, REGIONS_VISIBLE));
+    $block_storage = $this->entityTypeManager->getStorage('block');
+    $updated = 0;
+
+    foreach ($placements as $placement) {
+      $id = $placement['id'] ?? NULL;
+      $region = $placement['region'] ?? NULL;
+      if (!$id || !in_array($region, $valid_regions, TRUE)) {
+        continue;
+      }
+      /** @var \Drupal\block\BlockInterface $block */
+      $block = $block_storage->load($id);
+      if (!$block || $block->getTheme() !== $theme) {
+        continue;
+      }
+      $block->setRegion($region);
+      $block->setWeight((int) ($placement['weight'] ?? 0));
+      if (array_key_exists('status', $placement)) {
+        $placement['status'] ? $block->enable() : $block->disable();
+      }
+      $block->save();
+      $updated++;
+    }
+
+    return new JsonResponse([
+      'message' => $this->t('@count block placement(s) saved.', ['@count' => $updated]),
+      'updated' => $updated,
+    ]);
+  }
+
+  /**
+   * Lists block plugins available to place, grouped by category.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   The available blocks response.
+   */
+  public function getAvailableBlocks() {
+    $definitions = \Drupal::service('plugin.manager.block')->getDefinitions();
+    $blocks = [];
+    foreach ($definitions as $plugin_id => $definition) {
+      // Skip broken/placeholder plugins.
+      if ($plugin_id === 'broken' || strpos($plugin_id, 'broken') !== FALSE) {
+        continue;
+      }
+      $blocks[] = [
+        'plugin_id' => $plugin_id,
+        'label' => (string) ($definition['admin_label'] ?? $plugin_id),
+        'category' => (string) ($definition['category'] ?? $this->t('Other')),
+      ];
+    }
+    usort($blocks, static function ($a, $b) {
+      return [$a['category'], $a['label']] <=> [$b['category'], $b['label']];
+    });
+
+    return new JsonResponse(['data' => $blocks]);
+  }
+
+  /**
+   * Places a block plugin into a region of the default theme.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request object.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   The placement response.
+   */
+  public function placeBlock(Request $request) {
+    $data = json_decode($request->getContent(), TRUE);
+    $plugin_id = $data['plugin_id'] ?? NULL;
+    $region = $data['region'] ?? NULL;
+
+    $theme = \Drupal::config('system.theme')->get('default');
+    $valid_regions = array_keys(system_region_list($theme, REGIONS_VISIBLE));
+    $block_manager = \Drupal::service('plugin.manager.block');
+
+    if (!$plugin_id || !$block_manager->hasDefinition($plugin_id) || !in_array($region, $valid_regions, TRUE)) {
+      return new JsonResponse(['message' => $this->t('Invalid block or region.')], 400);
+    }
+
+    // Build a unique machine name for the placement.
+    $base = $theme . '_' . preg_replace('/[^a-z0-9_]+/', '_', strtolower(str_replace(':', '_', $plugin_id)));
+    $base = trim(substr($base, 0, 60), '_');
+    $block_storage = $this->entityTypeManager->getStorage('block');
+    $id = $base;
+    $i = 0;
+    while ($block_storage->load($id)) {
+      $id = $base . '_' . (++$i);
+    }
+
+    // Use the plugin's default configuration for settings.
+    $configuration = $block_manager->createInstance($plugin_id)->getConfiguration();
+
+    /** @var \Drupal\block\BlockInterface $block */
+    $block = $block_storage->create([
+      'id' => $id,
+      'theme' => $theme,
+      'region' => $region,
+      'plugin' => $plugin_id,
+      'weight' => 0,
+      'settings' => $configuration,
+    ]);
+    $block->save();
+
+    return new JsonResponse([
+      'message' => $this->t('Block placed.'),
+      'block' => [
+        'id' => $block->id(),
+        'label' => $block->label(),
+        'region' => $region,
+        'weight' => 0,
+        'status' => (bool) $block->status(),
+        'plugin' => $plugin_id,
+      ],
+    ]);
+  }
+
+  /**
+   * Removes a block placement from the default theme.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request object.
+   *
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
+   *   The removal response.
+   */
+  public function removeBlock(Request $request) {
+    $data = json_decode($request->getContent(), TRUE);
+    $id = $data['id'] ?? NULL;
+    $theme = \Drupal::config('system.theme')->get('default');
+
+    /** @var \Drupal\block\BlockInterface $block */
+    $block = $id ? $this->entityTypeManager->getStorage('block')->load($id) : NULL;
+    if (!$block || $block->getTheme() !== $theme) {
+      return new JsonResponse(['message' => $this->t('Block not found.')], 404);
+    }
+    $block->delete();
+
+    return new JsonResponse(['message' => $this->t('Block removed.')]);
+  }
+
+  /**
+   * Returns the default theme regions available for block placement.
+   *
+   * Placing a block in a region is a block layout operation, so the list is
+   * only exposed to users with the "administer blocks" permission.
+   *
+   * @return array
+   *   Region machine names keyed to their labels, or an empty array when the
+   *   current user cannot administer blocks.
+   */
+  protected function getRegionOptions() {
+    if (!$this->currentUser()->hasPermission('administer blocks')) {
+      return [];
+    }
+    $theme = \Drupal::config('system.theme')->get('default');
+    return system_region_list($theme, REGIONS_VISIBLE);
+  }
+
+  /**
+   * Returns the default theme region a content block is currently placed in.
+   *
+   * @param \Drupal\block_content\BlockContentInterface $block
+   *   The content block entity.
+   *
+   * @return string
+   *   The region machine name, or an empty string if not placed.
+   */
+  protected function getBlockContentRegion(BlockContentInterface $block) {
+    $placement = $this->loadBlockContentPlacement($block);
+    return $placement ? $placement->getRegion() : '';
+  }
+
+  /**
+   * Loads the block placement for a content block in the default theme.
+   *
+   * @param \Drupal\block_content\BlockContentInterface $block
+   *   The content block entity.
+   *
+   * @return \Drupal\block\BlockInterface|null
+   *   The placement, or NULL when the block is not placed.
+   */
+  protected function loadBlockContentPlacement(BlockContentInterface $block) {
+    $theme = \Drupal::config('system.theme')->get('default');
+    $plugin_id = 'block_content:' . $block->uuid();
+    $storage = $this->entityTypeManager->getStorage('block');
+    $ids = $storage->getQuery()
+      ->condition('theme', $theme)
+      ->condition('plugin', $plugin_id)
+      ->accessCheck(FALSE)
+      ->range(0, 1)
+      ->execute();
+    return $ids ? $storage->load(reset($ids)) : NULL;
+  }
+
+  /**
+   * Creates, updates or removes a content block placement for a given region.
+   *
+   * @param \Drupal\block_content\BlockContentInterface $block
+   *   The content block entity.
+   * @param string $region
+   *   The target region machine name. Empty removes the placement.
+   */
+  protected function syncBlockContentPlacement(BlockContentInterface $block, $region) {
+    // Assigning a block to a region is a block layout operation and requires
+    // the "administer blocks" permission, independent of block content access.
+    if (!$this->currentUser()->hasPermission('administer blocks')) {
+      return;
+    }
+    $theme = \Drupal::config('system.theme')->get('default');
+    $valid_regions = array_keys(system_region_list($theme, REGIONS_VISIBLE));
+    $placement = $this->loadBlockContentPlacement($block);
+
+    // No (valid) region selected: remove any existing placement.
+    if (empty($region) || !in_array($region, $valid_regions, TRUE)) {
+      if ($placement) {
+        $placement->delete();
+      }
+      return;
+    }
+
+    // Existing placement: just move it to the selected region.
+    if ($placement) {
+      $placement->setRegion($region);
+      $placement->save();
+      return;
+    }
+
+    // New placement: build one for the content block plugin.
+    $plugin_id = 'block_content:' . $block->uuid();
+    $block_manager = \Drupal::service('plugin.manager.block');
+    // The derivative for a freshly created block may not be discovered yet.
+    $block_manager->clearCachedDefinitions();
+    try {
+      $configuration = $block_manager->createInstance($plugin_id)->getConfiguration();
+    }
+    catch (\Exception $e) {
+      $configuration = [
+        'id' => $plugin_id,
+        'label' => $block->label(),
+        'label_display' => 'visible',
+      ];
+    }
+
+    $storage = $this->entityTypeManager->getStorage('block');
+    $base = $theme . '_' . preg_replace('/[^a-z0-9_]+/', '_', strtolower(str_replace(':', '_', $plugin_id)));
+    $base = trim(substr($base, 0, 60), '_');
+    $id = $base;
+    $i = 0;
+    while ($storage->load($id)) {
+      $id = $base . '_' . (++$i);
+    }
+    $storage->create([
+      'id' => $id,
+      'theme' => $theme,
+      'region' => $region,
+      'plugin' => $plugin_id,
+      'weight' => 0,
+      'settings' => $configuration,
+    ])->save();
   }
 
 }
