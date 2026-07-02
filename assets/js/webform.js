@@ -17,6 +17,7 @@ function webformTable(id) {
     selectedSubmissions: [],
     filters: {
       search: '',
+      status: '',
     },
     excludedFields: [
       'id',
@@ -73,7 +74,12 @@ function webformTable(id) {
     },
     async loadWebforms(page = 1) {
       this.currentPage = page;
-      const params = new URLSearchParams({ page: page, limit: Alpine.store('limit'), search: this.filters.search });
+      const params = new URLSearchParams({
+        page: page,
+        limit: Alpine.store('limit'),
+        search: this.filters.search,
+        status: this.filters.status,
+      });
 
       try {
         const endpointUrl = drupalSettings.vactoryDashboard.dataPath;

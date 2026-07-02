@@ -146,6 +146,7 @@ function vactory_dashboard_theme($existing, $type, $theme, $path) {
         'langs' => NULL,
         'has_metatag' => NULL,
         'configured_limit' => NULL,
+        'moderation_states' => NULL,
       ],
     ],
     'vactory_dashboard_captcha' => [
