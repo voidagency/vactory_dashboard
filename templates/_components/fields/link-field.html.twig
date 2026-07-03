@@ -18,7 +18,7 @@
       let message = '';
       const value = (url || '').trim();
       if (value !== '') {
-        if (/^https?:\/\//.test(value) || /^\//.test(value) || /^\?/.test(value) || /^#/.test(value) || /^<front>/.test(value)) {
+        if (/^https?:\/\//.test(value) || /^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(value) || /^\//.test(value) || /^\?/.test(value) || /^#/.test(value) || /^<front>/.test(value)) {
           message = '';
         }
         else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {

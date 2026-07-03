@@ -160,11 +160,12 @@
                         <input
                                 type="color"
                                 id="config-color"
+                                x-init="if (!{{ paragraph }}.config.color) {{ paragraph }}.config.color = {{ paragraph }}.config.default_color || '#ff0000'"
                                 x-model="{{ paragraph }}.config.color"
                                 class="mt-1 block w-10 h-10 border rounded cursor-pointer"
                         >
                         <span
-                                @click="{{ paragraph }}.config.color = '#ff0000'"
+                                @click="{{ paragraph }}.config.color = {{ paragraph }}.config.default_color || '#ff0000'"
                                 class="cursor-pointer">
                             Clear
                         </span>
