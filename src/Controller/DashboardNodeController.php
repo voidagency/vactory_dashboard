@@ -205,6 +205,29 @@ class DashboardNodeController extends ControllerBase {
     $content_type_limits = $config->get('content_type_limits') ?? [];
     $configured_limit = $content_type_limits[$bundle] ?? 50;
 
+    // Get the content moderation states available for this bundle, so the
+    // dashboard listing can offer a publication-status filter.
+    $moderation_states = [];
+    if (\Drupal::moduleHandler()->moduleExists('content_moderation')) {
+      $workflows = $this->entityTypeManager->getStorage('workflow')->loadMultiple();
+      foreach ($workflows as $workflow) {
+        $type_plugin = $workflow->getTypePlugin();
+        if ($type_plugin->getPluginId() !== 'content_moderation') {
+          continue;
+        }
+        if (!in_array('node', $type_plugin->getEntityTypes(), TRUE)) {
+          continue;
+        }
+        if (!in_array($bundle, $type_plugin->getBundlesForEntityType('node'), TRUE)) {
+          continue;
+        }
+        foreach ($type_plugin->getStates() as $state_id => $state) {
+          $moderation_states[$state_id] = $state->label();
+        }
+        break;
+      }
+    }
+
     return [
       '#theme' => 'vactory_dashboard_content_types',
       '#id' => $bundle,
@@ -215,6 +238,7 @@ class DashboardNodeController extends ControllerBase {
       '#langs' => $langs,
       '#has_metatag' => array_key_exists('field_vactory_meta_tags', $this->entityFieldManager->getFieldDefinitions('node', $bundle)),
       '#configured_limit' => $configured_limit,
+      '#moderation_states' => $moderation_states,
     ];
   }
 
@@ -240,6 +264,7 @@ class DashboardNodeController extends ControllerBase {
     $limit = max(1, (int) $request->query->get('limit', $default_limit));
     $limit = max(1, (int) $request->query->get('limit', 10));
     $search = $request->query->get('search', '');
+    $status = $request->query->get('status', '');
     $offset = ($page - 1) * $limit;
 
     // Build the query.
@@ -256,6 +281,62 @@ class DashboardNodeController extends ControllerBase {
         ->condition('title', '%' . $search . '%', 'LIKE')
         ->condition('body', '%' . $search . '%', 'LIKE');
       $query->condition($group);
+    }
+
+    // Add publication-status condition.
+    if (!empty($status)) {
+      if (\Drupal::moduleHandler()->moduleExists('content_moderation')) {
+        // Nodes whose current moderation state matches the requested one.
+        $moderation_ids = $this->entityTypeManager
+          ->getStorage('content_moderation_state')
+          ->getQuery()
+          ->condition('moderation_state', $status)
+          ->condition('content_entity_type_id', 'node')
+          ->accessCheck(TRUE)
+          ->execute();
+
+        $nids = [];
+        if (!empty($moderation_ids)) {
+          $states = $this->entityTypeManager
+            ->getStorage('content_moderation_state')
+            ->loadMultiple($moderation_ids);
+          foreach ($states as $state) {
+            $node_bundle = \Drupal::database()
+              ->select('node_field_data', 'nfd')
+              ->fields('nfd', ['type'])
+              ->condition('nfd.nid', $state->get('content_entity_id')->value)
+              ->range(0, 1)
+              ->execute()
+              ->fetchField();
+            if ($node_bundle === $bundle) {
+              $nids[] = $state->get('content_entity_id')->value;
+            }
+          }
+        }
+
+        // Fall back to the node status flag for nodes with no moderation
+        // record (e.g. created before moderation was enabled).
+        if ($status === 'published' || $status === 'draft') {
+          $node_query = \Drupal::database()->select('node_field_data', 'nfd');
+          $node_query->leftJoin(
+            'content_moderation_state_field_data',
+            'cms',
+            'nfd.nid = cms.content_entity_id AND cms.content_entity_type_id = :type',
+            [':type' => 'node']
+          );
+          $node_query->fields('nfd', ['nid']);
+          $node_query->condition('nfd.type', $bundle);
+          $node_query->isNull('cms.content_entity_id');
+          $node_query->condition('nfd.status', $status === 'published' ? 1 : 0);
+          $nids = array_merge($nids, $node_query->execute()->fetchCol());
+        }
+
+        // Constrain the entity query to the matching node ids (or none).
+        $query->condition('nid', !empty($nids) ? array_unique($nids) : [-1], 'IN');
+      }
+      else {
+        $query->condition('status', $status === 'published' ? 1 : 0);
+      }
     }
 
     // Get total count before adding range

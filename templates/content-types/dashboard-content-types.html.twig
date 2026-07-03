@@ -135,6 +135,7 @@
         return {
           id: id,
           vocabularyIds: {{ vocabulary_ids|json_encode|raw }},
+          statusOptions: {{ moderation_states|json_encode|raw }},
           data: [],
           taxonomies: [],
           metatagKeys: [],
@@ -181,6 +182,7 @@
               page: page,
               limit: this.limit,
               search: this.filters.search,
+              status: this.filters.status,
             });
 
             try {
@@ -405,6 +407,7 @@
               status: '',
               search: '',
             };
+            this.loadData(1);
           },
           editTerm(term) {
             this.editingTerm = term;
