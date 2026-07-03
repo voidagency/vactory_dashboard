@@ -320,18 +320,14 @@ protected static $cache = [];
       $uuid = $link->getBaseId();
     }
     $returnArray['id'] = $uuid;
-    $returnArray['title'] = $link->getTitle();
-    $url = $link->getUrlObject()->toString();
-    $current_lang = \Drupal::languageManager()->getCurrentLanguage()->getId();
-    $path = \Drupal::service('path_alias.manager')
-      ->getPathByAlias(str_replace('/' . $current_lang, '', $url));
-    if (str_starts_with($path, '/node/')) {
-      $node_id = str_replace('/node/', '', $path);
-      if (is_numeric($node_id)) {
-        $node_id = (int) $node_id;
+    $returnArray['title'] = $link->getTitle();    
+    $url_object = $link->getUrlObject();
+    if ($url_object->isRouted() && $url_object->getRouteName() === 'entity.node.canonical') {
+      $node_id = (int) ($url_object->getRouteParameters()['node'] ?? 0);
+      if ($node_id) {
         $returnArray['nid'] = $node_id;
         $returnArray['url'] = Url::fromRoute('vactory_dashboard.vactory_page.edit', ['id' => $node_id], ['absolute' => TRUE])
-        ->toString();
+          ->toString();
       }
     }
     return $returnArray;
