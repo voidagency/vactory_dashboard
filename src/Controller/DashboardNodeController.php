@@ -868,6 +868,17 @@ class DashboardNodeController extends ControllerBase {
           }
         }
 
+        // Handle social media links field.
+        if (isset($field_definitions[$field_name]) &&
+          $field_definitions[$field_name]->getType() === 'social_media_links_field' &&
+          is_array($field_value)) {
+          $node->set(
+            $field_name,
+            $this->prepareSocialMediaLinksFieldValue($bundle, $field_name, $field_value)
+          );
+          continue;
+        }
+
         if ($field_value) {
           $node->set($field_name, $field_value);
         }
@@ -1119,6 +1130,17 @@ class DashboardNodeController extends ControllerBase {
             $node->getTranslation($language)->set($field_name, $ids);
             continue;
           }
+        }
+
+        // Handle social media links field.
+        if (isset($field_definitions[$field_name]) &&
+          $field_definitions[$field_name]->getType() === 'social_media_links_field' &&
+          is_array($field_value)) {
+          $node->getTranslation($language)->set(
+            $field_name,
+            $this->prepareSocialMediaLinksFieldValue($bundle, $field_name, $field_value)
+          );
+          continue;
         }
 
         if ($field_value || is_array($field_value) || is_bool($field_value)) {
@@ -1501,6 +1523,46 @@ class DashboardNodeController extends ControllerBase {
    */
   public function getReferencedTaxonomies($bundle) {
     return $this->nodeService->getReferencedTaxonomies($bundle);
+  }
+
+  /**
+   * Formats dashboard social media values for the configured field widget.
+   *
+   * @param string $bundle
+   *   The node bundle.
+   * @param string $field_name
+   *   The social media field name.
+   * @param array $values
+   *   Values keyed by platform ID.
+   *
+   * @return array
+   *   Values formatted for the Social Media Links field item.
+   */
+  protected function prepareSocialMediaLinksFieldValue(string $bundle, string $field_name, array $values): array {
+    $form_display = \Drupal::service('entity_display.repository')
+      ->getFormDisplay('node', $bundle, 'default');
+    $component = $form_display->getComponent($field_name);
+
+    if (($component['type'] ?? '') === 'social_media_links_field_default') {
+      $platform_values = [];
+      foreach ($values as $platform_id => $value) {
+        $platform_values[$platform_id] = ['value' => $value];
+      }
+
+      return [['platform_values' => $platform_values]];
+    }
+
+    $items = [];
+    foreach ($values as $platform_id => $value) {
+      if ($value !== '') {
+        $items[] = [
+          'platform' => $platform_id,
+          'value' => $value,
+        ];
+      }
+    }
+
+    return $items;
   }
 
 }
