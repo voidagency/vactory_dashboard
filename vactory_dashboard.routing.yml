@@ -551,6 +551,171 @@ vactory_dashboard.settings.banner_blocks:
   requirements:
     _permission: "administer block content"
 
+vactory_dashboard.block_content:
+  path: "/admin/dashboard/content-blocks"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::contentBlocks'
+    _title: "Content blocks"
+  requirements:
+    _permission: "administer block content"
+
+vactory_dashboard.block_content.data:
+  path: "/api/vactory-dashboard/content-blocks"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::getContentBlocks'
+    _title: "Content blocks data"
+  methods: [GET]
+  requirements:
+    _permission: "administer block content"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.block_content.add:
+  path: "/admin/dashboard/content-blocks/add/{block_content_type}"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::addContentBlock'
+    _title: "Add content block"
+  requirements:
+    _entity_create_access: "block_content:{block_content_type}"
+  options:
+    parameters:
+      block_content_type:
+        type: entity:block_content_type
+
+vactory_dashboard.block_content.edit:
+  path: "/admin/dashboard/content-blocks/{block_content}/edit"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::editContentBlock'
+    _title: "Edit content block"
+  requirements:
+    _entity_access: "block_content.update"
+    block_content: \d+
+  options:
+    parameters:
+      block_content:
+        type: entity:block_content
+
+vactory_dashboard.block_content.dynamic_create:
+  path: "/api/vactory-dashboard/content-blocks/add/{block_content_type}/dynamic/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::createDynamicContentBlock'
+    _title: "Create dynamic content block"
+  methods: [POST]
+  requirements:
+    _entity_create_access: "block_content:{block_content_type}"
+  options:
+    no_cache: TRUE
+    parameters:
+      block_content_type:
+        type: entity:block_content_type
+
+vactory_dashboard.block_content.dynamic_save:
+  path: "/api/vactory-dashboard/content-blocks/{block_content}/dynamic/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::saveDynamicContentBlock'
+    _title: "Save dynamic content block"
+  methods: [POST]
+  requirements:
+    _entity_access: "block_content.update"
+    block_content: \d+
+  options:
+    no_cache: TRUE
+    parameters:
+      block_content:
+        type: entity:block_content
+
+vactory_dashboard.block_content.standard_create:
+  path: "/api/vactory-dashboard/content-blocks/add/{block_content_type}/standard/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::createStandardContentBlock'
+    _title: "Create standard content block"
+  methods: [POST]
+  requirements:
+    _entity_create_access: "block_content:{block_content_type}"
+  options:
+    no_cache: TRUE
+    parameters:
+      block_content_type:
+        type: entity:block_content_type
+
+vactory_dashboard.block_content.standard_save:
+  path: "/api/vactory-dashboard/content-blocks/{block_content}/standard/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::saveStandardContentBlock'
+    _title: "Save standard content block"
+  methods: [POST]
+  requirements:
+    _entity_access: "block_content.update"
+    block_content: \d+
+  options:
+    no_cache: TRUE
+    parameters:
+      block_content:
+        type: entity:block_content
+
+vactory_dashboard.block_content.delete:
+  path: "/api/vactory-dashboard/content-blocks/delete"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::deleteContentBlock'
+    _title: "Delete content block"
+  methods: [POST]
+  requirements:
+    _permission: "administer block content"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.block_regions:
+  path: "/admin/dashboard/content-blocks/regions"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::blockRegions'
+    _title: "Block layout"
+  requirements:
+    _permission: "administer blocks"
+
+vactory_dashboard.block_regions.save:
+  path: "/api/vactory-dashboard/block-regions/save"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::saveBlockRegions'
+    _title: "Save block regions"
+  methods: [POST]
+  requirements:
+    _permission: "administer blocks"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.block_regions.available:
+  path: "/api/vactory-dashboard/block-regions/available"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::getAvailableBlocks'
+    _title: "Available blocks"
+  methods: [GET]
+  requirements:
+    _permission: "administer blocks"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.block_regions.place:
+  path: "/api/vactory-dashboard/block-regions/place"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::placeBlock'
+    _title: "Place block"
+  methods: [POST]
+  requirements:
+    _permission: "administer blocks"
+  options:
+    no_cache: TRUE
+
+vactory_dashboard.block_regions.remove:
+  path: "/api/vactory-dashboard/block-regions/remove"
+  defaults:
+    _controller: '\Drupal\vactory_dashboard\Controller\DashboardBlockController::removeBlock'
+    _title: "Remove block"
+  methods: [POST]
+  requirements:
+    _permission: "administer blocks"
+  options:
+    no_cache: TRUE
+
 vactory_dashboard.vactory_page.add:
   path: "/admin/dashboard/vactory_page/add"
   defaults:
@@ -923,7 +1088,7 @@ vactory_dashboard.batch_export_process:
     _controller: '\Drupal\vactory_dashboard\Controller\DashboardSubmissionController::processBatchExport'
   methods: [GET]
   requirements:
-    _permission: 'administer dashboard configuration'
+    _permission: 'access dashboard'
 
 vactory_dashboard.batch_export_download:
   path: '/batch-export/download/{webform_id}'

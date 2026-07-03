@@ -411,6 +411,7 @@ protected static $cache = [];
 
     return new JsonResponse([
       'languages' => array_keys($enabled_languages),
+      'display_format' => $config->get('display_format') ?? 'list',
     ]);
   }
 

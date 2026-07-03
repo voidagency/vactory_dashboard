@@ -159,7 +159,7 @@ Usage:
         <div class="flex items-center">
             <button @click.prevent="activeTab = 'templates'"
                     type="button"
-                    class="group relative flex items-center justify-center rounded-md font-bold border border-primary-500 text-primary-500 w-full px-3.5 py-4 shadow-sm transition duration-150 hover:bg-primary-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500">
+                    class="group relative flex items-center justify-center rounded-md font-bold border border-primary-500 text-primary-500 w-full px-3.5 py-3 shadow-sm transition duration-150 hover:bg-primary-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500">
                 <span x-text="blocks.length === 0 ? `Ajouter une template` : `${blocks.length} Template${blocks.length > 1 ? 's' : ''} disponible${blocks.length > 1 ? 's' : ''}`"></span>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                      stroke="currentColor"
@@ -313,7 +313,7 @@ Usage:
                 let message = '';
                 const value = (url || '').trim();
                 if (value !== '') {
-                    if (/^https?:\/\//.test(value) || /^\//.test(value) || /^\?/.test(value) || /^#/.test(value) || /^<front>/.test(value)) { message = ''; }
+                    if (/^https?:\/\//.test(value) || /^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(value) || /^\//.test(value) || /^\?/.test(value) || /^#/.test(value) || /^<front>/.test(value)) { message = ''; }
                     else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { message = '{{ link_email_error|e('js') }}'; }
                     else { message = '{{ link_url_error|e('js') }}'; }
                 }
@@ -540,6 +540,40 @@ Usage:
         </div>
     </template>
 
+    {# Block field (plugin blocks) #}
+    <template x-if="field.type === 'block_field'">
+        <div class="space-y-3">
+            <template x-for="(item, idx) in formData.fields[field.name]" :key="`${field.name}-${idx}-${item.plugin_id || 'empty'}`">
+                <div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <select :value="formData.fields[field.name][idx].plugin_id"
+                            @change="formData.fields[field.name][idx].plugin_id = $event.target.value; formData.fields[field.name][idx].label = field.options[$event.target.value] || formData.fields[field.name][idx].label"
+                            class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-300">
+                        <option value="">{{ 'Select a block'|t }}</option>
+                        <template x-for="(groupOptions, category) in (field.options_grouped || {})" :key="category">
+                            <optgroup :label="category">
+                                <template x-for="(label, pluginId) in groupOptions" :key="pluginId">
+                                    <option :value="pluginId"
+                                            :selected="formData.fields[field.name][idx].plugin_id === pluginId"
+                                            x-text="label"></option>
+                                </template>
+                            </optgroup>
+                        </template>
+                    </select>
+                    <button type="button"
+                            @click="formData.fields[field.name].splice(idx, 1)"
+                            class="text-sm text-red-600 hover:text-red-700">
+                        {{ 'Remove'|t }}
+                    </button>
+                </div>
+            </template>
+            <button type="button"
+                    @click="formData.fields[field.name].push({ plugin_id: '', settings: {}, label: '' })"
+                    class="text-sm font-medium text-primary-600 hover:text-primary-700">
+                {{ 'Add another item'|t }}
+            </button>
+        </div>
+    </template>
+
     {# Boolean/Checkbox #}
     <template x-if="field.type === 'boolean'">
         <label class="flex items-center gap-2 cursor-pointer"
@@ -562,9 +596,9 @@ Usage:
             <input type="color"
                    :required="field.required"
                    x-model="formData.fields[field.name].color.hexadecimal"
-                   @change="if (!formData.fields[field.name]) formData.fields[field.name] = { color: { hexadecimal: '' } }"
+                   @change="if (!formData.fields[field.name]) formData.fields[field.name] = { color: { hexadecimal: field.default_value?.color?.hexadecimal || '' } }"
                    class="block w-10 h-10 border rounded cursor-pointer">
-            <span @click="formData.fields[field.name] = { color: { hexadecimal: '' } }"
+            <span @click="formData.fields[field.name] = { color: { hexadecimal: field.default_value?.color?.hexadecimal || '' } }"
                   class="text-primary-500 text-sm cursor-pointer hover:underline">
                 Clear
             </span>

@@ -368,7 +368,7 @@ class DashboardNodeController extends ControllerBase {
     $config = \Drupal::config('vactory_dashboard.global.settings');
     $enabled_languages = $config->get('dashboard_languages') ?? [];
     $enabled_languages = array_filter($enabled_languages);
-
+    $languages_display_format = $config->get('display_format');
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
 
@@ -416,6 +416,7 @@ class DashboardNodeController extends ControllerBase {
       '#language' => $current_language,
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
+      '#languages_display_format' => $languages_display_format,
       '#bundle' => $bundle,
       '#bundle_label' => $bundle_label,
       '#fields' => $fields,
@@ -482,7 +483,7 @@ class DashboardNodeController extends ControllerBase {
     $config = \Drupal::config('vactory_dashboard.global.settings');
     $enabled_languages = $config->get('dashboard_languages') ?? [];
     $enabled_languages = array_filter($enabled_languages);
-
+    $languages_display_format = $config->get('display_format');
     // Get existing translations.
     $existing_translations = $node->getTranslationLanguages();
 
@@ -540,6 +541,7 @@ class DashboardNodeController extends ControllerBase {
         ->getId() : $node->language()->getId(),
       '#node_default_lang' => $node->language()->getId(),
       '#available_languages' => $available_languages_list,
+      '#languages_display_format' => $languages_display_format,
       '#bundle' => $bundle,
       '#has_seo' => $node->hasField('field_vactory_meta_tags'),
       '#changed' => $node_translation ? $node_translation->get('changed')->value : $node->get('changed')->value,
@@ -611,6 +613,7 @@ class DashboardNodeController extends ControllerBase {
     $config = \Drupal::config('vactory_dashboard.global.settings');
     $enabled_languages = $config->get('dashboard_languages') ?? [];
     $enabled_languages = array_filter($enabled_languages);
+    $languages_display_format = $config->get('display_format');
 
     // Get existing translations.
     $existing_translations = $node->getTranslationLanguages();
@@ -668,6 +671,7 @@ class DashboardNodeController extends ControllerBase {
       '#language' => $current_language,
       '#node_default_lang' => $node->language()->getId(),
       '#available_languages' => $available_languages_list,
+      '#languages_display_format' => $languages_display_format,
       '#bundle' => $bundle,
       '#nid' => $nid,
       '#status' => $node->get('status')->value,

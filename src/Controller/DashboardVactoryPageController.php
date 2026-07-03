@@ -109,6 +109,7 @@ class DashboardVactoryPageController extends ControllerBase {
     $config = \Drupal::config('vactory_dashboard.global.settings');
     $enabled_languages = $config->get('dashboard_languages') ?? [];
     $enabled_languages = array_filter($enabled_languages);
+    $languages_display_format = $config->get('display_format');
 
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
@@ -140,6 +141,7 @@ class DashboardVactoryPageController extends ControllerBase {
       ...$paragraph_flags,
       '#node_default_lang' => $current_language,
       '#available_languages' => $available_languages_list,
+      '#languages_display_format' => $languages_display_format,
       '#fields' => $fields,
       '#banner' => $this->nodeService->getBannerConfiguration("vactory_page"),
       '#domain_access_enabled' => \Drupal::moduleHandler()->moduleExists('domain_access'),
@@ -194,6 +196,7 @@ class DashboardVactoryPageController extends ControllerBase {
     $config = \Drupal::config('vactory_dashboard.global.settings');
     $enabled_languages = $config->get('dashboard_languages') ?? [];
     $enabled_languages = array_filter($enabled_languages);
+    $languages_display_format = $config->get('display_format');
 
     // Get existing translations.
     $existing_translations = $node->getTranslationLanguages();
@@ -241,6 +244,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#status' => $node_translation ? $node_translation->get('status')->value : $node->get('status')->value,
       '#available_languages' => $available_languages_list,
       '#node_default_lang' => $node->language()->getId(),
+      '#languages_display_format' => $languages_display_format,
       '#has_translation' => $node_translation ? TRUE : FALSE,
       '#meta_tags' => $meta_tags,
       '#fields' => $fields,
@@ -296,6 +300,7 @@ class DashboardVactoryPageController extends ControllerBase {
     $config = \Drupal::config('vactory_dashboard.global.settings');
     $enabled_languages = $config->get('dashboard_languages') ?? [];
     $enabled_languages = array_filter($enabled_languages);
+    $languages_display_format = $config->get('display_format');
 
     // Get existing translations.
     $existing_translations = $node->getTranslationLanguages();
@@ -339,6 +344,7 @@ class DashboardVactoryPageController extends ControllerBase {
       '#status' => $node->get('status')->value,
       '#available_languages' => $available_languages_list,
       '#node_default_lang' => $node->language()->getId(),
+      '#languages_display_format' => $languages_display_format,
       '#has_translation' => FALSE,
       '#fields' => $fields,
       '#meta_tags' => $meta_tags,

@@ -79,7 +79,7 @@
     <div class="flex-1">
         <div class="mx-auto">
             <form id="node-form" @submit.prevent="saveNode()" class="bg-white rounded-lg shadow-sm p-6">
-                <div x-show="activeTab === 'content'" class="flex gap-y-4 flex-col">
+                <div x-show="activeTab === 'content'" class="flex gap-y-6 flex-col">
                     <template x-for="(field, fieldName) in contentFields" :key="field.name">
                         {% include "@vactory_dashboard/_components/fields/form-field-builder.html.twig" with {
                             field: 'field',

@@ -142,6 +142,20 @@ class VactoryDashboardSettingsForm extends ConfigFormBase {
       '#description' => $this->t('Default language - cannot be disabled'),
     ];
 
+    $display_options = [
+      'select' => $this->t('Select'),
+      'list' => $this->t('List'),
+    ];
+    
+    $default_display = $config->get('display_format') ?? 'list';
+    $form['language']['display_format'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Display format'),
+      '#description' => $this->t('Choose whether languages appear as a dropdown or a list'),
+      '#options' => $display_options,
+      '#default_value' => $default_display,
+    ];
+
     // SECTION WEBFORMS //
     $form['webforms'] = [
       '#type' => 'details',
@@ -239,8 +253,10 @@ class VactoryDashboardSettingsForm extends ConfigFormBase {
 
     // Save languages configuration
     $selected_languages = array_filter($form_state->getValue('dashboard_languages'));
+    $languages_display_format = $form_state->getValue('display_format');
     $this->configFactory()->getEditable('vactory_dashboard.global.settings')
       ->set('dashboard_languages', $selected_languages)
+      ->set('display_format', $languages_display_format)
       ->save();
 
     $selected_webforms = array_filter($form_state->getValue('dashboard_webforms'));

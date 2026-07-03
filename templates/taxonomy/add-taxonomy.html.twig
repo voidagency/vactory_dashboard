@@ -222,7 +222,7 @@
               if (field.type === 'colorapi_color_field') {
                 this.formData.fields[fieldKey] = {
                   color: {
-                    hexadecimal: existingValue || ''
+                    hexadecimal: existingValue || field.default_value?.color?.hexadecimal || ''
                   }
                 };
                 return;
