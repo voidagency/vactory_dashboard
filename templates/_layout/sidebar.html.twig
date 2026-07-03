@@ -628,6 +628,8 @@ Macro to render menu items recursively with proper depth and active state handli
                 </div>
             </div>
     </nav>
+    {# Help button: only rendered when at least one help link (video or manual) is configured. #}
+    {% if sidebar.advancedDashboard.video_url or sidebar.advancedDashboard.file_url %}
     <div class="pointer-events-none absolute inset-x-0 bottom-3 z-[60] flex justify-end px-3"
          x-data="{ assistanceOpen: false }">
         <div class="pointer-events-auto relative ml-auto flex shrink-0 flex-col items-end"
@@ -643,12 +645,12 @@ Macro to render menu items recursively with proper depth and active state handli
                  class="fixed bottom-[55px] left-4 mb-3 w-[215px] bg-white p-2 shadow-lg"
                  @keydown.escape.window="assistanceOpen = false" style="bottom: 55px;">
                 <div class="flex w-full flex-col gap-0.5">
+                    {% if sidebar.advancedDashboard.video_url %}
                     <div class="tutoriel-video w-full min-w-0">
-                        <a href="{{ sidebar.advancedDashboard.video_url ?: '#.' }}"
+                        <a href="{{ sidebar.advancedDashboard.video_url }}"
                            target="_blank" rel="noopener noreferrer"
-                           title="{{ sidebar.advancedDashboard.video_url ? '' : 'Vidéo non disponible' }}"
                            @click="assistanceOpen = false"
-                           class="flex w-full min-w-0 items-start gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-gray-600 outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 group {{ sidebar.advancedDashboard.video_url ? 'hover:bg-slate-50' : 'opacity-50 pointer-events-none' }}">
+                           class="flex w-full min-w-0 items-start gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-gray-600 outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 group hover:bg-slate-50">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                  stroke-width="1.5" stroke="currentColor" aria-hidden="true" focusable="false"
                                  class="mt-0.5 h-4 w-4 shrink-0 text-slate-500 group-hover:text-primary-600 transition-colors">
@@ -660,12 +662,13 @@ Macro to render menu items recursively with proper depth and active state handli
                             </span>
                         </a>
                     </div>
+                    {% endif %}
+                    {% if sidebar.advancedDashboard.file_url %}
                     <div class="manuel w-full min-w-0">
-                        <a href="{{ sidebar.advancedDashboard.file_url ?: '#.' }}"
-                           {% if sidebar.advancedDashboard.file_url %}download{% endif %}
-                           title="{{ sidebar.advancedDashboard.file_url ? '' : 'Fichier non disponible' }}"
+                        <a href="{{ sidebar.advancedDashboard.file_url }}"
+                           download
                            @click="assistanceOpen = false"
-                           class="flex w-full min-w-0 items-start gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-gray-600 outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 group {{ sidebar.advancedDashboard.file_url ? 'hover:bg-slate-50' : 'opacity-50 pointer-events-none' }}">
+                           class="flex w-full min-w-0 items-start gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-gray-600 outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 group hover:bg-slate-50">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                  class="mt-0.5 h-4 w-4 shrink-0 text-slate-500 group-hover:text-primary-600 transition-colors"
                                  fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false">
@@ -677,6 +680,7 @@ Macro to render menu items recursively with proper depth and active state handli
                             </span>
                         </a>
                     </div>
+                    {% endif %}
                 </div>
             </div>
             <button type="button"
@@ -689,6 +693,7 @@ Macro to render menu items recursively with proper depth and active state handli
             </button>
         </div>
     </div>
+    {% endif %}
 </aside>
 <script>
   function menuData(config) {

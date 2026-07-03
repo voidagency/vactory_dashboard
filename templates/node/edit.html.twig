@@ -52,6 +52,43 @@
               Object.entries(this.fields).filter(([key, field]) => key === 'field_exclude_from_search'),
             );
           },
+          get groupedContentFields() {
+            const fields = typeof this.fields === 'string' ? JSON.parse(this.fields) : this.fields;
+            const blocks = [];
+            const processedGroups = new Set();
+
+            for (const [fieldName, field] of Object.entries(fields)) {
+              if (field.group) {
+                if (!processedGroups.has(field.group)) {
+                  const groupSettings = field.group_format_settings || {};
+                  blocks.push({
+                    type: 'group',
+                    name: field.group,
+                    label: field.group_label || field.group,
+                    description: field.group_description || '',
+                    format_type: field.group_format_type || 'fieldset',
+                    open: !!groupSettings.open,
+                    classes: groupSettings.classes || '',
+                    id: groupSettings.id || '',
+                    fields: {}
+                  });
+                  processedGroups.add(field.group);
+                }
+
+                const groupBlock = blocks.find(b => b.name === field.group);
+                if (groupBlock) {
+                  groupBlock.fields[fieldName] = field;
+                }
+              } else {
+                blocks.push({
+                  type: 'field',
+                  name: fieldName,
+                  field: field
+                });
+              }
+            }
+            return blocks;
+          },
           // End other bundle specific vars.
           selectedDynamicField: null,
           showDynamicFieldModal: false,
@@ -2089,7 +2126,7 @@
             }
             this.settings.title = node?.title || '';
             this.settings.summary = node?.summary || '';
-            this.settings.alias = node?.alias || '';
+            this.settings.alias = (node?.alias || '').replace(/^\//, '');
             // this.settings.status = node.status || false;
             this.settings.moderation_state = this.settings.moderation?.current_state || '';
             this.settings.publish_on = node?.publish_on || '';
@@ -2310,16 +2347,20 @@
           removeTemplateMultiple() {
             this.paragraphMultipleForm.items[this.removeBlockMultipleIndex]['widgets'].splice(this.removeBlockMultipleTemplateIndex, 1);
           },
+          validationMessage: '',
+          emailErrors: {},
           // Node Specific logique for saving node
           validateForm(id) {
+            this.validationMessage = '';
             const borderClass = '!border-red-500';
             const form = document.getElementById(id);
-            const requiredInputs = form.querySelectorAll('[required]');
+            
+            const inputsToValidate = form.querySelectorAll('[required], input[type="email"]');
 
             let isValid = true;
             let firstInvalidElement = null;
 
-            requiredInputs.forEach(input => {
+            inputsToValidate.forEach(input => {
               // MEDIA FIELDS (BUTTONs)
               if (input.tagName === 'BUTTON') {
                 const parent = input.parentNode;
@@ -2356,6 +2397,8 @@
               const inputIsCKEditorDF = input.tagName === 'TEXTAREA' && input.id.startsWith('edit-ck');
               let hasValue = false;
 
+              const isRequired = input.hasAttribute('required');
+
               if (inputIsSummary) {
                 const textarea = input.querySelector('textarea');
                 hasValue = !!(textarea && textarea.value.trim());
@@ -2370,7 +2413,24 @@
                 input.classList.remove(borderClass);
               }
 
-              if (!hasValue && !input.disabled) {
+              let isValidFormat = true;
+              if (input.type === 'email' && hasValue) {
+                isValidFormat = input.checkValidity();
+              }
+
+              let isInvalid = false;
+              if (isRequired && !hasValue) {
+                isInvalid = true;
+              }
+              
+              if (input.type === 'email' && hasValue && !isValidFormat) {
+                isInvalid = true;
+                if (!this.validationMessage) {
+                  this.validationMessage = '{{ "Please enter a valid email address"|t }}';
+                }
+              }
+
+              if (isInvalid && !input.disabled) {
                 if (inputIsSummary) {
                   const textarea = input.querySelector('textarea');
                   if (textarea) {
@@ -2398,12 +2458,15 @@
             if (firstInvalidElement) {
               firstInvalidElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-
             return isValid;
           },
           async saveNode(id = 'node-form') {
             if (!this.validateForm(id)) {
-              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              this.showNotification(
+                'error',
+                this.validationMessage || '{{ "Please fill in all required fields"|t }}'
+              );
+
               this.activeTab = 'content';
               return;
             }
@@ -2441,6 +2504,7 @@
                   fields: this.formData.fields,
                   status: this.formData.status,
                   moderation_state: this.settings.moderation_state,
+                  alias: this.settings.alias,
                   seo: this.seo,
                   blocks: this.blocks,
                   has_translation: this.has_translation,

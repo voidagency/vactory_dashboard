@@ -20,7 +20,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Drupal\vactory_dashboard\Service\MetatagService;
 use Drupal\token\Token;
 use Drupal\vactory_dashboard\Service\PreviewUrlService;
+use Drupal\vactory_dashboard\Service\AliasValidationService;
 use Drupal\path_alias\AliasManagerInterface;
+use Drupal\pathauto\PathautoState;
 
 /**
  * Controller for the node dashboard.
@@ -86,6 +88,13 @@ class DashboardNodeController extends ControllerBase {
   protected $configFactory;
 
   /**
+   * The alias validation service.
+   *
+   * @var \Drupal\vactory_dashboard\Service\AliasValidationService
+   */
+  protected AliasValidationService $aliasValidationService;
+
+  /**
    * Constructs a new DashboardUsersController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
@@ -111,7 +120,8 @@ class DashboardNodeController extends ControllerBase {
     PreviewUrlService $previewUrlService,
     AliasManagerInterface $alias_manager,
     NodeService $node_service,
-    ConfigFactoryInterface $config_factory
+    ConfigFactoryInterface $config_factory,
+    AliasValidationService $alias_validation_service
   ) {
     $this->entityTypeManager = $entity_type_manager;
     $this->entityFieldManager = $entity_field_manager;
@@ -121,6 +131,7 @@ class DashboardNodeController extends ControllerBase {
     $this->aliasManager = $alias_manager;
     $this->nodeService = $node_service;
     $this->configFactory = $config_factory;
+    $this->aliasValidationService = $alias_validation_service;
   }
 
   /**
@@ -135,7 +146,8 @@ class DashboardNodeController extends ControllerBase {
       $container->get('vactory_dashboard.preview_url'),
       $container->get('path_alias.manager'),
       $container->get('vactory_dashboard.node_service'),
-      $container->get('config.factory')
+      $container->get('config.factory'),
+      $container->get('vactory_dashboard.alias_validation')
     );
   }
 
@@ -801,13 +813,16 @@ class DashboardNodeController extends ControllerBase {
         ->getDefaultLanguage()
         ->getId();
 
+      // Resolve the optional URL alias: empty means let pathauto generate one.
+      $alias = isset($data['alias']) ? trim($data['alias']) : '';
+
       // Create node
       $node = Node::create([
         'type' => $data['bundle'],
         'langcode' => $language,
-        'status' => $status,
         'path' => [
-          'pathauto' => 1,
+          'pathauto' => $alias === '' ? PathautoState::CREATE : PathautoState::SKIP,
+          'alias' => $alias === '' ? '' : '/' . ltrim($alias, '/'),
         ],
       ]);
 
@@ -822,6 +837,9 @@ class DashboardNodeController extends ControllerBase {
         // Moderated bundle: apply the submitted state, let content_moderation
         // derive the published status from it.
         $moderation_state = $data['moderation_state'] ?? NULL;
+        if (empty($moderation_state)) {
+          $moderation_state = $moderation['current_state'] ?? NULL;
+        }
         if (!empty($moderation_state)) {
           $allowed_ids = array_column($moderation['states'], 'id');
           if (!in_array($moderation_state, $allowed_ids, TRUE)) {
@@ -832,6 +850,9 @@ class DashboardNodeController extends ControllerBase {
           }
           $node->set('moderation_state', $moderation_state);
         }
+      }
+      else {
+        $node->set('status', $status);
       }
 
       // Get field definitions for type checking
@@ -947,6 +968,17 @@ class DashboardNodeController extends ControllerBase {
             $node->set($field_name, $ids);
             continue;
           }
+        }
+
+        // Handle social media links field.
+        if (isset($field_definitions[$field_name]) &&
+          $field_definitions[$field_name]->getType() === 'social_media_links_field' &&
+          is_array($field_value)) {
+          $node->set(
+            $field_name,
+            $this->prepareSocialMediaLinksFieldValue($bundle, $field_name, $field_value)
+          );
+          continue;
         }
 
         if ($field_value) {
@@ -1085,6 +1117,26 @@ class DashboardNodeController extends ControllerBase {
         $translation->set('status', $status);
       }
 
+      // Update the submitted alias.
+      if (array_key_exists('alias', $content)) {
+        $alias = trim($content['alias'] ?? '');
+        if (!empty($alias)) {
+          $this->aliasValidationService->validate($alias, $node->id());
+          $node->path->pathauto = PathautoState::SKIP;
+          $this->entityTypeManager->getStorage('path_alias')
+            ->create([
+              'path' => '/node/' . $node->id(),
+              'alias' => '/' . ltrim($alias, '/'),
+              'langcode' => $language,
+            ])
+            ->save();
+        }
+        else {
+          // Empty alias - let pathauto generate one.
+          $node->path->pathauto = PathautoState::CREATE;
+        }
+      }
+
       // Get field definitions for type checking
       $field_definitions = $node->getFieldDefinitions();
 
@@ -1200,6 +1252,17 @@ class DashboardNodeController extends ControllerBase {
             $node->getTranslation($language)->set($field_name, $ids);
             continue;
           }
+        }
+
+        // Handle social media links field.
+        if (isset($field_definitions[$field_name]) &&
+          $field_definitions[$field_name]->getType() === 'social_media_links_field' &&
+          is_array($field_value)) {
+          $node->getTranslation($language)->set(
+            $field_name,
+            $this->prepareSocialMediaLinksFieldValue($bundle, $field_name, $field_value)
+          );
+          continue;
         }
 
         if ($field_value || is_array($field_value) || is_bool($field_value)) {
@@ -1582,6 +1645,46 @@ class DashboardNodeController extends ControllerBase {
    */
   public function getReferencedTaxonomies($bundle) {
     return $this->nodeService->getReferencedTaxonomies($bundle);
+  }
+
+  /**
+   * Formats dashboard social media values for the configured field widget.
+   *
+   * @param string $bundle
+   *   The node bundle.
+   * @param string $field_name
+   *   The social media field name.
+   * @param array $values
+   *   Values keyed by platform ID.
+   *
+   * @return array
+   *   Values formatted for the Social Media Links field item.
+   */
+  protected function prepareSocialMediaLinksFieldValue(string $bundle, string $field_name, array $values): array {
+    $form_display = \Drupal::service('entity_display.repository')
+      ->getFormDisplay('node', $bundle, 'default');
+    $component = $form_display->getComponent($field_name);
+
+    if (($component['type'] ?? '') === 'social_media_links_field_default') {
+      $platform_values = [];
+      foreach ($values as $platform_id => $value) {
+        $platform_values[$platform_id] = ['value' => $value];
+      }
+
+      return [['platform_values' => $platform_values]];
+    }
+
+    $items = [];
+    foreach ($values as $platform_id => $value) {
+      if ($value !== '') {
+        $items[] = [
+          'platform' => $platform_id,
+          'value' => $value,
+        ];
+      }
+    }
+
+    return $items;
   }
 
 }
