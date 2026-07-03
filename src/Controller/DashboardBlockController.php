@@ -206,6 +206,25 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
   }
 
   /**
+   * Builds the content blocks list URL in a given language.
+   *
+   * The save API is called without a language prefix, so the current language
+   * defaults to the site default; building the URL explicitly in the block's
+   * language keeps the user on the list for the language they were editing.
+   *
+   * @param string $langcode
+   *   The language ID to build the URL for.
+   *
+   * @return string
+   *   The localized content blocks list URL.
+   */
+  protected function blockListUrl($langcode) {
+    $language = \Drupal::languageManager()->getLanguage($langcode);
+    $options = $language ? ['language' => $language] : [];
+    return Url::fromRoute('vactory_dashboard.block_content', [], $options)->toString();
+  }
+
+  /**
    * Builds language switcher variables for block add/edit pages.
    *
    * @param string $route_name
@@ -332,7 +351,10 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
     $language_context = $this->buildLanguageContext(
       'vactory_dashboard.block_content.edit',
       ['block_content' => $block_content->id()],
-      $block_content->language()->getId(),
+      // Original/source language of the block, not the active translation:
+      // the route entity resolves to the current language, so language()
+      // alone would wrongly flag the viewed language as "Original".
+      $block_content->getUntranslated()->language()->getId(),
       $block_content
     );
     $page_title = $this->t('Edit @label - @type', [
@@ -495,7 +517,7 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
     return new JsonResponse([
       'message' => $this->t('Content block created successfully.'),
       'block_id' => $block_content->id(),
-      'list' => Url::fromRoute('vactory_dashboard.block_content')->toString(),
+      'list' => $this->blockListUrl($block_content->language()->getId()),
     ]);
   }
 
@@ -757,7 +779,7 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
       return new JsonResponse([
         'message' => $this->t('Content block created successfully.'),
         'block_id' => $block->id(),
-        'list' => Url::fromRoute('vactory_dashboard.block_content')->toString(),
+        'list' => $this->blockListUrl($block->language()->getId()),
       ]);
     }
     catch (\Exception $e) {
