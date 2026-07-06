@@ -565,7 +565,11 @@ class DashboardTaxonomiesController extends ControllerBase {
         }
       }
 
-      $this->saveSchedulerFields($term, $content['scheduler'] ?? []);
+      $scheduler = $content['scheduler'] ?? [];
+      if ($scheduler_error = vactory_dashboard_scheduler_dates_error($term, $scheduler)) {
+        return new JsonResponse(['message' => $scheduler_error], 422);
+      }
+      $this->saveSchedulerFields($term, $scheduler);
 
       $term->save();
 
@@ -688,7 +692,11 @@ class DashboardTaxonomiesController extends ControllerBase {
         }
       }
 
-      $this->saveSchedulerFields($term_translation, $content['scheduler'] ?? []);
+      $scheduler = $content['scheduler'] ?? [];
+      if ($scheduler_error = vactory_dashboard_scheduler_dates_error($term_translation, $scheduler)) {
+        return new JsonResponse(['message' => $scheduler_error], 422);
+      }
+      $this->saveSchedulerFields($term_translation, $scheduler);
 
       $term->save();
 

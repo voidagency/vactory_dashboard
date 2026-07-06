@@ -1710,3 +1710,59 @@ function get_dashboard_widget_visibility(): array {
 
   return $values;
 }
+
+/**
+ * Validates submitted scheduler dates like the Scheduler module does.
+ *
+ * Mirrors SchedulerPublishOnConstraintValidator and
+ * SchedulerUnpublishOnConstraintValidator so the dashboard save endpoints
+ * reject invalid dates with the same messages as the standard Drupal forms.
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   The entity being saved (node or taxonomy term).
+ * @param array $scheduler
+ *   Submitted scheduler values, with 'publish_on'/'unpublish_on' date strings.
+ *
+ * @return string|null
+ *   A translated error message, or NULL when the dates are valid.
+ */
+function vactory_dashboard_scheduler_dates_error($entity, array $scheduler) {
+  if (!\Drupal::moduleHandler()->moduleExists('scheduler')) {
+    return NULL;
+  }
+
+  try {
+    /** @var \Drupal\scheduler\SchedulerManager $manager */
+    $manager = \Drupal::service('scheduler.manager');
+    $now = \Drupal::time()->getRequestTime();
+
+    $publish_on = !empty($scheduler['publish_on']) ? strtotime($scheduler['publish_on']) : NULL;
+    $unpublish_on = !empty($scheduler['unpublish_on']) ? strtotime($scheduler['unpublish_on']) : NULL;
+
+    // Publish-on must be in the future when the bundle rejects past dates.
+    if ($publish_on && $entity->hasField('publish_on')
+      && $manager->getThirdPartySetting($entity, 'publish_enable', FALSE)) {
+      $past = $manager->getThirdPartySetting($entity, 'publish_past_date', $manager->setting('default_publish_past_date'));
+      if ($past == 'error' && $publish_on < $now) {
+        return (string) t("The 'publish on' date must be in the future.");
+      }
+    }
+
+    // Unpublish-on must always be in the future, and after publish-on.
+    if ($unpublish_on && $entity->hasField('unpublish_on')
+      && $manager->getThirdPartySetting($entity, 'unpublish_enable', FALSE)) {
+      if ($unpublish_on < $now) {
+        return (string) t("The 'unpublish on' date must be in the future.");
+      }
+      if ($publish_on && $unpublish_on < $publish_on) {
+        return (string) t("The 'unpublish on' date must be later than the 'publish on' date.");
+      }
+    }
+  }
+  catch (\Exception $e) {
+    // Never block saving on an unexpected scheduler lookup error.
+    return NULL;
+  }
+
+  return NULL;
+}

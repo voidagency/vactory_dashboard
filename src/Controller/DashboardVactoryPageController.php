@@ -671,6 +671,9 @@ class DashboardVactoryPageController extends ControllerBase {
       }
 
       // Update scheduler fields if they exist and have values.
+      if ($scheduler_error = vactory_dashboard_scheduler_dates_error($node, $settings)) {
+        return new JsonResponse(['message' => $scheduler_error], 422);
+      }
       if (!empty($settings['publish_on']) && $node->hasField('publish_on')) {
         $node->getTranslation($language)->set('publish_on', strtotime($settings['publish_on']));
       }
@@ -810,6 +813,9 @@ class DashboardVactoryPageController extends ControllerBase {
       }
 
       // Update scheduler fields if they exist and have values.
+      if ($scheduler_error = vactory_dashboard_scheduler_dates_error($node, $settings)) {
+        return new JsonResponse(['message' => $scheduler_error], 422);
+      }
       if (!empty($settings['publish_on']) && $node->hasField('publish_on')) {
         $node->set('publish_on', strtotime($settings['publish_on']));
       }
