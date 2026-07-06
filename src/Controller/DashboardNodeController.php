@@ -1006,6 +1006,9 @@ class DashboardNodeController extends ControllerBase {
 
       // Save scheduler fields if they exist and have values.
       $scheduler = $data['scheduler'] ?? [];
+      if ($scheduler_error = vactory_dashboard_scheduler_dates_error($node, $scheduler)) {
+        return new JsonResponse(['message' => $scheduler_error], 422);
+      }
       if (!empty($scheduler['publish_on']) && $node->hasField('publish_on')) {
         $node->set('publish_on', strtotime($scheduler['publish_on']));
       }
@@ -1292,6 +1295,9 @@ class DashboardNodeController extends ControllerBase {
 
       // Save scheduler fields if they exist and have values.
       $scheduler = $content['scheduler'] ?? [];
+      if ($scheduler_error = vactory_dashboard_scheduler_dates_error($node, $scheduler)) {
+        return new JsonResponse(['message' => $scheduler_error], 422);
+      }
       if (!empty($scheduler['publish_on']) && $node->hasField('publish_on')) {
         $node->getTranslation($language)->set('publish_on', strtotime($scheduler['publish_on']));
       }
