@@ -460,24 +460,18 @@ class DashboardNodeController extends ControllerBase {
 
     // Get enabled languages from our custom configuration.
     $config = \Drupal::config('vactory_dashboard.global.settings');
-    $enabled_languages = $config->get('dashboard_languages') ?? [];
-    $enabled_languages = array_filter($enabled_languages);
     $languages_display_format = $config->get('display_format');
     $languages = \Drupal::languageManager()->getLanguages();
     $available_languages_list = [];
 
     foreach ($languages as $language) {
       $lang_id = $language->getId();
-
-      // Only show languages that are enabled in our custom configuration.
-      if (empty($enabled_languages) || isset($enabled_languages[$lang_id])) {
-        $available_languages_list[] = [
-          'id' => $lang_id,
-          'url' => Url::fromRoute('vactory_dashboard.node.add', 
-                  ['bundle' => $bundle], 
-                  ['language' => $language])->toString(),
-        ];
-      }
+      $available_languages_list[] = [
+        'id' => $lang_id,
+        'url' => Url::fromRoute('vactory_dashboard.node.add', 
+                ['bundle' => $bundle], 
+                ['language' => $language])->toString(),
+      ];
     }
 
     // Get bundle fields.
@@ -575,8 +569,6 @@ class DashboardNodeController extends ControllerBase {
 
     // Get enabled languages from our custom configuration.
     $config = \Drupal::config('vactory_dashboard.global.settings');
-    $enabled_languages = $config->get('dashboard_languages') ?? [];
-    $enabled_languages = array_filter($enabled_languages);
     $languages_display_format = $config->get('display_format');
     // Get existing translations.
     $existing_translations = $node->getTranslationLanguages();
@@ -587,19 +579,13 @@ class DashboardNodeController extends ControllerBase {
     foreach ($languages as $language) {
       $lang_id = $language->getId();
       $has_existing_translation = array_key_exists($lang_id, $existing_translations);
-
-      // Show language if: enabled in config OR has existing translation.
-      $is_enabled = empty($enabled_languages) || isset($enabled_languages[$lang_id]);
-
-      if ($is_enabled || $has_existing_translation) {
-        $available_languages_list[] = [
-          'id' => $lang_id,
-          'url' => $has_existing_translation 
-            ? '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid 
-            : '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid . '/add/translation',
-          'has_translation' => $has_existing_translation,
-        ];
-      }
+      $available_languages_list[] = [
+        'id' => $lang_id,
+        'url' => $has_existing_translation 
+          ? '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid 
+          : '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid . '/add/translation',
+        'has_translation' => $has_existing_translation,
+      ];
     }
 
     // Get bundle fields.
@@ -705,8 +691,6 @@ class DashboardNodeController extends ControllerBase {
 
     // Get enabled languages from our configuration.
     $config = \Drupal::config('vactory_dashboard.global.settings');
-    $enabled_languages = $config->get('dashboard_languages') ?? [];
-    $enabled_languages = array_filter($enabled_languages);
     $languages_display_format = $config->get('display_format');
 
     // Get existing translations.
@@ -719,18 +703,13 @@ class DashboardNodeController extends ControllerBase {
       $lang_id = $language->getId();
       $has_existing_translation = array_key_exists($lang_id, $existing_translations);
 
-      // Show language if: enabled in config OR has existing translation.
-      $is_enabled = empty($enabled_languages) || isset($enabled_languages[$lang_id]);
-
-      if ($is_enabled || $has_existing_translation) {
-        $available_languages_list[] = [
-          'id' => $lang_id,
-          'url' => $has_existing_translation 
-            ? '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid 
-            : '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid . '/add/translation',
-          'has_translation' => $has_existing_translation,
-        ];
-      }
+      $available_languages_list[] = [
+        'id' => $lang_id,
+        'url' => $has_existing_translation 
+          ? '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid 
+          : '/' . $lang_id . '/admin/dashboard/' . $bundle . '/edit/' . $nid . '/add/translation',
+        'has_translation' => $has_existing_translation,
+      ];
     }
 
     // Get bundle fields.

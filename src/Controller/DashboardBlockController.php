@@ -245,7 +245,6 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
       ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
     $config = \Drupal::config('vactory_dashboard.global.settings');
-    $enabled_languages = array_filter($config->get('dashboard_languages') ?? []);
     $languages_display_format = $config->get('display_format');
     $existing_translations = $block_content ? $block_content->getTranslationLanguages() : [];
     $available_languages = [];
@@ -253,15 +252,11 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
     foreach (\Drupal::languageManager()->getLanguages() as $language) {
       $lang_id = $language->getId();
       $has_existing_translation = array_key_exists($lang_id, $existing_translations);
-      $is_enabled = empty($enabled_languages) || isset($enabled_languages[$lang_id]);
-
-      if ($is_enabled || $has_existing_translation) {
-        $available_languages[] = [
-          'id' => $lang_id,
-          'url' => Url::fromRoute($route_name, $route_parameters, ['language' => $language])->toString(),
-          'has_translation' => $block_content ? $has_existing_translation : TRUE,
-        ];
-      }
+      $available_languages[] = [
+        'id' => $lang_id,
+        'url' => Url::fromRoute($route_name, $route_parameters, ['language' => $language])->toString(),
+        'has_translation' => $block_content ? $has_existing_translation : TRUE,
+      ];
     }
 
     return [
