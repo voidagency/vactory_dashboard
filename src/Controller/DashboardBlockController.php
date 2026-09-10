@@ -9,6 +9,7 @@ use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Url;
 use Drupal\vactory_dashboard\Service\NodeService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -165,7 +166,7 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
     $entities = $storage->loadMultiple($ids);
     $type_storage = $this->entityTypeManager->getStorage('block_content_type');
     $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
     $date_formatter = \Drupal::service('date.formatter');
 
@@ -241,7 +242,7 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
    */
   protected function buildLanguageContext($route_name, array $route_parameters, $default_language, ?BlockContentInterface $block_content = NULL) {
     $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
     $config = \Drupal::config('vactory_dashboard.global.settings');
     $enabled_languages = array_filter($config->get('dashboard_languages') ?? []);
@@ -285,7 +286,7 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
       'type' => $block_content_type->id(),
     ]);
     $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
     $language_context = $this->buildLanguageContext(
       'vactory_dashboard.block_content.add',
@@ -341,13 +342,13 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
    *   A render array.
    */
   public function editContentBlock(BlockContentInterface $block_content) {
+    $current_language = \Drupal::languageManager()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
+      ->getId();  
     $block = \Drupal::service('entity.repository')
-      ->getTranslationFromContext($block_content);
+      ->getTranslationFromContext($block_content, $current_language);
     $type = $this->entityTypeManager->getStorage('block_content_type')
       ->load($block->bundle());
-    $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
-      ->getId();
     $language_context = $this->buildLanguageContext(
       'vactory_dashboard.block_content.edit',
       ['block_content' => $block_content->id()],
@@ -442,7 +443,7 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
     }
 
     $language = $data['language'] ?? \Drupal::languageManager()
-      ->getDefaultLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
     $has_translation = $data['has_translation'] ?? TRUE;
     $has_translation = $has_translation !== '' ? $has_translation : FALSE;
@@ -501,7 +502,7 @@ class DashboardBlockController extends ControllerBase implements ContainerInject
       ->create([
         'type' => $block_content_type->id(),
         'langcode' => $data['language'] ?? \Drupal::languageManager()
-          ->getDefaultLanguage()
+          ->getCurrentLanguage(LanguageInterface::TYPE_URL)
           ->getId(),
         'info' => $data['label'] ?? $block_content_type->label(),
         'field_dynamic_block_components' => [
