@@ -5,6 +5,7 @@ namespace Drupal\vactory_dashboard\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -66,7 +67,7 @@ class DashboardTaxonomiesController extends ControllerBase {
       '#taxonomy_vid' => $vid,
       '#langs' => $langs,
       '#default_lang' => \Drupal::languageManager()
-        ->getDefaultLanguage()
+        ->getCurrentLanguage(LanguageInterface::TYPE_URL)
         ->getId(),
     ];
   }
@@ -90,10 +91,10 @@ class DashboardTaxonomiesController extends ControllerBase {
 
     // Get current language
     $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
     $default_language = \Drupal::languageManager()
-      ->getDefaultLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
 
     // Create a clone of the query for counting.
@@ -255,7 +256,7 @@ class DashboardTaxonomiesController extends ControllerBase {
 
     // Get current language
     $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
 
     // Get enabled languages from our custom configuration.
@@ -329,7 +330,7 @@ class DashboardTaxonomiesController extends ControllerBase {
 
     // Get current language
     $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
 
     // Get term translation by current language
@@ -428,7 +429,7 @@ class DashboardTaxonomiesController extends ControllerBase {
 
     // Get current language
     $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
 
     // Check if the term already has a translation in the current language
@@ -518,7 +519,7 @@ class DashboardTaxonomiesController extends ControllerBase {
     $content = json_decode($request->getContent(), TRUE);
     $fields = $content['fields'] ?? [];
     $status = $content['status'] ?? 1;
-    $lang = $content['lang'] ?? \Drupal::languageManager()->getCurrentLanguage()->getId();
+    $lang = $content['lang'] ?? \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_URL)->getId();
 
     // Get the name field
     $name = $fields['name'] ?? '';
@@ -614,7 +615,7 @@ class DashboardTaxonomiesController extends ControllerBase {
 
       // Extract data from request.
       $language = $content['language'] ?? \Drupal::languageManager()
-        ->getCurrentLanguage()
+        ->getCurrentLanguage(LanguageInterface::TYPE_URL)
         ->getId();
 
       $has_translation = $content['has_translation'] ?? TRUE;

@@ -7,6 +7,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Url;
 use Drupal\entityqueue\Entity\EntityQueue;
 use Drupal\node\Entity\Node;
@@ -454,7 +455,7 @@ class DashboardNodeController extends ControllerBase {
   public function add($bundle) {
     // Get current language
     $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
 
     // Get enabled languages from our custom configuration.
@@ -557,7 +558,7 @@ class DashboardNodeController extends ControllerBase {
 
     // Get current language.
     $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
 
     // Get node translation by current language
@@ -688,7 +689,7 @@ class DashboardNodeController extends ControllerBase {
 
     // Get current language.
     $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
     // Get node translation by current language
     try {
@@ -810,7 +811,7 @@ class DashboardNodeController extends ControllerBase {
       $status = $data['status'] ?? TRUE;
 
       $language = $data['language'] ?? \Drupal::languageManager()
-        ->getDefaultLanguage()
+        ->getCurrentLanguage(LanguageInterface::TYPE_URL)
         ->getId();
 
       // Resolve the optional URL alias: empty means let pathauto generate one.
@@ -1056,7 +1057,7 @@ class DashboardNodeController extends ControllerBase {
       // Extract data from request.
       $node_default_lang = NULL;
       $language = $content['language'] ?? \Drupal::languageManager()
-        ->getDefaultLanguage()
+        ->getCurrentLanguage(LanguageInterface::TYPE_URL)
         ->getId();
 
       $has_translation = $content['has_translation'] ?? TRUE;
@@ -1630,8 +1631,11 @@ class DashboardNodeController extends ControllerBase {
     $nodes = Node::loadMultiple($nids);
     $links = [];
     $entity_repository = \Drupal::service('entity.repository');
+    $current_language = \Drupal::languageManager()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
+      ->getId();
     foreach ($nodes as $node) {
-      $node = $entity_repository->getTranslationFromContext($node);
+      $node = $entity_repository->getTranslationFromContext($node, $current_language);
       $url = $node->toUrl()->getInternalPath();
       $links[] = [
         'title' => $node->label(),

@@ -5,6 +5,7 @@ namespace Drupal\vactory_dashboard\Form;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -114,7 +115,7 @@ class VactoryDashboardSettingsForm extends ConfigFormBase {
     }
 
     // Get the site default language (the one marked as default in language config).
-    $default_langcode = \Drupal::languageManager()->getDefaultLanguage()->getId();
+    $default_langcode = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_URL)->getId();
 
     // Get current config.
     $selected_languages = $config->get('dashboard_languages') ?? [];

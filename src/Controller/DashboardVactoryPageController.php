@@ -4,6 +4,7 @@ namespace Drupal\vactory_dashboard\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Url;
 use Drupal\node\Entity\Node;
 use Drupal\pathauto\PathautoState;
@@ -102,7 +103,7 @@ class DashboardVactoryPageController extends ControllerBase {
   public function add() {
     // Get current language.
     $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
 
     // Get enabled languages from our custom configuration.
@@ -181,7 +182,7 @@ class DashboardVactoryPageController extends ControllerBase {
 
     // Get current language.
     $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
 
     // Get node translation by current language.
@@ -286,7 +287,7 @@ class DashboardVactoryPageController extends ControllerBase {
     }
 
     $current_language = \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
     try {
       if ($node->hasTranslation($current_language)) {
@@ -570,7 +571,7 @@ class DashboardVactoryPageController extends ControllerBase {
       // Extract data from request.
       $node_default_lang = NULL;
       $language = $content['language'] ?? \Drupal::languageManager()
-        ->getDefaultLanguage()
+        ->getCurrentLanguage(LanguageInterface::TYPE_URL)
         ->getId();
       $settings = $content['settings'] ?? [];
       $seo = $content['seo'] ?? [];
@@ -754,7 +755,7 @@ class DashboardVactoryPageController extends ControllerBase {
       // Extract data from request.
       $node_default_lang = NULL;
       $language = $content['language'] ?? \Drupal::languageManager()
-        ->getDefaultLanguage()
+        ->getCurrentLanguage(LanguageInterface::TYPE_URL)
         ->getId();
 
       $settings = $content['settings'] ?? [];

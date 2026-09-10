@@ -25,6 +25,7 @@ use Drupal\Core\TypedData\TranslatableInterface;
 use Drupal\views\Views;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\Core\file\FileUrlGeneratorInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\node\Entity\Node;
 
 /**
@@ -126,6 +127,9 @@ class NodeService {
    */
   public function processNode($entity, $fields) {
     $node_data = [];
+    $current_language = \Drupal::languageManager()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
+      ->getId();
     // Get node fields
     foreach ($fields as $field) {
       if ($field['type'] === 'autocomplete') {
@@ -139,7 +143,7 @@ class NodeService {
               $referenced_entity = $this->entityTypeManager->getStorage($field['target_type'])
                 ->load($item->target_id);
               if ($referenced_entity) {
-                $referenced_entity = $this->entityRepository->getTranslationFromContext($referenced_entity);
+                $referenced_entity = $this->entityRepository->getTranslationFromContext($referenced_entity, $current_language);
                 $node_data[$field_name][] = [
                   'id' => (string) $referenced_entity->id(),
                   'label' => $referenced_entity->label(),
@@ -154,7 +158,7 @@ class NodeService {
             $referenced_entity = $this->entityTypeManager->getStorage($field['target_type'])
               ->load($target_id);
             if ($referenced_entity) {
-              $referenced_entity = $this->entityRepository->getTranslationFromContext($referenced_entity);
+              $referenced_entity = $this->entityRepository->getTranslationFromContext($referenced_entity, $current_language);
 
               $node_data[$field_name] = [
                 'id' => (string) $referenced_entity->id(),
@@ -694,7 +698,7 @@ class NodeService {
    */
   private function prepareVactoryParagraphsData($node, &$node_data, $paragraph_field = 'field_vactory_paragraphs') {
     $paragraphs = [];
-    $lang = \Drupal::languageManager()->getCurrentLanguage()->getId();
+    $lang = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_URL)->getId();
     if ($node->hasField($paragraph_field)) {
       $paragraphsData = $node->get($paragraph_field)->getValue();
       foreach ($paragraphsData as $paragraphData) {
@@ -1961,7 +1965,7 @@ class NodeService {
    * Get cross content options.
    */
   public function getCrossContentOptions($type, array $field_definition) {
-    $language = \Drupal::languageManager()->getCurrentLanguage()->getId();
+    $language = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_URL)->getId();
     $node_type = NodeType::load($type);
     if ($node_type->getThirdPartySetting('vactory_cross_content', 'enabling', '') == 1) {
       $content_type_selected = $node_type->getThirdPartySetting('vactory_cross_content', 'content_type', '');
@@ -2006,7 +2010,7 @@ class NodeService {
     $target_type = $field_definition['settings']['target_type'] ?? NULL;
     $handler_settings = $field_definition['settings']['handler_settings'] ?? [];
     $langcode = $field_definition['langcode'] ?? \Drupal::languageManager()
-      ->getCurrentLanguage()
+      ->getCurrentLanguage(LanguageInterface::TYPE_URL)
       ->getId();
 
     if (!$target_type) {
@@ -3083,7 +3087,7 @@ class NodeService {
   public function getSchedulerModerationSettingsForBundle(string $bundle, ?string $language = NULL): array {
     $node = Node::create([
       'type' => $bundle,
-      'langcode' => $language ?: \Drupal::languageManager()->getCurrentLanguage()->getId(),
+      'langcode' => $language ?: \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_URL)->getId(),
     ]);
 
     return $this->getSchedulerModerationSettings($node);
