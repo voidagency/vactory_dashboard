@@ -200,7 +200,13 @@
               const input = document.getElementById(`edit-${field.name.replaceAll('_', '-')}-value`);
               if (input && Drupal.editors?.ckeditor5) {
                 Drupal.editors.ckeditor5.onChange(input, () => {
-                  const ckInstance = Drupal.CKEditor5Instances.values().next().value;
+                  const instanceID = input.getAttribute('data-ckeditor5-id');
+                  let ckInstance = null;
+                  Drupal.CKEditor5Instances.forEach(function(instance, id) {
+                    if (instanceID == id) {
+                      ckInstance = instance;
+                    }
+                  });
                   if (ckInstance) {
                     this.formData.fields[field.name] = ckInstance.getData();
                   }
@@ -282,6 +288,31 @@
           this.showNotification('error', '{{ 'Please fill in all required fields'|t|e('js') }}');
           return;
         }
+
+        Object.keys(this.fields).forEach((fieldKey) => {
+          const field = this.fields[fieldKey];
+          if (!field?.textFormatField) {
+            return;
+          }
+          // The debounced onChange sync can lag behind the latest
+          // keystrokes, so read the live editor content directly before
+          // saving (same approach as node edit/add forms).
+          const input = document.getElementById(`edit-${field.name.replaceAll('_', '-')}-value`);
+          if (!input || !Drupal.CKEditor5Instances) {
+            return;
+          }
+          const instanceID = input.getAttribute('data-ckeditor5-id');
+          let ckInstance = null;
+          Drupal.CKEditor5Instances.forEach(function(instance, id) {
+            if (instanceID == id) {
+              ckInstance = instance;
+            }
+          });
+          if (ckInstance) {
+            this.formData.fields[field.name] = ckInstance.getData();
+          }
+        });
+
         if (this.isSaving) {
           return;
         }
