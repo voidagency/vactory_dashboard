@@ -454,6 +454,13 @@ class NodeService {
           $node_data[$field['name']] = [''];
         }
       }
+      elseif ($field['type'] === 'select' && !empty($field['multiple'])) {
+        // Handle plain (non entity reference) list fields with multiple values.
+        $values = $entity->get($field['name'])->getValue() ?? [];
+        $node_data[$field['name']] = array_values(array_map(function($item) {
+          return $item['value'] ?? '';
+        }, $values));
+      }
       else {
         if ($field['type'] === 'datetime' && $field['settings']['datetime_type'] === 'datetime') {
           $datetime_value = $entity->get($field['name'])->value;
