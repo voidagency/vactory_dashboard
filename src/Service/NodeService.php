@@ -4,6 +4,7 @@ namespace Drupal\vactory_dashboard\Service;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
@@ -264,11 +265,26 @@ class NodeService {
 
       if ($field['type'] === 'daterange') {
         $values = $entity->get($field['name'])->getValue();
+        $is_datetime = ($field['datetime_type'] ?? 'date') === 'datetime';
+        $to_local = function ($value) use ($is_datetime) {
+          if (empty($value)) {
+            return '';
+          }
+          if (!$is_datetime) {
+            return $value;
+          }
+          $date = \DateTime::createFromFormat(DateTimeItemInterface::DATETIME_STORAGE_FORMAT, $value, new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE));
+          if (!$date) {
+            return $value;
+          }
+          $date->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+          return $date->format('Y-m-d\TH:i:s');
+        };
         if (!empty($values)) {
           // Cardinalité simple.
           $node_data[$field['name']] = [
-            'value' => $values[0]['value'] ?? '',
-            'end_value' => $values[0]['end_value'] ?? '',
+            'value' => $to_local($values[0]['value'] ?? ''),
+            'end_value' => $to_local($values[0]['end_value'] ?? ''),
           ];
         }
         else {
@@ -1690,6 +1706,7 @@ class NodeService {
         case 'daterange':
           $field_info['type'] = 'daterange';
           $field_info['multiple'] = FALSE;
+          $field_info['datetime_type'] = $field_definition->getSettings()['datetime_type'] ?? 'date';
           break;
 
         case 'vactory_quiz_question':

@@ -4,6 +4,7 @@ namespace Drupal\vactory_dashboard\Controller;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
@@ -891,6 +892,42 @@ class DashboardNodeController extends ControllerBase {
           continue;
         }
 
+        // Handle Date range field type: normalize datetime-local input
+        // values (no seconds) to Drupal's expected storage format, and
+        // convert from the site's local timezone to UTC storage (fields
+        // are always stored in UTC; datetime-local inputs use local time).
+        if (isset($field_definitions[$field_name]) &&
+            $field_definitions[$field_name]->getType() === 'daterange') {
+          if (is_array($field_value) && !empty($field_value['value'])) {
+            $is_datetime = ($field_definitions[$field_name]->getSettings()['datetime_type'] ?? 'date') === 'datetime';
+            $to_utc = function ($value) use ($is_datetime) {
+              if (empty($value)) {
+                return NULL;
+              }
+              if (strlen($value) === 16) {
+                $value .= ':00';
+              }
+              if (!$is_datetime) {
+                return $value;
+              }
+              $date = \DateTime::createFromFormat(DateTimeItemInterface::DATETIME_STORAGE_FORMAT, $value, new \DateTimeZone(date_default_timezone_get()));
+              if (!$date) {
+                return $value;
+              }
+              $date->setTimezone(new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE));
+              return $date->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
+            };
+            $node->set($field_name, [
+              'value' => $to_utc($field_value['value']),
+              'end_value' => $to_utc($field_value['end_value'] ?? NULL),
+            ]);
+          }
+          else {
+            $node->set($field_name, NULL);
+          }
+          continue;
+        }
+
         if ($field_name === "field_contenu_lie" && is_array($field_value)) {
           $node->set($field_name, implode(" ", $field_value));
           continue;
@@ -1170,6 +1207,42 @@ class DashboardNodeController extends ControllerBase {
             }
             $node->getTranslation($language)->set($field_name, $link_data);
           } else {
+            $node->getTranslation($language)->set($field_name, NULL);
+          }
+          continue;
+        }
+
+        // Handle Date range field type: normalize datetime-local input
+        // values (no seconds) to Drupal's expected storage format, and
+        // convert from the site's local timezone to UTC storage (fields
+        // are always stored in UTC; datetime-local inputs use local time).
+        if (isset($field_definitions[$field_name]) &&
+            $field_definitions[$field_name]->getType() === 'daterange') {
+          if (is_array($field_value) && !empty($field_value['value'])) {
+            $is_datetime = ($field_definitions[$field_name]->getSettings()['datetime_type'] ?? 'date') === 'datetime';
+            $to_utc = function ($value) use ($is_datetime) {
+              if (empty($value)) {
+                return NULL;
+              }
+              if (strlen($value) === 16) {
+                $value .= ':00';
+              }
+              if (!$is_datetime) {
+                return $value;
+              }
+              $date = \DateTime::createFromFormat(DateTimeItemInterface::DATETIME_STORAGE_FORMAT, $value, new \DateTimeZone(date_default_timezone_get()));
+              if (!$date) {
+                return $value;
+              }
+              $date->setTimezone(new \DateTimeZone(DateTimeItemInterface::STORAGE_TIMEZONE));
+              return $date->format(DateTimeItemInterface::DATETIME_STORAGE_FORMAT);
+            };
+            $node->getTranslation($language)->set($field_name, [
+              'value' => $to_utc($field_value['value']),
+              'end_value' => $to_utc($field_value['end_value'] ?? NULL),
+            ]);
+          }
+          else {
             $node->getTranslation($language)->set($field_name, NULL);
           }
           continue;
