@@ -4,6 +4,7 @@ namespace Drupal\vactory_dashboard\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -111,7 +112,7 @@ class DashboardTranslationsController extends ControllerBase {
     $countQuery->addExpression('COUNT(DISTINCT ls.lid)', 'count');
 
     if (!empty($search)) {
-      $countQuery->condition('ls.source', '%' . $this->database->escapeLike($search) . '%', 'LIKE');
+      $this->addSourceSearchCondition($countQuery, $search);
     }
 
     if ($nx_only) {
@@ -125,7 +126,7 @@ class DashboardTranslationsController extends ControllerBase {
     $query->fields('ls', ['source', 'context', 'lid']);
 
     if (!empty($search)) {
-      $query->condition('ls.source', '%' . $this->database->escapeLike($search) . '%', 'LIKE');
+      $this->addSourceSearchCondition($query, $search);
     }
 
     if ($nx_only) {
@@ -171,6 +172,22 @@ class DashboardTranslationsController extends ControllerBase {
       'limit' => $limit,
       'pages' => ceil($total / $limit),
     ]);
+  }
+
+  /**
+   * Adds a case insensitive search condition on the source string.
+   *
+   * The locales_source.source column is stored as a blob on MySQL, so a plain
+   * LIKE comparison is binary and therefore case sensitive.
+   *
+   * @param \Drupal\Core\Database\Query\SelectInterface $query
+   *   The query to alter.
+   * @param string $search
+   *   The search keyword.
+   */
+  protected function addSourceSearchCondition(SelectInterface $query, string $search) {
+    $pattern = '%' . $this->database->escapeLike(mb_strtolower($search)) . '%';
+    $query->where('LOWER(CAST(ls.source AS CHAR)) LIKE :search', [':search' => $pattern]);
   }
 
   /**
