@@ -485,29 +485,94 @@ Usage:
     {# Date Range Field #}
     {% include "@vactory_dashboard/_components/fields/date-range-field.html.twig" %}
 
-    {# Entity Reference (Select) #}
-    <template x-if="field.type === 'select'">
+    {# Entity Reference (Select) - single value #}
+    <template x-if="field.type === 'select' && !field.multiple">
         <div>
             <select :key="field.name + JSON.stringify(formData.fields[field.name])"
                     :required="field.required"
-                    :multiple="field.multiple"
                     x-model="formData.fields[field.name]"
+                    {% if not isEdit %}
+                        x-init="if (field.default_value && !formData.fields[field.name]) { formData.fields[field.name] = field.default_value }"
+                    {% endif %}
                     class="w-full py-1.5 px-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
                     {% if isEdit and language != node_default_lang %}
                 :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
                     {% endif %}>
-                <template x-if="!field.multiple">
-                    <option value="">{{ 'Select...'|t }}</option>
-                </template>
+                <option value="">{{ 'Select...'|t }}</option>
                 <template x-for="key in Object.keys(field.options)" :key="key">
                     <option :value="key"
-                            :selected="(field.multiple ? formData.fields[field.name].includes(String(key)) : formData.fields[field.name] === String(key))"
+                            :selected="formData.fields[field.name] === String(key)"
                             x-text="field.options[key]"
                             class="py-1 px-2 rounded-md mb-[1px]"></option>
                 </template>
             </select>
         </div>
     </template>
+
+    {# Entity Reference (Select) - multiple values: Drupal-style dual listbox #}
+    <div x-data="{ dualListboxSearch: '', dualListboxAvailableSelection: [], dualListboxSelectedSelection: [] }">
+    <template x-if="field.type === 'select' && field.multiple">
+        <div class="bg-gray-100 rounded-lg p-3 border border-gray-300">
+            <input type="text"
+                   x-model="dualListboxSearch"
+                   placeholder="{{ 'Search...'|t }}"
+                   class="w-full py-1.5 px-3 text-sm border border-gray-300 rounded-md mb-2 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+                   {% if isEdit and language != node_default_lang %}
+                :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                   {% endif %}>
+            <div class="flex items-stretch gap-2"
+                 {% if isEdit and language != node_default_lang %}
+                :class="{'opacity-50 pointer-events-none': !field.is_translatable}"
+                 {% endif %}>
+                {# Available column #}
+                <select multiple
+                        @change="dualListboxAvailableSelection = Array.from($event.target.selectedOptions).map(o => o.value)"
+                        :size="Math.max(1, Math.min(6, Object.keys(field.options).length))"
+                        class="flex-1 py-1 px-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+                    <template x-for="key in Object.keys(field.options).filter(key => !(formData.fields[field.name] || []).includes(String(key)) && field.options[key].toLowerCase().includes(dualListboxSearch.toLowerCase()))" :key="key">
+                        <option :value="key" x-text="field.options[key]" class="py-1 px-2 rounded-md mb-[1px]"></option>
+                    </template>
+                </select>
+
+                {# Move buttons #}
+                <div class="flex flex-col justify-center gap-1">
+                    <button type="button"
+                            @click="
+                                if (dualListboxAvailableSelection.length) {
+                                    formData.fields[field.name] = [...(formData.fields[field.name] || []), ...dualListboxAvailableSelection];
+                                    dualListboxAvailableSelection = [];
+                                }
+                            "
+                            class="px-2 py-1 text-xs border border-gray-300 rounded-md bg-white hover:bg-gray-50 disabled:opacity-50" title="{{ 'Add selected'|t }}">&gt;</button>
+                    <button type="button"
+                            @click="formData.fields[field.name] = Object.keys(field.options).filter(key => field.options[key].toLowerCase().includes(dualListboxSearch.toLowerCase()))"
+                            class="px-2 py-1 text-xs border border-gray-300 rounded-md bg-white hover:bg-gray-50 disabled:opacity-50" title="{{ 'Add all'|t }}">&gt;&gt;</button>
+                    <button type="button"
+                            @click="
+                                if (dualListboxSelectedSelection.length) {
+                                    formData.fields[field.name] = (formData.fields[field.name] || []).filter(v => !dualListboxSelectedSelection.includes(String(v)));
+                                    dualListboxSelectedSelection = [];
+                                }
+                            "
+                            class="px-2 py-1 text-xs border border-gray-300 rounded-md bg-white hover:bg-gray-50 disabled:opacity-50" title="{{ 'Remove selected'|t }}">&lt;</button>
+                    <button type="button"
+                            @click="formData.fields[field.name] = []"
+                            class="px-2 py-1 text-xs border border-gray-300 rounded-md bg-white hover:bg-gray-50 disabled:opacity-50" title="{{ 'Remove all'|t }}">&lt;&lt;</button>
+                </div>
+
+                {# Selected column #}
+                <select multiple
+                        @change="dualListboxSelectedSelection = Array.from($event.target.selectedOptions).map(o => o.value)"
+                        :size="Math.max(1, Math.min(6, Object.keys(field.options).length))"
+                        class="flex-1 py-1 px-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent">
+                    <template x-for="key in (formData.fields[field.name] || [])" :key="key">
+                        <option :value="key" x-text="field.options[key] ?? key" class="py-1 px-2 rounded-md mb-[1px]"></option>
+                    </template>
+                </select>
+            </div>
+        </div>
+    </template>
+    </div>
 
     {# Autocomplete Field #}
     {% include "@vactory_dashboard/_components/fields/autocomplete-field.html.twig" %}
