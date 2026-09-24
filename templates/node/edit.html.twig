@@ -53,15 +53,14 @@
             );
           },
           get groupedContentFields() {
-            const fields = typeof this.fields === 'string' ? JSON.parse(this.fields) : this.fields;
+            const fields = Object.entries(this.fields).filter(([key, field]) => field.type !== 'field_cross_content' && !key.startsWith('field_domain_'));
             const blocks = [];
             const processedGroups = new Set();
 
-            for (const [fieldName, field] of Object.entries(fields)) {
+            for (const [fieldName, field] of fields) {
               if (field.group) {
                 if (!processedGroups.has(field.group)) {
-                  const groupSettings = field.group_format_settings || {};
-                  blocks.push({
+                  const groupSettings = field.group_format_settings || {};                  blocks.push({
                     type: 'group',
                     name: field.group,
                     label: field.group_label || field.group,
