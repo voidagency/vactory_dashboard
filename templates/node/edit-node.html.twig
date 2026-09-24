@@ -29,7 +29,7 @@
                         <span class="inline-block capitalize max-w-60 truncate ml-1">{{ node.title }}</span>
                     </h1>
                 </div>
-                <div class="flex max-lg:w-full max-lg:flex-wrap max-lg:gap-3 max-lg:[&>*]:w-full max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:px-3 max-lg:py-4 lg:items-center lg:space-x-4">
+                <div x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm" class="flex max-lg:w-full max-lg:flex-wrap max-lg:gap-3 max-lg:[&>*]:w-full max-lg:fixed max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:px-3 max-lg:py-4 lg:items-center lg:space-x-4">
                     {# Moderation state selector (moderated bundles) or publish checkbox (others) #}
                     <template x-if="settings.moderation && settings.moderation.enabled">
                         <div class="flex items-center gap-x-2">
