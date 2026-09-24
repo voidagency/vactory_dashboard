@@ -56,6 +56,12 @@ class DashboardPageSearchController extends ControllerBase {
    */
   public function search(Request $request) {
     $query = $request->query->get('q');
+    $bundle = $request->query->get('bundle');
+
+    if (!empty($bundle)) {
+      return new JsonResponse($this->searchService->contentSearch($query, $bundle));
+    }
+
     return $this->searchService->search($query);
   }
 
