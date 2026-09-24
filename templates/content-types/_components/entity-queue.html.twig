@@ -2,7 +2,7 @@
 <div x-data="entityQueue({
     queues: '{{ entity_queues|json_encode|e('js') }}',
     bundle: '{{ id }}'
-})" class="space-y-6">
+})" @add-to-queue.window="addToQueue($event.detail.item, $event.detail.queueName)" class="space-y-6">
     <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
             <h2 class="text-xl font-semibold flex items-center">
@@ -31,7 +31,7 @@
     {# Tab Panels #}
     <template x-for="(items, queueName) in queues" :key="queueName">
         <div x-show="$store.selectedTab === queueName">
-            <div class="border-b border-gray-200 bg-white px-4 py-4 shadow-sm overflow-hidden ring-1 ring-gray-900/5">
+            <div class="border-b border-gray-200 bg-white px-4 py-4 shadow-sm ring-1 ring-gray-900/5">
                 {# Add autocomplete search input #}
                 <div class="relative" x-data="autocomplete({ bundle: '{{ id }}' })">
                     <div class="flex flex-col-reverse lg:flex-row items-start gap-4 lg:items-center">
@@ -83,7 +83,7 @@
                             role="listbox">
                         <template x-for="result in searchResults" :key="result.id">
                             <button
-                                    @click="addToQueue(result, queueName)"
+                                    @click="$dispatch('add-to-queue', { item: result, queueName: queueName }); searchQuery = ''; searchResults = []; isOpen = false;"
                                     class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
                                     role="option">
                                 <div class="flex items-center">
@@ -298,8 +298,6 @@
               title: item.title,
             });
 
-            // Clear search
-            this.$root.querySelector('input[name="search"]').value = '';
             this.showNotification('success', '{{ "Élément ajouté avec succès"|t }}');
           },
           showNotification(type, message) {
