@@ -152,7 +152,7 @@ class ContentSearchService {
    * @return array
    *   An array of matched nodes with basic info.
    */
-  private function contentSearch(string $query, string $bundle): array {
+  public function contentSearch(string $query, string $bundle): array {
     $results = [];
 
     if (strlen($query) >= 2 && !empty($bundle)) {
