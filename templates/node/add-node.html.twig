@@ -20,6 +20,7 @@
                 {{ bundle_label }}</h1>
         </div>
         <div
+                x-show="!showBlockForm && !showParagraphBlockForm && !showParagraphViewForm && !showParagraphMultipleForm"
                 class="flex items-center space-x-4">
             {# Moderation state selector (moderated bundles) or publish checkbox (others) #}
             <template x-if="settings.moderation && settings.moderation.enabled">
