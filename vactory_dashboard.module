@@ -674,6 +674,7 @@ function vactory_dashboard_preprocess(&$variables) {
 
     $config = \Drupal::config('vactory_dashboard.global.settings');
     $data['pagespeed'] = $config->get('pagespeed_btn');
+    $data['clear_cache_btn'] = $config->get('clear_cache_btn') ?? true;
 
     $data['sidebar'] = getSidebarData();
     $data['widget_visibility'] = get_dashboard_widget_visibility();
