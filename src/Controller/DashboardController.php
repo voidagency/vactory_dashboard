@@ -126,16 +126,27 @@ class DashboardController extends ControllerBase implements ContainerInjectionIn
 
     $issues = [];
     $error_message = NULL;
+    // TRUE when there is fundamentally no usable Redmine connection for this
+    // user - either they have no Redmine account, or the integration itself
+    // is unconfigured (missing email/API key/project ID). In all of these
+    // cases the whole widget is hidden instead of showing an error, since
+    // there is nothing the user can retry. $error_message is still set
+    // alongside it so admins can find the reason in the rendered debug data
+    // if needed.
+    $no_redmine_account = FALSE;
 
     // Pre-validation checks.
     if (empty($email)) {
       $error_message = $this->t('User email is missing.');
+      $no_redmine_account = TRUE;
     }
     elseif (empty($apiKey)) {
       $error_message = $this->t('API key missing or invalid.');
+      $no_redmine_account = TRUE;
     }
     elseif (empty($project_id)) {
       $error_message = $this->t('Project ID missing or invalid.');
+      $no_redmine_account = TRUE;
     }
     else {
       // Proceed with API call only if all prerequisites are met.
@@ -206,6 +217,7 @@ class DashboardController extends ControllerBase implements ContainerInjectionIn
           $errorData = json_decode($responseBody, TRUE);
           if (isset($errorData['message']) && $errorData['message'] === 'User not found') {
             $error_message = $this->t('Check your email account to be in Redmine accounts.');
+            $no_redmine_account = TRUE;
           }
           else {
             $error_message = $this->t('Bad request: @message', ['@message' => $errorData['message'] ?? 'Invalid request parameters']);
@@ -251,6 +263,7 @@ class DashboardController extends ControllerBase implements ContainerInjectionIn
       '#issues' => $issues,
       '#projetID' => $project_id,
       '#error_message' => $error_message,
+      '#no_redmine_account' => $no_redmine_account,
     ];
   }
 

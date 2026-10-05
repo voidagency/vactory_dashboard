@@ -1667,12 +1667,16 @@ class DashboardNodeController extends ControllerBase {
    */
   public function getNodeLinks(Request $request) {
     $query = $request->query->get('q', '');
+    $id = $request->query->get('id', '');
 
     $entityQuery = \Drupal::entityQuery('node')
       ->accessCheck(TRUE)
       ->condition('status', 1);
 
-    if ($query !== '') {
+    if ($id !== '') {
+      $entityQuery->condition('nid', (int) $id);
+    }
+    elseif ($query !== '') {
       $entityQuery->condition('title', '%' . $query . '%', 'LIKE');
     }
 
