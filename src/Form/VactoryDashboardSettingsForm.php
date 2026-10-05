@@ -63,6 +63,18 @@ class VactoryDashboardSettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('pagespeed_btn') ?? true,
     ];
 
+    $form['clear_cache'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Clear cache button'),
+      '#open' => TRUE,
+    ];
+
+    $form['clear_cache']['clear_cache_btn'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Show clear cache button'),
+      '#default_value' => $config->get('clear_cache_btn') ?? true,
+    ];
+
     $form['image'] = [
       '#type' => 'managed_file',
       '#title' => $this->t('Logo'),
@@ -285,6 +297,10 @@ class VactoryDashboardSettingsForm extends ConfigFormBase {
 
     $this->configFactory()->getEditable('vactory_dashboard.global.settings')
       ->set('pagespeed_btn', $form_state->getValue('pagespeed_btn') ?? false)
+      ->save();
+
+    $this->configFactory()->getEditable('vactory_dashboard.global.settings')
+      ->set('clear_cache_btn', $form_state->getValue('clear_cache_btn') ?? false)
       ->save();
 
     \Drupal::cache()->delete('vactory_dashboard.vocabularies');

@@ -303,37 +303,146 @@ Usage:
     {% set link_email_error %}{{ 'Les adresses email ne sont pas autorisées. Utilisez le format mailto:email@exemple.com'|t }}{% endset %}
     {% set link_url_error %}{{ "L'URL saisie doit commencer par /, ?, # ou être une URL externe (http:// ou https://)."|t }}{% endset %}
     <template x-if="field.type === 'link'">
-        <div class="space-y-3"
-            x-effect="validateLinkUrl(formData.fields[field.name] && formData.fields[field.name].uri)"
-            x-data="{
-            linkUrlError: '',
-            linkFieldId: 'link_' + Math.random().toString(36).slice(2),
-            destroy() { this.$store.linkValidation.clear(this.linkFieldId); },
-            validateLinkUrl(url) {
-                let message = '';
-                const value = (url || '').trim();
-                if (value !== '') {
-                    if (/^https?:\/\//.test(value) || /^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(value) || /^\//.test(value) || /^\?/.test(value) || /^#/.test(value) || /^<front>/.test(value)) { message = ''; }
-                    else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { message = '{{ link_email_error|e('js') }}'; }
-                    else { message = '{{ link_url_error|e('js') }}'; }
-                }
-                this.linkUrlError = message;
-                this.$store.linkValidation.set(this.linkFieldId, message);
-                return message === '';
-            }
-        }">
-            <input type="text"
-                :required="field.required"
-                x-model="formData.fields[field.name].uri"
-                @input="validateLinkUrl($event.target.value)"
-                @blur="validateLinkUrl(formData.fields[field.name].uri)"
-                placeholder="https://example.com"
-                :class="linkUrlError ? 'border-red-400 focus:ring-red-300' : 'border-gray-300 focus:ring-primary-300'"
-                class="w-full py-1.5 px-3 text-sm border rounded-md focus:outline-none focus:ring-2 focus:border-transparent"
-                {% if isEdit and language != node_default_lang %}
-                    :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
-                {% endif %}>
-            <p x-show="linkUrlError" x-text="linkUrlError" class="text-xs text-red-600 mt-1"></p>
+        <div class="space-y-3">
+            {# Internal link autocomplete (link_type 1=internal only, 17=both) #}
+            <template x-if="field.link_type === 1 || field.link_type === 17">
+                <div class="relative"
+                    x-data="{
+                    linkLabel: '',
+                    linkResults: [],
+                    linkShowList: false,
+                    linkTimeout: null,
+                    linkError: '',
+                    linkFieldId: 'link_' + Math.random().toString(36).slice(2),
+                    destroy() { this.$store.linkValidation.clear(this.linkFieldId); },
+                    async linkInit() {
+                        const uri = formData.fields[field.name]?.uri || '';
+                        const match = uri.match(/^entity:node\/(\d+)$/);
+                        if (match) {
+                            try {
+                                const res = await fetch('/api/nodes/links?id=' + match[1]);
+                                const data = await res.json();
+                                const found = data.find(n => String(n.id) === match[1]);
+                                if (found) { this.linkLabel = found.title; this.validateLink(); return; }
+                            } catch(e) {}
+                        }
+                        this.linkLabel = uri;
+                        this.validateLink();
+                    },
+                    async linkSearch(q) {
+                        clearTimeout(this.linkTimeout);
+                        if (!q || q.length < 2) { this.linkResults = []; this.linkShowList = false; this.validateLink(); return; }
+                        this.linkTimeout = setTimeout(async () => {
+                            try {
+                                const res = await fetch('/api/nodes/links?q=' + encodeURIComponent(q));
+                                this.linkResults = await res.json() || [];
+                                this.linkShowList = this.linkResults.length > 0;
+                            } catch(e) { this.linkResults = []; }
+                        }, 300);
+                    },
+                    linkSelect(result) {
+                        formData.fields[field.name].uri = 'entity:node/' + result.id;
+                        this.linkLabel = result.title;
+                        this.linkResults = [];
+                        this.linkShowList = false;
+                        this.validateLink();
+                    },
+                    validateLink() {
+                        let message = '';
+                        const value = this.linkLabel.trim();
+                        const uri = formData.fields[field.name]?.uri || '';
+                        if (value !== '') {
+                            if (uri.startsWith('entity:node/')) {
+                                message = '';
+                            }
+                            else if (field.link_type === 1) {
+                                message = '{{ "Please select a node from the suggestions."|t|e('js') }}';
+                                formData.fields[field.name].uri = '';
+                            }
+                            else if (/^https?:\/\//.test(value) || /^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(value) || /^\//.test(value) || /^\?/.test(value) || /^#/.test(value) || /^<front>/.test(value)) {
+                                message = '';
+                                formData.fields[field.name].uri = value;
+                            }
+                            else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                                message = '{{ link_email_error|e('js') }}';
+                                formData.fields[field.name].uri = '';
+                            }
+                            else {
+                                message = '{{ link_url_error|e('js') }}';
+                                formData.fields[field.name].uri = '';
+                            }
+                        }
+                        else {
+                            formData.fields[field.name].uri = '';
+                        }
+                        this.linkError = message;
+                        this.$store.linkValidation.set(this.linkFieldId, message);
+                        return message === '';
+                    },
+                    linkBlur() {
+                        setTimeout(() => { this.linkShowList = false; }, 200);
+                        this.validateLink();
+                    }
+                }" x-init="linkInit()">
+                    <input type="text"
+                        :required="field.required"
+                        x-model="linkLabel"
+                        @input="linkSearch($event.target.value)"
+                        @blur="linkBlur()"
+                        :class="linkError ? 'border-red-400 focus:ring-red-300' : 'border-gray-300 focus:ring-primary-300'"
+                        placeholder="{{ 'Search by node title or paste URL...'|t }}"
+                        class="w-full py-1.5 px-3 text-sm border rounded-md focus:outline-none focus:ring-2 focus:border-transparent"
+                        {% if isEdit and language != node_default_lang %}
+                            :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                        {% endif %}>
+                    <p x-show="linkError" x-cloak x-text="linkError" class="mt-1 text-xs text-red-600"></p>
+                    <ul x-show="linkShowList && linkResults.length" x-cloak
+                        class="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg">
+                        <template x-for="result in linkResults" :key="result.id">
+                            <li @mousedown.prevent="linkSelect(result)"
+                                class="px-3 py-2 cursor-pointer hover:bg-primary-100">
+                                <div class="text-sm font-medium" x-text="result.title"></div>
+                                <div class="text-xs text-slate-500" x-text="result.type"></div>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </template>
+            {# External link only - unchanged native validated input #}
+            <template x-if="field.link_type === 16">
+                <div
+                    x-effect="validateLinkUrl(formData.fields[field.name] && formData.fields[field.name].uri)"
+                    x-data="{
+                    linkUrlError: '',
+                    linkFieldId: 'link_' + Math.random().toString(36).slice(2),
+                    destroy() { this.$store.linkValidation.clear(this.linkFieldId); },
+                    validateLinkUrl(url) {
+                        let message = '';
+                        const value = (url || '').trim();
+                        if (value !== '') {
+                            if (/^https?:\/\//.test(value) || /^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(value) || /^\//.test(value) || /^\?/.test(value) || /^#/.test(value) || /^<front>/.test(value)) { message = ''; }
+                            else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { message = '{{ link_email_error|e('js') }}'; }
+                            else { message = '{{ link_url_error|e('js') }}'; }
+                        }
+                        this.linkUrlError = message;
+                        this.$store.linkValidation.set(this.linkFieldId, message);
+                        return message === '';
+                    }
+                }">
+                    <input type="text"
+                        :required="field.required"
+                        x-model="formData.fields[field.name].uri"
+                        @input="validateLinkUrl($event.target.value)"
+                        @blur="validateLinkUrl(formData.fields[field.name].uri)"
+                        placeholder="https://example.com"
+                        :class="linkUrlError ? 'border-red-400 focus:ring-red-300' : 'border-gray-300 focus:ring-primary-300'"
+                        class="w-full py-1.5 px-3 text-sm border rounded-md focus:outline-none focus:ring-2 focus:border-transparent"
+                        {% if isEdit and language != node_default_lang %}
+                            :class="{'opacity-50 cursor-not-allowed': !field.is_translatable}"
+                        {% endif %}>
+                    <p x-show="linkUrlError" x-text="linkUrlError" class="text-xs text-red-600 mt-1"></p>
+                </div>
+            </template>
             <input type="text"
                 x-model="formData.fields[field.name].title"
                 placeholder="{{ 'Link text'|t }}"

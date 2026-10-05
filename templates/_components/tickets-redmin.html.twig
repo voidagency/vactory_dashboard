@@ -1,3 +1,4 @@
+{% if not no_redmine_account %}
 <div id="ticket-redmine" class="bg-white rounded-lg shadow-sm mb-8">
 	<div class="px-6 py-4 border-b border-gray-200 flex flex-col items-start gap-2 lg:flex-row lg:items-center justify-between">
 		<h2 class="text-lg font-medium">{{ "Tickets Redmine"|t }}</h2>
@@ -20,7 +21,9 @@
 
 	<div class="overflow-x-auto">
 		{% if error_message %}
-			<p class="text-red-600 text-center py-4 font-semibold">{{ error_message }}</p>
+			{# A backend/API error (timeout, 5xx, auth, ...) - keep the widget
+			   usable (header + Redmine links) without surfacing internal
+			   error details to the user. #}
 		{% elseif issues is empty %}
 			<p class="text-gray-500 text-center py-4">{{ "Aucun ticket trouvé."|t }}</p>
 		{% else %}
@@ -118,3 +121,4 @@
 		{% endif %}
 	</div>
 </div>
+{% endif %}

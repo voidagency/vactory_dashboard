@@ -1774,6 +1774,7 @@ class NodeService {
         case 'link':
           $field_info['type'] = 'link';
           $component = $form_display->getComponent($field_name);
+          $field_info['link_type'] = $field_settings['link_type'] ?? 17;
           if ($component && $component['type'] === 'link_attributes') {
             $field_info['widget_type'] = 'link_attributes';
             $enabled_attributes = $component['settings']['enabled_attributes'] ?? [];
