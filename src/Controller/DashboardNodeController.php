@@ -1142,18 +1142,14 @@ class DashboardNodeController extends ControllerBase {
         $alias = trim($content['alias'] ?? '');
         if (!empty($alias)) {
           $this->aliasValidationService->validate($alias, $node->id());
-          $node->path->pathauto = PathautoState::SKIP;
-          $this->entityTypeManager->getStorage('path_alias')
-            ->create([
-              'path' => '/node/' . $node->id(),
-              'alias' => '/' . ltrim($alias, '/'),
-              'langcode' => $language,
-            ])
-            ->save();
+          // Set the alias through the path field so the existing path_alias
+          // entity (pid) is updated on save instead of creating a duplicate.
+          $translation->path->alias = '/' . ltrim($alias, '/');
+          $translation->path->pathauto = PathautoState::SKIP;
         }
         else {
           // Empty alias - let pathauto generate one.
-          $node->path->pathauto = PathautoState::CREATE;
+          $translation->path->pathauto = PathautoState::CREATE;
         }
       }
 
