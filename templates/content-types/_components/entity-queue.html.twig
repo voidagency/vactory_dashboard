@@ -189,7 +189,7 @@
               console.error('Search error:', error);
               this.$dispatch('show-notification', {
                 type: 'error',
-                message: '{{ "Erreur lors de la recherche"|t }}',
+                message: '{{ "Erreur lors de la recherche"|t|e('js') }}',
               });
             }
           },
@@ -253,7 +253,7 @@
           },
 
           removeItem(queueName, index) {
-            if (confirm('{{ "Êtes-vous sûr de vouloir retirer cet élément ?"|t }}')) {
+            if (confirm('{{ "Êtes-vous sûr de vouloir retirer cet élément ?"|t|e('js') }}')) {
               this.queues[queueName].splice(index, 1);
             }
           },
@@ -272,14 +272,14 @@
               });
 
               if (!response.ok) {
-                throw new Error('{{ "Erreur lors de la sauvegarde"|t }}');
+                throw new Error('{{ "Erreur lors de la sauvegarde"|t|e('js') }}');
               }
 
               // Show success notification
-              this.showNotification('success', '{{ "Ordre sauvegardé avec succès"|t }}');
+              this.showNotification('success', '{{ "Ordre sauvegardé avec succès"|t|e('js') }}');
             } catch (error) {
               // Show error notification
-              this.showNotification('error', '{{ "Erreur lors de la sauvegarde"|t }}');
+              this.showNotification('error', '{{ "Erreur lors de la sauvegarde"|t|e('js') }}');
             }
             this.isSaving = false;
           },
@@ -288,7 +288,7 @@
             // Check if item already exists in queue
             const exists = this.queues[queueName].some(existing => existing.id === item.id);
             if (exists) {
-              this.showNotification('warning', '{{ "Cet élément existe déjà dans la file"|t }}');
+              this.showNotification('warning', '{{ "Cet élément existe déjà dans la file"|t|e('js') }}');
               return;
             }
 
@@ -298,7 +298,7 @@
               title: item.title,
             });
 
-            this.showNotification('success', '{{ "Élément ajouté avec succès"|t }}');
+            this.showNotification('success', '{{ "Élément ajouté avec succès"|t|e('js') }}');
           },
           showNotification(type, message) {
             if (this.notification.timeout) {

@@ -25,14 +25,14 @@
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.error || '{{ 'Upload failed'|t }}');
+                    throw new Error(result.error || '{{ 'Upload failed'|t|e('js') }}');
                 }
 
                 // Refresh file list
                 await loadFiles(1);
                 
                 // Show success notification
-                showNotification('success', '{{ 'Image uploaded successfully'|t }}');
+                showNotification('success', '{{ 'Image uploaded successfully'|t|e('js') }}');
             } catch (error) {
                 console.error('Upload error:', error);
                 this.uploadError = error.message;

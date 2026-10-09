@@ -1,7 +1,7 @@
 <div
         class="h-full flex flex-col" x-data="pageEditor({
              bundle: '{{ bundle }}',
-             bundle_label: '{{ bundle_labeln }}',
+             bundle_label: '{{ bundle_label|e('js') }}',
              language: '{{ language }}',
              fields: '{{ fields|json_encode|e('js') }}',
              moderation: '{{ moderation|json_encode|e('js') }}'
@@ -63,7 +63,7 @@
                 </svg>
 
                 <!-- Button text (changes based on loading state) -->
-                <span x-text="isSaving ? '{{ 'Saving...'|t }}' : '{{ 'Save'|t }}'"></span>
+                <span x-text="isSaving ? '{{ 'Saving...'|t|e('js') }}' : '{{ 'Save'|t|e('js') }}'"></span>
             </button>
 
         </div>

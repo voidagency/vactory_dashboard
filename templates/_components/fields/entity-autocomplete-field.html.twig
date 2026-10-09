@@ -93,7 +93,7 @@ Uses $dispatch to communicate with parent Alpine.js scope
                    @input="search($event.target.value)"
                    @focus="showResults = results.length > 0"
                    @blur="setTimeout(() => showResults = false, 200)"
-                   :placeholder="selectedEntity ? '{{ 'Search to change...'|t }}' : '{{ 'Search for content...'|t }}'"
+                   :placeholder="selectedEntity ? '{{ 'Search to change...'|t|e('js') }}' : '{{ 'Search for content...'|t|e('js') }}'"
                    style="width: 100%; padding: 8px 12px 8px 38px; font-family: inherit; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none;"
                    class="focus:ring-2 focus:ring-primary-300 focus:border-transparent transition-all duration-150">
             <svg x-show="isLoading" style="position: absolute; right: 12px; width: 16px; height: 16px;" class="text-primary-500 animate-spin" fill="none" viewBox="0 0 24 24">
