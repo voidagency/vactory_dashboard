@@ -5,7 +5,7 @@
         <div class="h-full flex flex-col"
              x-data="taxonomyEditor({
            vid: '{{ vid }}',
-           vocabulary_label: '{{ vocabulary_label }}',
+           vocabulary_label: '{{ vocabulary_label|e('js') }}',
            language: '{{ language }}',
            fields: '{{ fields|json_encode|e('js') }}',
            tid: '{{ tid }}',
@@ -63,7 +63,7 @@
                                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                             <!-- Button text (changes based on loading state) -->
-                            <span x-text="isSaving ? '{{ 'Saving...'|t }}' : '{{ 'Save'|t }}'"></span>
+                            <span x-text="isSaving ? '{{ 'Saving...'|t|e('js') }}' : '{{ 'Save'|t|e('js') }}'"></span>
                         </button>
                     </div>
                 </div>
@@ -708,7 +708,7 @@
               this.categories = Array.from(categoriesSet);
             } catch (error) {
               console.error('Error fetching templates:', error);
-              this.showNotification('error', error.message || '{{ 'Failed to load templates'|t }}');
+              this.showNotification('error', error.message || '{{ 'Failed to load templates'|t|e('js') }}');
             } finally {
               this.isLoadingTemplates = false;
             }
@@ -1048,7 +1048,7 @@
               this.blocks.splice(index, 1);
             }
             // Show success notification
-            this.showNotification('success', '{{ 'Block removed successfully'|t }}');
+            this.showNotification('success', '{{ 'Block removed successfully'|t|e('js') }}');
             if (!this.bundle) {
               this.saveChanges();
             }
@@ -1056,7 +1056,7 @@
 
           async saveTerm() {
             if (!this.validateForm()) {
-              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              this.showNotification('error', '{{ "Please fill in all required fields"|t|e('js') }}');
               return;
             }
 
@@ -1108,10 +1108,10 @@
               const data = await response.json();
 
               if (!response.ok) {
-                throw new Error(data.message || '{{ 'Failed to save term'|t }}');
+                throw new Error(data.message || '{{ 'Failed to save term'|t|e('js') }}');
               }
 
-              this.showNotification('success', '{{ 'Term updated successfully'|t }}');
+              this.showNotification('success', '{{ 'Term updated successfully'|t|e('js') }}');
 
               // Redirect to taxonomy list
               window.location.href = `/${this.language}/admin/dashboard/taxonomy/${this.vid}`;
@@ -1330,7 +1330,7 @@
 
           saveBlock(id = 'node-form') {
             if (!this.validateFormBlock(id)) {
-              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              this.showNotification('error', '{{ "Please fill in all required fields"|t|e('js') }}');
               return;
             }
             let blockData;
@@ -1598,7 +1598,7 @@
                   spacing: this.blockForm.config.spacing,
                   css_classes: this.blockForm.config.css_classes,
                 };
-                this.showNotification('success', '{{ 'Block updated successfully'|t }}');
+                this.showNotification('success', '{{ 'Block updated successfully'|t|e('js') }}');
               } else {
                 // Add new block
                 this.blocks.push({
@@ -1614,7 +1614,7 @@
                   widget_config: this.selectedTemplate,
                   widget_data: blockData,
                 });
-                this.showNotification('success', '{{ 'Block added successfully'|t }}');
+                this.showNotification('success', '{{ 'Block added successfully'|t|e('js') }}');
               }
             }
 
@@ -1659,7 +1659,7 @@
               const response = await fetch(`{{ path('vactory_dashboard.media.data') }}?${params.toString()}`);
 
               if (!response.ok) {
-                throw new Error('{{ "Une erreur est survenue lors du chargement des médias"|t }}');
+                throw new Error('{{ "Une erreur est survenue lors du chargement des médias"|t|e('js') }}');
               }
 
               const data = await response.json();
@@ -1721,7 +1721,7 @@
             this.setValueByPath(this.blockForm, this.currentFieldPath, mediaData);
 
             this.closeMediaLibrary();
-            this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
+            this.showNotification('success', '{{ "Media sélectionnée avec succès"|t|e('js') }}');
           },
           clearImage(fieldName, path, key) {
             this.setValueByPath(this.blockForm, path, {

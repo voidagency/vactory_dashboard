@@ -428,7 +428,7 @@
                 params.toString()
               }`);
               if (!response.ok) {
-                throw new Error('{{ "Une erreur est survenue lors du chargement des médias" | t }}');
+                throw new Error('{{ "Une erreur est survenue lors du chargement des médias" | t | e('js') }}');
               }
 
               const data = await response.json();
@@ -483,7 +483,7 @@
 
               if (!response.ok) {
                 if (response.status === 403) {
-                  throw new Error('{{ "Vous devez avoir les permissions nécessaires pour supprimer ces médias."|t }}');
+                  throw new Error('{{ "Vous devez avoir les permissions nécessaires pour supprimer ces médias."|t|e('js') }}');
                 } else {
                   const errorData = await response.json();
                   throw new Error(errorData.error || 'Erreur lors de la suppression.');

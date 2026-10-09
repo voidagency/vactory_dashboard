@@ -19,7 +19,7 @@
                     </button>
                 {% endif %}
                 <h1 class="text-lg font-semibold text-slate-900"
-                    x-text="selectedTemplate?.name || '{{ 'Add Block'|t }}'"></h1>
+                    x-text="selectedTemplate?.name || '{{ 'Add Block'|t|e('js') }}'"></h1>
             </div>
             <div class="max-lg:fixed max-lg:w-full max-lg:bottom-0 max-lg:left-0 max-lg:bg-white max-lg:shadow-lg max-lg:border-t max-lg:border-slate-200 max-lg:p-3 max-lg:[&>*]:w-full max-lg:z-[1] flex items-center gap-x-2">
                 {% if not hideBlockConfig %}
@@ -1457,7 +1457,7 @@
               return;
             }
             if (!this.validateForm()) {
-              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              this.showNotification('error', '{{ "Please fill in all required fields"|t|e('js') }}');
               return;
             }
             this.saveChanges();

@@ -60,7 +60,7 @@
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                             <!-- Button text (changes based on loading state) -->
-                            <span x-text="saving ? '{{ 'Saving...'|t }}' : '{{ 'Save'|t }}'"></span>
+                            <span x-text="saving ? '{{ 'Saving...'|t|e('js') }}' : '{{ 'Save'|t|e('js') }}'"></span>
                         </button>
                         {% endif %}
                     </div>
@@ -288,7 +288,7 @@ function mediaEditForm() {
 
                 if (response.ok) {
                     // Show success message
-                    this.showNotification('{{ "Média sauvegardé avec succès"|t }}', 'success');
+                    this.showNotification('{{ "Média sauvegardé avec succès"|t|e('js') }}', 'success');
                     
                     // Reload the page to show updated content
                     setTimeout(() => {
@@ -296,11 +296,11 @@ function mediaEditForm() {
                     }, 1000);
                 } else {
                     const errorData = await response.json();
-                    this.showNotification(errorData.error || '{{ "Erreur lors de la sauvegarde"|t }}', 'error');
+                    this.showNotification(errorData.error || '{{ "Erreur lors de la sauvegarde"|t|e('js') }}', 'error');
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                this.showNotification('{{ "Une erreur est survenue lors de la sauvegarde"|t }}', 'error');
+                this.showNotification('{{ "Une erreur est survenue lors de la sauvegarde"|t|e('js') }}', 'error');
             } finally {
                 this.saving = false;
             }
@@ -320,7 +320,7 @@ function mediaEditForm() {
                 });
 
                 if (response.ok) {
-                    this.showNotification('{{ "Média supprimé avec succès"|t }}', 'success');
+                    this.showNotification('{{ "Média supprimé avec succès"|t|e('js') }}', 'success');
                     
                     // Redirect to media list after successful deletion
                     setTimeout(() => {
@@ -328,11 +328,11 @@ function mediaEditForm() {
                     }, 1000);
                 } else {
                     const errorData = await response.json();
-                    this.showNotification(errorData.error || '{{ "Erreur lors de la suppression"|t }}', 'error');
+                    this.showNotification(errorData.error || '{{ "Erreur lors de la suppression"|t|e('js') }}', 'error');
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                this.showNotification('{{ "Une erreur est survenue lors de la suppression"|t }}', 'error');
+                this.showNotification('{{ "Une erreur est survenue lors de la suppression"|t|e('js') }}', 'error');
             } finally {
                 this.deleting = false;
             }

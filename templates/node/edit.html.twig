@@ -322,7 +322,7 @@
               this.dragStartIndex = null;
 
               // Show success notification
-              this.showNotification('success', '{{ 'Block order updated'|t }}');
+              this.showNotification('success', '{{ 'Block order updated'|t|e('js') }}');
               if (!this.bundle) {
                 this.saveVactoryPageNode();
               }
@@ -341,7 +341,7 @@
               this.dragStartItemIndex = null;
 
               // Show success notification
-              this.showNotification('success', '{{ 'Item order updated'|t }}');
+              this.showNotification('success', '{{ 'Item order updated'|t|e('js') }}');
             }
           },
           copyBlock(index) {
@@ -780,7 +780,7 @@
           },
           saveBlock(id = 'node-form') {
             if (!this.validateForm(id)) {
-              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              this.showNotification('error', '{{ "Please fill in all required fields"|t|e('js') }}');
               return;
             }
             let blockData;
@@ -1088,7 +1088,7 @@
                   widget_data: blockData,
                   widget_id: this.blocks[this.currentBlockIndex].widget_id,
                 };
-                this.showNotification('success', '{{ 'Block updated successfully'|t }}');
+                this.showNotification('success', '{{ 'Block updated successfully'|t|e('js') }}');
               } else {
                 // Add new block
                 this.blocks.push({
@@ -1101,7 +1101,7 @@
                   widget_config: this.selectedTemplate,
                   widget_data: blockData,
                 });
-                this.showNotification('success', '{{ 'Block added successfully'|t }}');
+                this.showNotification('success', '{{ 'Block added successfully'|t|e('js') }}');
               }
             }
 
@@ -1350,7 +1350,7 @@
               this.categories = Array.from(categoriesSet);
             } catch (error) {
               console.error('Error fetching templates:', error);
-              this.showNotification('error', error.message || '{{ 'Failed to load templates'|t }}');
+              this.showNotification('error', error.message || '{{ 'Failed to load templates'|t|e('js') }}');
             } finally {
               this.isLoadingTemplates = false;
             }
@@ -1512,7 +1512,7 @@
             });
 
             if (!isValid) {
-              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              this.showNotification('error', '{{ "Please fill in all required fields"|t|e('js') }}');
               return;
             }
             if (this.currentBlockIndex !== null) {
@@ -1521,7 +1521,7 @@
                 ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
                 ...this.prepareConfigurationData(this.paragraphBlockForm),
               };
-              this.showNotification('success', '{{ "Paragraph block updated successfully"|t }}');
+              this.showNotification('success', '{{ "Paragraph block updated successfully"|t|e('js') }}');
             } else {
               // Add new paragraph block to blocks array
               this.blocks.push({
@@ -1531,7 +1531,7 @@
                 ...this.prepareConfigurationData(this.paragraphBlockForm),
                 preview: '/modules/custom/vactory_dashboard/assets/images/default-screenshot.png', // Default preview image
               });
-              this.showNotification('success', '{{ "Paragraph block added successfully"|t }}');
+              this.showNotification('success', '{{ "Paragraph block added successfully"|t|e('js') }}');
             }
             // Reset form
             this.paragraphBlockForm = {
@@ -1602,7 +1602,7 @@
             });
 
             if (!isValid) {
-              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              this.showNotification('error', '{{ "Please fill in all required fields"|t|e('js') }}');
               return;
             }
             if (this.currentBlockIndex !== null) {
@@ -1611,7 +1611,7 @@
                 ...this.blocks[this.currentBlockIndex], // Preserve existing ID and other properties
                 ...this.prepareConfigurationData(this.paragraphViewForm),
               };
-              this.showNotification('success', '{{ "Paragraph block updated successfully"|t }}');
+              this.showNotification('success', '{{ "Paragraph block updated successfully"|t|e('js') }}');
             } else {
               // Add new paragraph block to blocks array
               this.blocks.push({
@@ -1621,7 +1621,7 @@
                 ...this.prepareConfigurationData(this.paragraphViewForm),
                 preview: '/modules/custom/vactory_dashboard/assets/images/default-screenshot.png', // Default preview image
               });
-              this.showNotification('success', '{{ "Paragraph view added successfully"|t }}');
+              this.showNotification('success', '{{ "Paragraph view added successfully"|t|e('js') }}');
             }
 
             // Reset form
@@ -1712,7 +1712,7 @@
             });
 
             if (!isValid) {
-              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              this.showNotification('error', '{{ "Please fill in all required fields"|t|e('js') }}');
               return;
             }
             if (this.currentBlockMultipleIndex !== null) {
@@ -1721,7 +1721,7 @@
                 ...this.blocks[this.currentBlockMultipleIndex],
                 ...this.prepareConfigurationData(this.paragraphMultipleForm),
               };
-              this.showNotification('success', '{{ "Paragraph multiple updated successfully"|t }}');
+              this.showNotification('success', '{{ "Paragraph multiple updated successfully"|t|e('js') }}');
             } else {
               // Add new paragraph block to blocks array
               this.blocks.push({
@@ -1731,7 +1731,7 @@
                 ...this.prepareConfigurationData(this.paragraphMultipleForm),
                 preview: '/modules/custom/vactory_dashboard/assets/images/default-screenshot.png', // Default preview image
               });
-              this.showNotification('success', '{{ "Paragraph view added successfully"|t }}');
+              this.showNotification('success', '{{ "Paragraph view added successfully"|t|e('js') }}');
             }
 
             // Reset form
@@ -2318,11 +2318,11 @@
                 throw new Error(data.message || 'Failed to save changes');
               }
               this.has_translation = true;
-              this.showNotification('success', '{{ 'Changes saved successfully'|t }}');
+              this.showNotification('success', '{{ 'Changes saved successfully'|t|e('js') }}');
               window.location.reload();
             } catch (error) {
               console.error('Error saving changes:', error);
-              this.showNotification('error', error.message || '{{ 'An error occurred while saving'|t }}');
+              this.showNotification('error', error.message || '{{ 'An error occurred while saving'|t|e('js') }}');
             } finally {
               this.isSaving = false;
             }
@@ -2338,7 +2338,7 @@
               this.blocks.splice(index, 1);
             }
             // Show success notification
-            this.showNotification('success', '{{ 'Block removed successfully'|t }}');
+            this.showNotification('success', '{{ 'Block removed successfully'|t|e('js') }}');
             if (!this.bundle) {
               this.saveVactoryPageNode();
             }
@@ -2425,7 +2425,7 @@
               if (input.type === 'email' && hasValue && !isValidFormat) {
                 isInvalid = true;
                 if (!this.validationMessage) {
-                  this.validationMessage = '{{ "Please enter a valid email address"|t }}';
+                  this.validationMessage = '{{ "Please enter a valid email address"|t|e('js') }}';
                 }
               }
 
@@ -2463,7 +2463,7 @@
             if (!this.validateForm(id)) {
               this.showNotification(
                 'error',
-                this.validationMessage || '{{ "Please fill in all required fields"|t }}'
+                this.validationMessage || '{{ "Please fill in all required fields"|t|e('js') }}'
               );
 
               this.activeTab = 'content';
@@ -2517,9 +2517,9 @@
               const data = await response.json();
 
               if (!response.ok) {
-                throw new Error(data.message || '{{ 'Failed to save node'|t }}');
+                throw new Error(data.message || '{{ 'Failed to save node'|t|e('js') }}');
               }
-              this.showNotification('success', '{{ 'Node updated successfully'|t }}');
+              this.showNotification('success', '{{ 'Node updated successfully'|t|e('js') }}');
               window.location.reload();
             } catch (error) {
               console.error('Error saving node:', error);
@@ -2592,7 +2592,7 @@
               const response = await fetch(`{{ path('vactory_dashboard.media.data') }}?${params.toString()}`);
 
               if (!response.ok) {
-                throw new Error('{{ "Une erreur est survenue lors du chargement des médias"|t }}');
+                throw new Error('{{ "Une erreur est survenue lors du chargement des médias"|t|e('js') }}');
               }
 
               const data = await response.json();
@@ -2677,7 +2677,7 @@
           },
           finalizeMediaSelection() {
             this.closeMediaLibrary();
-            this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
+            this.showNotification('success', '{{ "Media sélectionnée avec succès"|t|e('js') }}');
           },
           // File Library Methods (for image field type - not media)
           async loadFiles(page = 1) {
@@ -2696,7 +2696,7 @@
               const response = await fetch(`/api/vactory-dashboard/files?${params.toString()}`);
 
               if (!response.ok) {
-                throw new Error('{{ "Error loading images"|t }}');
+                throw new Error('{{ "Error loading images"|t|e('js') }}');
               }
 
               const data = await response.json();
@@ -2757,7 +2757,7 @@
           },
           finalizeFileSelection() {
             this.closeFileLibrary();
-            this.showNotification('success', '{{ "Image selected successfully"|t }}');
+            this.showNotification('success', '{{ "Image selected successfully"|t|e('js') }}');
           },
           clearImage(fieldName, path, key, isParagraphMultiple) {
             if (isParagraphMultiple) {

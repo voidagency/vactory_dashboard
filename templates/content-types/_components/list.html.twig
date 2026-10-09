@@ -99,7 +99,7 @@
                                 : (item.status ? 'text-green-600' : 'text-red-600')"
                             x-text="(item.moderation && item.moderation.enabled)
                                 ? item.moderation.label
-                                : (item.status ? '{{ 'Published'|t }}' : '{{ 'Unpublished'|t }}')"></td>
+                                : (item.status ? '{{ 'Published'|t|e('js') }}' : '{{ 'Unpublished'|t|e('js') }}')"></td>
                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900"
                             x-text="item.langague_label"></td>
                         <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900"

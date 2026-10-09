@@ -284,9 +284,9 @@
                                             </template>
                                             <span class="whitespace-nowrap"
                                                   x-text="
-                                                icon === 'ok' ? '{{ 'SSL'|t }}' :
-                                                (icon === 'error' ? '{{ 'SSL'|t }}' :
-                                                (icon === 'warning' ? '{{ 'SSL'|t }}' : ''))
+                                                icon === 'ok' ? '{{ 'SSL'|t|e('js') }}' :
+                                                (icon === 'error' ? '{{ 'SSL'|t|e('js') }}' :
+                                                (icon === 'warning' ? '{{ 'SSL'|t|e('js') }}' : ''))
                                               ">
                                         </span>
                                         </button>
@@ -674,7 +674,7 @@
       results: [],
       groupedResults: {},
       selectedFilter: 'all',
-      selectedFilterLabel: '{{ "Tout"|t }}',
+      selectedFilterLabel: '{{ "Tout"|t|e('js') }}',
       bundle: 'vactory_page',
       loading: true,
       showProfile: false,
@@ -724,9 +724,9 @@
       groupResults() {
         const groups = {};
         const entityLabels = {
-          'node': '{{ "Contenu"|t }}',
-          'media': '{{ "Média"|t }}',
-          'taxonomy_term': '{{ "Catégorie"|t }}',
+          'node': '{{ "Contenu"|t|e('js') }}',
+          'media': '{{ "Média"|t|e('js') }}',
+          'taxonomy_term': '{{ "Catégorie"|t|e('js') }}',
         };
 
         // Initialize groups
@@ -758,12 +758,12 @@
       setFilter(filterType) {
         this.selectedFilter = filterType;
         const filterLabels = {
-          'all': '{{ "Tout"|t }}',
-          'node': '{{ "Contenu"|t }}',
-          'media': '{{ "Média"|t }}',
-          'taxonomy_term': '{{ "Catégorie"|t }}'
+          'all': '{{ "Tout"|t|e('js') }}',
+          'node': '{{ "Contenu"|t|e('js') }}',
+          'media': '{{ "Média"|t|e('js') }}',
+          'taxonomy_term': '{{ "Catégorie"|t|e('js') }}'
         };
-        this.selectedFilterLabel = filterLabels[filterType] || '{{ "Tout"|t }}';
+        this.selectedFilterLabel = filterLabels[filterType] || '{{ "Tout"|t|e('js') }}';
 
         // Re-run search with new filter if there's a query
         if (this.query.length >= 2) {
