@@ -135,6 +135,13 @@ class DashboardController extends ControllerBase implements ContainerInjectionIn
     // if needed.
     $no_redmine_account = FALSE;
 
+    // The widget is rendered on every dashboard visit: cache the Redmine
+    // result per user so an unavailable API (timeouts, 5xx) or a user without
+    // a Redmine account costs one call per cache period instead of one per
+    // page view.
+    $cid = 'vactory_dashboard.redmine_issues:' . hash('sha256', $email . '|' . $project_id . '|' . $url);
+    $fetched_ok = FALSE;
+
     // Pre-validation checks.
     if (empty($email)) {
       $error_message = $this->t('User email is missing.');
@@ -147,6 +154,9 @@ class DashboardController extends ControllerBase implements ContainerInjectionIn
     elseif (empty($project_id)) {
       $error_message = $this->t('Project ID missing or invalid.');
       $no_redmine_account = TRUE;
+    }
+    elseif ($cached = \Drupal::cache()->get($cid)) {
+      [$issues, $error_message, $no_redmine_account] = $cached->data;
     }
     else {
       // Proceed with API call only if all prerequisites are met.
@@ -170,7 +180,8 @@ class DashboardController extends ControllerBase implements ContainerInjectionIn
         $response = $this->httpClient->request('GET', $url, [
           'query' => $query,
           'headers' => $headers,
-          'timeout' => 10,
+          'timeout' => 3,
+          'connect_timeout' => 2,
         ]);
 
         $statusCode = $response->getStatusCode();
@@ -183,6 +194,7 @@ class DashboardController extends ControllerBase implements ContainerInjectionIn
 
         // Handle successful response.
         if ($statusCode === 200) {
+          $fetched_ok = TRUE;
           $issues = $data ?? [];
           // Note: If user email is not in Redmine, API returns 400 "User not found"
           // So empty issues here means user exists but has no tickets assigned.
@@ -251,6 +263,16 @@ class DashboardController extends ControllerBase implements ContainerInjectionIn
         \Drupal::logger('vactory_dashboard')->error('Error fetching Redmine tickets: @message', ['@message' => $e->getMessage()]);
         $error_message = $this->t('An unexpected error occurred while retrieving Redmine tickets.');
       }
+
+      // Short cache on failure so a Redmine outage is retried soon without
+      // hammering the API; longer when the result is stable. Changing the
+      // Redmine settings invalidates every cached result.
+      $ttl = $fetched_ok || $no_redmine_account ? 900 : 120;
+      \Drupal::cache()->set($cid, [
+        $issues,
+        $error_message ? (string) $error_message : NULL,
+        $no_redmine_account,
+      ], \Drupal::time()->getRequestTime() + $ttl, ['config:vactory_dashboard.settings']);
     }
 
     return [
