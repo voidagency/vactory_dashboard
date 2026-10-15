@@ -14,7 +14,6 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\file\FileInterface;
 use Drupal\media\MediaInterface;
-use Drupal\node\Entity\NodeType;
 use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\paragraphs\Entity\ParagraphsType;
@@ -1706,7 +1705,9 @@ class NodeService {
           break;
 
         case 'field_cross_content':
-          $field_info['options'] = $this->getCrossContentOptions($bundle, $field_info);
+          // Filled per node with the selected titles only, see
+          // attachCrossContentOptions().
+          $field_info['options'] = [];
           $field_info['multiple'] = TRUE;
           break;
 
@@ -1987,45 +1988,59 @@ class NodeService {
   }
 
   /**
-   * Get cross content options.
+   * Get the titles of the selected cross content nodes.
+   *
+   * Only the selected nodes are read: the widget searches the other ones
+   * through /api/vactory-dashboard/cross-content-search.
+   *
+   * @param array $nids
+   *   The selected node IDs.
+   *
+   * @return array
+   *   Node titles keyed by nid, in the current language when translated,
+   *   otherwise in the node original language.
    */
-  public function getCrossContentOptions($type, array $field_definition) {
+  public function getCrossContentOptions(array $nids) {
+    $nids = array_filter(array_map('intval', $nids));
+    if (empty($nids)) {
+      return [];
+    }
+
     $language = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_URL)->getId();
-    $node_type = NodeType::load($type);
-    if ($node_type->getThirdPartySetting('vactory_cross_content', 'enabling', '') == 1) {
-      $content_type_selected = $node_type->getThirdPartySetting('vactory_cross_content', 'content_type', '');
-      if (!empty($content_type_selected) && $content_type_selected != 'none') {
-        $type = $content_type_selected;
-      }
-    }
-    $node_list = \Drupal::entityTypeManager()
-      ->getListBuilder('node')
-      ->getStorage()
-      ->loadByProperties([
-        'type' => $type,
-      ]);
+    $rows = \Drupal::database()
+      ->select('node_field_data', 'n')
+      ->fields('n', ['nid', 'title', 'langcode', 'default_langcode'])
+      ->condition('n.nid', $nids, 'IN')
+      ->execute();
 
-    foreach ($node_list as $key => $node) {
-      $node_list[$key] = \Drupal::service('entity.repository')
-        ->getTranslationFromContext($node, $language);
-    }
-
-    // @todo: implement for edit.
-    $current_node = "";
-    if (empty($current_node)) {
-      $current_node = 0;
-    }
-    else {
-      // $current_node = $current_node[0]['value'];
-    }
     $options = [];
-    foreach ($node_list as $key => $value) {
-      if ($key == $current_node) {
-        continue;
+    foreach ($rows as $row) {
+      // Current language wins, original language is the fallback.
+      if ($row->langcode === $language || ($row->default_langcode && !isset($options[$row->nid]))) {
+        $options[$row->nid] = $row->title;
       }
-      $options[$key] = $value->label();
     }
     return $options;
+  }
+
+  /**
+   * Fill the cross content fields options with the selected nodes titles.
+   *
+   * @param array $fields
+   *   The fields keyed by machine name (as returned by getBundleFields()).
+   * @param array $node_data
+   *   The node data (as returned by processNode()).
+   *
+   * @return array
+   *   The fields with their cross content options filled.
+   */
+  public function attachCrossContentOptions(array $fields, array $node_data) {
+    foreach ($fields as $field_name => $field) {
+      if (($field['type'] ?? '') === 'field_cross_content') {
+        $fields[$field_name]['options'] = $this->getCrossContentOptions($node_data[$field_name] ?? []);
+      }
+    }
+    return $fields;
   }
 
   /**
