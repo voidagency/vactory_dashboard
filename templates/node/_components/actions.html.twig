@@ -60,7 +60,7 @@
 				</svg>
 
 				<!-- Button text (changes based on loading state) -->
-				<span x-text="isSaving ? '{{ 'Saving...'|t }}' : '{{ 'Save'|t }}'"></span>
+				<span x-text="isSaving ? '{{ 'Saving...'|t|e('js') }}' : '{{ 'Save'|t|e('js') }}'"></span>
 			</button>
 		</div>
 	</div>

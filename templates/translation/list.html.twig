@@ -314,7 +314,7 @@
             try {
               const response = await fetch(`{{ path('vactory_dashboard.translations.data') }}?${params.toString()}`);
               if (!response.ok) {
-                throw new Error('{{ "Une erreur est survenue lors du chargement des traductions" | t }}');
+                throw new Error('{{ "Une erreur est survenue lors du chargement des traductions" | t | e('js') }}');
               }
 
               const data = await response.json();
@@ -335,7 +335,7 @@
             try {
               const response = await fetch(`{{ path('vactory_dashboard.translations.languages') }}`);
               if (!response.ok) {
-                throw new Error('{{ "Une erreur est survenue lors du chargement des traductions" | t }}');
+                throw new Error('{{ "Une erreur est survenue lors du chargement des traductions" | t | e('js') }}');
               }
 
               const data = await response.json();
@@ -347,7 +347,7 @@
           },
 
           async deleteTranslation(source, context) {
-            if (!confirm('{{ "Êtes-vous sûr de vouloir supprimer cette traduction ?" | t }}')) {
+            if (!confirm('{{ "Êtes-vous sûr de vouloir supprimer cette traduction ?" | t | e('js') }}')) {
               return;
             }
 
@@ -361,16 +361,16 @@
               });
 
               if (!response.ok) {
-                this.setNotification(true, '{{ "Une erreur est survenue lors de la suppression des traduction" | t }}');
-                throw new Error('{{ "Une erreur est survenue lors de la suppression de la traduction" | t }}');
+                this.setNotification(true, '{{ "Une erreur est survenue lors de la suppression des traduction" | t | e('js') }}');
+                throw new Error('{{ "Une erreur est survenue lors de la suppression de la traduction" | t | e('js') }}');
               }
 
               await this.fetchTranslations(1);
-              this.setNotification(false, '{{ "Les traductions ont été suprimmé avec succés" | t }}');
+              this.setNotification(false, '{{ "Les traductions ont été suprimmé avec succés" | t | e('js') }}');
             } catch (error) {
               this.error = error.message;
               console.error('Error deleting translation:', error);
-              this.setNotification(true, '{{ "Une erreur est survenue lors de la suppression des traduction" | t }}');
+              this.setNotification(true, '{{ "Une erreur est survenue lors de la suppression des traduction" | t | e('js') }}');
             }
           },
 
@@ -383,7 +383,7 @@
           },
 
           async deleteTranslationBulk() {
-            if (!confirm("{{ 'Êtes-vous sûr de vouloir supprimer les termes sélectionnés ?' | t }}")) {
+            if (!confirm("{{ 'Êtes-vous sûr de vouloir supprimer les termes sélectionnés ?' | t | e('js') }}")) {
               return;
             }
 
@@ -400,9 +400,9 @@
 
               if (response.ok) {
                 await this.fetchTranslations(1);
-                this.setNotification(false, '{{ "Les traductions ont été suprimmé avec succés" | t }}');
+                this.setNotification(false, '{{ "Les traductions ont été suprimmé avec succés" | t | e('js') }}');
               } else {
-                this.setNotification(true, '{{ "Une erreur est survenue lors de la suppression des traduction" | t }}');
+                this.setNotification(true, '{{ "Une erreur est survenue lors de la suppression des traduction" | t | e('js') }}');
               }
             } catch (error) {
               console.error('Error deleting submissions:', error);
@@ -425,10 +425,10 @@
             const result = await response.json();
             if (result.status == 'ok') {
               await this.fetchTranslations(1);
-              this.setNotification(false, '{{ "Les termes ont été importé avec success" | t }}');
+              this.setNotification(false, '{{ "Les termes ont été importé avec success" | t | e('js') }}');
               this.showAddModal = false;
             } else {
-              this.setNotification(true, '{{ "L import des termes a échoué" | t }}');
+              this.setNotification(true, '{{ "L import des termes a échoué" | t | e('js') }}');
               this.showAddModal = false;
             }
           },

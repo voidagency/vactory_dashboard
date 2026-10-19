@@ -202,13 +202,13 @@
                     })
                     .then(res => res.json())
                     .then(response => {
-                        this.setNotification(false, '{{ "Changements appliqués avec succès" | t }}');
+                        this.setNotification(false, '{{ "Changements appliqués avec succès" | t | e('js') }}');
                         this.modifiedRows = [];
                         this.loadData(this.currentPage);
                     })
                     .catch(error => {
                         console.error('Error saving changes:', error);
-                        this.setNotification(true, '{{ "Erreur lors de la sauvegarde des changements" | t }}');
+                        this.setNotification(true, '{{ "Erreur lors de la sauvegarde des changements" | t | e('js') }}');
                     });
                 },
 

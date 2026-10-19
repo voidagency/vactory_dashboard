@@ -48,7 +48,7 @@
 							:class="{'opacity-50 cursor-not-allowed': loading,'bg-primary-500 hover:bg-primary-600': !loading,'bg-primary-400': loading}"
 							class="inline-flex items-center justify-center gap-x-2 rounded-lg transition-all duration-150 px-5 py-2 text-sm text-white bg-primary-500 hover:bg-primary-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
 								<!-- Button text (changes based on loading state) -->
-								<span x-text="loading ? '{{ 'Ajout...'|t }}' : '{{ 'Ajouter'|t }}'"></span>
+								<span x-text="loading ? '{{ 'Ajout...'|t|e('js') }}' : '{{ 'Ajouter'|t|e('js') }}'"></span>
 								
 								<!-- Loading spinner (shown when saving) -->
 								<svg x-show="loading" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -109,16 +109,16 @@
               const result = await response.json();
 
               if (response.ok) {
-                this.showNotification('success', '{{ "Vidéo ajouté avec succès"|t }}');
+                this.showNotification('success', '{{ "Vidéo ajouté avec succès"|t|e('js') }}');
                 window.location.href = '{{ path("vactory_dashboard.media") }}';
                 form.reset();
               } else {
                 this.errors = result.errors;
-                this.showNotification('error', '{{ "Veuillez vérifier les valeurs fournies."|t }}');
+                this.showNotification('error', '{{ "Veuillez vérifier les valeurs fournies."|t|e('js') }}');
               }
             } catch (error) {
               this.errors['url'] = 'An error occurred. Please try again.';
-                this.showNotification('error', '{{ "Une erreur est survenue"|t }}');
+                this.showNotification('error', '{{ "Une erreur est survenue"|t|e('js') }}');
             } finally {
               this.loading = false;
             }

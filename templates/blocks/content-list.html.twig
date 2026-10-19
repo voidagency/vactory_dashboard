@@ -318,7 +318,7 @@
             const response = await fetch(`{{ path('vactory_dashboard.block_content.data') }}?${params}`);
             const data = await response.json();
             if (!response.ok) {
-              throw new Error(data.message || '{{ 'Unable to load content blocks.'|t }}');
+              throw new Error(data.message || '{{ 'Unable to load content blocks.'|t|e('js') }}');
             }
             this.blocks = data.data;
             this.currentPage = data.page;
@@ -369,7 +369,7 @@
             });
             const data = await response.json();
             if (!response.ok) {
-              throw new Error(data.message || '{{ 'Unable to delete content block.'|t }}');
+              throw new Error(data.message || '{{ 'Unable to delete content block.'|t|e('js') }}');
             }
             const deletedCount = this.pendingDeleteIds.length;
             this.showConfirmModal = false;

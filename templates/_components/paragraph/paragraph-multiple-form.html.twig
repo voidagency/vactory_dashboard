@@ -39,7 +39,7 @@
             this.dragStartOngletsIndex = null;
 
             // Show success notification
-            this.showNotification('success', '{{ 'Block order updated'|t }}');
+            this.showNotification('success', '{{ 'Block order updated'|t|e('js') }}');
         }
     },
     
@@ -62,7 +62,7 @@
             this.dragStartWidgetIndex = null;
 
             // Show success notification
-            this.showNotification('success', '{{ 'Item order updated'|t }}');
+            this.showNotification('success', '{{ 'Item order updated'|t|e('js') }}');
         }
     },
 }"

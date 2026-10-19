@@ -254,11 +254,11 @@
                 this.showDeleteModal = false;
               } else {
                 const error = await response.json();
-                this.setNotification(true, "{{ 'Erreur lors de la suppression' | t }}");
+                this.setNotification(true, "{{ 'Erreur lors de la suppression' | t | e('js') }}");
               }
             } catch (error) {
               console.error('Error deleting items:', error);
-              this.setNotification(true, "{{ 'Erreur lors de la suppression' | t }}");
+              this.setNotification(true, "{{ 'Erreur lors de la suppression' | t | e('js') }}");
             }
           },
           async laodTaxonomies(page = 1) {

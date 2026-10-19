@@ -51,7 +51,7 @@
                 <path class="opacity-75" fill="currentColor"
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <span x-text="isSaving ? '{{ 'Saving...'|t }}' : '{{ 'Save'|t }}'"></span>
+              <span x-text="isSaving ? '{{ 'Saving...'|t|e('js') }}' : '{{ 'Save'|t|e('js') }}'"></span>
             </button>
           </div>
         </div>
@@ -409,7 +409,7 @@
               const response = await fetch("{{ path('vactory_dashboard.templates') }}");
               const result = await response.json();
               if (!response.ok) {
-                throw new Error(result.message || '{{ 'Failed to load templates'|t }}');
+                throw new Error(result.message || '{{ 'Failed to load templates'|t|e('js') }}');
               }
               const categoriesSet = new Set();
               const templatesArray = [];
@@ -571,7 +571,7 @@
               return;
             }
             if (!this.validateForm(id)) {
-              this.showNotification('error', '{{ "Please fill in all required fields"|t }}');
+              this.showNotification('error', '{{ "Please fill in all required fields"|t|e('js') }}');
               return;
             }
             if (this.isSaving) {
@@ -598,9 +598,9 @@
               });
               const data = await response.json();
               if (!response.ok) {
-                throw new Error(data.message || '{{ 'Failed to save content block'|t }}');
+                throw new Error(data.message || '{{ 'Failed to save content block'|t|e('js') }}');
               }
-              this.showNotification('success', this.operation === 'add' ? '{{ 'Content block created successfully'|t }}' : '{{ 'Content block saved successfully'|t }}');
+              this.showNotification('success', this.operation === 'add' ? '{{ 'Content block created successfully'|t|e('js') }}' : '{{ 'Content block saved successfully'|t|e('js') }}');
               window.location.href = this.operation === 'add' ? (data.list || '{{ path('vactory_dashboard.block_content') }}') : window.location.href;
             } catch (error) {
               console.error('Error saving content block:', error);
@@ -664,7 +664,7 @@
               });
               const response = await fetch(`{{ path('vactory_dashboard.media.data') }}?${params.toString()}`);
               if (!response.ok) {
-                throw new Error('{{ "Une erreur est survenue lors du chargement des médias"|t }}');
+                throw new Error('{{ "Une erreur est survenue lors du chargement des médias"|t|e('js') }}');
               }
               const data = await response.json();
               this.mediaItems = data.data.map((item) => ({
@@ -720,7 +720,7 @@
               key: this.currentFieldKey || Date.now(),
             });
             this.closeMediaLibrary();
-            this.showNotification('success', '{{ "Media sélectionnée avec succès"|t }}');
+            this.showNotification('success', '{{ "Media sélectionnée avec succès"|t|e('js') }}');
           },
           clearImage(fieldName, path, key) {
             this.setValueByPath(this.blockForm, path, {
