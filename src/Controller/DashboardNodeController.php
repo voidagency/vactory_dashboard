@@ -591,6 +591,8 @@ class DashboardNodeController extends ControllerBase {
 
     // Get bundle fields.
     $fields = $this->nodeService->getBundleFields($bundle, count($available_languages_list));
+    $node_data = $this->nodeService->processNode($node_translation ?? $node, $fields);
+    $fields = $this->nodeService->attachCrossContentOptions($fields, $node_data);
 
     // Check bundle if has a paragraphs field (field_vactory_paragraphs) with a dynamic field.
     $has_paragraphs_field = $this->nodeService->hasParagraphsField($fields);
@@ -617,7 +619,7 @@ class DashboardNodeController extends ControllerBase {
       '#type' => 'not_page',
       '#has_paragraphs_field' => $has_paragraphs_field,
       '#alias' => $this->previewUrlService->getPreviewUrl($node),
-      '#node' => $this->nodeService->processNode($node_translation ?? $node, $fields),
+      '#node' => $node_data,
       '#language' => $node_translation ? $node_translation->language()
         ->getId() : $node->language()->getId(),
       '#node_default_lang' => $node->language()->getId(),
@@ -715,6 +717,8 @@ class DashboardNodeController extends ControllerBase {
 
     // Get bundle fields.
     $fields = $this->nodeService->getBundleFields($bundle, count($available_languages_list));
+    $node_data = $this->nodeService->processNode($node, $fields);
+    $fields = $this->nodeService->attachCrossContentOptions($fields, $node_data);
 
     // Check bundle if has a paragraphs field (field_vactory_paragraphs) with a dynamic field.
     $has_paragraphs_field = $this->nodeService->hasParagraphsField($fields);
@@ -741,7 +745,7 @@ class DashboardNodeController extends ControllerBase {
       '#theme' => 'vactory_dashboard_node_edit',
       '#type' => 'not_page',
       '#has_paragraphs_field' => $has_paragraphs_field,
-      '#node' => $this->nodeService->processNode($node, $fields),
+      '#node' => $node_data,
       '#language' => $current_language,
       '#node_default_lang' => $node->language()->getId(),
       '#available_languages' => $available_languages_list,
