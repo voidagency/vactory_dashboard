@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\user\UserInterface;
 use Drupal\user\Entity\Role;
+use Drupal\user\RoleInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -37,6 +38,13 @@ class DashboardUsersController extends ControllerBase {
   protected $currentUser;
 
   /**
+   * Role IDs the current user is not allowed to manage.
+   *
+   * @var string[]|null
+   */
+  protected $protectedRoleIds;
+
+  /**
    * Constructs a new DashboardUsersController object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
@@ -62,7 +70,75 @@ class DashboardUsersController extends ControllerBase {
    *   TRUE if the user is an admin, FALSE otherwise.
    */
   protected function isCurrentUserAdmin() {
-    return in_array('administrator', $this->currentUser->getRoles());
+    $roles = $this->currentUser->getRoles(TRUE);
+    if (in_array('administrator', $roles)) {
+      return TRUE;
+    }
+    foreach (Role::loadMultiple($roles) as $role) {
+      if ($role->isAdmin()) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * Returns the roles the current user is not allowed to manage.
+   *
+   * Role weights define the hierarchy: the lower the weight, the more
+   * privileged the role (administrator < super_administrator < master <
+   * webmaster). Admin roles are always protected.
+   *
+   * @return string[]
+   *   The protected role IDs.
+   */
+  protected function getProtectedRoleIds() {
+    if (isset($this->protectedRoleIds)) {
+      return $this->protectedRoleIds;
+    }
+
+    $roles = Role::loadMultiple();
+    unset($roles[RoleInterface::ANONYMOUS_ID], $roles[RoleInterface::AUTHENTICATED_ID]);
+
+    // The current user's rank is the weight of its most privileged role.
+    $current_weights = [];
+    foreach ($this->currentUser->getRoles(TRUE) as $role_id) {
+      if (isset($roles[$role_id])) {
+        $current_weights[] = $roles[$role_id]->getWeight();
+      }
+    }
+    $current_rank = $current_weights ? min($current_weights) : PHP_INT_MAX;
+
+    $this->protectedRoleIds = [];
+    foreach ($roles as $role_id => $role) {
+      if ($role->isAdmin() || $role_id === 'administrator' || $role->getWeight() < $current_rank) {
+        $this->protectedRoleIds[] = $role_id;
+      }
+    }
+
+    return $this->protectedRoleIds;
+  }
+
+  /**
+   * Checks if the current user can view, edit or delete the given user.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The target user.
+   *
+   * @return bool
+   *   TRUE if the target user has no role more privileged than the current
+   *   user's, FALSE otherwise.
+   */
+  protected function canManageUser(UserInterface $user) {
+    if ($this->isCurrentUserAdmin()) {
+      return TRUE;
+    }
+
+    if ((int) $user->id() === 1) {
+      return FALSE;
+    }
+
+    return !array_intersect($user->getRoles(TRUE), $this->getProtectedRoleIds());
   }
 
   /**
@@ -125,15 +201,16 @@ class DashboardUsersController extends ControllerBase {
     $query->accessCheck(TRUE);
     $query->condition('uid', 1, '>');
 
-    // Non-admin users should not see admin users.
-    if (!$this->isCurrentUserAdmin()) {
-      $admin_query = $this->entityTypeManager->getStorage('user')->getQuery();
-      $admin_query->accessCheck(TRUE);
-      $admin_query->condition('roles', 'administrator');
-      $admin_uids = $admin_query->execute();
-      if (!empty($admin_uids)) {
-        $count_query->condition('uid', $admin_uids, 'NOT IN');
-        $query->condition('uid', $admin_uids, 'NOT IN');
+    // Non-admin users should not see users with a more privileged role.
+    $protected_roles = $this->isCurrentUserAdmin() ? [] : $this->getProtectedRoleIds();
+    if (!empty($protected_roles)) {
+      $protected_query = $this->entityTypeManager->getStorage('user')->getQuery();
+      $protected_query->accessCheck(TRUE);
+      $protected_query->condition('roles', $protected_roles, 'IN');
+      $protected_uids = $protected_query->execute();
+      if (!empty($protected_uids)) {
+        $count_query->condition('uid', $protected_uids, 'NOT IN');
+        $query->condition('uid', $protected_uids, 'NOT IN');
       }
     }
 
@@ -240,7 +317,7 @@ class DashboardUsersController extends ControllerBase {
     $userIds = $content['userIds'] ?? [];
 
     if (in_array(1, $userIds)) {
-      return new JsonResponse(['message' => 'Action not permitted', 401]);
+      return new JsonResponse(['message' => 'Action not permitted'], Response::HTTP_FORBIDDEN);
     }
 
     if (empty($userIds)) {
@@ -250,6 +327,14 @@ class DashboardUsersController extends ControllerBase {
     try {
       $storage = $this->entityTypeManager->getStorage('user');
       $users = $storage->loadMultiple($userIds);
+
+      // Prevent users from deleting users with a more privileged role.
+      foreach ($users as $user) {
+        if (!$this->canManageUser($user)) {
+          return new JsonResponse(['message' => 'Access denied.'], Response::HTTP_FORBIDDEN);
+        }
+      }
+
       $storage->delete($users);
 
       return new JsonResponse(['message' => 'Users deleted successfully']);
@@ -285,8 +370,8 @@ class DashboardUsersController extends ControllerBase {
       throw new NotFoundHttpException('User not found.');
     }
 
-    // Prevent non-admin users from editing users with the administrator role.
-    if (!$this->isCurrentUserAdmin() && in_array('administrator', $user->getRoles())) {
+    // Prevent users from editing users with a more privileged role.
+    if (!$this->canManageUser($user)) {
       throw new AccessDeniedHttpException('Access denied');
     }
 
@@ -341,8 +426,8 @@ class DashboardUsersController extends ControllerBase {
       throw new NotFoundHttpException('Utilisateur non trouvé.');
     }
 
-    // Prevent non-admin users from editing users with the administrator role.
-    if (!$this->isCurrentUserAdmin() && in_array('administrator', $user->getRoles())) {
+    // Prevent users from editing users with a more privileged role.
+    if (!$this->canManageUser($user)) {
       return new JsonResponse(['message' => 'Access denied.'], Response::HTTP_FORBIDDEN);
     }
 
@@ -435,8 +520,8 @@ class DashboardUsersController extends ControllerBase {
       return new JsonResponse(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
     }
 
-    // Prevent non-admin users from editing users with the administrator role.
-    if (!$this->isCurrentUserAdmin() && in_array('administrator', $user->getRoles())) {
+    // Prevent users from editing users with a more privileged role.
+    if (!$this->canManageUser($user)) {
       return new JsonResponse(['message' => 'Access denied.'], Response::HTTP_FORBIDDEN);
     }
 
