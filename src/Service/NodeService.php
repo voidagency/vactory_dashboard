@@ -746,10 +746,6 @@ class NodeService {
             $colorRaw = $colorField->first()->get('color')->getString();
             $hex = explode(',', $colorRaw)[0];
           }
-          else {
-            // No saved value: fall back to the configured default.
-            $hex = $defaultColor;
-          }
         }
 
         $image = "";
