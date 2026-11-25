@@ -25,6 +25,43 @@ function vactory_dashboard_update_9970() {
 }
 
 /**
+ * Removes the term "slug" field from the dashboard search index when unusable.
+ *
+ * The field reads a property provided by vactory_decoupled. On a site without
+ * it, search_api cannot load the field definition; since search_api 1.43 the
+ * error is no longer only logged, and saving a view or the index fails (seen
+ * during "drush updb"). The field and its references in the processors are
+ * removed only when its definition cannot be loaded: decoupled sites keep it.
+ */
+function vactory_dashboard_update_9971() {
+  if (!\Drupal::moduleHandler()->moduleExists('search_api')) {
+    return t('search_api is not enabled: nothing to do.');
+  }
+  $index = \Drupal::entityTypeManager()->getStorage('search_api_index')->load('vactory_dashboard_search');
+  $field = $index ? $index->getField('slug') : NULL;
+  if (!$field) {
+    return t('No "slug" field on the dashboard search index: nothing to do.');
+  }
+  try {
+    $field->getDataDefinition();
+    return t('The "slug" field of the dashboard search index is usable: kept.');
+  }
+  catch (\Exception $e) {
+    // The property is not available on this site: remove the field below.
+  }
+  $index->removeField('slug');
+  foreach ($index->getProcessors() as $processor) {
+    $configuration = $processor->getConfiguration();
+    if (!empty($configuration['fields']) && in_array('slug', $configuration['fields'], TRUE)) {
+      $configuration['fields'] = array_values(array_diff($configuration['fields'], ['slug']));
+      $processor->setConfiguration($configuration);
+    }
+  }
+  $index->save();
+  return t('Unusable "slug" field removed from the dashboard search index.');
+}
+
+/**
  * Implements hook_install().
  */
 function vactory_dashboard_install() {
