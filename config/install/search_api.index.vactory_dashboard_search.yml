@@ -176,7 +176,6 @@ processor_settings:
       - mail
       - name
       - name_2
-      - slug
       - tid
       - title
       - vid
@@ -195,7 +194,6 @@ processor_settings:
       - mail
       - name
       - name_2
-      - slug
       - tid
       - title
       - vid
@@ -248,7 +246,6 @@ processor_settings:
       - mail
       - name
       - name_2
-      - slug
       - tid
       - title
       - vid
