@@ -1,0 +1,12 @@
+<?php
+
+/**
+ * @file
+ * A pending update of another module.
+ */
+
+/**
+ * An update that would save a view or the dashboard search index.
+ */
+function vactory_dashboard_update_order_test_update_10001() {
+}
