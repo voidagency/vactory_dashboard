@@ -10,6 +10,39 @@ use Drupal\block\Entity\Block;
 use Drupal\block_content\Entity\BlockContent;
 
 /**
+ * Implements hook_update_dependencies().
+ *
+ * Until update 9971 has removed the unusable "slug" field from the dashboard
+ * search index, any update that saves a view or the index fails with
+ * search_api 1.43 ("Could not retrieve data definition for field 'Term slug'").
+ * Updates of other modules can run before 9971 (Redmine #71716): every pending
+ * update of another module waits for it.
+ */
+function vactory_dashboard_update_dependencies() {
+  $registry = \Drupal::service('update.update_hook_registry');
+  if ($registry->getInstalledVersion('vactory_dashboard') >= 9971) {
+    return [];
+  }
+  $dependencies = [];
+  $module_handler = \Drupal::moduleHandler();
+  foreach (array_keys($module_handler->getModuleList()) as $module) {
+    if ($module === 'vactory_dashboard') {
+      continue;
+    }
+    // The update functions of a module are found only once its .install file
+    // is loaded.
+    $module_handler->loadInclude($module, 'install');
+    $installed = $registry->getInstalledVersion($module);
+    foreach ($registry->getAvailableUpdates($module) as $number) {
+      if ($number > $installed) {
+        $dependencies[$module][$number]['vactory_dashboard'] = 9971;
+      }
+    }
+  }
+  return $dependencies;
+}
+
+/**
  * Assign permissions (access dash, sitemap, media ..) to webmaster.
  */
 function vactory_dashboard_update_9956() {
