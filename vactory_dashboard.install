@@ -19,6 +19,10 @@ use Drupal\block_content\Entity\BlockContent;
  * update of another module waits for it.
  */
 function vactory_dashboard_update_dependencies() {
+  // The update hook registry exists from Drupal 9.3 on.
+  if (!\Drupal::hasService('update.update_hook_registry')) {
+    return [];
+  }
   $registry = \Drupal::service('update.update_hook_registry');
   if ($registry->getInstalledVersion('vactory_dashboard') >= 9971) {
     return [];

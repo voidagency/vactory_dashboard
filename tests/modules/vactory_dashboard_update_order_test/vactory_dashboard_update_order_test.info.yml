@@ -3,4 +3,4 @@ type: module
 description: 'Pending update of another module, for the update order test of vactory_dashboard.'
 package: Testing
 hidden: true
-core_version_requirement: ^9 || ^10
+core_version_requirement: ^9 || ^10 || ^11
